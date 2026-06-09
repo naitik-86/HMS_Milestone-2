@@ -1,0 +1,80 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Syne:wght@400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body, #root { height: 100%; width: 100%; }
+
+body {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  background-color: #F5F1EA;
+  color: #1A1D2E;
+  overflow: hidden;
+}
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #EFEAE0; }
+::-webkit-scrollbar-thumb { background: #C9C2B3; border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: #E8630A; }
+
+.nav-item { transition: all 0.2s ease; }
+.nav-item:hover { background: rgba(232, 99, 10, 0.12); color: #E8630A; }
+.nav-item.active {
+  background: rgba(232, 99, 10, 0.18);
+  color: #E8630A;
+  border-left: 3px solid #E8630A;
+}
+
+.card-hover { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+.card-hover:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(20,25,45,0.08); }
+
+.input-field {
+  background: #FFFFFF;
+  border: 1px solid #EAE5DC;
+  color: #1A1D2E;
+  border-radius: 10px;
+  padding: 10px 14px;
+  width: 100%;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.input-field:focus { border-color: #E8630A; box-shadow: 0 0 0 3px rgba(232,99,10,0.12); }
+.input-field::placeholder { color: #9CA3AF; }
+select.input-field option { background: #FFFFFF; color: #1A1D2E; }
+
+.badge-active { background: rgba(34, 197, 94, 0.15); color: #15803D; }
+.badge-inactive { background: rgba(239, 68, 68, 0.15); color: #B91C1C; }
+.badge-pending { background: rgba(234, 179, 8, 0.15); color: #A16207; }
+
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(20,25,45,0.45);
+  backdrop-filter: blur(4px);
+  z-index: 50;
+  display: flex; align-items: center; justify-content: center;
+}
+
+.progress-bar { height: 6px; border-radius: 99px; background: #EFEAE0; overflow: hidden; }
+.progress-fill { height: 100%; border-radius: 99px; transition: width 0.6s ease; }
+
+.stat-card {
+  background: #FFFFFF;
+  border: 1px solid #EFEAE0;
+  border-radius: 18px;
+  padding: 24px;
+  box-shadow: 0 1px 2px rgba(20,25,45,0.04);
+  transition: all 0.2s ease;
+}
+.stat-card:hover {
+  border-color: rgba(232, 99, 10, 0.35);
+  box-shadow: 0 8px 24px rgba(20,25,45,0.06);
+}
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px);} to { opacity: 1; transform: translateY(0);} }
+.fade-in { animation: fadeIn 0.3s ease forwards; }
+@keyframes pulse-dot { 0%,100% { opacity: 1;} 50% { opacity: 0.4;} }
+.pulse-dot { animation: pulse-dot 2s infinite; }
