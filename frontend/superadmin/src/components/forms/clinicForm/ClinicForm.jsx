@@ -1,7 +1,13 @@
+
 import { useState } from "react";
 import { showToast } from "../../../util/toast";
+import { api } from "../../../services/apiClient";
+
+
 
 /* ---------------- UI COMPONENTS ---------------- */
+
+
 
 const Card = ({ title, children }) => (
     <div className="bg-white p-6 rounded-2xl shadow">
@@ -81,6 +87,8 @@ const Upload = ({ label, requiredField = false, onChange }) => (
 
 export default function ClinicForm({ activeTab, form, setForm }) {
 
+    const [submitting, setSubmitting] = useState(false);
+
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -101,15 +109,52 @@ export default function ClinicForm({ activeTab, form, setForm }) {
         }));
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
+        if (submitting) return;
+        setSubmitting(true);
         e.preventDefault();
-        showToast({
-            type: "success",
-            title: "Clinic Created",
-            description: "Clinic has been registered successfully.",
-        });
-        console.log(form);
-        console.log(qualifications);
+        try {
+            const subscriptionMap = {
+                Basic: "FREE_TIER",
+                Standard: "6_MONTHS",
+                Professional: "12_MONTHS",
+                Enterprise: "12_MONTHS",
+                Custom: "FREE_TIER",
+            };
+
+            const payload = {
+                name: form.clinicName,
+                address: [
+                    form.address1,
+                    form.address2,
+                    form.city,
+                    form.state,
+                    form.pincode,
+                ]
+                    .filter(Boolean)
+                    .join(", "),
+                subscriptionType: subscriptionMap[form.plan] || "FREE_TIER",
+                maxDoctors: Number(form.maxDoctors || 0),
+                maxStaff: Number(form.maxStaff || 0),
+            };
+
+            await api.post("/clinics", payload);
+
+            showToast({
+                type: "success",
+                title: "Clinic Created",
+                description: "Clinic has been registered successfully.",
+            });
+        } catch (err) {
+            const msg = err?.response?.data?.message || err?.message || "Failed to create clinic";
+            showToast({
+                type: "error",
+                title: "Clinic Create Failed",
+                description: msg,
+            });
+        } finally {
+            setSubmitting(false);
+        }
     };
 
 
