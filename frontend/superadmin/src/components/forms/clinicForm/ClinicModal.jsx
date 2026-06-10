@@ -14,9 +14,6 @@ const tabs = [
 ];
 
 
-
-
-
 export default function ClinicModal({ onClose }) {
     const [activeTab, setActiveTab] = useState("identity");
 

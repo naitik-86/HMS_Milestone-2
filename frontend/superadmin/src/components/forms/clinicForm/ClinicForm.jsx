@@ -16,7 +16,7 @@ const Grid = ({ children }) => (
 
 const Full = ({ children }) => <div className="md:col-span-2">{children}</div>;
 
-/* ✅ FIXED INPUT (controlled-safe) */
+
 const Input = ({ label, requiredField = false, ...props }) => (
     <div>
         <label className="text-sm">{label}
@@ -32,7 +32,7 @@ const Input = ({ label, requiredField = false, ...props }) => (
     </div>
 );
 
-/* ✅ FIXED SELECT (controlled-safe) */
+
 const Select = ({ label, options, requiredField = false, ...props }) => (
     <div>
         <label className="text-sm">{label}
