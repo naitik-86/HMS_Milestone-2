@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import { showToast } from "../../../util/toast";
+
 
 /* UI (UNCHANGED) */
 const Card = ({ title, children }) => (
@@ -12,49 +14,145 @@ const Grid = ({ children }) => (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">{children}</div>
 );
 
-const Full = ({ children }) => <div className="md:col-span-2">{children}</div>;
+const Full = ({ children }) => <div className="md:col-span-2">
+    {children}
+</div>;
 
-const Input = ({ label, ...props }) => (
+const Input = ({ label, value = "", requiredField = false, ...props }) => (
     <div>
-        <label className="text-sm">{label}</label>
-        <input {...props} className="w-full border p-2 rounded-xl mt-1" />
+        <label required={requiredField} className="text-sm">
+            {label}
+            {requiredField && <span className="text-red-500"> *</span>}
+        </label>
+        <input {...props} value={value} className="w-full border p-2 rounded-xl mt-1" />
     </div>
 );
 
-const Select = ({ label, options, ...props }) => (
+const Select = ({
+    label,
+    value = "",
+    requiredField = false,
+    options = [],
+    ...props
+}) => (
     <div>
-        <label className="text-sm">{label}</label>
-        <select {...props} className="w-full border p-2 rounded-xl mt-1">
+        <label className="text-sm">
+            {label}
+            {requiredField && <span className="text-red-500"> *</span>}
+        </label>
+
+        <select
+            value={value}
+            {...props}
+            className="w-full border p-2 rounded-xl mt-1"
+        >
             <option value="">Select</option>
+
             {options.map((o) => (
-                <option key={o}>{o}</option>
+                <option key={o} value={o}>
+                    {o}
+                </option>
             ))}
         </select>
     </div>
 );
 
-const Upload = ({ label, onChange }) => (
-    <div>
-        <label className="text-sm">{label}</label>
+const Upload = ({
+    label,
+    requiredField = false,
+    value,
+    onChange,
+    onRemove,
+}) => {
+    const isImage = value && value.type?.startsWith("image/");
 
-        <label className="border-dashed border p-4 text-center rounded-xl mt-1 block cursor-pointer text-orange-400 border-black">
-            Upload File
+    return (
+        <div>
+            <label className="text-sm">
+                {label}
+                {requiredField && <span className="text-red-500"> *</span>}
+            </label>
 
-            <input
-                type="file"
-                className="hidden"
-                onChange={onChange}
-            />
-        </label>
-    </div>
-);
+            <label className="border-dashed border p-4 rounded-xl mt-1 block cursor-pointer border-black">
 
-export default function DoctorForm({ activeTab }) {
+                {!value ? (
+                    <div className="text-center text-orange-400">
+                        <p className="font-medium">Upload File</p>
+                        <p className="text-xs text-gray-400">
+                            Click to browse
+                        </p>
+                    </div>
+                ) : (
+                    <div className="flex items-center gap-4">
+
+                        {/* 🔥 Image Preview */}
+                        {isImage && (
+                            <img
+                                src={URL.createObjectURL(value)}
+                                alt="preview"
+                                className="w-16 h-16 object-cover rounded-lg border"
+                            />
+                        )}
+
+                        {/* 🔥 File Info */}
+                        <div className="flex-1">
+                            <p className="text-green-600 font-medium truncate">
+                                {value.name}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                                {(value.size / 1024).toFixed(1)} KB
+                            </p>
+                            <p className="text-xs text-blue-500">
+                                Click to change file
+                            </p>
+                        </div>
+
+                        {/* 🔥 Remove Button */}
+                        <button
+                            type="button"
+                            onClick={(e) => {
+                                e.preventDefault();
+                                onRemove && onRemove();
+                            }}
+                            className="text-red-500 text-sm"
+                        >
+                            ✕
+                        </button>
+                    </div>
+                )}
+
+                <input
+                    type="file"
+                    className="hidden"
+                    onChange={onChange}
+                />
+            </label>
+        </div>
+    );
+};
+
+
+
+
+
+export default function DoctorForm({ activeTab, form, setForm, qualifications, setQualifications }) {
+
+
     const handleFileUpload = (field) => (e) => {
+        const file = e.target.files[0];
+
+        if (!file) return;
+
         setForm((prev) => ({
             ...prev,
-            [field]: e.target.files[0],
+            [field]: file,
         }));
+
+        console.log("File selected:", file);
+        console.log(form);
+        console.log(qualifications);
+
+
     };
 
     const handleQualificationChange = (index, field, value) => {
@@ -68,47 +166,8 @@ export default function DoctorForm({ activeTab }) {
     };
 
 
-    const [form, setForm] = useState({
-        fullName: "",
-        gender: "",
-        dob: "",
-        mobile: "",
-        email: "",
-        languages: [],
-        address: "",
-        city: "",
-        state: "",
-        pincode: "",
-        govtIdType: "",
-        govtIdNumber: "",
 
-        govtIdDocument: null,
-        degreeCertificates: null,
-        registrationCertificate: null,
-        profilePhoto: null,
 
-        experience: "",
-        specializations: [],
-        vetCouncilRegistrationNumber: "",
-        stateVetCouncil: "",
-        certificateValidityDate: "",
-        isRenewable: false,
-        practiceType: "",
-        consultationFee: "",
-        emergencyAvailable: false,
-        serviceAreas: "",
-        gstPan: "",
-        accountName: "",
-        accountNumber: "",
-        ifsc: "",
-        bankName: "",
-        branch: "",
-        plan: "",
-    });
-
-    const [qualifications, setQualifications] = useState([
-        { degree: "", institution: "", year: "" },
-    ]);
 
     // const [employers, setEmployers] = useState([
     //     { organisation: "", role: "", duration: "" },
@@ -129,12 +188,22 @@ export default function DoctorForm({ activeTab }) {
         });
     };
 
+
+
+
     const handleSubmit = (e) => {
         e.preventDefault();
-
+        showToast({
+            type: "success",
+            title: "Doctor Added",
+            description: "Doctor has been registered successfully.",
+        });
         console.log(form);
         console.log(qualifications);
     };
+
+
+
 
     return (
         <form onSubmit={handleSubmit}>
@@ -145,41 +214,69 @@ export default function DoctorForm({ activeTab }) {
                     {activeTab === "personal" && (
                         <Card title="Personal Information">
                             <Grid>
-                                <Input name="fullName" label="Full Name" onChange={handleChange} />
-                                <Select name="gender" label="Gender" options={["Male", "Female", "Other"]} onChange={handleChange} />
-                                <Input type="date" name="dob" label="Date of Birth" onChange={handleChange} />
-                                <Input name="mobile" label="Mobile Number" onChange={handleChange} />
-                                <Input name="email" label="Email Address" onChange={handleChange} />
+                                <Input value={form.fullName} requiredField={true} name="fullName" label="Full Name" onChange={handleChange} />
+                                <Select value={form.gender || ""} requiredField={true} name="gender" label="Gender" options={["Male", "Female", "Other"]} onChange={handleChange} />
+                                <Input value={form.dob} requiredField={true} type="date" name="dob" label="Date of Birth" onChange={handleChange} />
+                                <Input value={form.mobile} requiredField={true} name="mobile" label="Mobile Number" onChange={handleChange} />
+                                <Input value={form.email} requiredField={true} name="email" label="Email Address" onChange={handleChange} />
                                 <Upload
+                                    requiredField={true}
                                     label="Profile Photo"
+                                    value={form.profilePhoto}
                                     onChange={handleFileUpload("profilePhoto")}
+                                    onRemove={() =>
+                                        setForm((prev) => ({ ...prev, profilePhoto: null }))
+                                    }
                                 />
 
                                 <Full>
-                                    <label>Languages Spoken</label>
+                                    <label>Languages Spoken <span className="text-red-500"> *</span></label>
                                     <div className="flex gap-4 flex-wrap">
                                         {["English", "Hindi", "Bengali"].map((l) => (
                                             <label key={l}>
-                                                <input type="checkbox" onChange={() => toggleArray("languages", l)} /> {l}
+                                                <input
+                                                    type="checkbox"
+                                                    checked={form.languages?.includes(l) || false}
+                                                    onChange={() => toggleArray("languages", l)} /> {l}
                                             </label>
                                         ))}
                                     </div>
                                 </Full>
 
                                 <Full>
-                                    <textarea name="address" className="w-full border p-2 rounded-xl" placeholder="Full Address" onChange={handleChange} />
+                                    <label htmlFor="address" className="block mb-1">
+                                        Full Address<span className="text-red-500"> *</span>
+                                    </label>
+
+                                    <textarea
+                                        value={form.address}
+                                        id="address"
+                                        name="address"
+                                        className="w-full border p-2 rounded-xl"
+                                        placeholder="Enter full address"
+                                        onChange={handleChange}
+                                    />
                                 </Full>
 
-                                <Input name="city" label="City / District" onChange={handleChange} />
-                                <Input name="state" label="State" onChange={handleChange} />
-                                <Input name="pincode" label="PIN Code" onChange={handleChange} />
+                                <Input value={form.city} requiredField={true} name="city" label="City / District" onChange={handleChange} />
+                                <Input value={form.state} requiredField={true} name="state" label="State" onChange={handleChange} />
+                                <Input value={form.pincode} requiredField={true} name="pincode" label="PIN Code" onChange={handleChange} />
 
-                                <Select name="govtIdType" label="Government ID Type" options={["Aadhaar", "PAN", "Passport"]} onChange={handleChange} />
-                                <Input name="govtIdNumber" label="Government ID Number" onChange={handleChange} />
-                                <Full><Upload
-                                    label="Government ID Document"
-                                    onChange={handleFileUpload("govtIdDocument")}
-                                /></Full>
+                                <Select value={form.govtIdType || ""} requiredField={true} name="govtIdType" label="Government ID Type" options={["Aadhaar", "PAN", "Passport"]} onChange={handleChange} />
+                                <Input value={form.govtIdNumber} requiredField={true} name="govtIdNumber" label="Government ID Number" onChange={handleChange} />
+                                <Full>
+                                    <Full>
+                                        <Upload
+                                            requiredField={true}
+                                            label="Government ID Document"
+                                            value={form.govtIdDocument}
+                                            onChange={handleFileUpload("govtIdDocument")}
+                                            onRemove={() =>
+                                                setForm((prev) => ({ ...prev, govtIdDocument: null }))
+                                            }
+                                        />
+                                    </Full>
+                                </Full>
                             </Grid>
                         </Card>
                     )}
@@ -190,6 +287,8 @@ export default function DoctorForm({ activeTab }) {
                             {qualifications.map((q, i) => (
                                 <Grid key={i}>
                                     <Input
+                                        label={"Degree Name"}
+                                        requiredField={true}
                                         placeholder="Degree"
                                         value={q.degree}
                                         onChange={(e) =>
@@ -202,6 +301,8 @@ export default function DoctorForm({ activeTab }) {
                                     />
 
                                     <Input
+                                        label={"Institute Name"}
+                                        requiredField={true}
                                         placeholder="Institution"
                                         value={q.institution}
                                         onChange={(e) =>
@@ -214,6 +315,8 @@ export default function DoctorForm({ activeTab }) {
                                     />
 
                                     <Input
+                                        label={"Year of Passing"}
+                                        requiredField={true}
                                         placeholder="Year"
                                         value={q.year}
                                         onChange={(e) =>
@@ -238,8 +341,13 @@ export default function DoctorForm({ activeTab }) {
                             >                            + Add Degree
                             </button>
                             <Upload
+                                requiredField={true}
                                 label="Degree Certificates (Multiple)"
+                                value={form.degreeCertificates}
                                 onChange={handleFileUpload("degreeCertificates")}
+                                onRemove={() =>
+                                    setForm((prev) => ({ ...prev, degreeCertificates: null }))
+                                }
                             />
                         </Card>
                     )}
@@ -248,13 +356,22 @@ export default function DoctorForm({ activeTab }) {
                     {activeTab === "vet" && (
                         <Card title="Vet Council Registration">
                             <Grid>
-                                <Input name="vetCouncilRegistrationNumber" label="Complete Vet Council Registration Number" onChange={handleChange} />
-                                <Select name="stateVetCouncil" label="State Vet Council" options={["Bihar", "UP", "Delhi"]} onChange={handleChange} />
-                                <Full><Upload
-                                    label="Registration Certificate"
-                                    onChange={handleFileUpload("registrationCertificate")}
-                                /></Full>
-                                <Input type="date" name="certificateValidityDate" label="Certificate Validity Date" onChange={handleChange} />
+                                <Input requiredField={true} value={form.vetCouncilRegistrationNumber} name="vetCouncilRegistrationNumber" label="Complete Vet Council Registration Number" onChange={handleChange} />
+                                <Select value={form.stateVetCouncil || ""} requiredField={true} name="stateVetCouncil" label="State Vet Council" options={["Bihar", "UP", "Delhi"]} onChange={handleChange} />
+                                <Full>
+                                    <Full>
+                                        <Upload
+                                            requiredField={true}
+                                            label="Registration Certificate"
+                                            value={form.registrationCertificate}
+                                            onChange={handleFileUpload("registrationCertificate")}
+                                            onRemove={() =>
+                                                setForm((prev) => ({ ...prev, registrationCertificate: null }))
+                                            }
+                                        />
+                                    </Full>
+                                </Full>
+                                <Input requiredField={true} type="date" value={form.certificateValidityDate} name="certificateValidityDate" label="Certificate Validity Date" onChange={handleChange} />
                                 <label>
                                     <input type="checkbox" name="isRenewable" onChange={handleChange} /> Is Registration Renewable?
                                 </label>
@@ -266,16 +383,20 @@ export default function DoctorForm({ activeTab }) {
                     {activeTab === "practice" && (
                         <Card title="Practice Details">
                             <Grid>
-                                <Select name="practiceType" label="Practice Type"
+                                <Select
+                                    value={form.practiceType || ""}
+                                    requiredField={true}
+                                    name="practiceType"
+                                    label="Practice Type"
                                     options={["Home visits", "Telemedicine", "Mobile clinic", "Freelance", "Government"]}
                                     onChange={handleChange}
                                 />
-                                <Input name="consultationFee" label="Consultation Fee (₹)" onChange={handleChange} />
+                                <Input requiredField={true} requiredField={true} value={form.consultationFee} name="consultationFee" label="Consultation Fee (₹)" onChange={handleChange} />
                                 <label>
                                     <input type="checkbox" name="emergencyAvailable" onChange={handleChange} /> Available for Emergency Calls?
                                 </label>
-                                <Input name="serviceAreas" label="Service Areas / Pincodes" onChange={handleChange} />
-                                <Input name="gstPan" label="GST / PAN" onChange={handleChange} />
+                                <Input requiredField={true} requiredField={true} name="serviceAreas" value={form.serviceAreas} label="Service Areas / Pincodes" onChange={handleChange} />
+                                <Input requiredField={true} requiredField={true} name="gstPan" value={form.gstPan} label="GST / PAN" onChange={handleChange} />
                             </Grid>
                         </Card>
                     )}
@@ -284,12 +405,12 @@ export default function DoctorForm({ activeTab }) {
                     {activeTab === "bank" && (
                         <Card title="Banking & Plan">
                             <Grid>
-                                <Input name="accountName" label="Account Holder Name" onChange={handleChange} />
-                                <Input name="accountNumber" label="Account Number" onChange={handleChange} />
-                                <Input name="ifsc" label="IFSC Code" onChange={handleChange} />
-                                <Input name="bankName" label="Bank Name" onChange={handleChange} />
-                                <Input name="branch" label="Branch" onChange={handleChange} />
-                                <Select name="plan" label="Plan Assigned" options={["Solo Basic", "Solo Pro"]} onChange={handleChange} />
+                                <Input value={form.accountName} requiredField={true} name="accountName" label="Account Holder Name" onChange={handleChange} />
+                                <Input value={form.accountNumber} requiredField={true} name="accountNumber" label="Account Number" onChange={handleChange} />
+                                <Input requiredField={true} name="ifsc" value={form.ifsc} label="IFSC Code" onChange={handleChange} />
+                                <Input requiredField={true} name="bankName" label="Bank Name" value={form.bankName} onChange={handleChange} />
+                                <Input requiredField={true} name="branch" label="Branch" value={form.branch} onChange={handleChange} />
+                                <Select value={form.plan || ""} requiredField={true} name="plan" label="Plan Assigned" options={["Solo Basic", "Solo Pro"]} onChange={handleChange} />
                             </Grid>
                         </Card>
                     )}
