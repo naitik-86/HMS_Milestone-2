@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { showToast } from "../../../util/toast";
-
+import { calculateEndDate, getTodayDate } from "../../../util/calculateEndDate ";
 
 import { ClinicForm, Stepper } from "../../index"
 
@@ -16,6 +16,8 @@ const tabs = [
 
 export default function ClinicModal({ onClose }) {
     const [activeTab, setActiveTab] = useState("identity");
+
+    const today = getTodayDate();
 
     const [form, setForm] = useState({
         clinicName: "",
@@ -39,10 +41,12 @@ export default function ClinicModal({ onClose }) {
         adminName: "",
         adminPhone: "",
         adminEmail: "",
-        plan: "",
-        billing: "",
-        startDate: "",
-        endDate: "",
+        plan: "Basic",
+
+        billing: "Monthly",
+        startDate: today,
+        endDate: calculateEndDate(today, "Monthly"),
+
         trialDays: 0,
         discountCode: "",
         notes: "",
@@ -81,6 +85,33 @@ export default function ClinicModal({ onClose }) {
         idDoc: null,
         profile: null,
     });
+
+    const handleChange = (e) => {
+        const { name, value, type, checked } = e.target;
+
+        setForm((prev) => {
+            const updated = {
+                ...prev,
+                [name]: type === "checkbox"
+                    ? checked
+                    : value,
+            };
+
+            if (name === "billing" || name === "startDate") {
+                updated.endDate = calculateEndDate(
+                    name === "startDate"
+                        ? value
+                        : updated.startDate,
+
+                    name === "billing"
+                        ? value
+                        : updated.billing
+                );
+            }
+
+            return updated;
+        });
+    };
 
     const validateTab = () => {
         switch (activeTab) {
@@ -138,22 +169,130 @@ export default function ClinicModal({ onClose }) {
                 );
 
             case "plan":
+                if (form.plan === "Custom") {
+                    return (
+                        form.plan &&
+                        form.billing &&
+                        form.startDate &&
+                        form.maxStaff &&
+                        form.maxDoctors &&
+                        form.maxPets &&
+                        form.storageLimit
+                    );
+                }
+
                 return (
                     form.plan &&
                     form.billing &&
-                    form.startDate &&
-                    form.trialDays &&
-                    form.discountCode &&
-                    form.maxStaff &&
-                    form.maxDoctors &&
-                    form.maxPets &&
-                    form.storageLimit
+                    form.startDate
                 );
 
             default:
                 return true;
         }
     };
+
+
+    const isFormComplete = () => {
+        const originalTab = activeTab;
+
+        const requiredTabs = [
+            "identity",
+            "address",
+            "licenses",
+            "tax",
+            "admin",
+            "plan",
+        ];
+
+        for (const tab of requiredTabs) {
+            switch (tab) {
+                case "identity":
+                    if (
+                        !form.clinicName ||
+                        !form.facilityType ||
+                        !form.year ||
+                        !form.email ||
+                        !form.phone ||
+                        !form.logo
+                    ) {
+                        return false;
+                    }
+                    break;
+
+                case "address":
+                    if (
+                        !form.address1 ||
+                        !form.city ||
+                        !form.district ||
+                        !form.state ||
+                        !form.pincode ||
+                        !form.serviceArea
+                    ) {
+                        return false;
+                    }
+                    break;
+
+                case "licenses":
+                    if (
+                        !form.vetReg ||
+                        !form.stateCouncil ||
+                        !form.expiry ||
+                        !form.tradeLicense ||
+                        !form.drugLicense ||
+                        !form.vetCert ||
+                        !form.tradeDoc ||
+                        !form.drugDoc
+                    ) {
+                        return false;
+                    }
+                    break;
+
+                case "tax":
+                    if (
+                        !form.gst ||
+                        !form.pan ||
+                        !form.bankName ||
+                        !form.accountNumber ||
+                        !form.ifsc ||
+                        !form.cheque
+                    ) {
+                        return false;
+                    }
+                    break;
+
+                case "admin":
+                    if (
+                        !form.adminName ||
+                        !form.designation ||
+                        !form.adminPhone ||
+                        !form.adminEmail ||
+                        !form.govtIdNumber ||
+                        !form.idDoc ||
+                        !form.profile
+                    ) {
+                        return false;
+                    }
+                    break;
+
+                case "plan":
+                    if (form.plan === "Custom") {
+                        if (
+                            !form.maxStaff ||
+                            !form.maxDoctors ||
+                            !form.maxPets ||
+                            !form.storageLimit
+                        ) {
+                            return false;
+                        }
+                    }
+                    break;
+            }
+        }
+
+        return true;
+    };
+
 
     return (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center">
@@ -222,6 +361,14 @@ export default function ClinicModal({ onClose }) {
                         activeTab={activeTab}
                         form={form}
                         setForm={setForm}
+                        handleChange={handleChange}
+                        canSave={
+                            activeTab === "plan" &&
+                            isFormComplete()
+                        }
+                        validateTab={validateTab}
+                        setActiveTab={setActiveTab}
+                        tabs={tabs}
                     />
                 </div>
             </div>
