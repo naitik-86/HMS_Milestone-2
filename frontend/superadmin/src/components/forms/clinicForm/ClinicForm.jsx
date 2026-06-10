@@ -109,53 +109,31 @@ export default function ClinicForm({ activeTab, form, setForm }) {
         }));
     };
 
+
     const handleSubmit = async (e) => {
-        if (submitting) return;
-        setSubmitting(true);
         e.preventDefault();
+
         try {
-            const subscriptionMap = {
-                Basic: "FREE_TIER",
-                Standard: "6_MONTHS",
-                Professional: "12_MONTHS",
-                Enterprise: "12_MONTHS",
-                Custom: "FREE_TIER",
-            };
-
-            const payload = {
-                name: form.clinicName,
-                address: [
-                    form.address1,
-                    form.address2,
-                    form.city,
-                    form.state,
-                    form.pincode,
-                ]
-                    .filter(Boolean)
-                    .join(", "),
-                subscriptionType: subscriptionMap[form.plan] || "FREE_TIER",
-                maxDoctors: Number(form.maxDoctors || 0),
-                maxStaff: Number(form.maxStaff || 0),
-            };
-
-            await api.post("/clinics", payload);
+            const data = await createClinic(form);
 
             showToast({
                 type: "success",
                 title: "Clinic Created",
-                description: "Clinic has been registered successfully.",
+                description: data.message,
             });
-        } catch (err) {
-            const msg = err?.response?.data?.message || err?.message || "Failed to create clinic";
+
+            console.log(data);
+
+        } catch (error) {
             showToast({
                 type: "error",
-                title: "Clinic Create Failed",
-                description: msg,
+                title: "Error",
+                description:
+                    error.response?.data?.message || "Something went wrong",
             });
-        } finally {
-            setSubmitting(false);
         }
     };
+
 
 
     return (
