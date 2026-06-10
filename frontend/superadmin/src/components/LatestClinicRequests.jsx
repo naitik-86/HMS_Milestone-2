@@ -1,66 +1,44 @@
+import { useState, useEffect } from "react";
 import {
     MapPin,
     Phone,
     MoreHorizontal,
     ClipboardCheck,
 } from "lucide-react";
-
-const clinics = [
-    {
-        name: "CareVet Hospital",
-        id: "CLN-P7Q8R9",
-        type: "Hospital",
-        location: "Hyderabad, Telangana",
-        contact: "5432109876",
-        plan: null,
-        status: "Rejected",
-    },
-    {
-        name: "PetCare Hospital",
-        id: "CLN-A1B2C3",
-        type: "Hospital",
-        location: "Mumbai, Maharashtra",
-        contact: "9876543210",
-        plan: "Professional",
-        status: "Active",
-    },
-    {
-        name: "VetCure Center",
-        id: "CLN-V4W5X6",
-        type: "Clinic",
-        location: "Kolkata, West Bengal",
-        contact: "3210987654",
-        plan: null,
-        status: "Pending",
-    },
-    {
-        name: "Happy Paws Clinic",
-        id: "CLN-D4E5F6",
-        type: "Clinic",
-        location: "Delhi, Delhi",
-        contact: "9123456789",
-        plan: "Standard",
-        status: "Active",
-    },
-    {
-        name: "PetZone Clinic",
-        id: "CLN-M4N5O6",
-        type: "Clinic",
-        location: "Chennai, Tamil Nadu",
-        contact: "6543210987",
-        plan: "Basic",
-        status: "Suspended",
-    },
-];
+import { getClinics } from "../api/clinicApi";
 
 const statusStyles = {
-    Active: "bg-green-100 text-green-700",
-    Pending: "bg-orange-100 text-orange-600",
-    Rejected: "bg-red-100 text-red-600",
-    Suspended: "bg-red-100 text-red-600",
+    ACTIVE: "bg-green-100 text-green-700",
+    SUBMITTED: "bg-orange-100 text-orange-600",
+    UNDER_REVIEW: "bg-orange-100 text-orange-600",
+    DOCS_VERIFIED: "bg-blue-100 text-blue-600",
+    APPROVED: "bg-green-100 text-green-700",
+    REJECTED: "bg-red-100 text-red-600",
+    SUSPENDED: "bg-red-100 text-red-600",
+    EXPIRED: "bg-red-100 text-red-600",
 };
 
 export default function LatestClinicApprovals() {
+    const [clinics, setClinics] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchClinics = async () => {
+            try {
+                const response = await getClinics();
+                if (response.success) {
+                    setClinics(response.data);
+                }
+            } catch (error) {
+                console.error("Failed to fetch clinics", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchClinics();
+    }, []);
+
     return (
         <div className="bg-white rounded-2xl shadow border overflow-hidden">
 
@@ -97,52 +75,62 @@ export default function LatestClinicApprovals() {
             </div>
 
             {/* TABLE BODY */}
-            {clinics.map((c, i) => (
-                <div
-                    key={i}
-                    className="grid grid-cols-7 items-center px-6 py-4 border-b hover:bg-gray-50 transition"
-                >
-                    {/* CLINIC */}
-                    <div>
-                        <p className="font-medium text-gray-800">{c.name}</p>
-                        <p className="text-xs text-gray-400">{c.id}</p>
-                    </div>
-
-                    {/* TYPE */}
-                    <span className="text-blue-600 font-medium">{c.type}</span>
-
-                    {/* LOCATION */}
-                    <div className="flex items-center gap-2 text-gray-700">
-                        <MapPin size={14} className="text-orange-500" />
-                        {c.location}
-                    </div>
-
-                    {/* CONTACT */}
-                    <div className="flex items-center gap-2 text-gray-700">
-                        <Phone size={14} className="text-orange-500" />
-                        {c.contact}
-                    </div>
-
-                    {/* PLAN */}
-                    <span className="text-blue-600">
-                        {c.plan || "—"}
-                    </span>
-
-                    {/* STATUS */}
-                    <span
-                        className={`px-3 py-1 text-xs rounded-full w-fit ${statusStyles[c.status]}`}
-                    >
-                        {c.status}
-                    </span>
-
-                    {/* ACTION */}
-                    <div className="flex justify-end">
-                        <button className="p-2 hover:bg-gray-100 rounded-lg">
-                            <MoreHorizontal size={18} />
-                        </button>
-                    </div>
+            {loading ? (
+                <div className="px-6 py-8 text-center text-gray-500">
+                    Loading clinics...
                 </div>
-            ))}
+            ) : clinics.length === 0 ? (
+                <div className="px-6 py-8 text-center text-gray-500">
+                    No clinics found.
+                </div>
+            ) : (
+                clinics.map((c) => (
+                    <div
+                        key={c._id}
+                        className="grid grid-cols-7 items-center px-6 py-4 border-b hover:bg-gray-50 transition"
+                    >
+                        {/* CLINIC */}
+                        <div>
+                            <p className="font-medium text-gray-800 truncate" title={c.name}>{c.name}</p>
+                            <p className="text-xs text-gray-400 truncate" title={c._id}>{c._id.slice(-6).toUpperCase()}</p>
+                        </div>
+
+                        {/* TYPE */}
+                        <span className="text-blue-600 font-medium">Hospital</span>
+
+                        {/* LOCATION */}
+                        <div className="flex items-center gap-2 text-gray-700 truncate" title={c.address}>
+                            <MapPin size={14} className="text-orange-500 shrink-0" />
+                            <span className="truncate">{c.address || "N/A"}</span>
+                        </div>
+
+                        {/* CONTACT */}
+                        <div className="flex items-center gap-2 text-gray-700">
+                            <Phone size={14} className="text-orange-500" />
+                            N/A
+                        </div>
+
+                        {/* PLAN */}
+                        <span className="text-blue-600 text-xs font-medium">
+                            {c.subscriptionType ? c.subscriptionType.replace("_", " ") : "—"}
+                        </span>
+
+                        {/* STATUS */}
+                        <span
+                            className={`px-3 py-1 text-xs rounded-full w-fit ${statusStyles[c.verificationStatus] || statusStyles[c.subscriptionStatus] || "bg-gray-100 text-gray-600"}`}
+                        >
+                            {c.verificationStatus || c.subscriptionStatus || "Unknown"}
+                        </span>
+
+                        {/* ACTION */}
+                        <div className="flex justify-end">
+                            <button className="p-2 hover:bg-gray-100 rounded-lg">
+                                <MoreHorizontal size={18} />
+                            </button>
+                        </div>
+                    </div>
+                ))
+            )}
         </div>
     );
 }
