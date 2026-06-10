@@ -20,45 +20,11 @@ export const createClinic = async (clinicData) => {
     if (clinicData.plan === "Standard" || clinicData.billing === "Monthly") subscriptionType = "6_MONTHS";
     if (clinicData.plan === "Professional" || clinicData.plan === "Enterprise" || clinicData.billing === "Annual") subscriptionType = "12_MONTHS";
 
-    const addressString = `${clinicData.address1 || ""}, ${clinicData.city || ""}, ${clinicData.state || ""}`;
-
-    const jsonPayload = {
-        name: clinicData.clinicName,
-        address: addressString,
-        subscriptionType,
-        maxDoctors: clinicData.maxDoctors || 5,
-        maxStaff: clinicData.maxStaff || 10
-    };
-
-    // 1. Create the clinic
-    const createRes = await API.post("/clinics", jsonPayload);
-    const clinic = createRes.data?.data;
-    const clinicId = clinic?._id;
-
-    if (!clinicId) {
-        throw new Error("Failed to retrieve clinic ID from response");
-    }
-
-    // 2. Upload the files if any exist
-    const hasFiles = clinicData.vetCert || clinicData.tradeDoc || clinicData.cheque;
-    
-    if (hasFiles) {
-        const fileData = {
-            vetCouncilCertificate: clinicData.vetCert,
-            tradeLicense: clinicData.tradeDoc,
-            cancelledCheque: clinicData.cheque
-        };
-        const formData = buildFormData(fileData);
-
-        await API.post(`/clinics/${clinicId}/documents`, formData, {
-            headers: {
-                "Content-Type": "multipart/form-data",
-            },
-        });
-    }
-
-    return createRes.data;
-};
+    const res = await API.post("/clinics", formData, {
+        headers: {
+            "Content-Type": "multipart/form-data",
+        },
+    });
 
 export const getClinics = async () => {
     const res = await API.get("/clinics");
