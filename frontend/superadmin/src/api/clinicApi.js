@@ -15,7 +15,7 @@ const buildFormData = (data) => {
 export const createClinic = async (clinicData) => {
     const formData = buildFormData(clinicData);
 
-    const res = await API.post("/clinic/create", formData, {
+    const res = await API.post("/clinics", formData, {
         headers: {
             "Content-Type": "multipart/form-data",
         },
