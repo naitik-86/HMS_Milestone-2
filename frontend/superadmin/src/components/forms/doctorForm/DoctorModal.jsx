@@ -56,6 +56,7 @@ export default function DoctorModal({ onClose }) {
     });
 
 
+
     const [qualifications, setQualifications] = useState([
         { degree: "", institution: "", year: "" },
     ]);
@@ -200,6 +201,8 @@ export default function DoctorModal({ onClose }) {
                         setForm={setForm}
                         qualifications={qualifications}
                         setQualifications={setQualifications}
+
+
                     />
                 </div>
             </div>

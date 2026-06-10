@@ -1,17 +1,5 @@
+import { buildFormData } from "../util/buildFormData";
 import API from "./axios";
-
-/* 🔹 helper to convert object → FormData */
-const buildFormData = (data) => {
-    const formData = new FormData();
-
-    Object.keys(data).forEach((key) => {
-        if (data[key] !== null && data[key] !== undefined) {
-            formData.append(key, data[key]);
-        }
-    });
-
-    return formData;
-};
 
 /* 🔹 API CALL */
 export const createClinic = async (clinicData) => {
