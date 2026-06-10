@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { showToast } from "../../../util/toast";
 import { Card, Input, Select, Grid, Full, Upload } from "../../../components"
-
+import { createDoctor } from "../../../api/doctorApi";
 
 export default function DoctorForm({ activeTab, form, setForm, qualifications, setQualifications }) {
 
@@ -34,13 +34,6 @@ export default function DoctorForm({ activeTab, form, setForm, qualifications, s
     };
 
 
-
-
-
-    // const [employers, setEmployers] = useState([
-    //     { organisation: "", role: "", duration: "" },
-    // ]);
-
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
         setForm({ ...form, [name]: type === "checkbox" ? checked : value });
@@ -59,22 +52,37 @@ export default function DoctorForm({ activeTab, form, setForm, qualifications, s
 
 
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        showToast({
-            type: "success",
-            title: "Doctor Added",
-            description: "Doctor has been registered successfully.",
-        });
-        console.log(form);
-        console.log(qualifications);
+
+        console.log("FORM SUBMITTED");
+        console.log("SUBMIT FIRED", activeTab);
+
+        try {
+            const data = await createDoctor(form);
+
+            showToast({
+                type: "success",
+                title: "Doctor Created",
+                description: data.message,
+            });
+
+            console.log(data);
+
+        } catch (error) {
+            showToast({
+                type: "error",
+                title: "Error",
+                description:
+                    error.response?.data?.message || "Something went wrong",
+            });
+        }
     };
 
 
 
-
     return (
-        <form onSubmit={handleSubmit}>
+        <form >
             <div className="p-6 bg-gray-100 min-h-full">
                 <div className="max-w-6xl mx-auto">
 
@@ -286,7 +294,8 @@ export default function DoctorForm({ activeTab, form, setForm, qualifications, s
                     {/* SAVE */}
                     <div className="flex justify-end mt-6">
                         <button
-                            type="submit"
+                            type="button"
+                            onClick={handleSubmit}
                             className="bg-orange-500 text-white px-6 py-3 rounded-xl"
                         >
                             Save Doctor

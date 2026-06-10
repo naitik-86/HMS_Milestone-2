@@ -2,10 +2,11 @@ import { buildFormData } from "../util/buildFormData";
 import API from "./axios";
 
 /* 🔹 API CALL */
-export const createClinic = async (clinicData) => {
-    const formData = buildFormData(clinicData);
+export const createDoctor = async (doctorData) => {
+    const formData = buildFormData(doctorData);
+    console.log("Docotr form fired : submitted");
 
-    const res = await API.post("/clinics", formData, {
+    const res = await API.post("/veterinarian", formData, {
         headers: {
             "Content-Type": "multipart/form-data",
         },

@@ -56,6 +56,9 @@ export default function ClinicForm({
     const handleSubmit = async (e) => {
         e.preventDefault();
 
+        console.log("FORM SUBMITTED");
+        console.log("SUBMIT FIRED", activeTab);
+
         try {
             const data = await createClinic(form);
 
@@ -80,7 +83,7 @@ export default function ClinicForm({
 
 
     return (
-        <form onSubmit={handleSubmit}>
+        <form >
             <div className="p-6 bg-gray-100 min-h-full">
                 <div className="max-w-6xl mx-auto space-y-6">
 
@@ -416,7 +419,8 @@ export default function ClinicForm({
                                 </button>
                             ) : (
                                 <button
-                                    type="submit"
+                                    onClick={handleSubmit}
+                                    type="button"
                                     className="
                 bg-orange-500
                 hover:bg-orange-600
