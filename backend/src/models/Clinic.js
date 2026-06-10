@@ -19,8 +19,8 @@ const clinicSchema = new mongoose.Schema({
     maxStaff: { type: Number, default: 10 }
   },
   location: {
-    type: { type: String, default: 'Point' },
-    coordinates: [Number] // [longitude, latitude] for geospatial search
+    type: { type: String, enum: ['Point'] },
+    coordinates: { type: [Number] }
   },
   servicesOffered: [{ type: String }],
   
