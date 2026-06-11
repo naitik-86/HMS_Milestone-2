@@ -1,28 +1,30 @@
 # PAHMS — Pet & Animal Healthcare Management System
 
-A React + Tailwind CSS v4 website recreated from the provided screenshots.
+A pixel-faithful recreation of the PAHMS marketing site, built with **React 19 + Vite + Tailwind CSS v4**. All source files are `.jsx`.
 
-## Stack
-- React 19 (.jsx only)
-- React Router v7
-- Tailwind CSS v4 (via `@tailwindcss/vite`)
-- Vite 6
-- lucide-react icons
+## Run locally
 
-## Run
 ```bash
 npm install
 npm run dev
 ```
 
+Open http://localhost:5173.
+
 ## Build
+
 ```bash
 npm run build
+npm run preview
 ```
 
-## Pages
-- `/` — Home (Hero, Features, Stats, Why PAHMS, How It Works, Testimonials, Pricing, CTA, Footer)
-- `/about` — About Us
-- `/contact` — Contact
-- `/login` — Login
-- `/signup` — Sign Up
+## Structure
+
+```
+src/
+  main.jsx
+  App.jsx
+  index.css
+  components/   Navbar, Footer, Layout, shared UI
+  pages/        Home, About, Contact, Login, Terms, Privacy, Cookies
+```
