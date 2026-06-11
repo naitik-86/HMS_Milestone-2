@@ -3,10 +3,20 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.jsx'
 import { Toaster } from "react-hot-toast";
+import { useEffect } from 'react';
 
-// Auto-seed Super Admin token for development convenience
-if (!localStorage.getItem('token')) {
-  localStorage.setItem('token', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhMjlhMTNlMTIxOWJkOTVkNDU1ZjMyYiIsInJvbGUiOiJTVVBFUl9BRE1JTiIsImlhdCI6MTc4MTExMzE1MSwiZXhwIjoxNzgxMTk5NTUxfQ.T32RqchFUr8frYjFdo0RIdrCD58Jy2T4on0l_wYpOsw');
+const params = new URLSearchParams(window.location.search);
+const token = params.get("token");
+
+if (token) {
+  localStorage.setItem("token", token);
+
+  // Remove token from URL
+  window.history.replaceState(
+    {},
+    document.title,
+    window.location.pathname
+  );
 }
 
 createRoot(document.getElementById('root')).render(

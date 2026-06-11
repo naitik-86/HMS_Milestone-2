@@ -28,7 +28,7 @@ exports.createClinic = async (req, res) => {
     let expiryDate = new Date();
     if (subscriptionType === '6_MONTHS') expiryDate.setMonth(expiryDate.getMonth() + 6);
     if (subscriptionType === '12_MONTHS') expiryDate.setFullYear(expiryDate.getFullYear() + 1);
-    if (subscriptionType === 'FREE_TIER') expiryDate = null; 
+    if (subscriptionType === 'FREE_TIER') expiryDate = null;
 
     const clinic = await Clinic.create({
       name,
@@ -49,8 +49,8 @@ exports.createStaff = async (req, res) => {
   try {
     const { name, mobile, role, specialization, practiceType, consultationFee } = req.body;
     // Bind to Admin's clinic (If Super Admin is creating a solo doctor, this might be null)
-    const clinicId = req.user.role === 'SUPER_ADMIN' && role === 'DOCTOR' ? null : req.user.clinicId; 
-    
+    const clinicId = req.user.role === 'SUPER_ADMIN' && role === 'DOCTOR' ? null : req.user.clinicId;
+
     const staff = await User.create({
       clinicId,
       name,
@@ -75,7 +75,7 @@ exports.createStaff = async (req, res) => {
 exports.updateStaff = async (req, res) => {
   try {
     const { id } = req.params;
-    const clinicId = req.user.clinicId; 
+    const clinicId = req.user.clinicId;
 
     const updatedStaff = await User.findOneAndUpdate(
       { _id: id, clinicId },
@@ -138,7 +138,7 @@ exports.updateSubscription = async (req, res) => {
       let expiryDate = new Date();
       if (subscriptionType === '6_MONTHS') expiryDate.setMonth(expiryDate.getMonth() + 6);
       if (subscriptionType === '12_MONTHS') expiryDate.setFullYear(expiryDate.getFullYear() + 1);
-      
+
       updateData.subscriptionType = subscriptionType;
       updateData.expiryDate = expiryDate;
     }
@@ -157,14 +157,14 @@ exports.getAdminDashboard = async (req, res) => {
     const activeClinics = await Clinic.countDocuments({ subscriptionStatus: 'ACTIVE' });
     const totalOwners = await Owner.countDocuments();
 
-    res.status(200).json({ 
-      success: true, 
+    res.status(200).json({
+      success: true,
       data: {
         totalClinics,
         activeClinics,
         suspendedClinics: totalClinics - activeClinics,
         totalPlatformUsers: totalOwners
-      } 
+      }
     });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -179,9 +179,9 @@ exports.getAdminDashboard = async (req, res) => {
 exports.updateClinicVerification = async (req, res) => {
   try {
     const { status, rejectionReason, clinicEmail } = req.body;
-    
+
     const clinic = await Clinic.findByIdAndUpdate(
-      req.params.id, 
+      req.params.id,
       { verificationStatus: status, rejectionReason: rejectionReason || '' },
       { new: true }
     );

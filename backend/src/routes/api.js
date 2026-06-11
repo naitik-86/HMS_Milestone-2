@@ -6,10 +6,10 @@ const { protect, authorize } = require('../middlewares/auth');
 const upload = require('../middlewares/upload'); // NEW: AWS S3 Multer Middleware
 
 // Controller Imports
-const { requestLoginOTP, verifyOTPAndLogin } = require('../controllers/authController');
-const { 
-  getMe, 
-  createClinic, 
+const { requestLoginOTP, verifyOTPAndLogin, verifySuperAdmin } = require('../controllers/authController');
+const {
+  getMe,
+  createClinic,
   createStaff,
   updateStaff,
   deleteStaff,
@@ -20,9 +20,9 @@ const {
   uploadClinicDocuments     // NEW
 } = require('../controllers/adminController');
 
-const { 
-  searchOwner, 
-  getClinicQueue, 
+const {
+  searchOwner,
+  getClinicQueue,
   updateAppointmentStatus,
   registerOwnerAndPet,
   bookAppointment,
@@ -34,10 +34,10 @@ const { searchNearbyClinics } = require('../controllers/clinicController');
 const { getDoctorSlots, getOwnerAppointments } = require('../controllers/appointmentController');
 const { getPetMedicalHistory } = require('../controllers/medicalRecordController');
 const { getVaccinationSchedule } = require('../controllers/vaccineController');
-const { 
-  createPaymentOrder, 
-  verifyRazorpayWebhook, 
-  getOwnerInvoices 
+const {
+  createPaymentOrder,
+  verifyRazorpayWebhook,
+  getOwnerInvoices
 } = require('../controllers/paymentController');
 const { addPet, getPetDetails, updatePet } = require('../controllers/petController');
 const { addReview, getClinicReviews, deleteReview } = require('../controllers/reviewController');
@@ -47,6 +47,7 @@ const { addReview, getClinicReviews, deleteReview } = require('../controllers/re
 // AUTHENTICATION
 // ==========================================
 router.post('/auth/request-otp', requestLoginOTP);
+router.post('/auth/login-superadmin', verifySuperAdmin); // log in of superadmin via email & password
 router.post('/auth/verify-otp', verifyOTPAndLogin);
 
 
@@ -94,10 +95,10 @@ router.put('/records/consultation', protect, authorize('DOCTOR'), saveConsultati
 // ==========================================
 // M6: PET MANAGEMENT & MOBILE APP
 // ==========================================
-router.post('/pets', protect, addPet); 
-router.get('/pets/:id', protect, getPetDetails); 
-router.put('/pets/:id', protect, updatePet); 
-router.get('/appointments/owner', protect, authorize('OWNER'), getOwnerAppointments); 
+router.post('/pets', protect, addPet);
+router.get('/pets/:id', protect, getPetDetails);
+router.put('/pets/:id', protect, updatePet);
+router.get('/appointments/owner', protect, authorize('OWNER'), getOwnerAppointments);
 
 
 // ==========================================
@@ -113,15 +114,15 @@ router.get('/vaccines/schedule/:petId', protect, getVaccinationSchedule);
 // M7: PAYMENTS & INVOICES
 // ==========================================
 router.post('/payments/create-order', protect, authorize('OWNER', 'RECEPTIONIST'), createPaymentOrder);
-router.post('/payments/webhook', verifyRazorpayWebhook); 
-router.get('/payments/invoices', protect, authorize('OWNER'), getOwnerInvoices); 
+router.post('/payments/webhook', verifyRazorpayWebhook);
+router.get('/payments/invoices', protect, authorize('OWNER'), getOwnerInvoices);
 
 
 // ==========================================
 // RATINGS & FEEDBACK
 // ==========================================
-router.post('/reviews', protect, authorize('OWNER'), addReview); 
-router.get('/reviews/clinic/:id', getClinicReviews); 
-router.delete('/reviews/:id', protect, authorize('SUPER_ADMIN'), deleteReview); 
+router.post('/reviews', protect, authorize('OWNER'), addReview);
+router.get('/reviews/clinic/:id', getClinicReviews);
+router.delete('/reviews/:id', protect, authorize('SUPER_ADMIN'), deleteReview);
 
 module.exports = router;
