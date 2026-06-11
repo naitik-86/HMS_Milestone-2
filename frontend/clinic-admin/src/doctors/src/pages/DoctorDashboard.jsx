@@ -1,104 +1,123 @@
-export default function DoctorDashboard({
-  setActiveStep,
-}) {
-  const cards = [
-    {
-      title: "Consultations",
-      value: "24",
-      icon: "🩺",
-    },
-    {
-      title: "Diagnoses",
-      value: "12",
-      icon: "🧬",
-    },
-    {
-      title: "Lab Requests",
-      value: "08",
-      icon: "🧪",
-    },
-    {
-      title: "Treatments",
-      value: "15",
-      icon: "💉",
-    },
-  ];
+import { useState } from "react";
+
+import DoctorSidebar from "../components/DoctorSidebar";
+import Dashboard from "../components/Dashboard";
+import PendingPets from "../components/PendingPets";
+import CompletedPets from "../components/CompletedPets";
+import History from "../components/History";
+
+export default function DoctorDashboard() {
+  const [activeStep, setActiveStep] = useState("dashboard");
+
+  const getPageTitle = () => {
+    switch (activeStep) {
+      case "pendingPets":
+        return "Pending Pets";
+      case "completedPets":
+        return "Completed Cases";
+      case "history":
+        return "Pet History";
+      default:
+        return "Dashboard";
+    }
+  };
+
+  const getPageDescription = () => {
+    switch (activeStep) {
+      case "pendingPets":
+        return "Manage pets waiting for consultation";
+      case "completedPets":
+        return "Review completed consultations";
+      case "history":
+        return "Access previous pet records";
+      default:
+        return "Veterinary Clinic Management Overview";
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-slate-100 p-8">
+    <div className="flex h-screen bg-slate-100 overflow-hidden">
 
-      <div className="bg-white rounded-3xl p-8 shadow-md mb-8">
-        <h1 className="text-3xl font-bold">
-          Doctor Dashboard
-        </h1>
+      {/* Sidebar */}
+      <DoctorSidebar
+        activeStep={activeStep}
+        setActiveStep={setActiveStep}
+      />
 
-        <p className="text-slate-500 mt-2">
-          Consultation, Diagnosis & Prescription
-        </p>
-      </div>
+      {/* Content */}
+      <div className="flex-1 flex flex-col overflow-hidden">
 
-      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {/* Premium Header */}
+        <div className="bg-white px-8 py-4 border-b border-slate-200">
 
-        {cards.map((card, index) => (
-          <div
-            key={index}
-            className="bg-white rounded-3xl p-6 shadow-md"
-          >
-            <div className="flex justify-between">
-              <div>
-                <p className="text-slate-500">
-                  {card.title}
+          <div className="flex items-center justify-between">
+
+            <div>
+              <div className="flex items-center gap-3 mb-2">
+
+                <div className="w-3 h-3 rounded-full bg-orange-500"></div>
+
+                <span className="text-orange-500 font-semibold">
+                  Veterinary Clinic System
+                </span>
+
+              </div>
+
+              <h1 className="text-3xl font-bold text-slate-900">
+                {getPageTitle()}
+              </h1>
+
+              <p className="text-slate-500 mt-2">
+                {getPageDescription()}
+              </p>
+
+            </div>
+
+            <div className="flex items-center gap-4">
+
+              <div className="bg-orange-50 border border-orange-100 rounded-3xl px-5 py-3">
+
+                <p className="text-xs text-slate-500">
+                  Active Module
                 </p>
 
-                <h2 className="text-4xl font-bold mt-2">
-                  {card.value}
-                </h2>
+                <p className="font-semibold text-orange-600">
+                  Doctor Panel
+                </p>
+
               </div>
 
-              <div className="text-4xl">
-                {card.icon}
+              <div className="w-14 h-14 rounded-3xl bg-gradient-to-r from-orange-500 to-orange-600 text-white flex items-center justify-center text-lg font-bold shadow-lg">
+                DR
               </div>
+
             </div>
+
           </div>
-        ))}
-
-      </div>
-
-      <div className="bg-white rounded-3xl p-8 shadow-md">
-        <h2 className="text-xl font-bold mb-6">
-          Quick Actions
-        </h2>
-
-        <div className="grid md:grid-cols-3 gap-4">
-
-          <button
-            onClick={() =>
-              setActiveStep(1)
-            }
-            className="bg-orange-500 text-white p-4 rounded-2xl"
-          >
-            Start Consultation
-          </button>
-
-          <button
-            onClick={() =>
-              setActiveStep(3)
-            }
-            className="bg-slate-900 text-white p-4 rounded-2xl"
-          >
-            Diagnosis
-          </button>
-
-          <button
-            onClick={() =>
-              setActiveStep(5)
-            }
-            className="bg-green-500 text-white p-4 rounded-2xl"
-          >
-            Treatment
-          </button>
 
         </div>
+
+        {/* Main Page */}
+        <div className="flex-1 overflow-y-auto p-8">
+
+          {activeStep === "dashboard" && (
+            <Dashboard setActiveStep={setActiveStep} />
+          )}
+
+          {activeStep === "pendingPets" && (
+            <PendingPets setActiveStep={setActiveStep} />
+          )}
+
+          {activeStep === "completedPets" && (
+            <CompletedPets setActiveStep={setActiveStep} />
+          )}
+
+          {activeStep === "history" && (
+            <History />
+          )}
+
+        </div>
+
       </div>
 
     </div>
