@@ -1,103 +1,25 @@
 
 import { useState } from "react";
 import { showToast } from "../../../util/toast";
-import { api } from "../../../services/apiClient";
+import { createClinic } from "../../../api/clinicApi";
 
-
-
-/* ---------------- UI COMPONENTS ---------------- */
-
-
-
-const Card = ({ title, children }) => (
-    <div className="bg-white p-6 rounded-2xl shadow">
-        <h2 className="text-lg font-semibold mb-4">{title}</h2>
-        {children}
-    </div>
-);
-
-const Grid = ({ children }) => (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">{children}</div>
-);
-
-const Full = ({ children }) => <div className="md:col-span-2">{children}</div>;
-
-
-const Input = ({ label, requiredField = false, ...props }) => (
-    <div>
-        <label className="text-sm">{label}
-            {requiredField && <span className="text-red-500"> *</span>}
-        </label>
-        <input
-            {...props}
-            required={requiredField}
-            value={props.value ?? ""}
-            onChange={props.onChange}
-            className="w-full border p-2 rounded-xl mt-1"
-        />
-    </div>
-);
-
-
-const Select = ({ label, options, requiredField = false, ...props }) => (
-    <div>
-        <label className="text-sm">{label}
-            {requiredField && <span className="text-red-500"> *</span>}
-
-        </label>
-        <select
-            required={requiredField}
-            {...props}
-            value={props.value ?? ""}
-            onChange={props.onChange}
-            className="w-full border p-2 rounded-xl mt-1"
-        >
-            <option value="">Select</option>
-            {options.map((o) => (
-                <option key={o} value={o}>
-                    {o}
-                </option>
-            ))}
-        </select>
-    </div>
-);
-
-const Upload = ({ label, requiredField = false, onChange }) => (
-    <div>
-        <label className="text-sm">
-            {label}
-            {requiredField && <span className="text-red-500"> *</span>}
-
-        </label>
-
-        <label className="border-dashed border p-4 text-center rounded-xl mt-1 block cursor-pointer text-orange-400 border-black">
-            Upload File
-
-            <input
-                required={requiredField}
-                type="file"
-                className="hidden"
-                onChange={onChange}
-            />
-        </label>
-    </div>
-);
+import { Upload, Card, Select, Grid, Full, Input } from "../../../components"
 
 /* ---------------- MAIN FORM ---------------- */
 
-export default function ClinicForm({ activeTab, form, setForm }) {
+export default function ClinicForm({
+    activeTab,
+    form,
+    setForm,
+    handleChange,
+    canSave,
+    validateTab,
+    setActiveTab,
+    tabs,
+}) {
 
     const [submitting, setSubmitting] = useState(false);
 
-
-    const handleChange = (e) => {
-        const { name, value, type, checked } = e.target;
-
-        setForm((prev) => ({
-            ...prev,
-            [name]: type === "checkbox" ? checked : value,
-        }));
-    };
 
     const handleFileUpload = (field) => (e) => {
         const file = e.target.files?.[0];
@@ -109,57 +31,59 @@ export default function ClinicForm({ activeTab, form, setForm }) {
         }));
     };
 
-    const handleSubmit = async (e) => {
-        if (submitting) return;
-        setSubmitting(true);
-        e.preventDefault();
-        try {
-            const subscriptionMap = {
-                Basic: "FREE_TIER",
-                Standard: "6_MONTHS",
-                Professional: "12_MONTHS",
-                Enterprise: "12_MONTHS",
-                Custom: "FREE_TIER",
-            };
 
-            const payload = {
-                name: form.clinicName,
-                address: [
-                    form.address1,
-                    form.address2,
-                    form.city,
-                    form.state,
-                    form.pincode,
-                ]
-                    .filter(Boolean)
-                    .join(", "),
-                subscriptionType: subscriptionMap[form.plan] || "FREE_TIER",
-                maxDoctors: Number(form.maxDoctors || 0),
-                maxStaff: Number(form.maxStaff || 0),
-            };
-
-            await api.post("/clinics", payload);
-
-            showToast({
-                type: "success",
-                title: "Clinic Created",
-                description: "Clinic has been registered successfully.",
-            });
-        } catch (err) {
-            const msg = err?.response?.data?.message || err?.message || "Failed to create clinic";
+    const handleNext = () => {
+        if (!validateTab()) {
             showToast({
                 type: "error",
-                title: "Clinic Create Failed",
-                description: msg,
+                title: "Validation Error",
+                description: "Please fill all required fields.",
             });
-        } finally {
-            setSubmitting(false);
+
+            return;
+        }
+
+        const currentIndex = tabs.findIndex(
+            ([key]) => key === activeTab
+        );
+
+        if (currentIndex < tabs.length - 1) {
+            setActiveTab(tabs[currentIndex + 1][0]);
         }
     };
 
 
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+
+        console.log("FORM SUBMITTED");
+        console.log("SUBMIT FIRED", activeTab);
+
+        try {
+            const data = await createClinic(form);
+
+            showToast({
+                type: "success",
+                title: "Clinic Created",
+                description: data.message,
+            });
+
+            console.log(data);
+
+        } catch (error) {
+            showToast({
+                type: "error",
+                title: "Error",
+                description:
+                    error.response?.data?.message || "Something went wrong",
+            });
+        }
+    };
+
+
+
     return (
-        <form onSubmit={handleSubmit}>
+        <form >
             <div className="p-6 bg-gray-100 min-h-full">
                 <div className="max-w-6xl mx-auto space-y-6">
 
@@ -197,8 +121,13 @@ export default function ClinicForm({ activeTab, form, setForm }) {
                                 <Input name="altPhone" label="Alternate Contact" value={form.altPhone} onChange={handleChange} />
                                 <Input name="website" label="Website URL" value={form.website} onChange={handleChange} />
 
-                                <Upload requiredField={true} label="Clinic Logo" onChange={handleFileUpload("logo")} />
-
+                                <Upload
+                                    requiredField={true}
+                                    label="Clinic Logo"
+                                    value={form.logo}
+                                    onChange={handleFileUpload("logo")}
+                                    onRemove={() => setForm((p) => ({ ...p, logo: null }))}
+                                />
                             </Grid>
                         </Card>
                     )}
@@ -243,10 +172,29 @@ export default function ClinicForm({ activeTab, form, setForm }) {
                                 <Input requiredField={true} name="tradeLicense" label="Trade License No." value={form.tradeLicense} onChange={handleChange} />
                                 <Input requiredField={true} name="drugLicense" label="Drug License No." value={form.drugLicense} onChange={handleChange} />
 
-                                <Upload requiredField={true} label="Registration Certificate" onChange={handleFileUpload("vetCert")} />
-                                <Upload requiredField={true} label="Trade License Doc" onChange={handleFileUpload("tradeDoc")} />
-                                <Upload requiredField={true} label="Drug License Doc" onChange={handleFileUpload("drugDoc")} />
+                                <Upload
+                                    requiredField={true}
+                                    label="Registration Certificate"
+                                    value={form.vetCert}
+                                    onChange={handleFileUpload("vetCert")}
+                                    onRemove={() => setForm((p) => ({ ...p, vetCert: null }))}
+                                />
 
+                                <Upload
+                                    requiredField={true}
+                                    label="Trade License Doc"
+                                    value={form.tradeDoc}
+                                    onChange={handleFileUpload("tradeDoc")}
+                                    onRemove={() => setForm((p) => ({ ...p, tradeDoc: null }))}
+                                />
+
+                                <Upload
+                                    requiredField={true}
+                                    label="Drug License Doc"
+                                    value={form.drugDoc}
+                                    onChange={handleFileUpload("drugDoc")}
+                                    onRemove={() => setForm((p) => ({ ...p, drugDoc: null }))}
+                                />
                             </Grid>
                         </Card>
                     )}
@@ -262,8 +210,13 @@ export default function ClinicForm({ activeTab, form, setForm }) {
                                 <Input requiredField={true} name="accountNumber" label="Account Number" value={form.accountNumber} onChange={handleChange} />
                                 <Input requiredField={true} name="ifsc" label="IFSC Code" value={form.ifsc} onChange={handleChange} />
 
-                                <Upload requiredField={true} label="Cancelled Cheque" onChange={handleFileUpload("cheque")} />
-
+                                <Upload
+                                    requiredField={true}
+                                    label="Cancelled Cheque"
+                                    value={form.cheque}
+                                    onChange={handleFileUpload("cheque")}
+                                    onRemove={() => setForm((p) => ({ ...p, cheque: null }))}
+                                />
                             </Grid>
                         </Card>
                     )}
@@ -288,9 +241,21 @@ export default function ClinicForm({ activeTab, form, setForm }) {
 
                                 <Input requiredField={true} name="govtIdNumber" label="ID Number" value={form.govtIdNumber} onChange={handleChange} />
 
-                                <Upload requiredField={true} label="ID Document" onChange={handleFileUpload("idDoc")} />
-                                <Upload requiredField={true} label="Profile Photo" onChange={handleFileUpload("profile")} />
+                                <Upload
+                                    requiredField={true}
+                                    label="ID Document"
+                                    value={form.idDoc}
+                                    onChange={handleFileUpload("idDoc")}
+                                    onRemove={() => setForm((p) => ({ ...p, idDoc: null }))}
+                                />
 
+                                <Upload
+                                    requiredField={true}
+                                    label="Profile Photo"
+                                    value={form.profile}
+                                    onChange={handleFileUpload("profile")}
+                                    onRemove={() => setForm((p) => ({ ...p, profile: null }))}
+                                />
                             </Grid>
                         </Card>
                     )}
@@ -310,21 +275,38 @@ export default function ClinicForm({ activeTab, form, setForm }) {
                                 />
 
                                 <Select
-                                    requiredField={true}
+                                    requiredField
                                     name="billing"
                                     label="Billing Cycle"
                                     value={form.billing}
-                                    options={["Monthly", "Quarterly", "Annual"]}
+                                    options={[
+                                        "Monthly",
+                                        "Quarterly",
+                                        "Annual",
+                                    ]}
                                     onChange={handleChange}
                                 />
 
-                                <Input requiredField={true} type="date" name="startDate" label="Plan Start Date" value={form.startDate} onChange={handleChange} />
+                                <Input
+                                    requiredField
+                                    type="date"
+                                    name="startDate"
+                                    label="Plan Start Date"
+                                    value={form.startDate}
+                                    onChange={handleChange}
+                                />
 
-                                <Input requiredField={true} name="endDate" label="Plan End / Renewal Date" value={form.endDate} disabled />
+                                <Input
+                                    requiredField
+                                    type="date"
+                                    name="endDate"
+                                    label="Plan End / Renewal Date"
+                                    value={form.endDate}
+                                    disabled
+                                />
+                                <Input requiredField={false} type="number" name="trialDays" label="Trial Period (Days)" value={form.trialDays} onChange={handleChange} />
 
-                                <Input requiredField={true} type="number" name="trialDays" label="Trial Period (Days)" value={form.trialDays} onChange={handleChange} />
-
-                                <Input requiredField={true} name="discountCode" label="Discount / Promo Code" value={form.discountCode} onChange={handleChange} />
+                                <Input requiredField={false} name="discountCode" label="Discount / Promo Code" value={form.discountCode} onChange={handleChange} />
 
                             </Grid>
 
@@ -337,59 +319,124 @@ export default function ClinicForm({ activeTab, form, setForm }) {
                             />
 
                             {/* MODULES (UNCHANGED UI) */}
-                            <div className="mt-6 bg-slate-50 p-6 rounded-2xl border">
-                                <h3 className="text-sm font-semibold text-slate-600 mb-4">
-                                    FEATURE LIMITS PER PLAN
-                                </h3>
+                            {form.plan === "Custom" && (
+                                <div className="mt-6 bg-slate-50 p-6 rounded-2xl border">
 
-                                <div className="grid grid-cols-2 gap-4 mb-6">
-                                    <Input requiredField={true} name="maxStaff" label="Max Staff Accounts" value={form.maxStaff} onChange={handleChange} />
-                                    <Input requiredField={true} name="maxDoctors" label="Max Doctors" value={form.maxDoctors} onChange={handleChange} />
-                                    <Input requiredField={true} name="maxPets" label="Max Pet Records / Unlimited" value={form.maxPets} onChange={handleChange} />
-                                    <Input requiredField={true} name="storageLimit" label="Storage Limit (GB)" value={form.storageLimit} onChange={handleChange} />
+                                    <h3 className="text-sm font-semibold text-slate-600 mb-4">
+                                        FEATURE LIMITS PER PLAN
+                                    </h3>
+
+                                    <div className="grid grid-cols-2 gap-4 mb-6">
+                                        <Input
+                                            requiredField
+                                            name="maxStaff"
+                                            label="Max Staff Accounts"
+                                            value={form.maxStaff}
+                                            onChange={handleChange}
+                                        />
+
+                                        <Input
+                                            requiredField
+                                            name="maxDoctors"
+                                            label="Max Doctors"
+                                            value={form.maxDoctors}
+                                            onChange={handleChange}
+                                        />
+
+                                        <Input
+                                            requiredField
+                                            name="maxPets"
+                                            label="Max Pet Records / Unlimited"
+                                            value={form.maxPets}
+                                            onChange={handleChange}
+                                        />
+
+                                        <Input
+                                            requiredField
+                                            name="storageLimit"
+                                            label="Storage Limit (GB)"
+                                            value={form.storageLimit}
+                                            onChange={handleChange}
+                                        />
+                                    </div>
+
+                                    <h3 className="text-sm font-semibold text-slate-600 mb-4">
+                                        MODULE ACCESS
+                                    </h3>
+
+                                    <div className="grid grid-cols-2 gap-4">
+
+                                        {[
+                                            ["labModule", "Lab Module"],
+                                            ["groomingModule", "Grooming Module"],
+                                            ["kennelModule", "Kennel Module"],
+                                            ["pharmacyModule", "Online Pharmacy"],
+                                            ["apiAccess", "API Access"],
+                                            ["whiteLabel", "White Label / Custom Branding"],
+                                        ].map(([key, label]) => (
+                                            <label
+                                                key={key}
+                                                className="flex items-center justify-between bg-white px-4 py-3 rounded-xl border"
+                                            >
+                                                <span>{label}</span>
+
+                                                <input
+                                                    type="checkbox"
+                                                    name={key}
+                                                    checked={form[key]}
+                                                    onChange={handleChange}
+                                                />
+                                            </label>
+                                        ))}
+
+                                    </div>
+
                                 </div>
-
-                                <h3 className="text-sm font-semibold text-slate-600 mb-4">
-                                    MODULE ACCESS
-                                </h3>
-
-                                <div className="grid grid-cols-2 gap-4">
-
-                                    {[
-                                        ["labModule", "Lab Module"],
-                                        ["groomingModule", "Grooming Module"],
-                                        ["kennelModule", "Kennel Module"],
-                                        ["pharmacyModule", "Online Pharmacy"],
-                                        ["apiAccess", "API Access"],
-                                        ["whiteLabel", "White Label / Custom Branding"],
-                                    ].map(([key, label]) => (
-                                        <label
-                                            key={key}
-                                            className="flex items-center justify-between bg-white px-4 py-3 rounded-xl border"
-                                        >
-                                            <span>{label}</span>
-                                            <input
-                                                type="checkbox"
-                                                name={key}
-                                                checked={form[key]}
-                                                onChange={handleChange}
-                                            />
-                                        </label>
-                                    ))}
-
-                                </div>
-                            </div>
-
+                            )}
                         </Card>
                     )}
 
                     {/* SAVE */}
                     <div className="flex justify-end">
-                        <button
-                            type="submit"
-                            className="bg-orange-500 text-white px-6 py-3 rounded-xl">
-                            Save Clinic
-                        </button>
+                        <div className="flex justify-end gap-3">
+
+                            {activeTab !== "plan" ? (
+                                <button
+                                    type="button"
+                                    onClick={handleNext}
+                                    className="
+                bg-orange-500
+                hover:bg-orange-600
+                text-white
+                px-6
+                py-3
+                rounded-xl
+                font-medium
+                transition-all
+            "
+                                >
+                                    Next →
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={handleSubmit}
+                                    type="button"
+                                    className="
+                bg-orange-500
+                hover:bg-orange-600
+                text-white
+                px-6
+                py-3
+                rounded-xl
+                font-medium
+                transition-all
+            "
+                                >
+                                    Save Clinic
+                                </button>
+                            )}
+
+                        </div>
                     </div>
 
                 </div>

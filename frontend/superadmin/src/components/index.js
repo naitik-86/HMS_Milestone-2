@@ -34,6 +34,12 @@ import SmsTab from "./settings/SmsTab"
 
 import VerificationCenter from "./verification/VerificationCenter "
 
+import Input from "./forms/Input"
+import Select from "./forms/Select"
+import Upload from "./forms/Upload"
+import { Grid, Full } from "./forms/Grid"
+import Card from "./forms/Card"
+
 // EXPORT ALL COMPONENTS
 
 export {
@@ -67,5 +73,11 @@ export {
     SmsTab,
     PaymentTab,
 
-    VerificationCenter
+    VerificationCenter,
+    Input,
+    Select,
+    Upload,
+    Grid,
+    Full,
+    Card,
 };

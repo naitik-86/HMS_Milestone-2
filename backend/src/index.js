@@ -17,7 +17,19 @@ connectDB();
 startCronJobs();
 
 // Global Middlewares
-app.use(cors()); // Allow requests from React Web and React Native Mobile
+app.use(cors({
+  origin: function (origin, callback) {
+    // allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    // Allow any localhost origin for development
+    if (/^http:\/\/localhost:\d+$/.test(origin) || /^http:\/\/127\.0\.0\.1:\d+$/.test(origin)) {
+      return callback(null, true);
+    }
+    // In production, add your domain here, e.g., if (origin === 'https://mydomain.com') return callback(null, true);
+    return callback(new Error('Not allowed by CORS'));
+  },
+  credentials: true
+})); // Allow requests from React Web and React Native Mobile
 app.use(express.json()); // Parse incoming JSON payloads
 app.use(express.urlencoded({ extended: true }));
 

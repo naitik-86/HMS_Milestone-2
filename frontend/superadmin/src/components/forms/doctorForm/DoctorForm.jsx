@@ -1,139 +1,7 @@
 import React, { useState } from "react";
 import { showToast } from "../../../util/toast";
-
-
-/* UI (UNCHANGED) */
-const Card = ({ title, children }) => (
-    <div className="bg-white p-6 rounded-2xl shadow">
-        <h2 className="text-lg font-semibold mb-4">{title}</h2>
-        {children}
-    </div>
-);
-
-const Grid = ({ children }) => (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">{children}</div>
-);
-
-const Full = ({ children }) => <div className="md:col-span-2">
-    {children}
-</div>;
-
-const Input = ({ label, value = "", requiredField = false, ...props }) => (
-    <div>
-        <label required={requiredField} className="text-sm">
-            {label}
-            {requiredField && <span className="text-red-500"> *</span>}
-        </label>
-        <input {...props} value={value} className="w-full border p-2 rounded-xl mt-1" />
-    </div>
-);
-
-const Select = ({
-    label,
-    value = "",
-    requiredField = false,
-    options = [],
-    ...props
-}) => (
-    <div>
-        <label className="text-sm">
-            {label}
-            {requiredField && <span className="text-red-500"> *</span>}
-        </label>
-
-        <select
-            value={value}
-            {...props}
-            className="w-full border p-2 rounded-xl mt-1"
-        >
-            <option value="">Select</option>
-
-            {options.map((o) => (
-                <option key={o} value={o}>
-                    {o}
-                </option>
-            ))}
-        </select>
-    </div>
-);
-
-const Upload = ({
-    label,
-    requiredField = false,
-    value,
-    onChange,
-    onRemove,
-}) => {
-    const isImage = value && value.type?.startsWith("image/");
-
-    return (
-        <div>
-            <label className="text-sm">
-                {label}
-                {requiredField && <span className="text-red-500"> *</span>}
-            </label>
-
-            <label className="border-dashed border p-4 rounded-xl mt-1 block cursor-pointer border-black">
-
-                {!value ? (
-                    <div className="text-center text-orange-400">
-                        <p className="font-medium">Upload File</p>
-                        <p className="text-xs text-gray-400">
-                            Click to browse
-                        </p>
-                    </div>
-                ) : (
-                    <div className="flex items-center gap-4">
-
-                        {/* 🔥 Image Preview */}
-                        {isImage && (
-                            <img
-                                src={URL.createObjectURL(value)}
-                                alt="preview"
-                                className="w-16 h-16 object-cover rounded-lg border"
-                            />
-                        )}
-
-                        {/* 🔥 File Info */}
-                        <div className="flex-1">
-                            <p className="text-green-600 font-medium truncate">
-                                {value.name}
-                            </p>
-                            <p className="text-xs text-gray-500">
-                                {(value.size / 1024).toFixed(1)} KB
-                            </p>
-                            <p className="text-xs text-blue-500">
-                                Click to change file
-                            </p>
-                        </div>
-
-                        {/* 🔥 Remove Button */}
-                        <button
-                            type="button"
-                            onClick={(e) => {
-                                e.preventDefault();
-                                onRemove && onRemove();
-                            }}
-                            className="text-red-500 text-sm"
-                        >
-                            ✕
-                        </button>
-                    </div>
-                )}
-
-                <input
-                    type="file"
-                    className="hidden"
-                    onChange={onChange}
-                />
-            </label>
-        </div>
-    );
-};
-
-
-
-
+import { Card, Input, Select, Grid, Full, Upload } from "../../../components"
+import { createDoctor } from "../../../api/doctorApi";
 
 export default function DoctorForm({ activeTab, form, setForm, qualifications, setQualifications }) {
 
@@ -166,13 +34,6 @@ export default function DoctorForm({ activeTab, form, setForm, qualifications, s
     };
 
 
-
-
-
-    // const [employers, setEmployers] = useState([
-    //     { organisation: "", role: "", duration: "" },
-    // ]);
-
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
         setForm({ ...form, [name]: type === "checkbox" ? checked : value });
@@ -191,22 +52,37 @@ export default function DoctorForm({ activeTab, form, setForm, qualifications, s
 
 
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        showToast({
-            type: "success",
-            title: "Doctor Added",
-            description: "Doctor has been registered successfully.",
-        });
-        console.log(form);
-        console.log(qualifications);
+
+        console.log("FORM SUBMITTED");
+        console.log("SUBMIT FIRED", activeTab);
+
+        try {
+            const data = await createDoctor(form);
+
+            showToast({
+                type: "success",
+                title: "Doctor Created",
+                description: data.message,
+            });
+
+            console.log(data);
+
+        } catch (error) {
+            showToast({
+                type: "error",
+                title: "Error",
+                description:
+                    error.response?.data?.message || "Something went wrong",
+            });
+        }
     };
 
 
 
-
     return (
-        <form onSubmit={handleSubmit}>
+        <form >
             <div className="p-6 bg-gray-100 min-h-full">
                 <div className="max-w-6xl mx-auto">
 
@@ -418,7 +294,8 @@ export default function DoctorForm({ activeTab, form, setForm, qualifications, s
                     {/* SAVE */}
                     <div className="flex justify-end mt-6">
                         <button
-                            type="submit"
+                            type="button"
+                            onClick={handleSubmit}
                             className="bg-orange-500 text-white px-6 py-3 rounded-xl"
                         >
                             Save Doctor
