@@ -1,49 +1,47 @@
 import { useState } from "react";
 
-import ReceptionSidebar from "./component/ReceptionSidebar";
+import ReceptionSidebar from "./components/ReceptionSidebar";
 
 import ReceptionDashboard from "./pages/ReceptionDashboard";
-
-import OwnerVerificationForm from "./component/OwnerVerificationForm";
-import PetRegistrationForm from "./component/PetRegistrationForm";
-import PetHistoryForm from "./component/PetHistoryForm";
-import ReasonForVisitForm from "./component/ReasonForVisitForm";
+import NewRegistrationPet from "./pages/NewRegistrationPet";
+import ExistingCustomerPet from "./pages/ExistingCustomerPet";
+import PetHistory from "./pages/PetHistory";
 
 function App() {
-  const [activeStep, setActiveStep] = useState(0);
+  const [activePage, setActivePage] =
+    useState("dashboard");
 
   return (
     <div className="flex">
 
       <ReceptionSidebar
-        activeStep={activeStep}
-        setActiveStep={setActiveStep}
+        activePage={activePage}
+        setActivePage={setActivePage}
       />
 
       <div className="flex-1 bg-slate-100 min-h-screen">
 
-        {activeStep === 0 && (
+        {activePage ===
+          "dashboard" && (
           <ReceptionDashboard />
         )}
 
-        {activeStep === 1 && (
-          <OwnerVerificationForm />
+        {activePage ===
+          "new-registration" && (
+          <NewRegistrationPet />
         )}
 
-        {activeStep === 2 && (
-          <PetRegistrationForm />
+        {activePage ===
+          "existing-customer" && (
+          <ExistingCustomerPet />
         )}
 
-        {activeStep === 3 && (
-          <PetHistoryForm />
-        )}
-
-        {activeStep === 4 && (
-          <ReasonForVisitForm />
+        {activePage ===
+          "history" && (
+          <PetHistory />
         )}
 
       </div>
-
     </div>
   );
 }

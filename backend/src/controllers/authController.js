@@ -2,8 +2,12 @@ const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const { generateOTP, sendSMS, sendWhatsApp } = require('../utils/otpService');
 
+const bcrypt = require("bcryptjs");
+const SuperAdmin = require("../models/SuperAdmin");
+
+
 // Temporary in-memory store for OTPs (Use Redis or MongoDB in production)
-const otpStore = new Map(); 
+const otpStore = new Map();
 
 exports.requestLoginOTP = async (req, res) => {
   try {
@@ -55,13 +59,81 @@ exports.verifyOTPAndLogin = async (req, res) => {
     // Fetch user and generate JWT
     const user = await User.findOne({ mobile });
     const token = jwt.sign(
-      { id: user._id, role: user.role, clinicId: user.clinicId }, 
-      process.env.JWT_SECRET, 
+      { id: user._id, role: user.role, clinicId: user.clinicId },
+      process.env.JWT_SECRET,
       { expiresIn: '1d' }
     );
 
     res.status(200).json({ success: true, token, user });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+
+
+
+
+exports.verifySuperAdmin = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    console.log("Email : " + email);
+    console.log("password : " + password);
+
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "Email and password are required",
+      });
+    }
+
+    const admin = await SuperAdmin.findOne({ email }).select("+password");;
+    if (!admin) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid credentials",
+      });
+    }
+
+    const isMatch = await bcrypt.compare(password, admin.password);
+    if (!isMatch) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid credentials **",
+      });
+    }
+
+    const token = jwt.sign(
+      {
+        id: admin._id,
+        role: admin.role,
+        email: admin.email,
+      },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: "1d",
+        issuer: "HMS-app",
+      }
+    );
+    console.log("GENERATED TOKEN:", token);
+    res.status(200).json({
+      success: true,
+      message: "Login successful",
+      token,
+      admin: {
+        id: admin._id,
+        email: admin.email,
+        role: admin.role,
+      },
+    });
+
+  } catch (error) {
+    console.error("SUPER ADMIN LOGIN ERROR:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message,
+    });
   }
 };
