@@ -1,22 +1,22 @@
 import React, { useState } from 'react';
 
-// ── Mock Data ────────────────────────────────────────────────────────────────
+// Mock data
 const degreeTypes = ['BVSc', 'BVSc & AH', 'MVSc', 'PhD (Vet)', 'BAMS', 'Other'];
 const specializations = ['Small Animal', 'Large Animal', 'Exotic & Wildlife', 'Poultry', 'Aquatic', 'Surgery', 'Dermatology', 'Dentistry', 'Oncology', 'Cardiology'];
 const languages = ['English', 'Hindi', 'Marathi', 'Tamil', 'Telugu', 'Kannada', 'Bengali', 'Gujarati'];
 const states = ['Maharashtra', 'Karnataka', 'Tamil Nadu', 'Delhi', 'Gujarat', 'Rajasthan', 'Kerala', 'West Bengal', 'Uttar Pradesh', 'Madhya Pradesh'];
 
 const initialDoctors = [
-  { id: 'DOC-001', name: 'Dr. Priya Sharma', initials: 'PS', color: '#6366F1', status: 'Active', specialization: 'Small Animal', experience: 8, fees: 500, emergency: true, regNo: 'VCI/MH/2020/1234', state: 'Maharashtra', degrees: [{ degree: 'BVSc & AH' }], selectedSpecs: ['Small Animal'], selectedLangs: ['English', 'Hindi'], regNumber: 'VCI/MH/2020/1234', certValidity: '2026-12-31', reminderDays: 30, avgDuration: 20 },
-  { id: 'DOC-002', name: 'Dr. Rohan Mehta', initials: 'RM', color: '#E8630A', status: 'Active', specialization: 'Surgery', experience: 12, fees: 800, emergency: false, regNo: 'VCI/KA/2018/5678', state: 'Karnataka', degrees: [{ degree: 'MVSc' }], selectedSpecs: ['Surgery'], selectedLangs: ['English', 'Kannada'], regNumber: 'VCI/KA/2018/5678', certValidity: '2025-06-30', reminderDays: 30, avgDuration: 30 },
-  { id: 'DOC-003', name: 'Dr. Anita Rao', initials: 'AR', color: '#22C55E', status: 'Active', specialization: 'Exotic & Wildlife', experience: 5, fees: 600, emergency: true, regNo: 'VCI/TN/2021/9101', state: 'Tamil Nadu', degrees: [{ degree: 'BVSc' }], selectedSpecs: ['Exotic & Wildlife'], selectedLangs: ['English', 'Tamil'], regNumber: 'VCI/TN/2021/9101', certValidity: '2027-03-15', reminderDays: 45, avgDuration: 25 },
+  { id: 'DOC-001', name: 'Dr. Priya Sharma', initials: 'PS', color: '#6366F1', status: 'Active', specialization: 'Small Animal', experience: 8, fees: 500, emergency: true, state: 'Maharashtra', degrees: [{ degree: 'BVSc & AH' }], selectedSpecs: ['Small Animal'], selectedLangs: ['English', 'Hindi'], regNumber: 'VCI/MH/2020/1234', certValidity: '2026-12-31', reminderDays: 30, avgDuration: 20 },
+  { id: 'DOC-002', name: 'Dr. Rohan Mehta', initials: 'RM', color: '#E8630A', status: 'Active', specialization: 'Surgery', experience: 12, fees: 800, emergency: false, state: 'Karnataka', degrees: [{ degree: 'MVSc' }], selectedSpecs: ['Surgery'], selectedLangs: ['English', 'Kannada'], regNumber: 'VCI/KA/2018/5678', certValidity: '2025-06-30', reminderDays: 30, avgDuration: 30 },
+  { id: 'DOC-003', name: 'Dr. Anita Rao', initials: 'AR', color: '#22C55E', status: 'Active', specialization: 'Exotic & Wildlife', experience: 5, fees: 600, emergency: true, state: 'Tamil Nadu', degrees: [{ degree: 'BVSc' }], selectedSpecs: ['Exotic & Wildlife'], selectedLangs: ['English', 'Tamil'], regNumber: 'VCI/TN/2021/9101', certValidity: '2027-03-15', reminderDays: 45, avgDuration: 25 },
 ];
 
 function getInitials(name) {
   return name.split(' ').filter(Boolean).slice(0, 2).map(w => w[0]?.toUpperCase() || '').join('');
 }
 
-// ── Shared style constants ───────────────────────────────────────────────────
+// Shared style constants
 const inputCls = "w-full border border-[#E5E7EB] rounded-xl px-4 py-3 text-sm text-[#1A1D2E] outline-none focus:border-[#E8630A] focus:ring-2 focus:ring-[#E8630A]/20 transition-all bg-white placeholder-gray-300";
 const inputErrCls = "w-full border border-red-400 rounded-xl px-4 py-3 text-sm text-[#1A1D2E] outline-none focus:border-red-500 focus:ring-2 focus:ring-red-200 transition-all bg-white";
 const labelCls = "block text-xs font-semibold text-[#6B7280] mb-2 tracking-wide";
@@ -37,7 +37,7 @@ function UploadBox({ id, accept, label }) {
   );
 }
 
-// ── DoctorForm ───────────────────────────────────────────────────────────────
+// DoctorForm
 function DoctorForm({ onClose, onSave, existingData, isEdit }) {
   const [activeStep, setActiveStep] = useState(0);
   const [degrees, setDegrees] = useState(existingData?.degrees || [{ degree: '' }]);
@@ -67,7 +67,7 @@ function DoctorForm({ onClose, onSave, existingData, isEdit }) {
     { label: 'Practice Settings' },
   ];
 
-  const validate = () => {
+  const getFormErrors = () => {
     const e = {};
     if (!formData.name.trim()) e.name = 'Doctor name is required';
     if (!formData.experience || Number(formData.experience) <= 0) e.experience = 'Enter valid years of experience';
@@ -75,14 +75,15 @@ function DoctorForm({ onClose, onSave, existingData, isEdit }) {
     if (!formData.regNumber.trim()) e.regNumber = 'Registration number is required';
     if (!formData.state) e.state = 'Please select a state';
     if (!formData.fees || Number(formData.fees) <= 0) e.fees = 'Enter valid consultation fees';
-    setErrors(e);
-    return !Object.keys(e).length;
+    return e;
   };
 
   const handleSave = () => {
-    if (!validate()) {
-      if (errors.name || errors.experience || errors.selectedSpecs) setActiveStep(0);
-      else if (errors.regNumber || errors.state) setActiveStep(1);
+    const e = getFormErrors();
+    setErrors(e);
+    if (Object.keys(e).length) {
+      if (e.name || e.experience || e.selectedSpecs) setActiveStep(0);
+      else if (e.regNumber || e.state) setActiveStep(1);
       else setActiveStep(2);
       return;
     }
@@ -118,7 +119,7 @@ function DoctorForm({ onClose, onSave, existingData, isEdit }) {
         onClick={e => e.stopPropagation()}
       >
 
-        {/* ── HEADER ── */}
+        {/* Header */}
         <div className="px-10 pt-8 pb-0 flex-shrink-0 border-b border-[#F3F4F6]">
           <div className="flex items-start justify-between mb-6">
             <div>
@@ -200,7 +201,7 @@ function DoctorForm({ onClose, onSave, existingData, isEdit }) {
           </div>
         </div>
 
-        {/* ── BODY ── */}
+        {/* Body */}
         <div className="flex-1 overflow-y-auto px-10 py-8">
 
           {/* Step 0: Qualifications */}
@@ -360,7 +361,7 @@ function DoctorForm({ onClose, onSave, existingData, isEdit }) {
           )}
         </div>
 
-        {/* ── FOOTER ── */}
+        {/* Footer */}
         <div className="px-10 py-5 flex items-center justify-between flex-shrink-0 border-t border-[#F3F4F6]">
           <button
             onClick={() => activeStep > 0 ? setActiveStep(activeStep - 1) : onClose()}
@@ -380,7 +381,7 @@ function DoctorForm({ onClose, onSave, existingData, isEdit }) {
   );
 }
 
-// ── ViewProfile Modal ────────────────────────────────────────────────────────
+// ViewProfile Modal
 function ViewProfileModal({ doctor, onClose, onEdit }) {
   if (!doctor) return null;
 
@@ -474,7 +475,7 @@ function ViewProfileModal({ doctor, onClose, onEdit }) {
   );
 }
 
-// ── Main Component ───────────────────────────────────────────────────────────
+// Main Component
 export default function DoctorDetails() {
   const [doctors, setDoctors] = useState(initialDoctors);
   const [modal, setModal] = useState(null);
@@ -500,7 +501,6 @@ export default function DoctorDetails() {
               fees: Number(formData.fees) || d.fees,
               emergency: formData.emergency,
               regNumber: formData.regNumber || d.regNumber,
-              regNo: formData.regNumber || d.regNo,
               state: formData.state || d.state,
               certValidity: formData.certValidity || d.certValidity,
               reminderDays: Number(formData.reminderDays) || d.reminderDays,
@@ -521,7 +521,6 @@ export default function DoctorDetails() {
         experience: Number(formData.experience) || 0,
         fees: Number(formData.fees) || 0,
         emergency: formData.emergency,
-        regNo: formData.regNumber || '—',
         regNumber: formData.regNumber || '',
         state: formData.state || '',
         certValidity: formData.certValidity || '',
@@ -611,7 +610,7 @@ export default function DoctorDetails() {
             </div>
 
             <div className="text-xs text-gray-400 border-t border-[#EAE5DC] pt-3 mb-3 truncate">
-              Reg: {d.regNo} · {d.state || '—'}
+              Reg: {d.regNumber || '—'} · {d.state || '—'}
             </div>
 
             <div className="flex gap-2">

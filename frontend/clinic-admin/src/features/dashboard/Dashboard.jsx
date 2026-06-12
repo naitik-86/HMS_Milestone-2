@@ -41,6 +41,7 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 export default function Dashboard() {
+
   return (
     <div className="p-6 flex flex-col gap-5 animate-fade-in">
       
@@ -114,6 +115,7 @@ export default function Dashboard() {
                     className="w-9 h-9 rounded-full border flex items-center justify-center text-[12px] font-bold"
                     style={{ backgroundColor: `${e.color}22`, borderColor: `${e.color}44`, color: e.color }}
                   >
+                    
                     {e.initials}
                   </div>
                   <div>
