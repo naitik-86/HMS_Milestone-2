@@ -26,6 +26,29 @@ const {
     deleteLabTechnician,
 } = require("../controllers/labTechnicianController");
 
+const {
+    createGroomer,
+    getAllGroomers,
+    getGroomerById,
+    updateGroomer,
+    deleteGroomer,
+} = require("../controllers/groomerController");
+
+const {
+    createKennel,
+    getAllKennels,
+    getKennelById,
+    updateKennel,
+    deleteKennel,
+    toggleKennelStatus,
+} = require("../controllers/kennelController");
+
+const {
+    getClinicSettings,
+    updateClinicSettings,
+    uploadClinicLogo,
+} = require("../controllers/clinicSettingsController");
+
 const { upload } = require("../middlewares/uploadMiddleware");
 
 /* =========================
@@ -100,5 +123,103 @@ router.get("/lab-technicians", getAllLabTechnicians);
 router.get("/lab-technicians/:id", getSingleLabTechnician);
 router.put("/lab-technicians/:id", updateLabTechnician);
 router.delete("/lab-technicians/:id", deleteLabTechnician);
+
+/* =========================
+   GROOMER ROUTES
+========================= */
+
+router.post(
+    "/groomers/create",
+    upload.fields([
+        {
+            name: "profilePhoto",
+            maxCount: 1,
+        },
+        {
+            name: "certificateDocument",
+            maxCount: 1,
+        },
+    ]),
+    createGroomer
+);
+
+router.get("/groomers", getAllGroomers);
+
+router.get("/groomers/:id", getGroomerById);
+
+router.put(
+    "/groomers/:id",
+    upload.fields([
+        {
+            name: "profilePhoto",
+            maxCount: 1,
+        },
+        {
+            name: "certificateDocument",
+            maxCount: 1,
+        },
+    ]),
+    updateGroomer
+);
+
+router.delete("/groomers/:id", deleteGroomer);
+
+
+/* =========================
+   KENNEL ROUTES
+========================= */
+
+router.post(
+    "/kennel/create",
+    upload.fields([
+        {
+            name: "firstAidCertificate",
+            maxCount: 1,
+        },
+    ]),
+    createKennel
+);
+
+router.get("/kennel", getAllKennels);
+
+router.get("/kennel/:id", getKennelById);
+
+router.put(
+    "/kennel/:id",
+    upload.fields([
+        {
+            name: "firstAidCertificate",
+            maxCount: 1,
+        },
+    ]),
+    updateKennel
+);
+
+router.patch("/kennel/:id/status", toggleKennelStatus);
+
+router.delete("/kennel/:id", deleteKennel);
+
+/* =========================
+   CLINIC SETTINGS ROUTES
+========================= */
+
+// Get Clinic Settings
+router.get(
+    "/clinic-settings",
+    getClinicSettings
+);
+
+// Update Clinic Settings
+router.put(
+    "/clinic-settings",
+    updateClinicSettings
+);
+
+// Upload Clinic Logo
+router.post(
+    "/clinic-settings/logo",
+    upload.single("logo"),
+    uploadClinicLogo
+);
 
 module.exports = router;
