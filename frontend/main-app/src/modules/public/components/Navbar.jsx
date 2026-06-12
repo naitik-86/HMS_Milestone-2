@@ -24,11 +24,10 @@ export default function Navbar() {
               <NavLink
                 key={l.to}
                 to={l.to}
-                className={`px-5 py-2 rounded-full text-sm font-medium transition ${
-                  active
-                    ? "bg-brand-light text-brand-dark"
-                    : "text-ink-soft hover:text-ink"
-                }`}
+                className={`px-5 py-2 rounded-full text-sm font-medium transition ${active
+                  ? "bg-brand-light text-brand-dark"
+                  : "text-ink-soft hover:text-ink"
+                  }`}
               >
                 {l.label}
               </NavLink>
@@ -36,19 +35,55 @@ export default function Navbar() {
           })}
         </nav>
 
-        <div className="flex items-center gap-4">
-          <Link
+        <div className="flex items-center gap-3">
+
+          {/* Login */}
+          <NavLink
             to="/login"
-            className="text-sm font-medium text-ink hover:text-brand-dark"
+            className={({ isActive }) =>
+              `px-5 py-2 rounded-full text-sm font-medium transition ${isActive
+                ? "bg-green-200 text-green-700"
+                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              }`
+            }
           >
             Log In
-          </Link>
-          <Link
+          </NavLink>
+
+          {/* Super Admin */}
+          <NavLink
+            to="/doctor"
+            className={({ isActive }) =>
+              `px-5 py-2 rounded-full text-sm font-medium transition ${isActive
+                ? "bg-green-200 text-green-700"
+                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              }`
+            }
+          >
+            Doctor
+          </NavLink>
+
+          {/* Clinic Admin */}
+          <NavLink
+            to="/clinic"
+            className={({ isActive }) =>
+              `px-5 py-2 rounded-full text-sm font-medium transition ${isActive
+                ? "bg-green-200 text-green-700"
+                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              }`
+            }
+          >
+            Clinic Admin
+          </NavLink>
+
+          {/* Signup */}
+          <NavLink
             to="/login"
             className="bg-brand hover:bg-brand-dark text-white text-sm font-semibold px-5 py-2.5 rounded-lg shadow-sm transition"
           >
             Sign Up Free
-          </Link>
+          </NavLink>
+
         </div>
       </div>
     </header>

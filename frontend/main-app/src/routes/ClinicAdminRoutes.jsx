@@ -16,9 +16,12 @@ const ClinicAdminRoutes = (
     <Route
         path="/clinic"
         element={
-            <ProtectedRoute allowedRoles={["CLINIC_ADMIN"]}>
-                <ClinicAdminLayout />
-            </ProtectedRoute>
+
+            // TODO: For now excluded protected routes to make a bypass, wrap it under protected routes once backend id done
+
+            // <ProtectedRoute allowedRoles={["CLINIC_ADMIN"]}>
+            <ClinicAdminLayout />
+            // </ProtectedRoute>
         }
     >
         <Route index element={<Dashboard />} />
@@ -29,6 +32,7 @@ const ClinicAdminRoutes = (
         <Route path="kennel" element={<KennelStaff />} />
         <Route path="reports" element={<Reports />} />
         <Route path="settings" element={<ClinicSettings />} />
+
     </Route>
 );
 
