@@ -369,6 +369,7 @@ export default function ClinicModal({ onClose }) {
                         validateTab={validateTab}
                         setActiveTab={setActiveTab}
                         tabs={tabs}
+                        onClose={onClose}
                     />
                 </div>
             </div>

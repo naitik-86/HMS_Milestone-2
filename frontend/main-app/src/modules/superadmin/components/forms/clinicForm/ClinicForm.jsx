@@ -17,6 +17,7 @@ export default function ClinicForm({
     validateTab,
     setActiveTab,
     tabs,
+    onClose
 }) {
 
     const [submitting, setSubmitting] = useState(false);
@@ -61,6 +62,7 @@ export default function ClinicForm({
         console.log("SUBMIT FIRED", activeTab);
 
         try {
+
             const data = await createClinic(form);
 
             showToast({
@@ -70,6 +72,7 @@ export default function ClinicForm({
             });
 
             console.log(data);
+            onClose();
             navigate("/superadmin/clinics");
 
         } catch (error) {

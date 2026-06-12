@@ -9,8 +9,12 @@ import {
     Settings,
     LogOut,
 } from "lucide-react";
+import { showToast } from "../../../shared/components/toast";
+import { useNavigate } from "react-router-dom";
 
 export default function Sidebar() {
+    const navigate = useNavigate();
+
     const menu = [
         { name: "Dashboard", path: "/superadmin", icon: LayoutDashboard, end: true },
         { name: "Clinics", path: "/superadmin/clinics", icon: Building2 },
@@ -23,7 +27,13 @@ export default function Sidebar() {
 
     const handleLogout = () => {
         console.log("Logout clicked");
-        alert("Logout")
+        showToast({
+            type: "success",
+            title: "Logout Successful",
+            description: "You have been logged out",
+        });
+        navigate("/");
+
     };
 
     return (
@@ -56,6 +66,9 @@ export default function Sidebar() {
                                     }`
                                 }
                             >
+
+
+
                                 <Icon size={18} />
                                 {item.name}
                             </NavLink>
