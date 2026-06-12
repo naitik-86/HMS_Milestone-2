@@ -1,6 +1,6 @@
 # Dependency directories
 node_modules/
-
+.env
 # Environment Variables & Secrets (CRITICAL)
 .env.production
 .env.local
