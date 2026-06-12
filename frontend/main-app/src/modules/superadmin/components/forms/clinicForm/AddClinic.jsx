@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 
-import { ClinicModal, ClinicHeader } from "../../index"
+import { ClinicModal, ClinicHeader } from "../../index.js"
 
 export default function ClinicPage() {
     const [open, setOpen] = useState(false);

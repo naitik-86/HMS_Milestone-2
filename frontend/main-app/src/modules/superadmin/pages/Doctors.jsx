@@ -1,6 +1,5 @@
-import DoctorForm from "../components/forms/doctorForm/DoctorForm"
-import AddDoctor from "../components/forms/doctorForm/AddDoctor"
-import { DoctorsTable } from "../components"
+
+import { DoctorsTable, AddDoctor, DoctorForm } from "../components"
 
 function Doctors() {
     return (

@@ -1,7 +1,7 @@
 
 import { useState } from "react";
-import { showToast } from "../../../util/toast";
-import { createClinic } from "../../../api/clinicApi";
+import { showToast } from "../../../../../shared/components/toast";
+// import { createClinic } from "../../../api/clinicApi";
 
 import { Upload, Card, Select, Grid, Full, Input } from "../../../components"
 
@@ -59,25 +59,25 @@ export default function ClinicForm({
         console.log("FORM SUBMITTED");
         console.log("SUBMIT FIRED", activeTab);
 
-        try {
-            const data = await createClinic(form);
+        // try {
+        //     const data = await createClinic(form);
 
-            showToast({
-                type: "success",
-                title: "Clinic Created",
-                description: data.message,
-            });
+        //     showToast({
+        //         type: "success",
+        //         title: "Clinic Created",
+        //         description: data.message,
+        //     });
 
-            console.log(data);
+        //     console.log(data);
 
-        } catch (error) {
-            showToast({
-                type: "error",
-                title: "Error",
-                description:
-                    error.response?.data?.message || "Something went wrong",
-            });
-        }
+        // } catch (error) {
+        //     showToast({
+        //         type: "error",
+        //         title: "Error",
+        //         description:
+        //             error.response?.data?.message || "Something went wrong",
+        //     });
+        // }
     };
 
 

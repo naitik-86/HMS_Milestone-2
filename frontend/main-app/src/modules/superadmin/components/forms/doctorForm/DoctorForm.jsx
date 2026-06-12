@@ -1,7 +1,8 @@
 import React, { useState } from "react";
-import { showToast } from "../../../util/toast";
+import { showToast } from "../../../../../shared/components/toast";
+
 import { Card, Input, Select, Grid, Full, Upload } from "../../../components"
-import { createDoctor } from "../../../api/doctorApi";
+// import { createDoctor } from "../../../api/doctorApi";
 
 export default function DoctorForm({ activeTab, form, setForm, qualifications, setQualifications }) {
 
@@ -58,25 +59,25 @@ export default function DoctorForm({ activeTab, form, setForm, qualifications, s
         console.log("FORM SUBMITTED");
         console.log("SUBMIT FIRED", activeTab);
 
-        try {
-            const data = await createDoctor(form);
+        // try {
+        //     const data = await createDoctor(form);
 
-            showToast({
-                type: "success",
-                title: "Doctor Created",
-                description: data.message,
-            });
+        //     showToast({
+        //         type: "success",
+        //         title: "Doctor Created",
+        //         description: data.message,
+        //     });
 
-            console.log(data);
+        //     console.log(data);
 
-        } catch (error) {
-            showToast({
-                type: "error",
-                title: "Error",
-                description:
-                    error.response?.data?.message || "Something went wrong",
-            });
-        }
+        // } catch (error) {
+        //     showToast({
+        //         type: "error",
+        //         title: "Error",
+        //         description:
+        //             error.response?.data?.message || "Something went wrong",
+        //     });
+        // }
     };
 
 

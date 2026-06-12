@@ -1,5 +1,4 @@
-import ReportsManagement from "../components/reports/ReportsManagement";
-
+import { ReportsManagement } from "../components";
 function Reports() {
     return <ReportsManagement />;
 }
