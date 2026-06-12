@@ -1,6 +1,6 @@
 
 import toast from "react-hot-toast";
-import CustomToast from "../components/CustomToast";
+import CustomToast from "./CustomToast";
 
 export const showToast = ({
     type,

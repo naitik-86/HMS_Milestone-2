@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 
 
-// import { getClinics } from "../api/clinicApi";
+import { getClinics } from "../api/clinicApi";
 
 const statusStyles = {
     ACTIVE: "bg-green-100 text-green-700",
@@ -24,22 +24,22 @@ export default function LatestClinicApprovals() {
     const [clinics, setClinics] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    // useEffect(() => {
-    //     const fetchClinics = async () => {
-    //         try {
-    //             const response = await getClinics();
-    //             if (response.success) {
-    //                 setClinics(response.data);
-    //             }
-    //         } catch (error) {
-    //             console.error("Failed to fetch clinics", error);
-    //         } finally {
-    //             setLoading(false);
-    //         }
-    //     };
+    useEffect(() => {
+        const fetchClinics = async () => {
+            try {
+                const response = await getClinics();
+                if (response.success) {
+                    setClinics(response.data);
+                }
+            } catch (error) {
+                console.error("Failed to fetch clinics", error);
+            } finally {
+                setLoading(false);
+            }
+        };
 
-    //     fetchClinics();
-    // }, []);
+        fetchClinics();
+    }, []);
 
     return (
         <div className="bg-white rounded-2xl shadow border overflow-hidden">

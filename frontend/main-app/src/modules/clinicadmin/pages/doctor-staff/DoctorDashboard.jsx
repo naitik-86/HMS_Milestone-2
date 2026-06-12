@@ -1,10 +1,12 @@
 import { useState } from "react";
 
-import DoctorSidebar from "../components/DoctorSidebar";
-import Dashboard from "../components/Dashboard";
-import PendingPets from "../components/PendingPets";
-import CompletedPets from "../components/CompletedPets";
-import History from "../components/History";
+import {
+  DoctorSidebar,
+  Dashboard,
+  PendingPets,
+  CompletedPets,
+  History
+} from "../../components";
 
 export default function DoctorDashboard() {
   const [activeStep, setActiveStep] = useState("dashboard");

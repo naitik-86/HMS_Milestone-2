@@ -121,7 +121,7 @@ exports.verifySuperAdmin = async (req, res) => {
       success: true,
       message: "Login successful",
       token,
-      admin: {
+      user: {
         id: admin._id,
         email: admin.email,
         role: admin.role,

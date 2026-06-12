@@ -2,7 +2,7 @@ import { LogIn, Mail, Lock } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import axios from "axios";
-// import { loginSuperAdmin } from "../api/authSuperAdmin";
+import { authApi } from "../../auth/api/authApi";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -22,21 +22,45 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // try {
-    //   const data = await loginSuperAdmin(form);
 
-    //   console.log("Login Success:", data);
+    try {
+      const response = await authApi(form);
 
-    //   // redirect
-    //   // window.location.href = import.meta.env.VITE_SUPERADMIN_URL;
-    //   window.location.href =
-    //     `${import.meta.env.VITE_SUPERADMIN_URL}/?token=${data.token}`;
+      console.log("Login Success:", response);
 
 
-    // } catch (err) {
-    //   console.error("Login Failed:", err);
-    //   alert(err.message || "Login failed");
-    // }
+
+      const token = response.token;
+      const role = response.user.role;
+
+      localStorage.setItem("token", token);
+      localStorage.setItem("role", role);
+
+      if (role === "SUPER_ADMIN") {
+        return navigate("/superadmin");
+
+      }
+
+      if (role === "CLINIC_ADMIN") {
+        return navigate("/clinic/dashboard");
+      }
+
+      if (role === "DOCTOR") {
+        return navigate("/doctor/dashboard");
+      }
+
+      if (role === "USER") {
+        return navigate("/user/dashboard");
+      }
+
+
+    } catch (err) {
+      console.error("Login Failed:", err);
+      alert(err.message || "Login failed");
+    }
+
+
+
   };
 
   return (

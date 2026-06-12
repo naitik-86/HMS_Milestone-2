@@ -1,8 +1,12 @@
-import PreConsultationDashboard from "../pages/PreConsultationDashboard";
-import VitalsForm from "./VitalsForm";
-import BriefHistoryForm from "./BriefHistoryForm";
-import ProblemDescriptionForm from "./ProblemDescriptionForm";
-import ObservationForm from "./ObservationForm";
+
+import {
+  VitalsForm,
+  BriefHistoryForm,
+  ProblemDescriptionForm,
+  ObservationForm
+} from "../../components"
+
+import { PreConsultationDashboard } from "../../pages"
 
 export default function PreConsultationWizard({
   activeStep,

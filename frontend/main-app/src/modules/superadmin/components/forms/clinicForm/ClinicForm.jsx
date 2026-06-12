@@ -1,9 +1,10 @@
 
 import { useState } from "react";
 import { showToast } from "../../../../../shared/components/toast";
-// import { createClinic } from "../../../api/clinicApi";
 
+import { createClinic } from "../../../api/clinicApi";
 import { Upload, Card, Select, Grid, Full, Input } from "../../../components"
+import { useNavigate } from "react-router-dom";
 
 /* ---------------- MAIN FORM ---------------- */
 
@@ -19,7 +20,7 @@ export default function ClinicForm({
 }) {
 
     const [submitting, setSubmitting] = useState(false);
-
+    const navigate = useNavigate();
 
     const handleFileUpload = (field) => (e) => {
         const file = e.target.files?.[0];
@@ -59,25 +60,26 @@ export default function ClinicForm({
         console.log("FORM SUBMITTED");
         console.log("SUBMIT FIRED", activeTab);
 
-        // try {
-        //     const data = await createClinic(form);
+        try {
+            const data = await createClinic(form);
 
-        //     showToast({
-        //         type: "success",
-        //         title: "Clinic Created",
-        //         description: data.message,
-        //     });
+            showToast({
+                type: "success",
+                title: "Clinic Created",
+                description: data.message,
+            });
 
-        //     console.log(data);
+            console.log(data);
+            navigate("/superadmin/clinics");
 
-        // } catch (error) {
-        //     showToast({
-        //         type: "error",
-        //         title: "Error",
-        //         description:
-        //             error.response?.data?.message || "Something went wrong",
-        //     });
-        // }
+        } catch (error) {
+            showToast({
+                type: "error",
+                title: "Error",
+                description:
+                    error.response?.data?.message || "Something went wrong",
+            });
+        }
     };
 
 

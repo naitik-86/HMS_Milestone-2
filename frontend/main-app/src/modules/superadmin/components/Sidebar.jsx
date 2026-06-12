@@ -10,25 +10,24 @@ import {
     LogOut,
 } from "lucide-react";
 
-const Sidebar = () => {
+export default function Sidebar() {
     const menu = [
-        { name: "Dashboard", path: "/", icon: LayoutDashboard },
-        { name: "Clinics", path: "/clinics", icon: Building2 },
-        { name: "Veterinarian", path: "/Veterinarian", icon: Users },
-        { name: "Plans", path: "/plans", icon: ClipboardList },
-        { name: "Verification", path: "/verification", icon: ShieldCheck },
-        { name: "Reports", path: "/reports", icon: BarChart3 },
-        { name: "Settings", path: "/settings", icon: Settings },
+        { name: "Dashboard", path: "/superadmin", icon: LayoutDashboard, end: true },
+        { name: "Clinics", path: "/superadmin/clinics", icon: Building2 },
+        { name: "Veterinarian", path: "/superadmin/Veterinarian", icon: Users },
+        { name: "Plans", path: "/superadmin/plans", icon: ClipboardList },
+        { name: "Verification", path: "/superadmin/verification", icon: ShieldCheck },
+        { name: "Reports", path: "/superadmin/reports", icon: BarChart3 },
+        { name: "Settings", path: "/superadmin/settings", icon: Settings },
     ];
 
     const handleLogout = () => {
         console.log("Logout clicked");
-        window.location.href = import.meta.env.VITE_WEBSITE_URL;
+        alert("Logout")
     };
 
     return (
-        <div className="w-65 h-screen bg-gradient-to-b from-[#020617] to-[#0f172a] text-white flex flex-col justify-between px-4 py-5">
-
+        <div className="fixed top-0 left-0 h-screen w-65 bg-gradient-to-b from-[#020617] to-[#0f172a] text-white flex flex-col justify-between px-4 py-5">
             {/* TOP SECTION */}
             <div>
                 {/* Logo */}
@@ -48,6 +47,7 @@ const Sidebar = () => {
                             <NavLink
                                 key={item.name}
                                 to={item.path}
+                                end={item.end}
                                 className={({ isActive }) =>
                                     `flex items-center gap-3 px-4 py-3 rounded-lg text-sm mb-2 transition-all
                   ${isActive
@@ -92,4 +92,3 @@ const Sidebar = () => {
     );
 };
 
-export default Sidebar;
