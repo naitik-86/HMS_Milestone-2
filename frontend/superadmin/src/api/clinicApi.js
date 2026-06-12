@@ -41,7 +41,7 @@ export const createClinic = async (clinicData) => {
 
     // 2. Upload the files if any exist
     const hasFiles = clinicData.vetCert || clinicData.tradeDoc || clinicData.cheque;
-    
+
     if (hasFiles) {
         const fileData = {
             vetCouncilCertificate: clinicData.vetCert,
