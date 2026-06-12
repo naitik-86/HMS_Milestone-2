@@ -1,4 +1,5 @@
 export default function LegalPage({ title, sections }) {
+
   return (
     <>
       <section className="legal-gradient pt-20 pb-12">

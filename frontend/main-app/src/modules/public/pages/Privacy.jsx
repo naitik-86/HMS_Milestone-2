@@ -1,4 +1,4 @@
-import LegalPage from "../components/LegalPage.jsx";
+import { LegalPage } from "../components"
 
 const sections = [
   {

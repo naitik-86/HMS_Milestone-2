@@ -32,7 +32,8 @@ import {
   Headphones,
   BadgeCheck,
 } from "lucide-react";
-import SectionHeader from "../components/SectionHeader.jsx";
+
+import { SectionHeader } from "../components"
 
 export default function Home() {
   return (
@@ -135,30 +136,30 @@ function Hero() {
 
 /* ---------------- Features ---------------- */
 const FEATURES = [
-  { icon: Calendar,     title: "Appointment Management", desc: "Smart scheduling with automated reminders, real-time availability, and drag-and-drop calendar.",                                              tone: "indigo" },
-  { icon: Stethoscope,  title: "Pet Medical Records",    desc: "Complete digital health records including diagnostics, surgeries, prescriptions, and treatment history.",                                    tone: "green"  },
-  { icon: Pill,         title: "Pharmacy Management",    desc: "End-to-end medicine inventory, automated reorder alerts, prescription management, and expiry tracking.",                                     tone: "orange" },
-  { icon: BarChart3,    title: "Analytics Dashboard",    desc: "Real-time revenue tracking, patient analytics, staff performance metrics, and business insights.",                                           tone: "violet" },
-  { icon: Shield,       title: "Role-Based Access",      desc: "Enterprise-grade RBAC with customizable permissions for doctors, staff, receptionists, and admins.",                                         tone: "green"  },
-  { icon: Users,        title: "Multi-Tenant SaaS",      desc: "Independent workspaces for multiple clinics with isolated data, branding, and subscription plans.",                                          tone: "pink"   },
-  { icon: Video,        title: "Telemedicine",           desc: "Built-in video consultations with screen sharing, file uploads, and integrated prescription delivery.",                                      tone: "sky"    },
-  { icon: Bell,         title: "Notification Engine",    desc: "Multi-channel notifications via email, SMS, WhatsApp, and in-app alerts for all stakeholders.",                                             tone: "amber"  },
-  { icon: Syringe,      title: "Vaccination Tracking",   desc: "Automated vaccination schedules, reminder systems, certificate generation, and compliance tracking.",                                        tone: "rose"   },
-  { icon: FlaskConical, title: "Lab Management",         desc: "Laboratory test ordering, result tracking, report generation, and integration with diagnostics.",                                            tone: "violet" },
-  { icon: ClipboardList,title: "Billing System",         desc: "Automated invoicing, payment tracking, insurance claims, tax calculations, and financial reports.",                                          tone: "teal"   },
-  { icon: Scissors,     title: "Grooming & Kennel",      desc: "Grooming appointments, kennel boarding management, pet daycare scheduling, and service tracking.",                                           tone: "pink"   },
+  { icon: Calendar, title: "Appointment Management", desc: "Smart scheduling with automated reminders, real-time availability, and drag-and-drop calendar.", tone: "indigo" },
+  { icon: Stethoscope, title: "Pet Medical Records", desc: "Complete digital health records including diagnostics, surgeries, prescriptions, and treatment history.", tone: "green" },
+  { icon: Pill, title: "Pharmacy Management", desc: "End-to-end medicine inventory, automated reorder alerts, prescription management, and expiry tracking.", tone: "orange" },
+  { icon: BarChart3, title: "Analytics Dashboard", desc: "Real-time revenue tracking, patient analytics, staff performance metrics, and business insights.", tone: "violet" },
+  { icon: Shield, title: "Role-Based Access", desc: "Enterprise-grade RBAC with customizable permissions for doctors, staff, receptionists, and admins.", tone: "green" },
+  { icon: Users, title: "Multi-Tenant SaaS", desc: "Independent workspaces for multiple clinics with isolated data, branding, and subscription plans.", tone: "pink" },
+  { icon: Video, title: "Telemedicine", desc: "Built-in video consultations with screen sharing, file uploads, and integrated prescription delivery.", tone: "sky" },
+  { icon: Bell, title: "Notification Engine", desc: "Multi-channel notifications via email, SMS, WhatsApp, and in-app alerts for all stakeholders.", tone: "amber" },
+  { icon: Syringe, title: "Vaccination Tracking", desc: "Automated vaccination schedules, reminder systems, certificate generation, and compliance tracking.", tone: "rose" },
+  { icon: FlaskConical, title: "Lab Management", desc: "Laboratory test ordering, result tracking, report generation, and integration with diagnostics.", tone: "violet" },
+  { icon: ClipboardList, title: "Billing System", desc: "Automated invoicing, payment tracking, insurance claims, tax calculations, and financial reports.", tone: "teal" },
+  { icon: Scissors, title: "Grooming & Kennel", desc: "Grooming appointments, kennel boarding management, pet daycare scheduling, and service tracking.", tone: "pink" },
 ];
 
 const TONES = {
   indigo: "bg-indigo-100 text-indigo-600",
-  green:  "bg-emerald-100 text-emerald-600",
+  green: "bg-emerald-100 text-emerald-600",
   orange: "bg-orange-100 text-orange-500",
   violet: "bg-violet-100 text-violet-600",
-  pink:   "bg-pink-100 text-pink-500",
-  sky:    "bg-sky-100 text-sky-500",
-  amber:  "bg-amber-100 text-amber-500",
-  rose:   "bg-rose-100 text-rose-500",
-  teal:   "bg-teal-100 text-teal-600",
+  pink: "bg-pink-100 text-pink-500",
+  sky: "bg-sky-100 text-sky-500",
+  amber: "bg-amber-100 text-amber-500",
+  rose: "bg-rose-100 text-rose-500",
+  teal: "bg-teal-100 text-teal-600",
 };
 
 function FeatureCard({ icon: Icon, title, desc, tone }) {
@@ -195,10 +196,10 @@ function Features() {
 /* ---------------- Stats ---------------- */
 function Stats() {
   const items = [
-    { icon: Building2, value: "500+",  label: "Clinics Onboarded", tone: "text-emerald-400" },
-    { icon: Heart,     value: "1.2M+", label: "Pets Treated",      tone: "text-orange-400" },
-    { icon: Users,     value: "5,000+",label: "Veterinarians",     tone: "text-emerald-400" },
-    { icon: Globe,     value: "25+",   label: "Cities Covered",    tone: "text-orange-400" },
+    { icon: Building2, value: "500+", label: "Clinics Onboarded", tone: "text-emerald-400" },
+    { icon: Heart, value: "1.2M+", label: "Pets Treated", tone: "text-orange-400" },
+    { icon: Users, value: "5,000+", label: "Veterinarians", tone: "text-emerald-400" },
+    { icon: Globe, value: "25+", label: "Cities Covered", tone: "text-orange-400" },
   ];
   return (
     <section className="dark-section py-20">
@@ -220,10 +221,10 @@ function Stats() {
 /* ---------------- Why Us ---------------- */
 function WhyUs() {
   const items = [
-    { icon: Lock,     title: "HIPAA Compliant",    desc: "Enterprise-grade security standards to protect sensitive patient data at all times.",                                    tone: "from-violet-500/20 to-violet-500/5",  iconColor: "text-violet-400" },
-    { icon: Cpu,      title: "AI-Powered Insights", desc: "Smart analytics that predict patient trends, optimize scheduling, and flag inventory shortages.",                        tone: "from-fuchsia-500/20 to-fuchsia-500/5", iconColor: "text-fuchsia-400" },
-    { icon: Cloud,    title: "99.9% Uptime SLA",   desc: "Reliable cloud infrastructure with guaranteed availability for mission-critical operations.",                            tone: "from-emerald-500/20 to-emerald-500/5", iconColor: "text-emerald-400" },
-    { icon: Database, title: "Data Isolation",     desc: "Complete logical data separation between tenants with independent backups and recovery.",                                tone: "from-orange-500/20 to-orange-500/5",  iconColor: "text-orange-400" },
+    { icon: Lock, title: "HIPAA Compliant", desc: "Enterprise-grade security standards to protect sensitive patient data at all times.", tone: "from-violet-500/20 to-violet-500/5", iconColor: "text-violet-400" },
+    { icon: Cpu, title: "AI-Powered Insights", desc: "Smart analytics that predict patient trends, optimize scheduling, and flag inventory shortages.", tone: "from-fuchsia-500/20 to-fuchsia-500/5", iconColor: "text-fuchsia-400" },
+    { icon: Cloud, title: "99.9% Uptime SLA", desc: "Reliable cloud infrastructure with guaranteed availability for mission-critical operations.", tone: "from-emerald-500/20 to-emerald-500/5", iconColor: "text-emerald-400" },
+    { icon: Database, title: "Data Isolation", desc: "Complete logical data separation between tenants with independent backups and recovery.", tone: "from-orange-500/20 to-orange-500/5", iconColor: "text-orange-400" },
   ];
   return (
     <section className="dark-section py-24">
@@ -258,9 +259,9 @@ function WhyUs() {
 /* ---------------- How It Works ---------------- */
 function HowItWorks() {
   const steps = [
-    { n: "01", icon: UserPlus, title: "Register Your Clinic",    desc: "Sign up with your clinic details, upload verification documents, and create your workspace in minutes." },
-    { n: "02", icon: Settings, title: "Configure Your System",   desc: "Set up departments, add staff with role-based access, configure services, pharmacy, and notification preferences." },
-    { n: "03", icon: Rocket,   title: "Go Live",                 desc: "Start managing appointments, patient records, billing, telemedicine, and analytics from your personalized dashboard." },
+    { n: "01", icon: UserPlus, title: "Register Your Clinic", desc: "Sign up with your clinic details, upload verification documents, and create your workspace in minutes." },
+    { n: "02", icon: Settings, title: "Configure Your System", desc: "Set up departments, add staff with role-based access, configure services, pharmacy, and notification preferences." },
+    { n: "03", icon: Rocket, title: "Go Live", desc: "Start managing appointments, patient records, billing, telemedicine, and analytics from your personalized dashboard." },
   ];
   return (
     <section className="py-24">
@@ -296,12 +297,12 @@ function HowItWorks() {
 /* ---------------- Testimonials ---------------- */
 function Testimonials() {
   const tcards = [
-    { quote: "PAHMS transformed how we manage our clinic. From appointment booking to pharmacy inventory — everything is now in one place. Our efficiency has improved by 60%.",                               name: "Dr. Priya Sharma",  role: "Lead Veterinarian, HappyPaws Clinic, Mumbai",        initials: "PS" },
-    { quote: "The multi-tenant architecture is a game-changer. We now manage all three of our clinic branches from a single dashboard with complete data isolation.",                                         name: "Dr. Rajesh Kumar",  role: "Owner, PetCare Hospital, Bangalore",                 initials: "RK" },
-    { quote: "Telemedicine integration has been invaluable. We now provide follow-up consultations remotely, saving pet parents time while keeping our schedules efficient.",                                  name: "Dr. Ananya Patel",  role: "Veterinary Surgeon, AnimalWelfare Trust, Delhi",     initials: "AP" },
-    { quote: "The analytics dashboard gives us insights we never had before — revenue trends, patient demographics, staff performance. It's helped us grow revenue by 35%.",                                 name: "Dr. Vikram Reddy",  role: "Clinic Director, VetLife Center, Hyderabad",         initials: "VR" },
-    { quote: "Vaccination tracking alone saves us hours every week. Automated reminders and certificate generation have reduced no-shows by nearly half.",                                                    name: "Dr. Meera Iyer",    role: "Head Veterinarian, FurCare Clinic, Chennai",         initials: "MI" },
-    { quote: "The role-based access control is perfect for our large team. Receptionists, nurses, and doctors each see exactly what they need without compromising security.",                                name: "Dr. Arjun Nair",    role: "Practice Manager, PetPoint Hospital, Pune",          initials: "AN" },
+    { quote: "PAHMS transformed how we manage our clinic. From appointment booking to pharmacy inventory — everything is now in one place. Our efficiency has improved by 60%.", name: "Dr. Priya Sharma", role: "Lead Veterinarian, HappyPaws Clinic, Mumbai", initials: "PS" },
+    { quote: "The multi-tenant architecture is a game-changer. We now manage all three of our clinic branches from a single dashboard with complete data isolation.", name: "Dr. Rajesh Kumar", role: "Owner, PetCare Hospital, Bangalore", initials: "RK" },
+    { quote: "Telemedicine integration has been invaluable. We now provide follow-up consultations remotely, saving pet parents time while keeping our schedules efficient.", name: "Dr. Ananya Patel", role: "Veterinary Surgeon, AnimalWelfare Trust, Delhi", initials: "AP" },
+    { quote: "The analytics dashboard gives us insights we never had before — revenue trends, patient demographics, staff performance. It's helped us grow revenue by 35%.", name: "Dr. Vikram Reddy", role: "Clinic Director, VetLife Center, Hyderabad", initials: "VR" },
+    { quote: "Vaccination tracking alone saves us hours every week. Automated reminders and certificate generation have reduced no-shows by nearly half.", name: "Dr. Meera Iyer", role: "Head Veterinarian, FurCare Clinic, Chennai", initials: "MI" },
+    { quote: "The role-based access control is perfect for our large team. Receptionists, nurses, and doctors each see exactly what they need without compromising security.", name: "Dr. Arjun Nair", role: "Practice Manager, PetPoint Hospital, Pune", initials: "AN" },
   ];
   return (
     <section className="py-24 bg-slate-50/50">
@@ -344,10 +345,10 @@ function Testimonials() {
 /* ---------------- Trust ---------------- */
 function Trust() {
   const items = [
-    { icon: Lock,      title: "End-to-End Encryption", desc: "All communication and stored data encrypted using AES-256 and TLS 1.3 protocols.",                                    tone: "text-rose-400",   bg: "bg-rose-500/10"   },
-    { icon: RefreshCw, title: "Seamless Migration",    desc: "Free data migration from your existing system with zero downtime and full data integrity.",                            tone: "text-sky-400",    bg: "bg-sky-500/10"    },
-    { icon: Headphones,title: "24/7 Support",          desc: "Round-the-clock technical support via chat, phone, and email with guaranteed response times.",                        tone: "text-pink-400",   bg: "bg-pink-500/10"   },
-    { icon: BadgeCheck,title: "GDPR Compliant",        desc: "Full compliance with global data protection regulations including GDPR and India's DPDP Act.",                         tone: "text-violet-400", bg: "bg-violet-500/10" },
+    { icon: Lock, title: "End-to-End Encryption", desc: "All communication and stored data encrypted using AES-256 and TLS 1.3 protocols.", tone: "text-rose-400", bg: "bg-rose-500/10" },
+    { icon: RefreshCw, title: "Seamless Migration", desc: "Free data migration from your existing system with zero downtime and full data integrity.", tone: "text-sky-400", bg: "bg-sky-500/10" },
+    { icon: Headphones, title: "24/7 Support", desc: "Round-the-clock technical support via chat, phone, and email with guaranteed response times.", tone: "text-pink-400", bg: "bg-pink-500/10" },
+    { icon: BadgeCheck, title: "GDPR Compliant", desc: "Full compliance with global data protection regulations including GDPR and India's DPDP Act.", tone: "text-violet-400", bg: "bg-violet-500/10" },
   ];
   return (
     <section className="dark-section py-20">

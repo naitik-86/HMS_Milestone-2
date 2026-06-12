@@ -2,7 +2,7 @@ import { LogIn, Mail, Lock } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import axios from "axios";
-import { loginSuperAdmin } from "../api/authSuperAdmin";
+// import { loginSuperAdmin } from "../api/authSuperAdmin";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -22,21 +22,21 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    try {
-      const data = await loginSuperAdmin(form);
+    // try {
+    //   const data = await loginSuperAdmin(form);
 
-      console.log("Login Success:", data);
+    //   console.log("Login Success:", data);
 
-      // redirect
-      // window.location.href = import.meta.env.VITE_SUPERADMIN_URL;
-      window.location.href =
-        `${import.meta.env.VITE_SUPERADMIN_URL}/?token=${data.token}`;
+    //   // redirect
+    //   // window.location.href = import.meta.env.VITE_SUPERADMIN_URL;
+    //   window.location.href =
+    //     `${import.meta.env.VITE_SUPERADMIN_URL}/?token=${data.token}`;
 
 
-    } catch (err) {
-      console.error("Login Failed:", err);
-      alert(err.message || "Login failed");
-    }
+    // } catch (err) {
+    //   console.error("Login Failed:", err);
+    //   alert(err.message || "Login failed");
+    // }
   };
 
   return (
