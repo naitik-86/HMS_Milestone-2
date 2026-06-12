@@ -1,26 +1,20 @@
-import { useState } from "react";
-import "./App.css";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 
-import PreConsultationSidebar from "./compnent/PreConsultationSidebar";
-import PreConsultationWizard from "./compnent/PreConsultationWizard";
+import PreConsultationDashboard from "./pages/PreConsultationDashboard";
+import PendingPets from "./pages/PendingPets";
+import CompletedPets from "./pages/CompletedPets";
+import HistoryPets from "./pages/HistoryPets";
 
 function App() {
-  const [activeStep, setActiveStep] = useState(0);
-
   return (
-    <div className="flex">
-      <PreConsultationSidebar
-        activeStep={activeStep}
-        setActiveStep={setActiveStep}
-      />
-
-      <div className="flex-1">
-        <PreConsultationWizard
-          activeStep={activeStep}
-          setActiveStep={setActiveStep}
-        />
-      </div>
-    </div>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<PreConsultationDashboard />} />
+        <Route path="/pending-pets" element={<PendingPets />} />
+        <Route path="/completed-pets" element={<CompletedPets />} />
+        <Route path="/history-pets" element={<HistoryPets />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
 
