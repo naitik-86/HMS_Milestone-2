@@ -6,7 +6,21 @@ const storage = new CloudinaryStorage({
     cloudinary,
     params: async (req, file) => ({
         folder: "hms-staff",
-        allowed_formats: ["jpg", "jpeg", "png"],
+        allowed_formats: [
+            // Images
+            "jpg",
+            "jpeg",
+            "png",
+
+            // Documents
+            "pdf",
+            "doc",
+            "docx",
+
+            // Excel
+            "xls",
+            "xlsx",
+        ],
     }),
 });
 
