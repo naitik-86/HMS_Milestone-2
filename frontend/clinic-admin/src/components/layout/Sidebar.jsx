@@ -11,50 +11,68 @@ const navItems = [
   { id: 'reports', label: 'Reports', icon: '📊' },
 ];
 
-export default function Sidebar({ activePage, setActivePage }) {
+export default function Sidebar({ activePage, setActivePage, onLogout }) {
   return (
-    <div style={{ width: 260, minWidth: 260, background: '#13151F', borderRight: '1px solid #2A2E45', display: 'flex', flexDirection: 'column', height: '100vh' }}>
+    <div className="w-[260px] min-w-[260px] bg-[#13151F] border-r border-[#2A2E45] flex flex-col h-screen">
+
       {/* Logo */}
-      <div style={{ padding: '24px 20px 20px', borderBottom: '1px solid #2A2E45' }}>
-        <div style={{ fontFamily: 'Syne, sans-serif', fontSize: 22, fontWeight: 800 }}>
-          <span style={{ color: '#E8630A' }}>Clinic</span>
-          <span style={{ color: '#E2E8F0' }}>Admin</span>
+      <div className="px-5 pt-6 pb-5 border-b border-[#2A2E45]">
+        <div className="font-syne text-[22px] font-extrabold">
+          <span className="text-[#E8630A]">Clinic</span>
+          <span className="text-[#E2E8F0]">Admin</span>
         </div>
-        <div style={{ color: '#6B7280', fontSize: 11, marginTop: 2, letterSpacing: '0.05em' }}>Veterinary Management System</div>
+        <div className="text-[#6B7280] text-[11px] mt-0.5 tracking-[0.05em]">
+          Veterinary Management System
+        </div>
       </div>
 
       {/* Nav */}
-      <nav style={{ flex: 1, padding: '12px 10px', overflowY: 'auto' }}>
+      <nav className="flex-1 px-2.5 py-3 overflow-y-auto">
         {navItems.map(item => (
           <button
             key={item.id}
             onClick={() => setActivePage(item.id)}
-            className={`nav-item ${activePage === item.id ? 'active' : ''}`}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 12,
-              width: '100%', padding: '11px 14px', borderRadius: 10,
-              border: 'none', cursor: 'pointer', textAlign: 'left',
-              fontSize: 14, fontWeight: activePage === item.id ? 600 : 400,
-              marginBottom: 2, fontFamily: 'Plus Jakarta Sans, sans-serif',
-              background: activePage === item.id ? 'rgba(232,99,10,0.18)' : 'transparent',
-              color: activePage === item.id ? '#E8630A' : '#9CA3AF',
-              borderLeft: activePage === item.id ? '3px solid #E8630A' : '3px solid transparent',
-            }}
+            className={`flex items-center gap-3 w-full px-3.5 py-[11px] rounded-[10px] text-left text-sm mb-0.5 font-['Plus_Jakarta_Sans',sans-serif] transition-colors
+              ${activePage === item.id
+                ? 'bg-[#E8630A2E] text-[#E8630A] font-semibold border-l-[3px] border-[#E8630A]'
+                : 'bg-transparent text-[#9CA3AF] font-normal border-l-[3px] border-transparent hover:bg-white/5'
+              }`}
           >
-            <span style={{ fontSize: 16 }}>{item.icon}</span>
+            <span className="text-base">{item.icon}</span>
             {item.label}
           </button>
         ))}
+
+        {/* Divider */}
+        <div className="border-t border-[#2A2E45] my-2.5 mx-1" />
+
+        {/* Logout Button */}
+        <button
+          onClick={onLogout}
+          className="flex items-center gap-3 w-full px-3.5 py-[11px] rounded-[10px] text-left text-sm font-medium font-['Plus_Jakarta_Sans',sans-serif] text-[#F43F5E] border-l-[3px] border-transparent bg-transparent hover:bg-[#F43F5E1A] transition-colors"
+        >
+          <span className="flex items-center text-base">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#F43F5E" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" y1="12" x2="9" y2="12" />
+            </svg>
+          </span>
+          Logout
+        </button>
       </nav>
 
       {/* User */}
-      <div style={{ padding: '16px 20px', borderTop: '1px solid #2A2E45', display: 'flex', alignItems: 'center', gap: 12 }}>
-        <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg,#E8630A,#c4500a)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: '#fff', flexShrink: 0 }}>CA</div>
+      <div className="px-5 py-4 border-t border-[#2A2E45] flex items-center gap-3">
+        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#E8630A] to-[#c4500a] flex items-center justify-center text-[13px] font-bold text-white shrink-0">
+          CA
+        </div>
         <div>
-          <div style={{ fontSize: 13, fontWeight: 600, color: '#E2E8F0' }}>Clinic Admin</div>
-          <div style={{ fontSize: 11, color: '#6B7280' }}>admin@clinic.com</div>
+          <div className="text-[13px] font-semibold text-[#E2E8F0]">Clinic Admin</div>
+          <div className="text-[11px] text-[#6B7280]">admin@clinic.com</div>
         </div>
       </div>
+
     </div>
   );
 }
