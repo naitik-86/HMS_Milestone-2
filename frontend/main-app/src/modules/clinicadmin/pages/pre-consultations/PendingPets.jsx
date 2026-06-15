@@ -1,6 +1,5 @@
 import { useState } from "react";
-import Sidebar from "../components/Sidebar";
-import Header from "../components/Header";
+import { Header } from "../../components";
 import PetRegistrationWizard from "./PetRegistrationWizard";
 
 export default function PendingPets() {
@@ -46,7 +45,7 @@ export default function PendingPets() {
 
   return (
     <div className="flex min-h-screen bg-slate-100">
-      <Sidebar />
+
 
       <div className="flex-1 p-8">
 

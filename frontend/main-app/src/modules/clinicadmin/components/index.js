@@ -7,9 +7,7 @@ import Header from "./layout/Header";
 import Sidebar from "./layout/Sidebar";
 import BriefHistoryForm from "./pre-consultations/BriefHistoryForm";
 import ObservationForm from "./pre-consultations/ObservationForm";
-// import PreConsultationSidebar from "./pre-consultations/PreConsultationSidebar";
-// import PreConsultationSidebar from "./pre-consultations/"
-// import PreConsultationWizard from "./pre-consultations/PreConsultationWizard";
+import PreConsulatationSideBar from "./pre-consultations/PreConsultationSideBar";
 import ProblemDescriptionForm from "./pre-consultations/ProblemDescriptionForm";
 import VitalsForm from "./pre-consultations/VitalsForm";
 
@@ -29,9 +27,8 @@ export {
     Sidebar,
     BriefHistoryForm,
     ObservationForm,
-    // PreConsultationSidebar,
-    // PreConsultationWizard,
     ProblemDescriptionForm,
-    VitalsForm
+    VitalsForm,
+    PreConsulatationSideBar,
 
 }

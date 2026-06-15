@@ -5,7 +5,7 @@ export default function Header({ title, subtitle }) {
   const [search, setSearch] = useState('');
 
   return (
-    <div style={{ background: '#FFFFFF', borderBottom: '1px solid #EAE5DC', padding: '16px 28px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+    <div style={{ background: '#FFFFFF', borderBottom: '1px solid #EAE5DC', padding: '16px 28px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, marginBottom: '24px' }}>
       <div>
         <h1 style={{ fontFamily: 'Syne, sans-serif', fontSize: 22, fontWeight: 700, color: '#1A1D2E' }}>{title}</h1>
         {subtitle && <p style={{ color: '#6B7280', fontSize: 12, marginTop: 2 }}>{subtitle}</p>}

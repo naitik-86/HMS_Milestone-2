@@ -1,25 +1,27 @@
-export default function ReceptionSidebar({
-  activePage,
-  setActivePage,
-}) {
+import { useNavigate, useLocation } from "react-router-dom";
+
+export default function ReceptionSidebar() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const menuItems = [
     {
-      id: "dashboard",
+      path: "/clinic/reception",
       title: "Dashboard",
       icon: "🏠",
     },
     {
-      id: "new-registration",
+      path: "/clinic/reception/new-registration",
       title: "New Registration Pet",
       icon: "🐾",
     },
     {
-      id: "existing-customer",
+      path: "/clinic/reception/existing-customer",
       title: "Existing Customer Pet",
       icon: "👤",
     },
     {
-      id: "history",
+      path: "/clinic/reception/history",
       title: "Pet History",
       icon: "📋",
     },
@@ -31,9 +33,7 @@ export default function ReceptionSidebar({
       {/* Logo */}
       <div className="p-6 border-b border-slate-800">
         <h1 className="text-3xl font-bold">
-          <span className="text-orange-500">
-            Clinic
-          </span>{" "}
+          <span className="text-orange-500">Clinic</span>{" "}
           Reception
         </h1>
 
@@ -44,72 +44,67 @@ export default function ReceptionSidebar({
 
       {/* Navigation */}
       <div className="flex-1 p-4 overflow-y-auto">
-
         <p className="text-xs uppercase tracking-widest text-slate-500 mb-4">
           Navigation
         </p>
 
         <div className="space-y-3">
+          {menuItems.map((item) => {
+            let isActive = false;
 
-          {menuItems.map((item) => (
-            <button
-              key={item.id}
-              onClick={() =>
-                setActivePage(item.id)
-              }
-              className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all duration-300
+            // 🔥 Dashboard → exact match only
+            if (item.path === "/clinic/reception") {
+              isActive = location.pathname === item.path;
+            }
+            // 🔥 Others → support nested routes
+            else {
+              isActive = location.pathname.startsWith(item.path);
+            }
 
-              ${
-                activePage === item.id
-                  ? "bg-orange-500 shadow-lg"
-                  : "bg-slate-800 hover:bg-slate-700"
-              }`}
-            >
-              <div
-                className={`w-10 h-10 rounded-xl flex items-center justify-center
-
-                ${
-                  activePage === item.id
-                    ? "bg-orange-400"
-                    : "bg-slate-700"
-                }`}
+            return (
+              <button
+                key={item.path}
+                onClick={() => navigate(item.path)}
+                className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all duration-300
+                ${isActive
+                    ? "bg-orange-500 shadow-lg"
+                    : "bg-slate-800 hover:bg-slate-700"
+                  }`}
               >
-                {item.icon}
-              </div>
+                <div
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center
+                  ${isActive
+                      ? "bg-orange-400"
+                      : "bg-slate-700"
+                    }`}
+                >
+                  {item.icon}
+                </div>
 
-              <span className="font-medium">
-                {item.title}
-              </span>
-            </button>
-          ))}
-
+                <span className="font-medium">
+                  {item.title}
+                </span>
+              </button>
+            );
+          })}
         </div>
-
       </div>
 
       {/* User */}
       <div className="p-4 border-t border-slate-800">
-
         <div className="flex items-center gap-3">
-
           <div className="w-11 h-11 rounded-full bg-orange-500 flex items-center justify-center font-bold">
             CR
           </div>
 
           <div>
-            <h4 className="font-medium">
-              Receptionist
-            </h4>
-
+            <h4 className="font-medium">Receptionist</h4>
             <p className="text-xs text-slate-400">
               Clinic Staff
             </p>
           </div>
-
         </div>
-
       </div>
-
     </aside>
   );
 }

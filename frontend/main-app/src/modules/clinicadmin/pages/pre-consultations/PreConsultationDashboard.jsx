@@ -1,5 +1,3 @@
-import Sidebar from "../components/Sidebar";
-
 export default function PreConsultationDashboard() {
   const cards = [
     {
@@ -57,8 +55,6 @@ export default function PreConsultationDashboard() {
 
   return (
     <div className="flex min-h-screen bg-slate-100">
-
-      <Sidebar />
 
       <div className="flex-1 p-8">
 
@@ -212,13 +208,12 @@ export default function PreConsultationDashboard() {
                   <span
                     className={`
                     px-4 py-2 rounded-full text-sm font-semibold
-                    ${
-                      item.status === "Pending"
+                    ${item.status === "Pending"
                         ? "bg-orange-100 text-orange-600"
                         : item.status === "Completed"
-                        ? "bg-green-100 text-green-600"
-                        : "bg-purple-100 text-purple-600"
-                    }
+                          ? "bg-green-100 text-green-600"
+                          : "bg-purple-100 text-purple-600"
+                      }
                     `}
                   >
                     {item.status}
