@@ -18,6 +18,6 @@ router.get('/owners/search', searchOwner);
 router.get('/appointments/queue', getClinicQueue);
 router.post('/appointments/book', bookAppointment);
 router.put('/appointments/:id/status', updateAppointmentStatus);
-router.post('/vitals', authorize('PARA_MEDICAL'), updateVitals);
+// router.post('/vitals', authorize('PARA_MEDICAL'), updateVitals);
 
 module.exports = router;

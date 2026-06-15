@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createDoctor } from '../../api/doctorApi';
 
 // ── Mock Data ────────────────────────────────────────────────────────────────
 const degreeTypes = ['BVSc', 'BVSc & AH', 'MVSc', 'PhD (Vet)', 'BAMS', 'Other'];
@@ -79,15 +80,34 @@ function DoctorForm({ onClose, onSave, existingData, isEdit }) {
     return !Object.keys(e).length;
   };
 
-  const handleSave = () => {
-    if (!validate()) {
-      if (errors.name || errors.experience || errors.selectedSpecs) setActiveStep(0);
-      else if (errors.regNumber || errors.state) setActiveStep(1);
-      else setActiveStep(2);
-      return;
+  // const handleSave = () => {
+  //   if (!validate()) {
+  //     if (errors.name || errors.experience || errors.selectedSpecs) setActiveStep(0);
+  //     else if (errors.regNumber || errors.state) setActiveStep(1);
+  //     else setActiveStep(2);
+  //     return;
+  //   }
+  //   onSave({ ...formData, degrees, selectedSpecs, selectedLangs });
+  // };
+
+  const handleSave = async (formData) => {
+    try {
+      const res = await createDoctor(formData);
+
+      console.log(res);
+
+      showToast("Doctor created successfully");
+
+      const doctorsData = await getDoctors();
+      setDoctors(doctorsData.doctors || doctorsData);
+
+      closeModal();
+    } catch (error) {
+      console.error(error);
+      showToast("Failed to create doctor");
     }
-    onSave({ ...formData, degrees, selectedSpecs, selectedLangs });
   };
+
 
   const toggleSpec = (s) => {
     setSelectedSpecs(p => p.includes(s) ? p.filter(x => x !== s) : [...p, s]);
@@ -102,8 +122,7 @@ function DoctorForm({ onClose, onSave, existingData, isEdit }) {
   ];
 
   const chipCls = (active) =>
-    `flex items-center gap-2 px-4 py-2.5 rounded-xl border cursor-pointer transition-all text-xs font-semibold ${
-      active ? 'border-[#E8630A] bg-[#FEF3EB] text-[#E8630A]' : 'border-[#E5E7EB] bg-white text-[#6B7280] hover:border-gray-300'
+    `flex items-center gap-2 px-4 py-2.5 rounded-xl border cursor-pointer transition-all text-xs font-semibold ${active ? 'border-[#E8630A] bg-[#FEF3EB] text-[#E8630A]' : 'border-[#E5E7EB] bg-white text-[#6B7280] hover:border-gray-300'
     }`;
 
   return (
@@ -493,23 +512,23 @@ export default function DoctorDetails() {
       setDoctors(prev => prev.map(d =>
         d.id === modal.doctor.id
           ? {
-              ...d,
-              name: formData.name.trim() || d.name,
-              initials: initials || d.initials,
-              experience: Number(formData.experience) || d.experience,
-              fees: Number(formData.fees) || d.fees,
-              emergency: formData.emergency,
-              regNumber: formData.regNumber || d.regNumber,
-              regNo: formData.regNumber || d.regNo,
-              state: formData.state || d.state,
-              certValidity: formData.certValidity || d.certValidity,
-              reminderDays: Number(formData.reminderDays) || d.reminderDays,
-              avgDuration: Number(formData.avgDuration) || d.avgDuration,
-              degrees: formData.degrees,
-              selectedSpecs: formData.selectedSpecs,
-              selectedLangs: formData.selectedLangs,
-              specialization: formData.selectedSpecs?.[0] || d.specialization,
-            }
+            ...d,
+            name: formData.name.trim() || d.name,
+            initials: initials || d.initials,
+            experience: Number(formData.experience) || d.experience,
+            fees: Number(formData.fees) || d.fees,
+            emergency: formData.emergency,
+            regNumber: formData.regNumber || d.regNumber,
+            regNo: formData.regNumber || d.regNo,
+            state: formData.state || d.state,
+            certValidity: formData.certValidity || d.certValidity,
+            reminderDays: Number(formData.reminderDays) || d.reminderDays,
+            avgDuration: Number(formData.avgDuration) || d.avgDuration,
+            degrees: formData.degrees,
+            selectedSpecs: formData.selectedSpecs,
+            selectedLangs: formData.selectedLangs,
+            specialization: formData.selectedSpecs?.[0] || d.specialization,
+          }
           : d
       ));
       showToast('Doctor details updated successfully!');
