@@ -1,8 +1,9 @@
 import { LogIn, Mail, Lock } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
-import axios from "axios";
 import { authApi } from "../../auth/api/authApi";
+import API from "../../../shared/api/axios";
+
 
 export default function Login() {
   const navigate = useNavigate();
@@ -37,22 +38,27 @@ export default function Login() {
       localStorage.setItem("token", token);
       localStorage.setItem("role", role);
 
-      if (role === "SUPER_ADMIN") {
-        return navigate("/superadmin");
+      // Centralized redirect from backend (role-based)
+      try {
+        const redirectRes = await API.get("/dashboard");
 
+        const redirectUrl = redirectRes.data?.data?.redirectUrl;
+      if (redirectUrl) {
+          // API returns backend route like /super-admin/dashboard
+          // Frontend may use different route prefix (already mapped in layouts/routes)
+          return navigate(redirectUrl);
+        }
+      } catch (e) {
+        console.warn("Dashboard redirect failed, fallback to role navigation", e);
       }
 
-      if (role === "CLINIC_ADMIN") {
-        return navigate("/clinic/dashboard");
-      }
+      // Fallback navigation (legacy)
+      if (role === "SUPER_ADMIN") return navigate("/superadmin");
+      if (role === "CLINIC_ADMIN") return navigate("/clinic/dashboard");
+      if (role === "DOCTOR") return navigate("/doctor/dashboard");
+      if (role === "RECEPTIONIST") return navigate("/clinic/receptionist");
+      if (role === "PARA_MEDICAL") return navigate("/clinic/pre-consultation");
 
-      if (role === "DOCTOR") {
-        return navigate("/doctor/dashboard");
-      }
-
-      if (role === "USER") {
-        return navigate("/user/dashboard");
-      }
 
 
     } catch (err) {
