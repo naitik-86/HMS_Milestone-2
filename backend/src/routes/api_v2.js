@@ -49,6 +49,14 @@ const {
     uploadClinicLogo,
 } = require("../controllers/clinicSettingsController");
 
+const {
+    getDashboardSummary,
+    getRevenueReport,
+    getStaffRoleReport,
+    getAppointmentTrend,
+    getTopDoctors,
+} = require("../controllers/adminReportsController");
+
 const { upload } = require("../middlewares/uploadMiddleware");
 
 /* =========================
@@ -220,6 +228,72 @@ router.post(
     "/clinic-settings/logo",
     upload.single("logo"),
     uploadClinicLogo
+);
+
+/* =========================
+   REPORT ROUTES
+========================= */
+
+// Dashboard KPI Summary
+router.get(
+    "/reports/dashboard-summary",
+    getDashboardSummary
+);
+
+// Revenue vs Target
+router.get(
+    "/reports/revenue",
+    getRevenueReport
+);
+
+// Staff Distribution
+router.get(
+    "/reports/staff-role",
+    getStaffRoleReport
+);
+
+// Appointment Trend
+router.get(
+    "/reports/appointment-trend",
+    getAppointmentTrend
+);
+
+// Top Performing Doctors
+router.get(
+    "/reports/top-doctors",
+    getTopDoctors
+);/* =========================
+   REPORT ROUTES
+========================= */
+
+// Dashboard KPI Summary
+router.get(
+    "/reports/dashboard-summary",
+    getDashboardSummary
+);
+
+// Revenue vs Target
+router.get(
+    "/reports/revenue",
+    getRevenueReport
+);
+
+// Staff Distribution
+router.get(
+    "/reports/staff-role",
+    getStaffRoleReport
+);
+
+// Appointment Trend
+router.get(
+    "/reports/appointment-trend",
+    getAppointmentTrend
+);
+
+// Top Performing Doctors
+router.get(
+    "/reports/top-doctors",
+    getTopDoctors
 );
 
 module.exports = router;

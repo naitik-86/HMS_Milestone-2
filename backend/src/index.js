@@ -33,8 +33,8 @@ app.use(express.json()); // Parse incoming JSON payloads
 app.use(express.urlencoded({ extended: true }));
 
 // Mount Routes
-app.use('/api/v1', apiRoutes);
-app.use('/api/v2', apiv2Routes);
+app.use('/api/v1', apiRoutes);      //superAdmin 
+app.use('/api/v2', apiv2Routes);    // admin 
 
 // Health Check Route (Useful for AWS/Deployment checks)
 app.get('/health', (req, res) => {
