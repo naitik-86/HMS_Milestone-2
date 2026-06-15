@@ -6,8 +6,6 @@ const cors = require('cors');
 const connectDB = require('./config/db');
 // Import Main API Router
 const apiRoutes = require('./routes/api');
-const apiv2Routes = require('./routes/api_v2')
-
 // Initialize Express App
 const app = express();
 

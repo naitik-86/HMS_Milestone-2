@@ -46,9 +46,9 @@ const { addReview, getClinicReviews, deleteReview } = require('../controllers/re
 // ==========================================
 // AUTHENTICATION
 // ==========================================
-router.post('/auth/request-otp', requestLoginOTP);
-router.post('/auth/login', verifySuperAdmin); // log in of superadmin via email & password
-router.post('/auth/verify-otp', verifyOTPAndLogin);
+// router.post('/auth/request-otp', requestLoginOTP);
+// router.post('/auth/login', verifySuperAdmin); // log in of superadmin via email & password
+// router.post('/auth/verify-otp', verifyOTPAndLogin);
 
 
 // ==========================================

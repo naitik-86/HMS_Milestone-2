@@ -7,8 +7,8 @@ const {
     verifySuperAdmin
 } = require('../controllers/authController');
 
-router.post('/request-otp', requestLoginOTP);
-router.post('/login', verifySuperAdmin);
-router.post('/verify-otp', verifyOTPAndLogin);
+router.post('/auth/request-otp', requestLoginOTP);
+router.post('/auth/login', verifySuperAdmin); // log in of superadmin via email & password
+router.post('/auth/verify-otp', verifyOTPAndLogin);
 
 module.exports = router;
