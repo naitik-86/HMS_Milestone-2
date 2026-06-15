@@ -53,7 +53,8 @@
 
 import { Route } from "react-router-dom";
 import ProtectedRoute from "./ProtectedRoute";
-
+import DoctorLayout from "../layouts/DoctorStaffLayout";
+import ReceptionLayout from "../layouts/ReceptionLayout";
 import ClinicAdminLayout from "../layouts/ClinicAdminLayout";
 import PreConsultationLayout from "../layouts/PreConsultationLayout";
 // clinic pages
@@ -66,13 +67,28 @@ import KennelStaff from "../modules/clinicadmin/features/kennel/KennelStaff";
 import ClinicSettings from "../modules/clinicadmin/features/settings/ClinicSettings";
 import Reports from "../modules/clinicadmin/features/reports/Reports";
 
+//reception pages
+import ReceptionDashboard from "../modules/clinicadmin/pages/clinic-receptionist/ReceptionDashboard";
+import NewRegistrationPet from "../modules/clinicadmin/pages/clinic-receptionist/NewRegistrationPet";
+import ExistingCustomerPet from "../modules/clinicadmin/pages/clinic-receptionist/ExistingCustomerPet";
+import PetHistory from "../modules/clinicadmin/pages/clinic-receptionist/PetHistory"
+
 // preconsultation pages
 import {
     PreConsultationDashboard,
     PendingPets,
     CompletedPets,
-    HistoryPets
+    HistoryPets,
 } from "../modules/clinicadmin/pages";
+
+import {
+    DoctorDashboard,
+    DoctorPendingPetsPage,
+    DoctorCompletedPetsPage,
+    DoctorHistoryPetsPage,
+} from "../modules/clinicadmin/pages";
+
+
 
 const ClinicAdminRoutes = (
     <>
@@ -95,6 +111,7 @@ const ClinicAdminRoutes = (
             <Route path="settings" element={<ClinicSettings />} />
         </Route>
 
+        {/* {Preconsultation Routes} */}
 
         <Route
             path="/clinic/preconsultation"
@@ -108,6 +125,35 @@ const ClinicAdminRoutes = (
             <Route path="pending" element={<PendingPets />} />
             <Route path="completed" element={<CompletedPets />} />
             <Route path="history" element={<HistoryPets />} />
+        </Route>
+
+
+        {/* {Doctor - staff Routes} */}
+
+        <Route
+            path="/clinic/doctor"
+            element={
+                // <ProtectedRoute allowedRoles={["DOCTOR"]}>
+                <DoctorLayout />
+                // </ProtectedRoute>
+            }
+        >
+            <Route index element={<DoctorDashboard />} />
+            <Route path="pending" element={<DoctorPendingPetsPage />} />
+            <Route path="completed" element={<DoctorCompletedPetsPage />} />
+            <Route path="history" element={<DoctorHistoryPetsPage />} />
+        </Route>
+
+
+
+        <Route
+            path="/clinic/reception"
+            element={<ReceptionLayout />}
+        >
+            <Route index element={<ReceptionDashboard />} />
+            <Route path="new-registration" element={<NewRegistrationPet />} />
+            <Route path="existing-customer" element={<ExistingCustomerPet />} />
+            <Route path="history" element={<PetHistory />} />
         </Route>
     </>
 );

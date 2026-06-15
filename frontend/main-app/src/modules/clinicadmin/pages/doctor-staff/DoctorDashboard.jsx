@@ -5,7 +5,7 @@ import {
   CompletedPets,
   History,
   Dashboard,
-  DoctorSidebar
+
 } from "../../components"
 
 export default function DoctorDashboard() {
@@ -40,11 +40,7 @@ export default function DoctorDashboard() {
   return (
     <div className="flex h-screen bg-slate-100 overflow-hidden">
 
-      {/* Sidebar */}
-      <DoctorSidebar
-        activeStep={activeStep}
-        setActiveStep={setActiveStep}
-      />
+
 
       {/* Content */}
       <div className="flex-1 flex flex-col overflow-hidden">

@@ -9,6 +9,10 @@ import PetRegistrationWizard from "./pre-consultations/PetRegistrationWizard";
 import HistoryPets from "./pre-consultations/HistoryPets";
 import CompletedPets from "./pre-consultations/CompletedPets"
 
+import DoctorHistoryPetsPage from "./doctor-staff/DoctorHistoryPetsPage";
+import DoctorCompletedPetsPage from "./doctor-staff/DoctorCompletedPetsPage";
+import DoctorPendingPetsPage from "./doctor-staff/DoctorPendingPetsPage";
+
 export {
     ExistingCustomerPet,
     NewRegistrationPet,
@@ -18,5 +22,8 @@ export {
     CompletedPets,
     HistoryPets,
     PetRegistrationWizard,
-    PendingPets
+    PendingPets,
+    DoctorPendingPetsPage,
+    DoctorHistoryPetsPage,
+    DoctorCompletedPetsPage,
 }

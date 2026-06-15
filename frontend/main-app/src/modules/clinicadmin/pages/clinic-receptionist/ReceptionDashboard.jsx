@@ -1,68 +1,68 @@
 import { useState } from "react";
 
 export default function ReceptionDashboard() {
-  const [pendingRegistrations, setPendingRegistrations] = useState([
-    {
-      token: "TK-001",
-      owner: "Rahul Sharma",
-      pet: "Tommy",
-      status: "Pending",
-    },
-    {
-      token: "TK-002",
-      owner: "Aman Verma",
-      pet: "Bruno",
-      status: "Pending",
-    },
-    {
-      token: "TK-003",
-      owner: "Priya Singh",
-      pet: "Coco",
-      status: "Pending",
-    },
-    {
-      token: "TK-004",
-      owner: "Neha Gupta",
-      pet: "Max",
-      status: "Pending",
-    },
-  ]);
+    const [pendingRegistrations, setPendingRegistrations] = useState([
+        {
+            token: "TK-001",
+            owner: "Rahul Sharma",
+            pet: "Tommy",
+            status: "Pending",
+        },
+        {
+            token: "TK-002",
+            owner: "Aman Verma",
+            pet: "Bruno",
+            status: "Pending",
+        },
+        {
+            token: "TK-003",
+            owner: "Priya Singh",
+            pet: "Coco",
+            status: "Pending",
+        },
+        {
+            token: "TK-004",
+            owner: "Neha Gupta",
+            pet: "Max",
+            status: "Pending",
+        },
+    ]);
 
-  const [selectedPet, setSelectedPet] = useState(null);
+    const [selectedPet, setSelectedPet] = useState(null);
 
-  const [editForm, setEditForm] = useState({
-    token: "",
-    owner: "",
-    pet: "",
-    status: "",
-  });
-
-  const handleEdit = (pet) => {
-    setSelectedPet(pet);
-
-    setEditForm({
-      token: pet.token,
-      owner: pet.owner,
-      pet: pet.pet,
-      status: pet.status,
+    const [editForm, setEditForm] = useState({
+        token: "",
+        owner: "",
+        pet: "",
+        status: "",
     });
-  };
 
-  const handleSave = () => {
-    const updatedData = pendingRegistrations.map((item) =>
-      item.token === editForm.token
-        ? {
-            ...item,
-            owner: editForm.owner,
-            pet: editForm.pet,
-            status: editForm.status,
-          }
-        : item
-    );
+    const handleEdit = (pet) => {
+        setSelectedPet(pet);
 
-    setPendingRegistrations(updatedData);
-    setSelectedPet(null);
-  };
+        setEditForm({
+            token: pet.token,
+            owner: pet.owner,
+            pet: pet.pet,
+            status: pet.status,
+        });
+    };
+
+    const handleSave = () => {
+        const updatedData = pendingRegistrations.map((item) =>
+            item.token === editForm.token
+                ? {
+                    ...item,
+                    owner: editForm.owner,
+                    pet: editForm.pet,
+                    status: editForm.status,
+                }
+                : item
+        );
+
+        setPendingRegistrations(updatedData);
+        setSelectedPet(null);
+    };
 
 
     return (
@@ -358,12 +358,12 @@ export default function ReceptionDashboard() {
                                             Cancel
                                         </button>
 
-                                      <button
-  onClick={handleSave}
-  className="px-5 py-2 bg-orange-500 text-white rounded-xl"
->
-  Save Changes
-</button>
+                                        <button
+                                            onClick={handleSave}
+                                            className="px-5 py-2 bg-orange-500 text-white rounded-xl"
+                                        >
+                                            Save Changes
+                                        </button>
 
                                     </div>
 
@@ -381,3 +381,5 @@ export default function ReceptionDashboard() {
         </div>
     );
 }
+
+
