@@ -8,7 +8,7 @@ export default function ReceptionLayout() {
             <ReceptionSidebar />
 
             {/* Main Content */}
-            <div className="flex-1 bg-gray-50 min-h-screen p-6">
+            <div className="flex-1 bg-gray-50 min-h-screen ">
                 <Outlet />
             </div>
         </div>
