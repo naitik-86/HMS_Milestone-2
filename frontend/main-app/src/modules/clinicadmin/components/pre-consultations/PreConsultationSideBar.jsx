@@ -1,25 +1,25 @@
 import { NavLink } from "react-router-dom";
 
-export default function Sidebar() {
+export default function PreConsulatationSideBar() {
   const menus = [
     {
       name: "Dashboard",
-      path: "/",
+      path: "",
       icon: "📊",
     },
     {
       name: "Pending Pets",
-      path: "/pending-pets",
+      path: "pending",
       icon: "🐾",
     },
     {
       name: "Completed Pets",
-      path: "/completed-pets",
+      path: "completed",
       icon: "✅",
     },
     {
       name: "History Pets",
-      path: "/history-pets",
+      path: "history",
       icon: "📋",
     },
   ];
@@ -29,10 +29,7 @@ export default function Sidebar() {
 
       {/* Logo */}
       <div className="p-6 border-b border-slate-800">
-        <h1 className="text-2xl font-bold">
-          VetCare
-        </h1>
-
+        <h1 className="text-2xl font-bold">VetCare</h1>
         <p className="text-slate-400 text-sm mt-1">
           Pre Consultation
         </p>
@@ -41,29 +38,22 @@ export default function Sidebar() {
       {/* Menu */}
       <div className="p-4 flex-1">
         <div className="space-y-3">
-
           {menus.map((menu) => (
             <NavLink
-              key={menu.path}
+              key={menu.name}
               to={menu.path}
+              end={menu.path === ""} // ✅ important for dashboard active state
               className={({ isActive }) =>
-                `flex items-center gap-4 px-4 py-4 rounded-2xl transition-all ${
-                  isActive
-                    ? "bg-orange-500 text-white"
-                    : "hover:bg-slate-800 text-slate-300"
+                `flex items-center gap-4 px-4 py-4 rounded-2xl transition-all ${isActive
+                  ? "bg-orange-500 text-white"
+                  : "hover:bg-slate-800 text-slate-300"
                 }`
               }
             >
-              <span className="text-xl">
-                {menu.icon}
-              </span>
-
-              <span className="font-medium">
-                {menu.name}
-              </span>
+              <span className="text-xl">{menu.icon}</span>
+              <span className="font-medium">{menu.name}</span>
             </NavLink>
           ))}
-
         </div>
       </div>
 
@@ -73,7 +63,6 @@ export default function Sidebar() {
           Veterinary Clinic System
         </p>
       </div>
-
     </div>
   );
 }

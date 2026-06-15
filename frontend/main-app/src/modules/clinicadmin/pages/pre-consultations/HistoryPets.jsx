@@ -1,6 +1,8 @@
 import { useState } from "react";
-import Sidebar from "../components/Sidebar";
-import Header from "../components/Header";
+// import Sidebar from "../components/Sidebar";
+// import Header from "../components/Header";
+
+import { Header } from "../../components";
 
 export default function HistoryPets() {
   const [search, setSearch] = useState("");
@@ -70,11 +72,12 @@ export default function HistoryPets() {
   return (
     <div className="flex min-h-screen bg-slate-100">
 
-      <Sidebar />
+
 
       <div className="flex-1 p-8">
 
         <Header
+
           title="History Pets"
           subtitle="Archived pet consultation records"
         />
