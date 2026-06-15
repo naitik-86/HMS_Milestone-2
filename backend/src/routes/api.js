@@ -41,14 +41,14 @@ const {
 } = require('../controllers/paymentController');
 const { addPet, getPetDetails, updatePet } = require('../controllers/petController');
 const { addReview, getClinicReviews, deleteReview } = require('../controllers/reviewController');
-
+const { getDashboardRedirect } = require('../controllers/dashboardController');
 
 // ==========================================
 // AUTHENTICATION
 // ==========================================
-router.post('/auth/request-otp', requestLoginOTP);
-router.post('/auth/login', verifySuperAdmin); // log in of superadmin via email & password
-router.post('/auth/verify-otp', verifyOTPAndLogin);
+// router.post('/auth/request-otp', requestLoginOTP);
+// router.post('/auth/login', verifySuperAdmin); // log in of superadmin via email & password
+// router.post('/auth/verify-otp', verifyOTPAndLogin);
 
 
 // ==========================================
@@ -124,5 +124,13 @@ router.get('/payments/invoices', protect, authorize('OWNER'), getOwnerInvoices);
 router.post('/reviews', protect, authorize('OWNER'), addReview);
 router.get('/reviews/clinic/:id', getClinicReviews);
 router.delete('/reviews/:id', protect, authorize('SUPER_ADMIN'), deleteReview);
+
+// ==========================================
+// CENTRALIZED DASHBOARD REDIRECT
+// Frontend should call this after login.
+// Optional disambiguation: /dashboard?as=lab-technician for PARA_MEDICAL.
+// ==========================================
+router.get('/dashboard', protect, getDashboardRedirect);
+
 
 module.exports = router;
