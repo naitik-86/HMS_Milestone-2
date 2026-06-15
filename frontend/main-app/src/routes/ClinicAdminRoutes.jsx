@@ -1,6 +1,7 @@
 
 
 import { Route } from "react-router-dom";
+// eslint-disable-next-line no-unused-vars
 import ProtectedRoute from "./ProtectedRoute";
 import DoctorLayout from "../layouts/DoctorStaffLayout";
 import ReceptionLayout from "../layouts/ReceptionLayout";
@@ -20,7 +21,11 @@ import Reports from "../modules/clinicadmin/features/reports/Reports";
 import ReceptionDashboard from "../modules/clinicadmin/pages/clinic-receptionist/ReceptionDashboard";
 import NewRegistrationPet from "../modules/clinicadmin/pages/clinic-receptionist/NewRegistrationPet";
 import ExistingCustomerPet from "../modules/clinicadmin/pages/clinic-receptionist/ExistingCustomerPet";
-import PetHistory from "../modules/clinicadmin/pages/clinic-receptionist/PetHistory"
+import PetHistory from "../modules/clinicadmin/pages/clinic-receptionist/PetHistory";
+
+// Lab Upload Dashboard
+import LabDashboard from "../modules/clinicadmin/pages/lab_reports_upload/LabDashboard";
+import LabReportUpload from "../modules/clinicadmin/pages/lab_reports_upload/LabReportUpload";
 
 // preconsultation pages
 import {
@@ -104,6 +109,11 @@ const ClinicAdminRoutes = (
             <Route path="existing-customer" element={<ExistingCustomerPet />} />
             <Route path="history" element={<PetHistory />} />
         </Route>
+
+        <Route path="/clinic/lab">
+  <Route index element={<LabDashboard />} />
+  <Route path="upload" element={<LabReportUpload />} />
+</Route>
     </>
 );
 
