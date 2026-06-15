@@ -3,7 +3,7 @@ const { getDoctorQueue, saveConsultation } = require('../controllers/doctorContr
 const { protect, authorize } = require('../middlewares/auth');
 const router = express.Router();
 
-router.get('/queue', protect, authorize('DOCTOR'), getDoctorQueue);
-router.put('/consultation', protect, authorize('DOCTOR'), saveConsultation);
+router.get('/queue', authorize('DOCTOR'), getDoctorQueue);
+router.put('/consultation', authorize('DOCTOR'), saveConsultation);
 
 module.exports = router;

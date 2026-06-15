@@ -1,10 +1,23 @@
 const express = require('express');
-const { registerOwnerAndPet, bookAppointment, updateVitals } = require('../controllers/receptionController');
-const { protect, authorize } = require('../middlewares/auth');
 const router = express.Router();
 
-router.post('/register', protect, authorize('RECEPTIONIST', 'CLINIC_ADMIN'), registerOwnerAndPet);
-router.post('/book', protect, authorize('RECEPTIONIST', 'CLINIC_ADMIN'), bookAppointment);
-router.post('/vitals', protect, authorize('PARA_MEDICAL'), updateVitals);
+const { authorize } = require('../middlewares/auth');
+
+const {
+    searchOwner,
+    getClinicQueue,
+    updateAppointmentStatus,
+    registerOwnerAndPet,
+    bookAppointment
+} = require('../controllers/receptionController');
+
+router.use(authorize('RECEPTIONIST', 'CLINIC_ADMIN'));
+
+router.post('/owners/register', registerOwnerAndPet);
+router.get('/owners/search', searchOwner);
+router.get('/appointments/queue', getClinicQueue);
+router.post('/appointments/book', bookAppointment);
+router.put('/appointments/:id/status', updateAppointmentStatus);
+router.post('/vitals', authorize('PARA_MEDICAL'), updateVitals);
 
 module.exports = router;

@@ -1,4 +1,6 @@
 require('dotenv').config({ path: require('path').resolve(__dirname, '..', '.env') });
+const apiRoutes = require("./routes/index")
+
 const express = require('express');
 const cors = require('cors');
 const connectDB = require('./config/db');
@@ -33,8 +35,9 @@ app.use(express.json()); // Parse incoming JSON payloads
 app.use(express.urlencoded({ extended: true }));
 
 // Mount Routes
-app.use('/api/v1', apiRoutes);      //superAdmin 
-app.use('/api/v2', apiv2Routes);    // admin 
+
+app.use('/api/v1', apiRoutes); // single address for all api -> inside apiRoutes we will match the respective routes and connect further to its own respective routes file
+
 
 // Health Check Route (Useful for AWS/Deployment checks)
 app.get('/health', (req, res) => {
