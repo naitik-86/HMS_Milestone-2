@@ -56,10 +56,10 @@ router.post('/groomers/create', upload.fields([
 
 router.get("/groomers", groomerController.getAllGroomers);
 router.get("/groomers/:id", groomerController.getGroomerById);
-router.put("/groomers/:id", groomerController.upload.fields([
+router.put("/groomers/:id",upload.fields([
     { name: "profilePhoto", maxCount: 1, },
     { name: "certificateDocument", maxCount: 1, },
-]), updateGroomer);
+]) ,groomerController.updateGroomer);
 
 router.delete("/groomers/:id", groomerController.deleteGroomer);
 
@@ -71,7 +71,7 @@ router.get("/kennel", kennelController.getAllKennels);
 router.get("/kennel/:id", kennelController.getKennelById);
 router.put("/kennel/:id", upload.fields([
     { name: "firstAidCertificate", maxCount: 1, },
-]), updateKennel);
+]), kennelController.updateKennel);
 router.patch("/kennel/:id/status", kennelController.toggleKennelStatus);
 router.delete("/kennel/:id", kennelController.deleteKennel);
 

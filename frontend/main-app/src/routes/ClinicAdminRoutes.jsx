@@ -27,6 +27,12 @@ import PetHistory from "../modules/clinicadmin/pages/clinic-receptionist/PetHist
 import LabDashboard from "../modules/clinicadmin/pages/lab_reports_upload/LabDashboard";
 import LabReportUpload from "../modules/clinicadmin/pages/lab_reports_upload/LabReportUpload";
 
+
+// pet owner
+import PetOwnerDashboard from "../modules/clinicadmin/pages/pet-owner/PetOwnerDashboard";
+import PetOwnerHistory from "../modules/clinicadmin/pages/pet-owner/PetOwnerHistory";
+import PetOwnerUploadDocuments from "../modules/clinicadmin/pages/pet-owner/PetOwnerUploadDocuments";
+
 // preconsultation pages
 import {
     PreConsultationDashboard,
@@ -111,9 +117,15 @@ const ClinicAdminRoutes = (
         </Route>
 
         <Route path="/clinic/lab">
-  <Route index element={<LabDashboard />} />
-  <Route path="upload" element={<LabReportUpload />} />
-</Route>
+            <Route index element={<LabDashboard />} />
+            <Route path="upload" element={<LabReportUpload />} />
+        </Route>
+
+        <Route path="/clinic/owner">
+            <Route index element={<PetOwnerDashboard />} />
+            <Route path="history" element={<PetOwnerHistory />} />
+            <Route path="upload" element={<PetOwnerUploadDocuments />} />
+        </Route>
     </>
 );
 
