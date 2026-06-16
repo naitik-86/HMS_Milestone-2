@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 
 const { authorize } = require('../middlewares/auth');
-const { upload } = require('../middlewares/uploadMiddleware');
+const upload = require('../middlewares/uploadMiddleware');
 
 // controllers
 const staffController = require('../controllers/staffController');
@@ -43,7 +43,7 @@ router.post('/lab-technicians/create', upload.fields([
 ]), labController.createLabTechnician);
 
 router.get('/lab-technicians', labController.getAllLabTechnicians);
-router.get("/lab-technicians/:id", labController.getSingleLabTechnician);
+router.get("/lab-technicians/:id", labController.getSingleLabTechnician)
 router.put("/lab-technicians/:id", labController.updateLabTechnician);
 router.delete("/lab-technicians/:id", labController.deleteLabTechnician);
 
@@ -56,10 +56,14 @@ router.post('/groomers/create', upload.fields([
 
 router.get("/groomers", groomerController.getAllGroomers);
 router.get("/groomers/:id", groomerController.getGroomerById);
-router.put("/groomers/:id", groomerController.upload.fields([
-    { name: "profilePhoto", maxCount: 1, },
-    { name: "certificateDocument", maxCount: 1, },
-]), updateGroomer);
+router.put(
+    "/groomers/:id",
+    upload.fields([
+        { name: "profilePhoto", maxCount: 1 },
+        { name: "certificateDocument", maxCount: 1 }
+    ]),
+    groomerController.updateGroomer
+);
 
 router.delete("/groomers/:id", groomerController.deleteGroomer);
 
@@ -71,7 +75,7 @@ router.get("/kennel", kennelController.getAllKennels);
 router.get("/kennel/:id", kennelController.getKennelById);
 router.put("/kennel/:id", upload.fields([
     { name: "firstAidCertificate", maxCount: 1, },
-]), updateKennel);
+]), kennelController.updateKennel);
 router.patch("/kennel/:id/status", kennelController.toggleKennelStatus);
 router.delete("/kennel/:id", kennelController.deleteKennel);
 

@@ -205,7 +205,7 @@ exports.updateVitals = async (req, res) => {
 exports.getClinicQueue = async (req, res) => {
   try {
     const clinicId = req.user.clinicId;
-    
+
     // Get all appointments for today at this clinic
     const today = new Date();
     const startOfDay = new Date(today.setHours(0, 0, 0, 0));
@@ -215,10 +215,10 @@ exports.getClinicQueue = async (req, res) => {
       clinicId,
       appointmentDate: { $gte: startOfDay, $lte: endOfDay }
     })
-    .populate('doctorId', 'name')
-    .populate('petId', 'name breed')
-    .populate('ownerId', 'name mobile')
-    .sort({ appointmentDate: 1 }); // Sort by time
+      .populate('doctorId', 'name')
+      .populate('petId', 'name breed')
+      .populate('ownerId', 'name mobile')
+      .sort({ appointmentDate: 1 }); // Sort by time
 
     res.status(200).json({ success: true, count: queue.length, data: queue });
   } catch (error) {
@@ -258,5 +258,94 @@ exports.updateAppointmentStatus = async (req, res) => {
     res.status(200).json({ success: true, data: appointment });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+
+
+
+exports.getDashboardStats = async (req, res) => {
+  try {
+    const clinicId = req.user.clinicId;
+
+    const today = new Date();
+
+    const startOfDay = new Date(today);
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const endOfDay = new Date(today);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const todayVisits = await Appointment.countDocuments({
+      clinicId,
+      appointmentDate: {
+        $gte: startOfDay,
+        $lte: endOfDay,
+      },
+    });
+
+    const newPets = await Pet.countDocuments({
+      createdAt: {
+        $gte: startOfDay,
+        $lte: endOfDay,
+      },
+    });
+
+    const appointments = await Appointment.countDocuments({
+      clinicId,
+    });
+
+    const pending = await Appointment.countDocuments({
+      clinicId,
+      status: "WAITING",
+    });
+
+    res.status(200).json({
+      success: true,
+      data: {
+        todayVisits,
+        newPets,
+        appointments,
+        pending,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+};
+
+exports.getPendingRegistrations = async (req, res) => {
+  try {
+    const clinicId = req.user.clinicId;
+
+    const registrations = await Appointment.find({
+      clinicId,
+      status: "WAITING",
+    })
+      .populate("ownerId", "name mobile")
+      .populate("petId", "name")
+      .sort({ createdAt: -1 });
+
+    const data = registrations.map((item) => ({
+      id: item._id,
+      token: item._id.toString().slice(-6),
+      owner: item.ownerId?.name,
+      pet: item.petId?.name,
+      status: item.status,
+    }));
+
+    res.status(200).json({
+      success: true,
+      count: data.length,
+      data,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
   }
 };

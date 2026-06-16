@@ -173,7 +173,7 @@ exports.getSingleLabTechnician =
                     error.message,
             });
         }
-    };
+    }
 
 exports.updateLabTechnician =
     async (req, res) => {
@@ -200,7 +200,6 @@ exports.updateLabTechnician =
             });
         }
     };
-
 exports.deleteLabTechnician =
     async (req, res) => {
         try {

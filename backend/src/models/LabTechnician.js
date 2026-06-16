@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+const mongoose = require("mongoose")
 
 const labTechnicianSchema = new mongoose.Schema(
     {
@@ -101,4 +101,4 @@ const labTechnicianSchema = new mongoose.Schema(
 module.exports = mongoose.model(
     "LabTechnician",
     labTechnicianSchema
-);
+)
