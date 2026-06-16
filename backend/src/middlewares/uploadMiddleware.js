@@ -4,28 +4,25 @@ const cloudinary = require("../config/cloudinary.js");
 
 const storage = new CloudinaryStorage({
     cloudinary,
-    params: async (req, file) => ({
-        folder: "hms-staff",
-        allowed_formats: [
-            // Images
-            "jpg",
-            "jpeg",
-            "png",
+    params: async (req, file) => {
 
-            // Documents
-            "pdf",
-            "doc",
-            "docx",
+        // file type detect
+        let resourceType = "auto";
 
-            // Excel
-            "xls",
-            "xlsx",
-        ],
-    }),
+        if (file.mimetype.startsWith("image/")) {
+            resourceType = "image";
+        } else {
+            resourceType = "raw"; // pdf, doc, excel
+        }
+
+        return {
+            folder: "hms-staff",
+            resource_type: resourceType,
+            format: undefined, // let cloudinary decide
+        };
+    },
 });
 
 const upload = multer({ storage });
 
-module.exports = {
-    upload,
-};
+module.exports = upload;

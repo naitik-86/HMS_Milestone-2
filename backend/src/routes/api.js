@@ -78,6 +78,7 @@ router.delete('/users/staff/:id', protect, authorize('CLINIC_ADMIN'), deleteStaf
 // ==========================================
 // M2: RECEPTION & FRONT DESK ROUTES
 // ==========================================
+
 router.post('/owners/register', protect, authorize('RECEPTIONIST', 'CLINIC_ADMIN'), registerOwnerAndPet);
 router.get('/owners/search', protect, authorize('RECEPTIONIST', 'CLINIC_ADMIN', 'DOCTOR'), searchOwner);
 router.get('/appointments/queue', protect, authorize('RECEPTIONIST', 'CLINIC_ADMIN'), getClinicQueue);
