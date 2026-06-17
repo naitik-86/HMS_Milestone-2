@@ -13,6 +13,8 @@ const kennelController = require('../controllers/kennelController');
 const settingsController = require('../controllers/clinicSettingsController');
 const reportsController = require('../controllers/adminReportsController');
 
+const labReportController = require("../controllers/labDashboardController");
+
 router.use(authorize('CLINIC_ADMIN'));
 
 /* STAFF */
@@ -47,6 +49,19 @@ router.get("/lab-technicians/:id", labController.getSingleLabTechnician)
 router.put("/lab-technicians/:id", labController.updateLabTechnician);
 router.delete("/lab-technicians/:id", labController.deleteLabTechnician);
 
+//labReportDashboard
+
+router.get("/stats", labReportController.getDashboardStats);
+router.get("/recent-activities", labReportController.getRecentActivities);
+router.get("/pending-summary", labReportController.getPendingSummary);
+
+// for create report
+
+router.post("/report", upload.single("reportFile"), labReportController.createReport);
+router.get("/report", labReportController.getAllReports);
+router.get("/report/:id", labReportController.getSingleReport);
+router.put("/report/:id", labReportController.updateReport);
+router.delete("/report/:id", labReportController.deleteReport);
 
 /* GROOMER */
 router.post('/groomers/create', upload.fields([

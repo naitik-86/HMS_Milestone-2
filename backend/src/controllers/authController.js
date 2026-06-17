@@ -397,7 +397,7 @@ exports.login = async (req, res) => {
     const clinicAdmin = await ClinicAdmin.findOne({ email }).select("+password");
 
     if (clinicAdmin) {
-      const isMatch = await bcrypt.compare(password, admin.password);
+      const isMatch = await bcrypt.compare(password, clinicAdmin.password);
 
       if (!isMatch) {
         return res.status(401).json({
