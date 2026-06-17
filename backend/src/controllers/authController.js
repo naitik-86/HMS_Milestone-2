@@ -347,6 +347,11 @@ const ClinicAdmin = require("../models/ClinicAdmin")
 
 exports.login = async (req, res) => {
   try {
+
+    console.log("************************");
+    console.log(req.body);
+
+
     const { email, password } = req.body;
 
     if (!email || !password) {
@@ -397,7 +402,10 @@ exports.login = async (req, res) => {
     const clinicAdmin = await ClinicAdmin.findOne({ email }).select("+password");
 
     if (clinicAdmin) {
-      const isMatch = await bcrypt.compare(password, admin.password);
+      const isMatch = await bcrypt.compare(
+        password,
+        clinicAdmin.password
+      );
 
       if (!isMatch) {
         return res.status(401).json({

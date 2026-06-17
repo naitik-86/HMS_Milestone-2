@@ -24,37 +24,18 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-
     try {
       const response = await authApi(form);
 
       console.log("Login Success:", response);
-
-
-
       const token = response.token;
       const role = response.user.role;
 
       localStorage.setItem("token", token);
       localStorage.setItem("role", role);
 
-      // Centralized redirect from backend (role-based)
-      try {
-        const redirectRes = await API.get("/dashboard");
-
-        const redirectUrl = redirectRes.data?.data?.redirectUrl;
-      if (redirectUrl) {
-          // API returns backend route like /super-admin/dashboard
-          // Frontend may use different route prefix (already mapped in layouts/routes)
-          return navigate(redirectUrl);
-        }
-      } catch (e) {
-        console.warn("Dashboard redirect failed, fallback to role navigation", e);
-      }
-
-      // Fallback navigation (legacy)
       if (role === "SUPER_ADMIN") return navigate("/superadmin");
-      if (role === "CLINIC_ADMIN") return navigate("/clinic/dashboard");
+      if (role === "CLINIC_ADMIN") return navigate("/clinic");
       if (role === "DOCTOR") return navigate("/doctor/dashboard");
       if (role === "RECEPTIONIST") return navigate("/clinic/receptionist");
       if (role === "PARA_MEDICAL") return navigate("/clinic/pre-consultation");
