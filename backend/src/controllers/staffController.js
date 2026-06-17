@@ -6,6 +6,11 @@ const generateUsername = require("../utils/generateUsername.js");
 const generatePassword = require("../utils/generatePassword.js");
 
 const createStaff = async (req, res) => {
+
+    console.log("****** -> createstaff");
+    console.log(req.body);
+
+
     try {
         const personalInfo = req.body.personalInfo
             ? JSON.parse(req.body.personalInfo)
@@ -137,10 +142,6 @@ const getAllStaff = async (req, res) => {
             );
 
         const staff = await Staff.find(query)
-            .populate(
-                "employmentInfo.reportingTo",
-                "personalInfo.fullName"
-            )
             .skip((page - 1) * limit)
             .limit(limit)
             .sort({

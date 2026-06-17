@@ -70,9 +70,8 @@ const staffSchema = new mongoose.Schema(
             },
 
             reportingTo: {
-                type:
-                    mongoose.Schema.Types.ObjectId,
-                ref: "Staff",
+                type: String,
+                default: ""
             },
 
             department: String,

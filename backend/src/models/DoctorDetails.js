@@ -22,6 +22,11 @@ const doctorSchema = new mongoose.Schema(
             type: String,
             unique: true,
         },
+        name: {
+            type: String,
+            required: true,
+            trim: true,
+        },
 
         // Qualifications
         degrees: {

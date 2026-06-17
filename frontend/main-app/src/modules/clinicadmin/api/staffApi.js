@@ -1,0 +1,166 @@
+import API from "../../../shared/api/axios";
+
+const BASE_URL = "/clinic-admin/staff";
+
+export const getStaff = async () => {
+    const res = await API.get(BASE_URL);
+
+    console.log("Fetched staff:");
+    console.log(res);
+
+    return res.data;
+};
+
+
+export const getStaffById = async (id) => {
+    const res = await API.get(
+        `${BASE_URL}/${id}`
+    );
+
+    return res.data;
+};
+
+export const getManagers = async () => {
+    const res = await API.get(
+        "/clinic-admin/managers"
+    );
+
+    return res.data;
+};
+
+export const createStaff = async (
+    staffData
+) => {
+
+    const formData =
+        buildStaffFormData(
+            staffData
+        );
+
+    console.log(
+        "Creating Staff"
+    );
+    console.log(staffData);
+
+
+    const res =
+        await API.post(
+            BASE_URL,
+            formData,
+            {
+                headers: {
+                    "Content-Type":
+                        "multipart/form-data",
+                },
+            }
+        );
+
+    return res.data;
+};
+
+export const updateStaff = async (
+    id,
+    staffData
+) => {
+
+    const formData =
+        buildStaffFormData(
+            staffData
+        );
+
+    const res =
+        await API.put(
+            `${BASE_URL}/${id}`,
+            formData,
+            {
+                headers: {
+                    "Content-Type":
+                        "multipart/form-data",
+                },
+            }
+        );
+
+    return res.data;
+};
+
+export const deleteStaff =
+    async (id) => {
+
+        const res =
+            await API.delete(
+                `${BASE_URL}/${id}`
+            );
+
+        return res.data;
+    };
+const buildStaffFormData = (staff) => {
+    const formData = new FormData();
+
+    formData.append(
+        "personalInfo",
+        JSON.stringify({
+            fullName: staff.fullName,
+            gender: staff.gender,
+            dateOfBirth: staff.dateOfBirth,
+            email: staff.email,
+            mobileNumber: staff.mobileNumber,
+
+            emergencyContacts: [
+                {
+                    contactPersonName:
+                        staff.emergencyContacts?.[0]
+                            ?.contactPersonName || "",
+
+                    contactNumber:
+                        staff.emergencyContacts?.[0]
+                            ?.contactNumber || "",
+                },
+            ],
+        })
+    );
+
+    formData.append(
+        "employmentInfo",
+        JSON.stringify({
+            role: staff.role,
+            department: staff.department,
+            reportingTo: staff.reportingTo,
+            staffId: staff.staffId,
+            dateOfJoining: staff.dateOfJoining,
+            employmentType: staff.employmentType,
+        })
+    );
+
+    formData.append(
+        "accountInfo",
+        JSON.stringify({
+            accountActive: staff.accountActive,
+            accountExpiryDate:
+                staff.accountExpiryDate,
+            forcePasswordReset:
+                staff.forcePasswordReset,
+        })
+    );
+
+    const moduleAccess = {};
+
+    (staff.modules || []).forEach(
+        module => {
+            moduleAccess[module] = true;
+        }
+    );
+
+    formData.append(
+        "moduleAccess",
+        JSON.stringify(moduleAccess)
+    );
+
+    if (staff.profilePhoto) {
+        formData.append(
+            "profilePhoto",
+            staff.profilePhoto
+        );
+    }
+
+    return formData;
+};

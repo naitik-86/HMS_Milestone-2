@@ -348,10 +348,6 @@ const ClinicAdmin = require("../models/ClinicAdmin")
 exports.login = async (req, res) => {
   try {
 
-    console.log("************************");
-    console.log(req.body);
-
-
     const { email, password } = req.body;
 
     if (!email || !password) {
