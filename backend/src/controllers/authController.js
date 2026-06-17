@@ -339,6 +339,7 @@ const User = require("../models/User");
 const SuperAdmin = require("../models/SuperAdmin");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const ClinicAdmin = require("../models/ClinicAdmin")
 
 /* ==========================================
    LOGIN (EMAIL + PASSWORD ONLY)
@@ -386,6 +387,41 @@ exports.login = async (req, res) => {
         token,
         role: "SUPER_ADMIN",
         user: admin,
+      });
+    }
+
+
+    /* =========================
+       1. CHECK CLINIC ADMIN
+    ========================= */
+    const clinicAdmin = await ClinicAdmin.findOne({ email }).select("+password");
+
+    if (clinicAdmin) {
+      const isMatch = await bcrypt.compare(password, admin.password);
+
+      if (!isMatch) {
+        return res.status(401).json({
+          success: false,
+          message: "Invalid credentials",
+        });
+      }
+
+      const token = jwt.sign(
+        {
+          id: clinicAdmin._id,
+          role: "CLINIC_ADMIN",
+          email: clinicAdmin.email,
+        },
+        process.env.JWT_SECRET,
+        { expiresIn: "1d" }
+      );
+
+      return res.status(200).json({
+        success: true,
+        message: "Login successful",
+        token,
+        role: "CLINIC_ADMIN",
+        user: clinicAdmin,
       });
     }
 
