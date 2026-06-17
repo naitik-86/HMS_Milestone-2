@@ -21,10 +21,8 @@ startCronJobs();
 // Global Middlewares
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow requests with no origin (Postman, mobile apps, curl)
     if (!origin) return callback(null, true);
 
-    // Allow localhost during development
     if (
       /^http:\/\/localhost:\d+$/.test(origin) ||
       /^http:\/\/127\.0\.0\.1:\d+$/.test(origin)
@@ -32,12 +30,13 @@ app.use(cors({
       return callback(null, true);
     }
 
-    // Allow deployed frontend in production
-    if (origin === process.env.FRONTEND_URL) {
+    if (
+      origin === process.env.FRONTEND_URL ||
+      /\.vercel\.app$/.test(new URL(origin).hostname)
+    ) {
       return callback(null, true);
     }
 
-    // Reject everything else
     return callback(new Error("Not allowed by CORS"));
   },
   credentials: true
