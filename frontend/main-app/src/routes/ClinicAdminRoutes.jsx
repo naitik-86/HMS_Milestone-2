@@ -28,7 +28,7 @@ import LabDashboard from "../modules/clinicadmin/pages/lab_reports_upload/LabDas
 import LabReportUpload from "../modules/clinicadmin/pages/lab_reports_upload/LabReportUpload";
 
 
-// pet owner
+// pet owner module
 import PetOwnerDashboard from "../modules/clinicadmin/pages/pet-owner/PetOwnerDashboard";
 import PetOwnerHistory from "../modules/clinicadmin/pages/pet-owner/PetOwnerHistory";
 import PetOwnerUploadDocuments from "../modules/clinicadmin/pages/pet-owner/PetOwnerUploadDocuments";
