@@ -7,6 +7,12 @@ const upload = require('../middlewares/upload'); // NEW: AWS S3 Multer Middlewar
 
 // Controller Imports
 const { requestLoginOTP, verifyOTPAndLogin, verifySuperAdmin } = require('../controllers/authController');
+const authOtpRoutes = require('./authOtpRoutes');
+
+
+
+
+
 const {
   getMe,
   createClinic,
@@ -134,4 +140,7 @@ router.delete('/reviews/:id', protect, authorize('SUPER_ADMIN'), deleteReview);
 router.get('/dashboard', protect, getDashboardRedirect);
 
 
+router.use('/auth', authOtpRoutes);
+
 module.exports = router;
+

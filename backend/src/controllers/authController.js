@@ -340,6 +340,11 @@ const SuperAdmin = require("../models/SuperAdmin");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const ClinicAdmin = require("../models/ClinicAdmin")
+const LoginOtp = require('../models/LoginOtp');
+const { generateOTP } = require('../utils/otpService');
+const SuperAdminOtpSecret = process.env.SUPER_ADMIN_OTP_SALT || 'superadmin-otp';
+const sendEmail = require('../utils/emailService');
+const { sendOtpMultiChannel } = require('../utils/sendOtpMultiChannel');
 
 /* ==========================================
    LOGIN (EMAIL + PASSWORD ONLY)
@@ -347,6 +352,7 @@ const ClinicAdmin = require("../models/ClinicAdmin")
 
 exports.login = async (req, res) => {
   try {
+
     const { email, password } = req.body;
 
     if (!email || !password) {
@@ -371,24 +377,52 @@ exports.login = async (req, res) => {
         });
       }
 
-      const token = jwt.sign(
-        {
-          id: admin._id,
-          role: "SUPER_ADMIN",
-          email: admin.email,
-        },
-        process.env.JWT_SECRET,
-        { expiresIn: "1d" }
-      );
+      // IMPORTANT: SUPER_ADMIN login is OTP-gated as per requirement.
+      // We generate + send 2 OTPs (email + mobile), store them in DB,
+      // then client must call /auth/superadmin/verify-otp.
+      const otpEmail = generateOTP();
+      const otpMobile = generateOTP();
+
+      // For SuperAdmin mobile, we use env var (no mobile in SuperAdmin model)
+      // so ensure you set SUPER_ADMIN_MOBILE in .env
+      const mobile = process.env.SUPER_ADMIN_MOBILE;
+      if (!mobile) {
+        return res.status(500).json({
+          success: false,
+          message: "SUPER_ADMIN_MOBILE is not configured in .env",
+        });
+      }
+
+      const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+
+      await LoginOtp.create({
+        userType: 'SUPER_ADMIN',
+        userId: admin._id,
+        email: admin.email,
+        mobile,
+        otpEmail,
+        otpMobile,
+        expiresAt,
+      });
+
+      // Send both OTPs
+      await sendOtpMultiChannel({
+        email: admin.email,
+        mobile,
+        otpEmail,
+        otpMobile,
+        emailSender: sendEmail,
+      });
 
       return res.status(200).json({
         success: true,
-        message: "Login successful",
-        token,
+        message: "OTP sent to registered email and mobile. Verify to login.",
+        // Do not return JWT yet
         role: "SUPER_ADMIN",
-        user: admin,
+        user: { id: admin._id, email: admin.email, role: 'SUPER_ADMIN' },
       });
     }
+
 
 
     /* =========================
