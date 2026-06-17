@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import ViewStaffModal from "./ViewStaffModal";
 import { roles, departments, employmentTypes, staffData } from '../../data/staff';
 
 import {
@@ -458,9 +459,9 @@ function EnrollForm({ onClose, onSave, editData, mode }) {
                       {staffData.map((s, index) => (
                         <option
                           key={s.employmentInfo?.staffId || index}
-                          value={s.name}
+                          value={s.personalInfo.fullName}
                         >
-                          {s.name}
+                          {s.personalInfo.fullName}
                         </option>
                       ))}                    </select>
                   </div>
@@ -748,14 +749,27 @@ export default function StaffEnrollment() {
 
   return (
     <div className="px-16 py-10 bg-white min-h-screen">
-      {showModal && (
-        <EnrollForm
-          onClose={() => setShowModal(false)}
-          onSave={handleSave}
-          editData={selectedStaff}
-          mode={modalMode}
-        />
-      )}
+      {showModal &&
+        modalMode === "view" && (
+          <ViewStaffModal
+            staff={selectedStaff}
+            onClose={() =>
+              setShowModal(false)
+            }
+          />
+        )}
+
+      {showModal &&
+        modalMode !== "view" && (
+          <EnrollForm
+            onClose={() =>
+              setShowModal(false)
+            }
+            onSave={handleSave}
+            editData={selectedStaff}
+            mode={modalMode}
+          />
+        )}
 
       {/* Title Header */}
       <div className="flex justify-between items-end mb-10">
