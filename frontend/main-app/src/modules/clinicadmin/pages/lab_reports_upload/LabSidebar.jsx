@@ -16,39 +16,140 @@ export default function LabSidebar({
   ];
 
   return (
-    <div className="w-72 bg-slate-950 text-white flex flex-col">
+    <div className="relative w-72 min-h-screen overflow-hidden bg-[#020B2D] text-white shadow-2xl">
 
-      <div className="p-6 border-b border-slate-800">
+      {/* Glow Effects */}
+      <div className="absolute -top-20 -left-20 h-60 w-60 rounded-full bg-orange-500/20 blur-[120px]" />
+      <div className="absolute bottom-0 right-0 h-60 w-60 rounded-full bg-blue-500/20 blur-[120px]" />
 
-        <div className="w-16 h-16 rounded-3xl bg-gradient-to-r from-orange-500 to-blue-600 flex items-center justify-center text-3xl">
+      {/* Logo Section */}
+      <div className="relative z-10 border-b border-white/10 p-7">
+
+        <div
+          className="
+          flex
+          h-20
+          w-20
+          items-center
+          justify-center
+          rounded-3xl
+          bg-gradient-to-br
+          from-orange-500
+          via-orange-400
+          to-blue-600
+          text-4xl
+          shadow-xl
+          "
+        >
           🧪
         </div>
 
-        <h2 className="text-2xl font-bold mt-4">
+        <h2 className="mt-5 text-3xl font-bold">
           Lab Panel
         </h2>
 
-        <p className="text-slate-400">
+        <p className="mt-1 text-sm text-slate-400">
           Veterinary Laboratory
         </p>
 
       </div>
 
-      <div className="p-4 flex-1">
+      {/* Menu */}
+      <div className="relative z-10 p-5">
 
         {menus.map((item) => (
           <button
             key={item.id}
             onClick={() => setActiveStep(item.id)}
-            className={`w-full text-left p-4 rounded-2xl mb-3 transition-all font-medium ${
-              activeStep === item.id
-                ? "bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg"
-                : "hover:bg-slate-800 text-slate-300"
-            }`}
+            className={`
+              group
+              relative
+              mb-3
+              flex
+              w-full
+              items-center
+              gap-4
+              rounded-2xl
+              px-5
+              py-4
+              text-left
+              font-medium
+              transition-all
+              duration-300
+              ${
+                activeStep === item.id
+                  ? `
+                    bg-gradient-to-r
+                    from-orange-500
+                    to-orange-600
+                    text-white
+                    shadow-lg
+                    shadow-orange-500/20
+                  `
+                  : `
+                    text-slate-300
+                    hover:bg-white/5
+                    hover:text-white
+                  `
+              }
+            `}
           >
-            {item.icon} {item.label}
+
+            {/* Active Indicator */}
+            {activeStep === item.id && (
+              <div className="absolute left-0 top-1/2 h-10 w-1 -translate-y-1/2 rounded-r-full bg-white" />
+            )}
+
+            <span className="text-xl">
+              {item.icon}
+            </span>
+
+            <span>
+              {item.label}
+            </span>
+
           </button>
         ))}
+
+      </div>
+
+      {/* Bottom User Card */}
+      <div className="absolute bottom-6 left-5 right-5">
+
+        <div className="rounded-3xl border border-white/10 bg-white/5 p-4 backdrop-blur-md">
+
+          <div className="flex items-center gap-3">
+
+            <div
+              className="
+              flex
+              h-12
+              w-12
+              items-center
+              justify-center
+              rounded-full
+              bg-gradient-to-r
+              from-orange-500
+              to-orange-600
+              font-bold
+              "
+            >
+              LB
+            </div>
+
+            <div>
+              <p className="font-semibold">
+                Lab Technician
+              </p>
+
+              <p className="text-xs text-slate-400">
+                Active Module
+              </p>
+            </div>
+
+          </div>
+
+        </div>
 
       </div>
 
