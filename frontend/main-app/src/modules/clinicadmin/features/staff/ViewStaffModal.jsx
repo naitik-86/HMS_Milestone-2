@@ -18,10 +18,8 @@ export default function ViewStaffModal({
             onClick={onClose}
         >
             <div
-                className="bg-white rounded-3xl shadow-2xl w-[1100px] max-h-[90vh] overflow-y-auto"
-                onClick={(e) =>
-                    e.stopPropagation()
-                }
+                className="bg-white rounded-3xl shadow-2xl w-[1100px] max-h-[90vh] overflow-y-auto no-scrollbar"
+                onClick={(e) => e.stopPropagation()}
             >
                 {/* Header */}
                 <div className="p-8 border-b border-gray-100 flex justify-between items-start">
