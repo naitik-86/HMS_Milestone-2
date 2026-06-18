@@ -61,34 +61,20 @@ const groomerSchema = new mongoose.Schema(
 
         certified: {
             type: Boolean,
-            default: false,
+            default: true,
         },
 
         species: [
             {
                 type: String,
-                enum: [
-                    "Dogs",
-                    "Cats",
-                    "Small Animals",
-                    "Birds",
-                    "Exotic",
-                ],
+                enum: ['Dog', 'Cat', 'Bird', 'Rabbit', 'Hamster', 'Guinea Pig', 'Reptile'],
             },
         ],
 
         services: [
             {
                 type: String,
-                enum: [
-                    "Bath & Dry",
-                    "Hair Trim",
-                    "Nail Clipping",
-                    "Ear Cleaning",
-                    "Dental Cleaning",
-                    "De-shedding",
-                    "Styling",
-                ],
+                enum: ['Bath & Dry', 'Haircut', 'Nail Trim', 'Ear Cleaning', 'Teeth Brushing', 'De-shedding', 'Flea Treatment', 'Full Groom'],
             },
         ],
 
@@ -128,11 +114,7 @@ const groomerSchema = new mongoose.Schema(
                 "Spa & Wellness",
                 "General Grooming",
             ],
-        },
-
-        supervisor: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "Staff",
+            default: "General Grooming"
         },
 
         notes: {

@@ -65,7 +65,6 @@ router.delete("/report/:id", labReportController.deleteReport);
 
 /* GROOMER */
 router.post('/groomers/create', upload.fields([
-    { name: "profilePhoto", maxCount: 1 },
     { name: "certificateDocument", maxCount: 1 },
 ]), groomerController.createGroomer);
 

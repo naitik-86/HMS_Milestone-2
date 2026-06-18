@@ -13,10 +13,18 @@ export const getGroomerById = async (id) => {
 };
 
 export const createGroomer = async (groomerData) => {
+
+    console.log("this is from create groomer api ->>>", groomerData);
+
+
     const formData = buildGroomerFormData(groomerData);
 
+    for (let [key, value] of formData.entries()) {
+        console.log(`${key}:`, value);
+    }
+
     const res = await API.post(
-        BASE_URL,
+        `${BASE_URL}/create`,
         formData,
         {
             headers: {
@@ -52,41 +60,120 @@ export const deleteGroomer = async (id) => {
 const buildGroomerFormData = (groomer) => {
     const formData = new FormData();
 
+    // Basic details
     formData.append(
-        "personalInfo",
-        JSON.stringify({
-            fullName: groomer.fullName,
-            email: groomer.email,
-            mobileNumber: groomer.mobileNumber,
-            gender: groomer.gender,
-            specialization: groomer.specialization,
-            experience: groomer.experience
-        })
+        "experience",
+        Number(groomer.experience) || 0
     );
 
     formData.append(
-        "availability",
-        JSON.stringify({
-            workingDays: groomer.workingDays || [],
-            shiftStart: groomer.shiftStart,
-            shiftEnd: groomer.shiftEnd
-        })
+        "previousSalon",
+        groomer.previousSalon || ""
     );
 
     formData.append(
-        "accountInfo",
-        JSON.stringify({
-            accountActive: groomer.accountActive,
-            forcePasswordReset: groomer.forcePasswordReset
-        })
+        "licenseNumber",
+        groomer.licenseNumber || ""
     );
 
+    formData.append(
+        "dateOfJoining",
+        groomer.dateOfJoining || ""
+    );
+
+    // Certificates
+    formData.append(
+        "certificates",
+        JSON.stringify(groomer.certificates || [])
+    );
+
+    // Certificate documents (multiple files)
+    if (groomer.documents?.length > 0) {
+        groomer.documents.forEach((file) => {
+            formData.append("certificateDocument", file);
+        });
+    }
+
+    // Profile photo
     if (groomer.profilePhoto) {
         formData.append(
             "profilePhoto",
             groomer.profilePhoto
         );
     }
+
+
+    if (groomer.certified) {
+        formData.append("certified", groomer.certified);
+    }
+
+
+    // Arrays
+    formData.append(
+        "species",
+        JSON.stringify(groomer.species || [])
+    );
+
+    formData.append(
+        "services",
+        JSON.stringify(groomer.services || [])
+    );
+
+    // Shift details
+    formData.append(
+        "shift",
+        groomer.shift || ""
+    );
+
+    formData.append(
+        "shiftStart",
+        groomer.shiftStart || ""
+    );
+
+    formData.append(
+        "shiftEnd",
+        groomer.shiftEnd || ""
+    );
+
+    // Other details
+    formData.append(
+        "weeklyDays",
+        groomer.weeklyDays || ""
+    );
+
+    formData.append(
+        "onCall",
+        groomer.onCall || ""
+    );
+
+    formData.append(
+        "tools",
+        groomer.tools || ""
+    );
+
+    formData.append(
+        "specialBreeds",
+        groomer.specialBreeds || ""
+    );
+
+    formData.append(
+        "status",
+        groomer.status || "Active"
+    );
+
+    if (groomer.department) {
+        formData.append("department", groomer.department);
+    }
+
+    formData.append(
+        "supervisor",
+        groomer.supervisor || ""
+    );
+
+    formData.append(
+        "notes",
+        groomer.notes || ""
+    );
 
     return formData;
 };
