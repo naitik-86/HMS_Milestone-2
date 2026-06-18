@@ -23,6 +23,7 @@ app.use(cors({
   origin: function (origin, callback) {
     if (!origin) return callback(null, true);
 
+    // Localhost
     if (
       /^http:\/\/localhost:\d+$/.test(origin) ||
       /^http:\/\/127\.0\.0\.1:\d+$/.test(origin)
@@ -30,10 +31,18 @@ app.use(cors({
       return callback(null, true);
     }
 
-    if (
-      origin === process.env.FRONTEND_URL ||
-      /\.vercel\.app$/.test(new URL(origin).hostname)
-    ) {
+    // Production Frontend (ENV)
+    if (origin === process.env.FRONTEND_URL) {
+      return callback(null, true);
+    }
+
+    // Vercel domains
+    if (/\.vercel\.app$/.test(new URL(origin).hostname)) {
+      return callback(null, true);
+    }
+
+    // ✅ ADD THIS (Render frontend)
+    if (origin === "https://pet-hms-frontend.onrender.com") {
       return callback(null, true);
     }
 
