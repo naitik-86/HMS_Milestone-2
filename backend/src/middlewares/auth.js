@@ -2,10 +2,13 @@ const jwt = require('jsonwebtoken');
 
 // 1. Verify JWT and inject user data into the request
 const protect = async (req, res, next) => {
-  let token;
-  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-    token = req.headers.authorization.split(' ')[1];
-  }
+  const authHeader = req.headers.authorization || req.headers.Authorization;
+  const match = typeof authHeader === 'string'
+    ? authHeader.match(/^Bearer\s+(.+)$/i)
+    : null;
+
+  const token = match?.[1];
+
 
   if (!token) {
     return res.status(401).json({ success: false, message: 'Not authorized, no token' });
