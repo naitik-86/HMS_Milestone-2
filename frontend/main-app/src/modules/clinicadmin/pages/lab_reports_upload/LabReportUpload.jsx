@@ -55,6 +55,7 @@ const initialRegistrationForm = {
   status: "Pending Upload",
 };
 
+
 export default function LabReportUpload() {
   const [registrations, setRegistrations] = useState(initialRegistrations);
 

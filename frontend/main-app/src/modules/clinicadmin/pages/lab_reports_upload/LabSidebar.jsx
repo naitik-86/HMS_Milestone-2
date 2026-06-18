@@ -142,6 +142,7 @@ export default function LabSidebar({
                 Lab Technician
               </p>
 
+
               <p className="text-xs text-slate-400">
                 Active Module
               </p>

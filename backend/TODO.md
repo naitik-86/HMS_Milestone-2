@@ -1,5 +1,0 @@
-- [ ] Validate/adjust dashboard mapping once backend JWT roles for pet owner are confirmed
-- [ ] Implement client-side navigation using GET /api/v1/dashboard response redirectUrl
-- [ ] Fix PARA_MEDICAL disambiguation strategy (query param as=lab-technician) after frontend contract finalized
-- [ ] Add explicit OWNER role to JWT if required (currently User model enum has no OWNER)
-- [ ] Run backend and smoke-test /api/v1/dashboard for: SUPER_ADMIN, CLINIC_ADMIN, RECEPTIONIST, DOCTOR, PARA_MEDICAL (pre-consultation + lab technician)
