@@ -14,14 +14,9 @@ export const getGroomerById = async (id) => {
 
 export const createGroomer = async (groomerData) => {
 
-    console.log("this is from create groomer api ->>>", groomerData);
-
-
     const formData = buildGroomerFormData(groomerData);
 
-    for (let [key, value] of formData.entries()) {
-        console.log(`${key}:`, value);
-    }
+
 
     const res = await API.post(
         `${BASE_URL}/create`,
