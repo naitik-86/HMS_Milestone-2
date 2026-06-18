@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { createDoctor } from '../../api/doctorApi';
+import { useEffect } from 'react';
+import { createDoctor, getDoctors, updateDoctor } from '../../api/doctorApi';
 
 // ── Mock Data ────────────────────────────────────────────────────────────────
 const degreeTypes = ['BVSc', 'BVSc & AH', 'MVSc', 'PhD (Vet)', 'BAMS', 'Other'];
@@ -7,13 +8,8 @@ const specializations = ['Small Animal', 'Large Animal', 'Exotic & Wildlife', 'P
 const languages = ['English', 'Hindi', 'Marathi', 'Tamil', 'Telugu', 'Kannada', 'Bengali', 'Gujarati'];
 const states = ['Maharashtra', 'Karnataka', 'Tamil Nadu', 'Delhi', 'Gujarat', 'Rajasthan', 'Kerala', 'West Bengal', 'Uttar Pradesh', 'Madhya Pradesh'];
 
-const initialDoctors = [
-  { id: 'DOC-001', name: 'Dr. Priya Sharma', initials: 'PS', color: '#6366F1', status: 'Active', specialization: 'Small Animal', experience: 8, fees: 500, emergency: true, regNo: 'VCI/MH/2020/1234', state: 'Maharashtra', degrees: [{ degree: 'BVSc & AH' }], selectedSpecs: ['Small Animal'], selectedLangs: ['English', 'Hindi'], regNumber: 'VCI/MH/2020/1234', certValidity: '2026-12-31', reminderDays: 30, avgDuration: 20 },
-  { id: 'DOC-002', name: 'Dr. Rohan Mehta', initials: 'RM', color: '#E8630A', status: 'Active', specialization: 'Surgery', experience: 12, fees: 800, emergency: false, regNo: 'VCI/KA/2018/5678', state: 'Karnataka', degrees: [{ degree: 'MVSc' }], selectedSpecs: ['Surgery'], selectedLangs: ['English', 'Kannada'], regNumber: 'VCI/KA/2018/5678', certValidity: '2025-06-30', reminderDays: 30, avgDuration: 30 },
-  { id: 'DOC-003', name: 'Dr. Anita Rao', initials: 'AR', color: '#22C55E', status: 'Active', specialization: 'Exotic & Wildlife', experience: 5, fees: 600, emergency: true, regNo: 'VCI/TN/2021/9101', state: 'Tamil Nadu', degrees: [{ degree: 'BVSc' }], selectedSpecs: ['Exotic & Wildlife'], selectedLangs: ['English', 'Tamil'], regNumber: 'VCI/TN/2021/9101', certValidity: '2027-03-15', reminderDays: 45, avgDuration: 25 },
-];
 
-function getInitials(name) {
+function getInitials(name = " ") {
   return name.split(' ').filter(Boolean).slice(0, 2).map(w => w[0]?.toUpperCase() || '').join('');
 }
 
@@ -41,7 +37,23 @@ function UploadBox({ id, accept, label }) {
 // ── DoctorForm ───────────────────────────────────────────────────────────────
 function DoctorForm({ onClose, onSave, existingData, isEdit }) {
   const [activeStep, setActiveStep] = useState(0);
-  const [degrees, setDegrees] = useState(existingData?.degrees || [{ degree: '' }]);
+  const [degrees, setDegrees] =
+    useState(
+      existingData?.degrees ||
+      [{
+        degree: '',
+        certificate: null
+      }]
+    );
+  const [doctorLetterhead,
+    setDoctorLetterhead] =
+    useState(null);
+  const [registrationCertificate,
+    setRegistrationCertificate] =
+    useState(null);
+  const [digitalSignature,
+    setDigitalSignature] =
+    useState(null);
   const [selectedSpecs, setSelectedSpecs] = useState(existingData?.selectedSpecs || []);
   const [selectedLangs, setSelectedLangs] = useState(existingData?.selectedLangs || []);
   const [errors, setErrors] = useState({});
@@ -80,32 +92,20 @@ function DoctorForm({ onClose, onSave, existingData, isEdit }) {
     return !Object.keys(e).length;
   };
 
-  // const handleSave = () => {
-  //   if (!validate()) {
-  //     if (errors.name || errors.experience || errors.selectedSpecs) setActiveStep(0);
-  //     else if (errors.regNumber || errors.state) setActiveStep(1);
-  //     else setActiveStep(2);
-  //     return;
-  //   }
-  //   onSave({ ...formData, degrees, selectedSpecs, selectedLangs });
-  // };
+  const submitForm = () => {
 
-  const handleSave = async (formData) => {
-    try {
-      const res = await createDoctor(formData);
+    if (!validate()) return;
 
-      console.log(res);
+    onSave({
+      ...formData,
+      degrees,
+      selectedSpecs,
+      selectedLangs,
+      registrationCertificate,
+      digitalSignature,
+      doctorLetterhead,
+    });
 
-      showToast("Doctor created successfully");
-
-      const doctorsData = await getDoctors();
-      setDoctors(doctorsData.doctors || doctorsData);
-
-      closeModal();
-    } catch (error) {
-      console.error(error);
-      showToast("Failed to create doctor");
-    }
   };
 
 
@@ -262,7 +262,30 @@ function DoctorForm({ onClose, onSave, existingData, isEdit }) {
                             {degreeTypes.map(t => <option key={t}>{t}</option>)}
                           </select>
                         </div>
-                        <UploadBox id={`cert-${i}`} accept=".pdf,image/*" label="Certificate (img / pdf)" />
+                        <div>
+                          <label className={labelCls}>
+                            Certificate (img / pdf)
+                          </label>
+
+                          <input
+                            type="file"
+                            accept=".pdf,image/*"
+                            onChange={(e) =>
+                              setDegrees(
+                                degrees.map((deg, j) =>
+                                  j === i
+                                    ? {
+                                      ...deg,
+                                      certificate:
+                                        e.target.files[0]
+                                    }
+                                    : deg
+                                )
+                              )
+                            }
+                            className={inputCls}
+                          />
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -318,8 +341,22 @@ function DoctorForm({ onClose, onSave, existingData, isEdit }) {
                   <input type="number" value={formData.reminderDays} onChange={e => u('reminderDays', e.target.value)} className={inputCls} />
                 </div>
                 <div className="col-span-2">
-                  <UploadBox id="regCert" accept=".pdf" label="Registration Certificate (PDF)" />
-                </div>
+                  <div>
+                    <label className={labelCls}>
+                      Registration Certificate
+                    </label>
+
+                    <input
+                      type="file"
+                      accept=".pdf"
+                      className={inputCls}
+                      onChange={(e) =>
+                        setRegistrationCertificate(
+                          e.target.files[0]
+                        )
+                      }
+                    />
+                  </div>                </div>
               </div>
             </div>
           )}
@@ -358,8 +395,38 @@ function DoctorForm({ onClose, onSave, existingData, isEdit }) {
               <div className={cardCls}>
                 <h3 className="text-base font-bold text-[#1A1D2E] mb-6">Documents & Assets</h3>
                 <div className="grid grid-cols-2 gap-6">
-                  <UploadBox id="digSign" accept="image/*" label="Digital Signature" />
-                  <UploadBox id="letterhead" accept="image/*,.pdf" label="Doctor Letterhead / Stamp" />
+                  <div>
+                    <label className={labelCls}>
+                      Digital Signature
+                    </label>
+
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className={inputCls}
+                      onChange={(e) =>
+                        setDigitalSignature(
+                          e.target.files[0]
+                        )
+                      }
+                    />
+                  </div>
+                  <div>
+                    <label className={labelCls}>
+                      Doctor Letterhead / Stamp
+                    </label>
+
+                    <input
+                      type="file"
+                      accept="image/*,.pdf"
+                      className={inputCls}
+                      onChange={(e) =>
+                        setDoctorLetterhead(
+                          e.target.files[0]
+                        )
+                      }
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -388,7 +455,11 @@ function DoctorForm({ onClose, onSave, existingData, isEdit }) {
             {activeStep > 0 ? '← Previous' : 'Cancel'}
           </button>
           <button
-            onClick={() => activeStep < steps.length - 1 ? setActiveStep(activeStep + 1) : handleSave()}
+            onClick={() =>
+              activeStep < steps.length - 1
+                ? setActiveStep(activeStep + 1)
+                : submitForm()
+            }
             className="px-8 py-2.5 rounded-xl text-sm font-semibold text-white bg-[#E8630A] hover:bg-[#D05A09] cursor-pointer transition-colors border-none"
           >
             {activeStep < steps.length - 1 ? 'Next →' : isEdit ? '✓ Update Doctor' : 'Save Doctor Details'}
@@ -495,9 +566,86 @@ function ViewProfileModal({ doctor, onClose, onEdit }) {
 
 // ── Main Component ───────────────────────────────────────────────────────────
 export default function DoctorDetails() {
-  const [doctors, setDoctors] = useState(initialDoctors);
+  // const [doctors, setDoctors] = useState(initialDoctors);
+  const [doctors, setDoctors] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState(null);
   const [toast, setToast] = useState(null);
+
+  useEffect(() => {
+    fetchDoctors();
+  }, []);
+
+  const fetchDoctors = async () => {
+    try {
+      setLoading(true);
+
+      const response = await getDoctors();
+
+      const doctorsData =
+        response.doctors || response;
+
+      const formattedDoctors =
+        doctorsData.map((doc) => ({
+          ...doc,
+
+          // UI
+          initials: getInitials(doc.name),
+          color: "#E8630A",
+
+          // Match form names
+          regNumber:
+            doc.registrationNumber,
+
+          state:
+            doc.stateVetCouncil,
+
+          certValidity:
+            doc.certificateValidityDate
+              ?.split("T")[0] || "",
+
+          reminderDays:
+            doc.renewalReminderDays,
+
+          fees:
+            doc.consultationFees,
+
+          avgDuration:
+            doc.avgConsultationDuration,
+
+          emergency:
+            doc.emergencyAvailability,
+
+          // Arrays
+          selectedSpecs:
+            doc.specializations || [],
+
+          selectedLangs:
+            doc.prescriptionLanguages || [],
+
+          registrationCertificate:
+            doc.registrationCertificate,
+
+          digitalSignature:
+            doc.digitalSignature,
+
+          doctorLetterhead:
+            doc.doctorLetterhead,
+
+          status:
+            doc.status || "Active",
+        }));
+
+
+
+      setDoctors(formattedDoctors);
+    } catch (error) {
+      console.error(error);
+      showToast("Failed to load doctors");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const showToast = (msg) => {
     setToast(msg);
@@ -506,54 +654,44 @@ export default function DoctorDetails() {
 
   const closeModal = () => setModal(null);
 
-  const handleSave = (formData) => {
-    const initials = getInitials(formData.name);
-    if (modal.type === 'edit') {
-      setDoctors(prev => prev.map(d =>
-        d.id === modal.doctor.id
-          ? {
-            ...d,
-            name: formData.name.trim() || d.name,
-            initials: initials || d.initials,
-            experience: Number(formData.experience) || d.experience,
-            fees: Number(formData.fees) || d.fees,
-            emergency: formData.emergency,
-            regNumber: formData.regNumber || d.regNumber,
-            regNo: formData.regNumber || d.regNo,
-            state: formData.state || d.state,
-            certValidity: formData.certValidity || d.certValidity,
-            reminderDays: Number(formData.reminderDays) || d.reminderDays,
-            avgDuration: Number(formData.avgDuration) || d.avgDuration,
-            degrees: formData.degrees,
-            selectedSpecs: formData.selectedSpecs,
-            selectedLangs: formData.selectedLangs,
-            specialization: formData.selectedSpecs?.[0] || d.specialization,
-          }
-          : d
-      ));
-      showToast('Doctor details updated successfully!');
-    } else {
-      const id = `DOC-${String(doctors.length + 1).padStart(3, '0')}`;
-      setDoctors(prev => [...prev, {
-        id, name: formData.name.trim(), initials, color: '#E8630A', status: 'Active',
-        specialization: formData.selectedSpecs?.[0] || 'General',
-        experience: Number(formData.experience) || 0,
-        fees: Number(formData.fees) || 0,
-        emergency: formData.emergency,
-        regNo: formData.regNumber || '—',
-        regNumber: formData.regNumber || '',
-        state: formData.state || '',
-        certValidity: formData.certValidity || '',
-        reminderDays: Number(formData.reminderDays) || 30,
-        avgDuration: Number(formData.avgDuration) || 15,
-        degrees: formData.degrees,
-        selectedSpecs: formData.selectedSpecs,
-        selectedLangs: formData.selectedLangs,
-      }]);
-      showToast('New doctor added successfully!');
+  const handleSave = async (formData) => {
+    try {
+
+      if (modal.type === "edit") {
+
+        await updateDoctor(
+          modal.doctor._id,
+          formData
+        );
+
+        showToast("Doctor updated successfully");
+
+      } else {
+
+        await createDoctor(formData);
+
+        showToast("Doctor created successfully");
+      }
+
+      await fetchDoctors();
+
+      closeModal();
+
+    } catch (error) {
+
+      console.error(error);
+
+      showToast("Operation failed");
     }
-    closeModal();
   };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-[400px]">
+        Loading doctors...
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 bg-white min-h-screen">
@@ -599,56 +737,65 @@ export default function DoctorDetails() {
 
       {/* Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-        {doctors.map(d => (
-          <div key={d.id} className="bg-white border border-[#EAE5DC] rounded-2xl p-5 hover:shadow-lg transition-all duration-200 group">
-            <div className="flex items-center gap-3 mb-4">
-              <div
-                className="w-12 h-12 rounded-xl flex items-center justify-center text-base font-bold flex-shrink-0 group-hover:scale-105 transition-transform"
-                style={{ background: `${d.color}20`, border: `2px solid ${d.color}40`, color: d.color }}
-              >
-                {d.initials}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-sm font-bold text-[#1A1D2E] truncate">{d.name}</div>
-                <div className="text-xs text-gray-400 mt-0.5">{d.id}</div>
-              </div>
-              <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-green-100 text-green-600 flex-shrink-0">{d.status}</span>
-            </div>
+        {doctors.length === 0 ? (
 
-            <div className="grid grid-cols-2 gap-2 mb-4">
-              {[
-                { label: 'SPECIALIZATION', value: d.specialization, cls: 'text-[#1A1D2E]' },
-                { label: 'EXPERIENCE', value: `${d.experience} yrs`, cls: 'text-[#1A1D2E]' },
-                { label: 'CONSULT FEES', value: `₹${d.fees}`, cls: 'text-[#E8630A]' },
-                { label: 'EMERGENCY', value: d.emergency ? 'Available' : 'Not Available', cls: d.emergency ? 'text-green-500' : 'text-red-400' },
-              ].map(item => (
-                <div key={item.label} className="bg-gray-50 rounded-xl p-2.5">
-                  <div className="text-[10px] text-gray-400 font-semibold mb-1 tracking-wide">{item.label}</div>
-                  <div className={`text-xs font-bold ${item.cls}`}>{item.value}</div>
-                </div>
-              ))}
-            </div>
-
-            <div className="text-xs text-gray-400 border-t border-[#EAE5DC] pt-3 mb-3 truncate">
-              Reg: {d.regNo} · {d.state || '—'}
-            </div>
-
-            <div className="flex gap-2">
-              <button
-                onClick={e => { e.stopPropagation(); setModal({ type: 'edit', doctor: d }); }}
-                className="flex-1 bg-white border border-[#E8630A]/30 text-[#E8630A] hover:bg-[#E8630A]/5 rounded-xl py-2 text-xs font-semibold cursor-pointer transition-colors"
-              >
-                ✏️ Edit Details
-              </button>
-              <button
-                onClick={e => { e.stopPropagation(); setModal({ type: 'view', doctor: d }); }}
-                className="flex-1 bg-white border border-[#E5E7EB] text-gray-500 hover:bg-gray-50 rounded-xl py-2 text-xs font-semibold cursor-pointer transition-colors"
-              >
-                👁 View Profile
-              </button>
-            </div>
+          <div className="col-span-full text-center py-10 text-gray-500">
+            No doctors found
           </div>
-        ))}
+
+        ) : (
+          doctors.map(d => (
+            <div key={d._id} className="bg-white border border-[#EAE5DC] rounded-2xl p-5 hover:shadow-lg transition-all duration-200 group">
+              <div className="flex items-center gap-3 mb-4">
+                <div
+                  className="w-12 h-12 rounded-xl flex items-center justify-center text-base font-bold flex-shrink-0 group-hover:scale-105 transition-transform"
+                  style={{ background: `${d.color}20`, border: `2px solid ${d.color}40`, color: d.color }}
+                >
+                  {d.initials}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-bold text-[#1A1D2E] truncate">{d.name}</div>
+                  <div className="text-xs text-gray-400 mt-0.5">{d._id}</div>
+                </div>
+                <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-green-100 text-green-600 flex-shrink-0">{d.status}</span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 mb-4">
+                {[
+                  { label: 'SPECIALIZATION', value: d.specialization, cls: 'text-[#1A1D2E]' },
+                  { label: 'EXPERIENCE', value: `${d.experience} yrs`, cls: 'text-[#1A1D2E]' },
+                  { label: 'CONSULT FEES', value: `₹${d.fees}`, cls: 'text-[#E8630A]' },
+                  { label: 'EMERGENCY', value: d.emergency ? 'Available' : 'Not Available', cls: d.emergency ? 'text-green-500' : 'text-red-400' },
+                ].map(item => (
+                  <div key={item.label} className="bg-gray-50 rounded-xl p-2.5">
+                    <div className="text-[10px] text-gray-400 font-semibold mb-1 tracking-wide">{item.label}</div>
+                    <div className={`text-xs font-bold ${item.cls}`}>{item.value}</div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="text-xs text-gray-400 border-t border-[#EAE5DC] pt-3 mb-3 truncate">
+                Reg: {d.regNo} · {d.state || '—'}
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  onClick={e => { e.stopPropagation(); setModal({ type: 'edit', doctor: d }); }}
+                  className="flex-1 bg-white border border-[#E8630A]/30 text-[#E8630A] hover:bg-[#E8630A]/5 rounded-xl py-2 text-xs font-semibold cursor-pointer transition-colors"
+                >
+                  ✏️ Edit Details
+                </button>
+                <button
+                  onClick={e => { e.stopPropagation(); setModal({ type: 'view', doctor: d }); }}
+                  className="flex-1 bg-white border border-[#E5E7EB] text-gray-500 hover:bg-gray-50 rounded-xl py-2 text-xs font-semibold cursor-pointer transition-colors"
+                >
+                  👁 View Profile
+                </button>
+              </div>
+            </div>
+          ))
+        )}
+
       </div>
     </div>
   );

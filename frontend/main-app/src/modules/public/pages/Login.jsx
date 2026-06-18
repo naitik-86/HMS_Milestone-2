@@ -81,35 +81,18 @@ export default function Login() {
       return;
     }
 
-    setPhoneVerified(true);
-    setPhoneVerified(true);
-    console.log("Phone OTP Verified");
-  };
-
-  const handleSendEmailOtp = () => {
-    setEmailOtpSent(true);
-
-    console.log("Send Email OTP");
-  };
-
-  const handleVerifyEmailOtp = () => {
-    if (!emailOtp) {
-      alert("Enter Email OTP");
-      return;
-    }
-
-    setEmailVerified(true);
+      console.log("Login Success:", response);
+      const token = response.token;
+      const role = response.user.role;
 
     console.log("Email OTP Verified");
   };
 
- const handleContinue = async () => {
-  console.log("Role:", localStorage.getItem("role"));
-  alert("Verification Completed");
-
-  setShowVerificationModal(false);
-
-  const role = localStorage.getItem("role");
+      if (role === "SUPER_ADMIN") return navigate("/superadmin");
+      if (role === "CLINIC_ADMIN") return navigate("/clinic");
+      if (role === "DOCTOR") return navigate("/doctor/dashboard");
+      if (role === "RECEPTIONIST") return navigate("/clinic/receptionist");
+      if (role === "PARA_MEDICAL") return navigate("/clinic/pre-consultation");
 
   try {
     const redirectRes = await API.get("/dashboard");

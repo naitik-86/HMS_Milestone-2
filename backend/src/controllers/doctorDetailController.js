@@ -4,9 +4,9 @@ const generateDoctorId = require("../utils/generateDoctorId.js");
 
 const createDoctor = async (req, res) => {
     try {
-
         const {
             experience,
+            name,
             registrationNumber,
             stateVetCouncil,
             certificateValidityDate,
@@ -61,6 +61,8 @@ const createDoctor = async (req, res) => {
             doctorId,
 
             degrees,
+            name,
+
 
             specializations,
 
@@ -102,9 +104,11 @@ const createDoctor = async (req, res) => {
         });
 
     } catch (error) {
+        console.log(error);
         return res.status(500).json({
             success: false,
             message: error.message,
+            stack: error.stack,
         });
     }
 };
@@ -157,6 +161,10 @@ const getDoctorById = async (req, res) => {
 };
 const updateDoctor = async (req, res) => {
     try {
+        console.log("this is from update doctor controller");
+        console.log(req.params);
+        console.log(req.body);
+
 
         const doctor = await Doctor.findByIdAndUpdate(
             req.params.id,

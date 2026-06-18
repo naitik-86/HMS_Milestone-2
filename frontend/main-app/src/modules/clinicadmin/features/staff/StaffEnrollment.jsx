@@ -1,5 +1,15 @@
 import React, { useState, useEffect } from 'react';
+import ViewStaffModal from "./ViewStaffModal";
 import { roles, departments, employmentTypes, staffData } from '../../data/staff';
+
+import {
+  createStaff,
+  updateStaff,
+  deleteStaff,
+  getManagers,
+  getStaff,
+  getStaffById,
+} from '../../api/staffApi';
 
 // --- Multi-step Enrollment Form (Full-Screen Fixed Panel) ---
 function EnrollForm({ onClose, onSave, editData, mode }) {
@@ -8,30 +18,130 @@ function EnrollForm({ onClose, onSave, editData, mode }) {
 
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({
-    fullName: '', gender: '', dob: '', mobile: '', email: '', photo: null,
-    emergencyName: '', emergencyContact: '',
-    role: '', department: '', reportingTo: '', accessLevel: '', staffId: '', dateOfJoining: '', employmentType: '',
-    username: '', accountActive: true, accountExpiry: '', forceReset: true,
-    modules: []
+    fullName: '',
+    profilePhoto: null,
+    email: '',
+    mobileNumber: '',
+    dateOfBirth: '',
+    gender: '',
+
+    emergencyContacts: [
+      {
+        contactPersonName: '',
+        contactNumber: ''
+      }
+    ],
+
+    role: '',
+    dateOfJoining: '',
+    staffId: '',
+    reportingTo: '',
+    department: '',
+    employmentType: '',
+    accessLevel: '',
+
+    modules: [],
+
+    username: '',
+
+    accountExpiryDate: '',
+    accountActive: true,
+    forcePasswordReset: true
   });
 
   useEffect(() => {
     if (editData) {
       setForm({
-        ...editData,
-        fullName: editData.name,
-        staffId: editData.id,
-        department: editData.dept,
-        accountActive: editData.status === 'Active',
-        employmentType: editData.employment,
-        dateOfJoining: editData.joined,
-        modules: editData.modules || ['OPD', 'Reports'],
-        forceReset: true
+        fullName:
+          editData.personalInfo?.fullName || "",
+
+        profilePhoto:
+          editData.personalInfo?.profilePhoto || null,
+
+        email:
+          editData.personalInfo?.email || "",
+
+        mobileNumber:
+          editData.personalInfo?.mobileNumber || "",
+
+        dateOfBirth:
+          editData.personalInfo?.dateOfBirth
+            ? new Date(editData.personalInfo.dateOfBirth)
+              .toISOString()
+              .split("T")[0]
+            : "",
+
+        gender:
+          editData.personalInfo?.gender || "",
+
+        emergencyContacts:
+          editData.personalInfo?.emergencyContacts?.length
+            ? editData.personalInfo.emergencyContacts
+            : [
+              {
+                contactPersonName: "",
+                contactNumber: "",
+              },
+            ],
+
+        role:
+          editData.employmentInfo?.role || "",
+
+        dateOfJoining:
+          editData.employmentInfo?.dateOfJoining
+            ? new Date(editData.employmentInfo.dateOfJoining)
+              .toISOString()
+              .split("T")[0]
+            : "",
+
+        staffId:
+          editData.employmentInfo?.staffId || "",
+
+        reportingTo:
+          editData.employmentInfo?.reportingTo || "",
+
+        department:
+          editData.employmentInfo?.department || "",
+
+        employmentType:
+          editData.employmentInfo?.employmentType || "",
+
+        accessLevel:
+          editData.employmentInfo?.accessLevel || "",
+
+        modules: Object.entries(
+          editData.moduleAccess || {}
+        )
+          .filter(([_, value]) => value)
+          .map(([key]) => key),
+
+        username:
+          editData.accountInfo?.username || "",
+
+        accountExpiryDate:
+          editData.accountInfo?.accountExpiryDate
+            ? new Date(editData.accountInfo.accountExpiryDate)
+              .toISOString()
+              .split("T")[0]
+            : "",
+
+        accountActive:
+          editData.accountInfo?.accountActive ?? true,
+
+        forcePasswordReset:
+          editData.accountInfo?.forcePasswordReset ?? true,
       });
     } else {
-      setForm(prev => ({ ...prev, staffId: 'STF' + Math.floor(Math.random() * 900 + 100) }));
+      setForm(prev => ({
+        ...prev,
+        staffId:
+          "STF" +
+          Math.floor(Math.random() * 900 + 100),
+      }));
     }
   }, [editData]);
+
+
 
   const update = (k, v) => {
     if (isView) return;
@@ -81,8 +191,8 @@ function EnrollForm({ onClose, onSave, editData, mode }) {
                 {isView
                   ? `Viewing record for ${form.fullName || '—'}`
                   : isEdit
-                  ? `Update details for ${form.fullName || '—'}`
-                  : 'Enroll a new staff member into the clinic system.'}
+                    ? `Update details for ${form.fullName || '—'}`
+                    : 'Enroll a new staff member into the clinic system.'}
               </p>
             </div>
             <button
@@ -207,8 +317,8 @@ function EnrollForm({ onClose, onSave, editData, mode }) {
                     className={isView ? inputDisabled : inputBase}
                     disabled={isView}
                     type="date"
-                    value={form.dob}
-                    onChange={e => update('dob', e.target.value)}
+                    value={form.dateOfBirth}
+                    onChange={e => update('dateOfBirth', e.target.value)}
                   />
                 </div>
 
@@ -218,8 +328,8 @@ function EnrollForm({ onClose, onSave, editData, mode }) {
                     className={isView ? inputDisabled : inputBase}
                     disabled={isView}
                     type="tel"
-                    value={form.mobile}
-                    onChange={e => update('mobile', e.target.value)}
+                    value={form.mobileNumber}
+                    onChange={e => update('mobileNumber', e.target.value)}
                     placeholder="e.g. +91 98765 43210"
                   />
                 </div>
@@ -239,7 +349,17 @@ function EnrollForm({ onClose, onSave, editData, mode }) {
                 <div>
                   <label className={labelClass}>Profile Photo</label>
                   {isView ? (
-                    <div className={inputDisabled}>No photo uploaded</div>
+                    form.profilePhoto ? (
+                      <img
+                        src={form.profilePhoto}
+                        alt="Profile"
+                        className="h-24 w-24 rounded-xl object-cover"
+                      />
+                    ) : (
+                      <div className={inputDisabled}>
+                        No photo uploaded
+                      </div>
+                    )
                   ) : (
                     <div
                       className="w-full border border-dashed border-[#E8630A] rounded-xl py-3 px-4 text-sm text-[#E8630A] font-semibold text-center cursor-pointer hover:bg-[#FEF3EB] transition-colors"
@@ -247,7 +367,7 @@ function EnrollForm({ onClose, onSave, editData, mode }) {
                     >
                       Upload File
                       <input id="photoUpload" type="file" accept="image/*" className="hidden"
-                        onChange={e => update('photo', e.target.files[0])} />
+                        onChange={e => update('profilePhoto', e.target.files[0])} />
                     </div>
                   )}
                 </div>
@@ -262,8 +382,15 @@ function EnrollForm({ onClose, onSave, editData, mode }) {
                     <input
                       className={isView ? inputDisabled : inputBase}
                       disabled={isView}
-                      value={form.emergencyName}
-                      onChange={e => update('emergencyName', e.target.value)}
+                      value={form.emergencyContacts[0]?.contactPersonName || ""}
+                      onChange={e =>
+                        update("emergencyContacts", [
+                          {
+                            ...form.emergencyContacts[0],
+                            contactPersonName: e.target.value
+                          }
+                        ])
+                      }
                       placeholder="e.g. Jane Doe"
                     />
                   </div>
@@ -272,8 +399,15 @@ function EnrollForm({ onClose, onSave, editData, mode }) {
                     <input
                       className={isView ? inputDisabled : inputBase}
                       disabled={isView}
-                      value={form.emergencyContact}
-                      onChange={e => update('emergencyContact', e.target.value)}
+                      value={form.emergencyContacts[0]?.contactNumber || ""}
+                      onChange={e =>
+                        update("emergencyContacts", [
+                          {
+                            ...form.emergencyContacts[0],
+                            contactNumber: e.target.value
+                          }
+                        ])
+                      }
                       placeholder="e.g. +91 98765 00000"
                     />
                   </div>
@@ -322,8 +456,14 @@ function EnrollForm({ onClose, onSave, editData, mode }) {
                       onChange={e => update('reportingTo', e.target.value)}
                     >
                       <option value="">Select Manager</option>
-                      {staffData.map(s => <option key={s.id}>{s.name}</option>)}
-                    </select>
+                      {staffData.map((s, index) => (
+                        <option
+                          key={s.employmentInfo?.staffId || index}
+                          value={s.personalInfo.fullName}
+                        >
+                          {s.personalInfo.fullName}
+                        </option>
+                      ))}                    </select>
                   </div>
                   <div>
                     <label className={labelClass}>Staff ID <span className="text-[#9CA3AF] font-normal">(System Generated)</span></label>
@@ -359,7 +499,17 @@ function EnrollForm({ onClose, onSave, editData, mode }) {
                 <h3 className="text-base font-bold text-[#1A1D2E] mb-2">Module Access Permissions</h3>
                 <p className="text-sm text-gray-400 mb-6">Select the modules this staff member should have access to.</p>
                 <div className="flex flex-wrap gap-3">
-                  {['OPD', 'Lab', 'Pharmacy', 'Grooming', 'Kennel', 'Reports', 'Billing', 'Settings'].map(m => (
+                  {[
+                    'opd',
+                    'surgery',
+                    'lab',
+                    'icu',
+                    'grooming',
+                    'kennel',
+                    'pharmacy',
+                    'reports',
+                    'settings'
+                  ].map(m => (
                     <div
                       key={m}
                       onClick={() => toggleModule(m)}
@@ -413,8 +563,8 @@ function EnrollForm({ onClose, onSave, editData, mode }) {
                     className={isView ? inputDisabled : inputBase}
                     disabled={isView}
                     type="date"
-                    value={form.accountExpiry}
-                    onChange={e => update('accountExpiry', e.target.value)}
+                    value={form.accountExpiryDate}
+                    onChange={e => update('accountExpiryDate', e.target.value)}
                   />
                 </div>
               </div>
@@ -430,17 +580,26 @@ function EnrollForm({ onClose, onSave, editData, mode }) {
                     <div className="text-xs text-gray-400 mt-0.5">User must change password on first login</div>
                   </div>
                   <div
-                    onClick={() => !isView && update('forceReset', !form.forceReset)}
+                    onClick={() => !isView && update(
+                      'forcePasswordReset',
+                      !form.forcePasswordReset
+                    )}
                     className="relative rounded-full transition-colors flex-shrink-0"
                     style={{
                       width: '46px', height: '24px',
-                      backgroundColor: form.forceReset ? '#22C55E' : '#D1D5DB',
+                      backgroundColor: form.forcePasswordReset
+                        ? '#22C55E'
+                        : '#D1D5DB',
                       cursor: isView ? 'default' : 'pointer',
                     }}
                   >
                     <div
                       className="absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-all"
-                      style={{ left: form.forceReset ? '23px' : '3px' }}
+                      style={{
+                        left: form.forcePasswordReset
+                          ? '23px'
+                          : '3px'
+                      }}
                     />
                   </div>
                 </div>
@@ -507,10 +666,10 @@ function EnrollForm({ onClose, onSave, editData, mode }) {
             {isView
               ? 'Close'
               : step < 3
-              ? 'Next →'
-              : isEdit
-              ? '✓ Update Staff'
-              : '✓ Save Staff Member'}
+                ? 'Next →'
+                : isEdit
+                  ? '✓ Update Staff'
+                  : '✓ Save Staff Member'}
           </button>
         </div>
       </div>
@@ -523,14 +682,30 @@ export default function StaffEnrollment() {
   const [showModal, setShowModal] = useState(false);
   const [modalMode, setModalMode] = useState('create');
   const [selectedStaff, setSelectedStaff] = useState(null);
-  const [staff, setStaff] = useState(staffData);
+  const [staff, setStaff] = useState([]);
   const [filterRole, setFilterRole] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
 
+
   const filtered = staff.filter(s =>
-    (!filterRole || s.role === filterRole) &&
-    (!filterStatus || s.status === filterStatus)
+    (!filterRole ||
+      s.employmentInfo?.role === filterRole) &&
+    (!filterStatus ||
+      (s.accountInfo?.accountActive
+        ? "Active"
+        : "Inactive") === filterStatus)
   );
+  useEffect(() => {
+    const fetchStaff = async () => {
+      const response = await getStaff();
+
+      console.log("API Response:", response);
+
+      setStaff(response.data || []);
+    };
+
+    fetchStaff();
+  }, []);
 
   const handleOpenCreate = () => {
     setSelectedStaff(null);
@@ -549,47 +724,52 @@ export default function StaffEnrollment() {
     setModalMode('view');
     setShowModal(true);
   };
+  const handleSave = async (form) => {
+    try {
+      if (modalMode === "edit") {
+        await updateStaff(
+          selectedStaff._id,
+          form
+        );
+      } else {
+        await createStaff(form);
+      }
 
-  const handleSave = (form) => {
-    if (modalMode === 'edit') {
-      setStaff(prev => prev.map(s => s.id === form.staffId ? {
-        ...s,
-        name: form.fullName,
-        role: form.role,
-        dept: form.department || 'N/A',
-        status: form.accountActive ? 'Active' : 'Inactive',
-        employment: form.employmentType,
-        joined: form.dateOfJoining
-      } : s));
-    } else {
-      const newStaff = {
-        id: form.staffId,
-        name: form.fullName,
-        role: form.role,
-        dept: form.department || 'N/A',
-        status: form.accountActive ? 'Active' : 'Inactive',
-        joined: form.dateOfJoining || new Date().toISOString().split('T')[0],
-        initials: form.fullName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase(),
-        color: '#E8630A',
-        employment: form.employmentType || 'Full-time',
-      };
-      setStaff([newStaff, ...staff]);
+      const response = await getStaff();
+      setStaff(response.data || []);
+
+      setShowModal(false);
+
+    } catch (err) {
+      console.error(err);
     }
-    setShowModal(false);
   };
 
   const filterSelectClass = "w-full border border-[#EAE5DC] rounded-xl px-4 py-3 text-sm text-[#1A1D2E] bg-white outline-none focus:border-[#E8630A] focus:ring-1 focus:ring-[#E8630A] transition-colors";
 
   return (
     <div className="px-16 py-10 bg-white min-h-screen">
-      {showModal && (
-        <EnrollForm
-          onClose={() => setShowModal(false)}
-          onSave={handleSave}
-          editData={selectedStaff}
-          mode={modalMode}
-        />
-      )}
+      {showModal &&
+        modalMode === "view" && (
+          <ViewStaffModal
+            staff={selectedStaff}
+            onClose={() =>
+              setShowModal(false)
+            }
+          />
+        )}
+
+      {showModal &&
+        modalMode !== "view" && (
+          <EnrollForm
+            onClose={() =>
+              setShowModal(false)
+            }
+            onSave={handleSave}
+            editData={selectedStaff}
+            mode={modalMode}
+          />
+        )}
 
       {/* Title Header */}
       <div className="flex justify-between items-end mb-10">
@@ -654,36 +834,57 @@ export default function StaffEnrollment() {
           </thead>
           <tbody>
             {filtered.map((s) => (
-              <tr key={s.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+              <tr key={s._id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
                 <td className="px-5 py-4">
                   <div className="flex items-center gap-3.5">
                     <div
                       className="w-11 h-11 rounded-xl flex items-center justify-center font-extrabold text-sm"
-                      style={{ backgroundColor: `${s.color}15`, color: s.color }}
+                      style={{
+                        backgroundColor: "#FEF3EB",
+                        color: "#E8630A"
+                      }}
                     >
-                      {s.initials}
+                      {s.personalInfo?.fullName
+                        ?.split(" ")
+                        .map(n => n[0])
+                        .join("")
+                        .slice(0, 2)
+                        .toUpperCase()}
                     </div>
-                    <div className="font-bold text-[#1A1D2E] text-[15px]">{s.name}</div>
+                    <div className="font-bold text-[#1A1D2E] text-[15px]">
+                      {s.personalInfo?.fullName}
+                    </div>
                   </div>
                 </td>
-                <td className="px-5 py-5 font-mono text-gray-500 text-sm">{s.id}</td>
+                <td className="px-5 py-5 font-mono text-gray-500 text-sm"> {s.employmentInfo?.staffId}</td>
                 <td className="px-5 py-5">
-                  <div className="text-[#1A1D2E] font-semibold text-sm">{s.role}</div>
-                  <div className="text-gray-400 text-xs mt-0.5">{s.dept}</div>
+                  <div className="text-[#1A1D2E] font-semibold text-sm">
+                    {s.employmentInfo?.role}
+                  </div>
+
+                  <div className="text-gray-400 text-xs mt-0.5">
+                    {s.employmentInfo?.department}
+                  </div>
                 </td>
-                <td className="px-5 py-5 text-gray-600 text-sm">{s.employment}</td>
+                <td className="px-5 py-5 text-gray-600 text-sm">  {s.employmentInfo?.employmentType}</td>
                 <td className="px-5 py-5">
                   <span
                     className="px-3 py-1.5 rounded-lg text-xs font-bold"
                     style={{
-                      backgroundColor: s.status === 'Active' ? '#DCFCE7' : '#F3F4F6',
-                      color: s.status === 'Active' ? '#16A34A' : '#6B7280',
+                      backgroundColor: s.accountInfo?.accountActive
+                        ? '#DCFCE7'
+                        : '#F3F4F6',
+                      color: s.accountInfo?.accountActive
+                        ? '#16A34A'
+                        : '#6B7280',
                     }}
                   >
-                    {s.status}
+                    {s.accountInfo?.accountActive
+                      ? "Active"
+                      : "Inactive"}
                   </span>
                 </td>
-                <td className="px-5 py-5 text-gray-500 text-sm">{s.joined}</td>
+                <td className="px-5 py-5 text-gray-500 text-sm">{s.employmentInfo?.dateOfJoining?.split("T")[0]}</td>
                 <td className="px-5 py-5 text-right">
                   <div className="flex gap-2 justify-end">
                     <button

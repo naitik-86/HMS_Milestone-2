@@ -7,7 +7,7 @@ export const authApi = async (loginData) => {
 
         const res = await API.post("/auth/login", loginData);
 
-        console.log("LOGIN RESPONSE:", res.data);
+        // console.log("LOGIN RESPONSE:", res.data);
 
         if (res.data?.token) {
             localStorage.setItem("token", res.data.token);
