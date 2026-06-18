@@ -212,6 +212,9 @@ const updateStaff = async (
     res
 ) => {
     try {
+
+        console.log("Form data - >>>>", req.body);
+
         const updatedStaff =
             await Staff.findByIdAndUpdate(
                 req.params.id,

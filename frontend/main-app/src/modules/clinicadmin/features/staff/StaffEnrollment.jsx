@@ -322,7 +322,7 @@ function EnrollForm({ onClose, onSave, editData, mode, staff }) {
               <div className="grid grid-cols-2 gap-6">
                 {/* Full Name */}
                 <div className="col-span-2 grid grid-cols-2 gap-6">
-                  <div>
+                  99    <div>
                     <label className={labelClass}>Full Name <span className="text-[#E8630A]">*</span></label>
                     <input
                       className={isView ? inputDisabled : inputBase}
