@@ -31,7 +31,7 @@ export const createClinic = async (clinicData) => {
     };
 
     // 1. Create the clinic
-    const createRes = await API.post("/clinics", jsonPayload);
+    const createRes = await API.post("/super-admin/clinics", jsonPayload);
     const clinic = createRes.data?.data;
     const clinicId = clinic?._id;
 
@@ -50,7 +50,7 @@ export const createClinic = async (clinicData) => {
         };
         const formData = buildFormData(fileData);
 
-        await API.post(`/clinics/${clinicId}/documents`, formData, {
+        await API.post(`/super-admin/clinics/${clinicId}/documents`, formData, {
             headers: {
                 "Content-Type": "multipart/form-data",
             },
@@ -61,6 +61,6 @@ export const createClinic = async (clinicData) => {
 };
 
 export const getClinics = async () => {
-    const res = await API.get("/clinics");
+    const res = await API.get("/super-admin/clinics");
     return res.data;
 };
