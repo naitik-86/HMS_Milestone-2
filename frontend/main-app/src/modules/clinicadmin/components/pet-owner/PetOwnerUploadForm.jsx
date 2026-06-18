@@ -1,40 +1,76 @@
 const PetOwnerUploadForm = () => {
   return (
-    <div className="card mt-4">
-      <div className="card-body">
+    <div className="mt-4 rounded-3xl bg-white p-4 md:p-6 shadow-lg">
+      <div className="space-y-5">
+        {/* Lab Report */}
+        <div>
+          <label className="mb-2 block text-sm font-semibold text-slate-700">
+            Lab Report
+          </label>
 
-        <div className="mb-3">
-          <label className="form-label">Lab Report</label>
-          <input type="file" className="form-control" />
+          <input
+            type="file"
+            className="w-full rounded-2xl border border-slate-200 p-3 text-sm focus:border-orange-500 focus:outline-none"
+          />
         </div>
 
-        <div className="mb-3">
-          <label className="form-label">Lab Name</label>
+        {/* Lab Name */}
+        <div>
+          <label className="mb-2 block text-sm font-semibold text-slate-700">
+            Lab Name
+          </label>
+
           <input
             type="text"
-            className="form-control"
             placeholder="Enter Lab Name"
+            className="w-full rounded-2xl border border-slate-200 p-3 text-sm focus:border-orange-500 focus:outline-none"
           />
         </div>
 
-        <div className="mb-3">
-          <label className="form-label">Report Date</label>
-          <input type="date" className="form-control" />
+        {/* Report Date */}
+        <div>
+          <label className="mb-2 block text-sm font-semibold text-slate-700">
+            Report Date
+          </label>
+
+          <input
+            type="date"
+            className="w-full rounded-2xl border border-slate-200 p-3 text-sm focus:border-orange-500 focus:outline-none"
+          />
         </div>
 
-        <div className="mb-3">
-          <label className="form-label">Notes</label>
+        {/* Notes */}
+        <div>
+          <label className="mb-2 block text-sm font-semibold text-slate-700">
+            Notes
+          </label>
+
           <textarea
-            className="form-control"
-            rows="4"
+            rows={4}
             placeholder="Notes for Doctor"
+            className="w-full rounded-2xl border border-slate-200 p-3 text-sm focus:border-orange-500 focus:outline-none"
           />
         </div>
 
-        <button className="btn btn-primary">
+        {/* Button */}
+        <button
+          className="
+            w-full sm:w-auto
+            rounded-2xl
+            bg-gradient-to-r
+            from-orange-500
+            to-orange-600
+            px-6
+            py-3
+            font-medium
+            text-white
+            shadow-lg
+            transition
+            hover:shadow-xl
+          "
+        >
           Upload Report
         </button>
-
       </div>
     </div>
   );

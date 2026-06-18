@@ -41,7 +41,7 @@ export default function Login() {
       // LOGIN API CALL HERE
       // ===========================
 
-    
+
       const response = await authApi({
         email: form.email,
         password: form.password,
@@ -49,19 +49,19 @@ export default function Login() {
 
       localStorage.setItem("token", response.token);
       localStorage.setItem("role", response.user.role);
-    
+
 
       setShowVerificationModal(true);
     } catch (error) {
-  console.error("Login Error:", error);
-  console.log(error.response?.data);
+      console.error("Login Error:", error);
+      console.log(error.response?.data);
 
-  alert(
-    error.response?.data?.message ||
-    error.message ||
-    "Login Failed"
-  );
-}
+      alert(
+        error.response?.data?.message ||
+        error.message ||
+        "Login Failed"
+      );
+    }
   };
 
   const handleSendPhoneOtp = () => {
@@ -81,50 +81,60 @@ export default function Login() {
       return;
     }
 
-      console.log("Login Success:", response);
-      const token = response.token;
-      const role = response.user.role;
+    setPhoneVerified(true);
+    console.log("Phone OTP Verified");
 
     console.log("Email OTP Verified");
   };
 
-      if (role === "SUPER_ADMIN") return navigate("/superadmin");
-      if (role === "CLINIC_ADMIN") return navigate("/clinic");
-      if (role === "DOCTOR") return navigate("/doctor/dashboard");
-      if (role === "RECEPTIONIST") return navigate("/clinic/receptionist");
-      if (role === "PARA_MEDICAL") return navigate("/clinic/pre-consultation");
-
-  try {
-    const redirectRes = await API.get("/dashboard");
-
-    const redirectUrl =
-      redirectRes.data?.data?.redirectUrl;
-
-    if (redirectUrl) {
-      return navigate(redirectUrl);
+  const handleSendEmailOtp = () => {
+    setEmailOtpSent(true);
+    console.log("Send Email OTP:", form.email);
+  };
+  const handleVerifyEmailOtp = () => {
+    if (emailOtp.length !== 6) {
+      alert("Please enter a valid 6 digit OTP");
+      return;
     }
-  } catch (e) {
-    console.warn(
-      "Dashboard redirect failed, fallback to role navigation",
-      e
-    );
-  }
 
-  if (role === "SUPER_ADMIN")
-    return navigate("/superadmin");
+    setEmailVerified(true);
+    console.log("Email OTP Verified");
+  };
+  const handleContinue = async () => {
+    const role = localStorage.getItem("role");
 
-  if (role === "CLINIC_ADMIN")
-    return navigate("/clinic/dashboard");
+    try {
+      const redirectRes = await API.get("/dashboard");
 
-  if (role === "DOCTOR")
-    return navigate("/doctor/dashboard");
+      const redirectUrl =
+        redirectRes.data?.data?.redirectUrl;
 
-  if (role === "RECEPTIONIST")
-    return navigate("/clinic/receptionist");
+      if (redirectUrl) {
+        return navigate(redirectUrl);
+      }
+      if (!phoneVerified || !emailVerified) {
+        alert("Please verify both Phone and Email");
+        return;
+      }
+    } catch (e) {
+      console.warn("Dashboard redirect failed", e);
+    }
 
-  if (role === "PARA_MEDICAL")
-    return navigate("/clinic/pre-consultation");
-};
+    if (role === "SUPER_ADMIN")
+      return navigate("/superadmin");
+
+    if (role === "CLINIC_ADMIN")
+      return navigate("/clinic");
+
+    if (role === "DOCTOR")
+      return navigate("/doctor/dashboard");
+
+    if (role === "RECEPTIONIST")
+      return navigate("/clinic/receptionist");
+
+    if (role === "PARA_MEDICAL")
+      return navigate("/clinic/pre-consultation");
+  };
 
   return (
     <div className="min-h-screen bg-white flex flex-col items-center justify-center px-6 py-12">

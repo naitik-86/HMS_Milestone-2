@@ -127,13 +127,13 @@ export default function LabReportUpload() {
   };
 
   return (
-    <div className="p-8 bg-slate-100 min-h-screen">
+    <div className="p-4 md:p-6 lg:p-8 bg-slate-100 min-h-screen overflow-x-hidden">
 
       <div className="mb-8 rounded-[32px] bg-gradient-to-r from-slate-950 via-slate-900 to-blue-700 p-8 text-white shadow-2xl">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
 
           <div>
-            <h1 className="text-4xl font-bold">
+            <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold">
               Laboratory Panel
             </h1>
 
@@ -169,7 +169,7 @@ export default function LabReportUpload() {
           Total Reports
         </p>
 
-        <h2 className="mt-4 text-5xl font-bold text-slate-900">
+        <h2 className="mt-4 text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900">
           1,245
         </h2>
 
@@ -198,7 +198,7 @@ export default function LabReportUpload() {
           Pending Uploads
         </p>
 
-        <h2 className="mt-4 text-5xl font-bold text-orange-500">
+        <h2 className="mt-4 text-3xl md:text-4xl lg:text-5xl font-bold text-orange-500">
           32
         </h2>
 
@@ -227,7 +227,7 @@ export default function LabReportUpload() {
           Critical Cases
         </p>
 
-        <h2 className="mt-4 text-5xl font-bold text-red-500">
+        <h2 className="mt-4 text-3xl md:text-4xl lg:text-5xl font-bold text-red-500">
           08
         </h2>
 
@@ -256,7 +256,7 @@ export default function LabReportUpload() {
           Today's Reports
         </p>
 
-        <h2 className="mt-4 text-5xl font-bold text-blue-500">
+        <h2 className="mt-4 text-3xl md:text-4xl lg:text-5xl font-bold text-blue-500">
           54
         </h2>
 
@@ -283,10 +283,10 @@ export default function LabReportUpload() {
         <div className="p-8">
 
           {/* Heading */}
-          <div className="mb-6 flex items-center justify-between">
+          <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
 
             <div>
-              <h2 className="text-3xl font-bold text-slate-900">
+              <h2 className="text-2xl md:text-3xl font-bold text-slate-900">
                 Search Registration
               </h2>
 
@@ -347,7 +347,7 @@ export default function LabReportUpload() {
           </div>
 
           {/* Bottom Stats */}
-          <div className="mt-6 grid grid-cols-3 gap-4">
+          <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
 
             <div className="rounded-2xl bg-slate-50 p-4">
               <p className="text-sm text-slate-500">
@@ -387,7 +387,7 @@ export default function LabReportUpload() {
 
       <div className="overflow-hidden rounded-[32px] bg-white shadow-2xl border border-slate-100">
 
-        <div className="flex items-center justify-between border-b border-slate-100 px-8 py-6">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between border-b border-slate-100 px-4 md:px-8 py-6">
 
           <div>
             <h2 className="text-2xl font-bold text-slate-900">
@@ -407,7 +407,8 @@ export default function LabReportUpload() {
 
         </div>
 
-        <table className="w-full">
+<div className="hidden lg:block overflow-x-auto">
+  <table className="w-full">
 
           <thead className="bg-slate-50">
 
@@ -598,13 +599,82 @@ export default function LabReportUpload() {
           </tbody>
 
         </table>
-
+</div>
       </div>
+      <div className="lg:hidden p-4 space-y-4">
+  {filteredRegistrations.map((item, index) => (
+    <div
+      key={index}
+      className="rounded-3xl border border-slate-200 bg-white p-4 shadow-md"
+    >
+      <div className="flex items-center justify-between">
+        <span className="rounded-xl bg-slate-100 px-3 py-2 text-sm font-semibold">
+          {item.labId}
+        </span>
+
+        <span
+          className={`rounded-full px-3 py-1 text-xs font-semibold ${
+            item.status === "Pending Upload"
+              ? "bg-orange-100 text-orange-600"
+              : item.status === "Report Uploaded"
+              ? "bg-green-100 text-green-600"
+              : "bg-red-100 text-red-600"
+          }`}
+        >
+          {item.status}
+        </span>
+      </div>
+
+      <div className="mt-4 space-y-2">
+        <p>
+          <strong>Pet:</strong> {item.petName}
+        </p>
+
+        <p>
+          <strong>Owner:</strong> {item.ownerName}
+        </p>
+
+        <p>
+          <strong>Phone:</strong> {item.phone}
+        </p>
+      </div>
+
+      <div className="mt-4 flex flex-wrap gap-2">
+        <button
+          onClick={() => {
+            setSelectedPet(item);
+            setShowModal(true);
+          }}
+          className="rounded-xl bg-orange-500 px-4 py-2 text-white"
+        >
+          Upload
+        </button>
+
+        <button
+          onClick={() => {
+            setRegistrationForm({
+              ...initialRegistrationForm,
+              ...item,
+            });
+            setShowRegistrationModal(true);
+          }}
+          className="rounded-xl bg-blue-500 px-4 py-2 text-white"
+        >
+          Edit
+        </button>
+
+        <button className="rounded-xl bg-slate-900 px-4 py-2 text-white">
+          View
+        </button>
+      </div>
+    </div>
+  ))}
+</div>
 
       {showRegistrationModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
 
-          <div className="bg-white w-[700px] max-h-[90vh] overflow-y-auto rounded-3xl shadow-xl p-8 relative">
+          <div className="bg-white w-[95%] max-w-[700px] max-h-[90vh] overflow-y-auto rounded-3xl shadow-xl p-4 md:p-8 relative">
 
             <button
               onClick={() =>
@@ -644,7 +714,7 @@ export default function LabReportUpload() {
               </div>
 
               {/* Row 1 */}
-              <div className="grid grid-cols-2 gap-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
 
                 <div>
                   <label className="mb-2 block font-medium text-slate-700">
@@ -678,7 +748,7 @@ export default function LabReportUpload() {
               </div>
 
               {/* Row 2 */}
-              <div className="grid grid-cols-2 gap-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
 
                 <div>
                   <label className="mb-2 block font-medium text-slate-700">
@@ -713,7 +783,7 @@ export default function LabReportUpload() {
               </div>
 
               {/* Row 3 */}
-              <div className="grid grid-cols-2 gap-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
 
                 <div>
                   <label className="mb-2 block font-medium text-slate-700">
@@ -747,7 +817,7 @@ export default function LabReportUpload() {
               </div>
 
               {/* Row 4 */}
-              <div className="grid grid-cols-2 gap-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
 
                 <div>
                   <label className="mb-2 block font-medium text-slate-700">
@@ -792,7 +862,7 @@ export default function LabReportUpload() {
               </div>
 
               {/* Row 5 */}
-              <div className="grid grid-cols-3 gap-5">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
 
                 <div>
                   <label className="mb-2 block font-medium text-slate-700">
@@ -845,7 +915,7 @@ export default function LabReportUpload() {
               </div>
 
               {/* Footer */}
-              <div className="flex justify-end gap-4 pt-6 border-t">
+              <div className="flex flex-col sm:flex-row justify-end gap-4 pt-6 border-t">
 
                 <button
                   type="button"
@@ -886,7 +956,7 @@ export default function LabReportUpload() {
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
 
-          <div className="bg-white w-[1000px] max-h-[90vh] overflow-y-auto rounded-3xl shadow-xl p-8 relative">
+          <div className="bg-white w-[95%] max-w-[1000px] max-h-[90vh] overflow-y-auto rounded-3xl shadow-xl p-4 md:p-8 relative">
 
             <button
               onClick={() => setShowModal(false)}
@@ -914,7 +984,7 @@ export default function LabReportUpload() {
 
               {/* Lab Order + Pet */}
 
-              <div className="grid grid-cols-2 gap-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
 
                 <div>
                   <label className="block mb-2 font-medium">
@@ -957,7 +1027,7 @@ export default function LabReportUpload() {
                   Tests Completed
                 </h3>
 
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
 
                   {tests.map((test) => (
                     <label
@@ -990,7 +1060,7 @@ export default function LabReportUpload() {
 
               {/* Dates */}
 
-              <div className="grid grid-cols-2 gap-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
 
                 <div>
 
@@ -1028,7 +1098,7 @@ export default function LabReportUpload() {
 
               {/* Technician */}
 
-              <div className="grid grid-cols-2 gap-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
 
                 <div>
 
@@ -1133,7 +1203,7 @@ export default function LabReportUpload() {
 
               {/* Buttons */}
 
-              <div className="flex justify-end gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
 
                 <button
                   type="button"

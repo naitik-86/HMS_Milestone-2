@@ -75,7 +75,7 @@ export default function CompletedPets() {
     <div className="flex min-h-screen bg-slate-100">
 
 
-      <div className="flex-1 p-8">
+      <div className="flex-1 p-4 md:p-6 lg:p-8 overflow-x-hidden">
 
         <Header
           title="Completed Pets"
@@ -83,7 +83,7 @@ export default function CompletedPets() {
         />
 
         {/* Stats Cards */}
-        <div className="grid lg:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
 
           {cards.map((card, index) => (
             <div
@@ -97,7 +97,7 @@ export default function CompletedPets() {
                     {card.title}
                   </p>
 
-                  <h2 className="text-4xl font-bold text-slate-800 mt-3">
+                  <h2 className="text-3xl md:text-4xl font-bold text-slate-800 mt-3">
                     {card.value}
                   </h2>
                 </div>
@@ -115,7 +115,7 @@ export default function CompletedPets() {
         </div>
 
         {/* Search */}
-        <div className="bg-white rounded-3xl shadow-sm p-6 mb-8">
+        <div className="bg-white rounded-3xl shadow-sm p-4 md:p-6 mb-8">
 
           <div className="relative">
 
@@ -139,7 +139,7 @@ export default function CompletedPets() {
         <div className="bg-white rounded-3xl shadow-sm overflow-hidden border border-slate-200">
 
           {/* Header */}
-          <div className="flex items-center justify-between px-8 py-6 border-b border-slate-200">
+         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between px-4 md:px-8 py-6 border-b border-slate-200">
 
             <div>
               <h2 className="text-xl font-bold text-slate-800">
@@ -157,7 +157,7 @@ export default function CompletedPets() {
 
           </div>
 
-          <div className="overflow-x-auto">
+         <div className="hidden lg:block overflow-x-auto">
 
             <table className="w-full">
 
@@ -318,6 +318,51 @@ export default function CompletedPets() {
             </table>
 
           </div>
+          <div className="lg:hidden p-4 space-y-4">
+  {filteredPets.map((pet) => (
+    <div
+      key={pet.id}
+      className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm"
+    >
+
+<div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <span className="font-bold text-slate-800">
+          {pet.token}
+        </span>
+
+        <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
+          {pet.status}
+        </span>
+      </div>
+
+      <div className="mt-4 space-y-2">
+        <p>
+          <strong>Owner:</strong> {pet.ownerName}
+        </p>
+
+        <p>
+          <strong>Phone:</strong> {pet.phoneNumber}
+        </p>
+
+        <p>
+          <strong>Pet:</strong> {pet.petName}
+        </p>
+
+        <p>
+          <strong>Date:</strong> {pet.completedDate}
+        </p>
+
+        <p>
+          <strong>Doctor:</strong> {pet.completedBy}
+        </p>
+      </div>
+
+      <button className="mt-4 w-full rounded-xl bg-blue-500 py-3 text-white font-medium hover:bg-blue-600 transition-all">
+        👁 View
+      </button>
+    </div>
+  ))}
+</div>
 
         </div>
 

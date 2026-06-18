@@ -6,11 +6,11 @@ const PetOwnerDashboard = () => {
     <div className="flex min-h-screen bg-slate-50">
       <PetOwnerSidebar />
 
-      <div className="flex-1 ml-[280px]">
+      <div className="flex-1 ml-0 lg:ml-[280px] pt-[72px] lg:pt-0 min-w-0">
         {/* Header */}
-        <div className="flex items-center justify-between border-b bg-white px-8 py-5">
+       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between border-b bg-white px-4 md:px-8 py-5">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">
+            <h1 className="text-2xl md:text-3xl font-bold text-slate-900">
               Pet Owner Dashboard
             </h1>
             <p className="mt-1 text-sm text-slate-500">
@@ -18,7 +18,7 @@ const PetOwnerDashboard = () => {
             </p>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 md:gap-4">
             <button className="rounded-xl border bg-white px-4 py-2 text-sm font-medium shadow-sm hover:bg-slate-50">
               Notifications
             </button>
@@ -38,10 +38,10 @@ const PetOwnerDashboard = () => {
         </div>
 
         {/* Content */}
-        <div className="p-8">
+        <div className="p-4 md:p-8">
           {/* Hero Banner */}
-          <div className="mb-8 overflow-hidden rounded-3xl bg-gradient-to-r from-slate-900 via-blue-900 to-blue-600 p-8 text-white shadow-lg">
-            <h2 className="text-3xl font-bold">
+          <div className="mb-8 overflow-hidden rounded-3xl bg-gradient-to-r from-slate-900 via-blue-900 to-blue-600 p-5 md:p-8 text-white shadow-lg">
+            <h2 className="text-2xl md:text-3xl font-bold">
               Welcome Back 👋
             </h2>
 
@@ -53,7 +53,7 @@ const PetOwnerDashboard = () => {
 
           <PetOwnerDashboardCards />
 
-          <div className="mt-8 grid gap-6 lg:grid-cols-3">
+          <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-3">
             {/* Activity */}
             <div className="lg:col-span-2 rounded-3xl bg-white p-6 shadow-sm">
               <h3 className="mb-5 text-xl font-bold text-slate-800">

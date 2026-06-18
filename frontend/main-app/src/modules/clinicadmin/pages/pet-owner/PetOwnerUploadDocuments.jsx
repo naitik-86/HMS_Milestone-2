@@ -15,10 +15,10 @@ const PetOwnerUploadDocuments = () => {
     <div className="min-h-screen bg-gradient-to-br from-slate-100 via-slate-50 to-blue-50">
       <PetOwnerSidebar />
 
-      <div className="ml-[280px] p-8">
+      <div className="ml-0 lg:ml-[280px] pt-[80px] lg:pt-8 p-4 md:p-6 lg:p-8 min-w-0">
         {/* Header */}
-        <div className="mb-8 rounded-[32px] bg-gradient-to-r from-slate-950 via-blue-900 to-blue-600 p-8 text-white shadow-2xl">
-          <h1 className="text-4xl font-bold">
+        <div className="mb-8 rounded-[32px] bg-gradient-to-r from-slate-950 via-blue-900 to-blue-600 p-5 md:p-8 text-white shadow-2xl">
+          <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold">
             Upload Documents
           </h1>
 
@@ -38,7 +38,7 @@ const PetOwnerUploadDocuments = () => {
           border-dashed
           border-orange-300
           bg-white
-          p-12
+         p-6 md:p-8 lg:p-12
           text-center
           shadow-lg
           transition-all
@@ -47,11 +47,11 @@ const PetOwnerUploadDocuments = () => {
           hover:shadow-2xl
         "
         >
-          <div className="mx-auto mb-5 flex h-24 w-24 items-center justify-center rounded-full bg-orange-100">
+          <div className="mx-auto mb-5 flex h-16 w-16 md:h-20 md:w-20 lg:h-24 lg:w-24 items-center justify-center rounded-full bg-orange-100">
             <FaCloudUploadAlt className="text-5xl text-orange-500" />
           </div>
 
-          <h2 className="text-3xl font-bold text-slate-800">
+          <h2 className="text-xl md:text-2xl lg:text-3xl font-bold text-slate-800">
             Upload Lab Report
           </h2>
 
@@ -76,10 +76,10 @@ const PetOwnerUploadDocuments = () => {
         {/* Modal */}
         {showModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-            <div className="w-full max-w-2xl rounded-3xl bg-white shadow-2xl">
+            <div className="mx-4 w-full max-w-2xl rounded-3xl bg-white shadow-2xl max-h-[90vh] overflow-y-auto">
               {/* Modal Header */}
-              <div className="flex items-center justify-between border-b p-6">
-                <h2 className="text-2xl font-bold text-slate-800">
+             <div className="flex items-start md:items-center justify-between gap-3 border-b p-4 md:p-6">
+                <h2 className="text-lg md:text-xl lg:text-2xl font-bold text-slate-800">
                   Upload External Lab Report
                 </h2>
 
@@ -98,7 +98,7 @@ const PetOwnerUploadDocuments = () => {
               </div>
 
               {/* Modal Body */}
-              <div className="space-y-6 p-6">
+              <div className="space-y-5 p-4 md:p-6">
                 {/* Upload */}
                 <div>
                   <label className="mb-2 flex items-center gap-2 font-semibold text-slate-700">
@@ -186,34 +186,36 @@ const PetOwnerUploadDocuments = () => {
               </div>
 
               {/* Footer */}
-              <div className="flex justify-end gap-3 border-t p-6">
+             <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 border-t p-4 md:p-6">
                 <button
                   onClick={() => setShowModal(false)}
-                  className="
-                  rounded-2xl
-                  border
-                  px-6
-                  py-3
-                  font-medium
-                  hover:bg-slate-50
-                "
+                 className="
+w-full sm:w-auto
+rounded-2xl
+border
+px-6
+py-3
+font-medium
+hover:bg-slate-50
+"
                 >
                   Cancel
                 </button>
 
                 <button
-                  className="
-                  rounded-2xl
-                  bg-gradient-to-r
-                  from-orange-500
-                  to-orange-600
-                  px-6
-                  py-3
-                  font-medium
-                  text-white
-                  shadow-lg
-                  hover:shadow-xl
-                "
+                className="
+w-full sm:w-auto
+rounded-2xl
+bg-gradient-to-r
+from-orange-500
+to-orange-600
+px-6
+py-3
+font-medium
+text-white
+shadow-lg
+hover:shadow-xl
+"
                 >
                   Submit Report
                 </button>

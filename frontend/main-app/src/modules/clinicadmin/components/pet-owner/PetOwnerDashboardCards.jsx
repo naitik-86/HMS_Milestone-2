@@ -54,7 +54,7 @@ const PetOwnerDashboardCards = () => {
                   {card.title}
                 </p>
 
-                <h2 className="mt-4 text-5xl font-bold">
+                <h2 className="mt-4 text-3xl md:text-4xl lg:text-5xl font-bold">
                   {card.value}
                 </h2>
 
@@ -64,7 +64,7 @@ const PetOwnerDashboardCards = () => {
                 </div>
               </div>
 
-              <div className="text-5xl text-white/90">
+              <div className="text-3xl md:text-4xl lg:text-5xl text-white/90">
                 {card.icon}
               </div>
             </div>
@@ -73,10 +73,10 @@ const PetOwnerDashboardCards = () => {
       </div>
 
       {/* Bottom Cards */}
-      <div className="mt-8 grid gap-6 lg:grid-cols-3">
+      <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Recent Activity */}
-        <div className="lg:col-span-2 rounded-3xl bg-white p-8 shadow-lg">
-          <div className="mb-6 flex items-center justify-between">
+        <div className="lg:col-span-2 rounded-3xl bg-white p-5 md:p-8 shadow-lg">
+          <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <h3 className="text-2xl font-bold text-slate-800">
               Recent Activities
             </h3>
@@ -88,7 +88,7 @@ const PetOwnerDashboardCards = () => {
 
           <div className="space-y-4">
             <div className="rounded-2xl bg-slate-50 p-5 transition hover:bg-slate-100">
-              <div className="flex items-center gap-4">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                 <div className="rounded-xl bg-green-100 p-3 text-xl">
                   ✅
                 </div>
@@ -144,9 +144,9 @@ const PetOwnerDashboardCards = () => {
         </div>
 
         {/* Reminder Card */}
-        <div className="rounded-3xl bg-gradient-to-br from-orange-500 to-orange-700 p-8 text-white shadow-xl">
-          <div className="mb-6 flex items-center justify-between">
-            <h3 className="text-2xl font-bold">
+       <div className="rounded-3xl bg-gradient-to-br from-orange-500 to-orange-700 p-5 md:p-8 text-white shadow-xl">
+          <div className="mb-6 flex items-center justify-between gap-4">
+            <h3 className="text-xl md:text-2xl font-bold">
               Upcoming Vaccine
             </h3>
 
@@ -164,16 +164,17 @@ const PetOwnerDashboardCards = () => {
 
             <div className="mt-6">
               <button
-                className="
-                rounded-xl
-                bg-white
-                px-5
-                py-3
-                font-semibold
-                text-orange-600
-                transition
-                hover:scale-105
-              "
+              className="
+w-full sm:w-auto
+rounded-xl
+bg-white
+px-5
+py-3
+font-semibold
+text-orange-600
+transition
+hover:scale-105
+"
               >
                 View Details
               </button>

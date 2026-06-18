@@ -1,6 +1,9 @@
+import { useState } from "react";
 import { NavLink } from "react-router-dom";
 
 export default function PreConsulatationSideBar() {
+  const [isOpen, setIsOpen] = useState(false);
+
   const menus = [
     {
       name: "Dashboard",
@@ -25,44 +28,131 @@ export default function PreConsulatationSideBar() {
   ];
 
   return (
-    <div className="w-72 min-h-screen bg-[#081122] text-white flex flex-col">
+    <>
+      {/* Mobile Header */}
+      <div className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between bg-[#081122] px-4 py-3 text-white shadow-lg md:hidden">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500 to-blue-600">
+            🐾
+          </div>
 
-      {/* Logo */}
-      <div className="p-6 border-b border-slate-800">
-        <h1 className="text-2xl font-bold">VetCare</h1>
-        <p className="text-slate-400 text-sm mt-1">
-          Pre Consultation
-        </p>
+          <div>
+            <h2 className="text-sm font-bold">
+              VetCare
+            </h2>
+
+            <p className="text-[10px] text-slate-400">
+              Pre Consultation
+            </p>
+          </div>
+        </div>
+
+        <button
+          onClick={() => setIsOpen(true)}
+          className="rounded-xl bg-white/10 p-2"
+        >
+          ☰
+        </button>
       </div>
 
-      {/* Menu */}
-      <div className="p-4 flex-1">
-        <div className="space-y-3">
-          {menus.map((menu) => (
-            <NavLink
-              key={menu.name}
-              to={menu.path}
-              end={menu.path === ""} // ✅ important for dashboard active state
-              className={({ isActive }) =>
-                `flex items-center gap-4 px-4 py-4 rounded-2xl transition-all ${isActive
-                  ? "bg-orange-500 text-white"
-                  : "hover:bg-slate-800 text-slate-300"
-                }`
-              }
+      {/* Mobile Overlay */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/50 md:hidden"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+  <div
+  className={`
+   fixed md:relative
+top-[50px] md:top-0
+left-0 z-40
+    h-screen md:min-h-screen
+    w-[280px]
+    bg-[#081122]
+    text-white
+    flex flex-col
+    shadow-2xl
+    transition-transform
+    duration-300
+    ${
+      isOpen
+        ? "translate-x-0"
+        : "-translate-x-full"
+    }
+    md:translate-x-0
+  `}
+>
+        {/* Logo */}
+        <div className="border-b border-slate-800 p-6">
+          <div className="flex items-start justify-between">
+            <div>
+              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-500 to-blue-600 text-3xl">
+                🐾
+              </div>
+
+              <h1 className="text-2xl font-bold">
+                VetCare
+              </h1>
+
+              <p className="mt-1 text-sm text-slate-400">
+                Pre Consultation
+              </p>
+            </div>
+
+            <button
+              onClick={() => setIsOpen(false)}
+              className="text-2xl md:hidden"
             >
-              <span className="text-xl">{menu.icon}</span>
-              <span className="font-medium">{menu.name}</span>
-            </NavLink>
-          ))}
+              ✕
+            </button>
+          </div>
+        </div>
+
+        {/* Menu */}
+        <div className="flex-1 p-4">
+          <div className="space-y-3">
+            {menus.map((menu) => (
+              <NavLink
+                key={menu.name}
+                to={menu.path}
+                end={menu.path === ""}
+                onClick={() => setIsOpen(false)}
+                className={({ isActive }) =>
+                  `flex items-center gap-4 rounded-2xl px-4 py-4 transition-all ${
+                    isActive
+                      ? "bg-orange-500 text-white shadow-lg"
+                      : "text-slate-300 hover:bg-slate-800"
+                  }`
+                }
+              >
+                <span className="text-xl">
+                  {menu.icon}
+                </span>
+
+                <span className="font-medium">
+                  {menu.name}
+                </span>
+              </NavLink>
+            ))}
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="border-t border-slate-800 p-5">
+          <div className="rounded-2xl bg-white/5 p-4">
+            <p className="font-semibold">
+              Reception Staff
+            </p>
+
+            <p className="text-xs text-slate-400">
+              Active Module
+            </p>
+          </div>
         </div>
       </div>
-
-      {/* Footer */}
-      <div className="p-5 border-t border-slate-800">
-        <p className="text-sm text-slate-400">
-          Veterinary Clinic System
-        </p>
-      </div>
-    </div>
+    </>
   );
 }

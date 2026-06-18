@@ -74,8 +74,7 @@ export default function HistoryPets() {
 
 
 
-      <div className="flex-1 p-8">
-
+<div className="flex-1 p-4 md:p-6 lg:p-8">
         <Header
 
           title="History Pets"
@@ -83,8 +82,7 @@ export default function HistoryPets() {
         />
 
         {/* KPI Cards */}
-        <div className="grid lg:grid-cols-3 gap-6 mb-8">
-
+<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           {cards.map((card, index) => (
             <div
               key={index}
@@ -98,9 +96,9 @@ export default function HistoryPets() {
                     {card.title}
                   </p>
 
-                  <h2 className="text-4xl font-bold text-slate-800 mt-3">
-                    {card.value}
-                  </h2>
+                    <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-slate-800 mt-3">
+  {card.value}
+</h2>
                 </div>
 
                 <div
@@ -117,52 +115,56 @@ export default function HistoryPets() {
         </div>
 
         {/* Search Section */}
-        <div className="bg-white rounded-3xl shadow-sm p-6 mb-8">
+{/* Search Section */}
+<div className="bg-white rounded-3xl shadow-sm p-4 md:p-6 mb-8">
 
-          <div className="grid lg:grid-cols-4 gap-4">
+  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
 
-            <div className="relative">
+    {/* Search Input */}
+    <div className="relative sm:col-span-2 xl:col-span-1">
 
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
-                🔍
-              </span>
+      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
+        🔍
+      </span>
 
-              <input
-                type="text"
-                placeholder="Search Pet / Owner / Token..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-12 pr-4 py-4 border border-slate-200 rounded-2xl bg-slate-50 outline-none focus:bg-white focus:border-orange-500 focus:ring-4 focus:ring-orange-100"
-              />
+      <input
+        type="text"
+        placeholder="Search Pet / Owner / Token..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        className="w-full pl-12 pr-4 py-4 border border-slate-200 rounded-2xl bg-slate-50 outline-none focus:bg-white focus:border-orange-500 focus:ring-4 focus:ring-orange-100"
+      />
 
-            </div>
+    </div>
 
-            <input
-              type="date"
-              className="border border-slate-200 rounded-2xl px-5 py-4"
-            />
+    {/* Date */}
+    <input
+      type="date"
+      className="w-full border border-slate-200 rounded-2xl px-5 py-4"
+    />
 
-            <select className="border border-slate-200 rounded-2xl px-5 py-4">
-              <option>All Visit Types</option>
-              <option>Checkup</option>
-              <option>Vaccination</option>
-              <option>Consultation</option>
-            </select>
+    {/* Visit Type */}
+    <select className="w-full border border-slate-200 rounded-2xl px-5 py-4">
+      <option>All Visit Types</option>
+      <option>Checkup</option>
+      <option>Vaccination</option>
+      <option>Consultation</option>
+    </select>
 
-            <button className="bg-orange-500 hover:bg-orange-600 text-white rounded-2xl font-medium">
-              Search Records
-            </button>
+    {/* Button */}
+   <button className="w-full bg-orange-500 hover:bg-orange-600 text-white rounded-2xl font-medium py-4">
+  Search Records
+</button>
 
-          </div>
+  </div>
 
-        </div>
+</div>
 
         {/* Table */}
         <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
 
           {/* Table Header */}
-          <div className="flex items-center justify-between px-8 py-6 border-b border-slate-200">
-
+<div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 px-4 md:px-8 py-6 border-b border-slate-200">
             <div>
 
               <h2 className="text-xl font-bold text-slate-800">
@@ -181,9 +183,8 @@ export default function HistoryPets() {
 
           </div>
 
-          <div className="overflow-x-auto">
-
-            <table className="w-full">
+        <div className="hidden lg:block overflow-x-auto">
+  <table className="w-full">
 
               <thead className="bg-slate-50">
 
@@ -302,7 +303,7 @@ export default function HistoryPets() {
 
                         <div className="flex justify-center">
 
-                          <button className="bg-slate-800 hover:bg-slate-900 text-white px-5 py-2.5 rounded-xl font-medium">
+                          <button className="whitespace-nowrap bg-slate-800 hover:bg-slate-900 text-white px-5 py-2.5 rounded-xl font-medium">
                             📄 View Record
                           </button>
 
@@ -340,8 +341,39 @@ export default function HistoryPets() {
               </tbody>
 
             </table>
+</div>
+{/* Mobile Cards */}
+<div className="lg:hidden p-4 space-y-4">
+  {filteredRecords.map((item) => (
+    <div
+      key={item.id}
+      className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm"
+    >
+      <div className="flex items-center justify-between">
+        <span className="font-bold text-slate-800">
+          {item.token}
+        </span>
 
-          </div>
+        <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">
+          {item.visitType}
+        </span>
+      </div>
+
+      <div className="mt-4 space-y-2 text-sm">
+        <p><strong>Owner:</strong> {item.ownerName}</p>
+        <p><strong>Phone:</strong> {item.phoneNumber}</p>
+        <p><strong>Pet:</strong> {item.petName}</p>
+        <p><strong>Date:</strong> {item.visitDate}</p>
+        <p><strong>Doctor:</strong> {item.doctor}</p>
+      </div>
+
+      <button className="mt-4 w-full rounded-xl bg-slate-800 py-3 text-white">
+        📄 View Record
+      </button>
+    </div>
+  ))}
+</div>
+          
 
         </div>
 
