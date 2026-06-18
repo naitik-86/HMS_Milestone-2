@@ -12,7 +12,7 @@ import {
 } from '../../api/staffApi';
 
 // --- Multi-step Enrollment Form (Full-Screen Fixed Panel) ---
-function EnrollForm({ onClose, onSave, editData, mode }) {
+function EnrollForm({ onClose, onSave, editData, mode, staff }) {
   const isView = mode === 'view';
   const isEdit = mode === 'edit';
 
@@ -48,6 +48,43 @@ function EnrollForm({ onClose, onSave, editData, mode }) {
     accountActive: true,
     forcePasswordReset: true
   });
+
+
+  const validateStep = () => {
+    if (step === 1) {
+      if (
+        !form.fullName.trim() ||
+        !form.gender ||
+        !form.dateOfBirth ||
+        !form.mobileNumber.trim() ||
+        !form.email.trim()
+      ) {
+        alert("Please fill all required fields in Personal Information");
+        return false;
+      }
+    }
+
+    if (step === 2) {
+      if (
+        !form.role ||
+        !form.staffId ||
+        !form.dateOfJoining
+      ) {
+        alert("Please fill all required fields in Work & Access");
+        return false;
+      }
+    }
+
+    if (step === 3) {
+      if (!form.accountExpiryDate) {
+        alert("Please select account expiry date");
+        return false;
+      }
+    }
+
+    return true;
+  };
+
 
   useEffect(() => {
     if (editData) {
@@ -456,14 +493,14 @@ function EnrollForm({ onClose, onSave, editData, mode }) {
                       onChange={e => update('reportingTo', e.target.value)}
                     >
                       <option value="">Select Manager</option>
-                      {staffData.map((s, index) => (
+                      {staff.map((s, index) => (
                         <option
                           key={s.employmentInfo?.staffId || index}
-                          value={s.personalInfo.fullName}
+                          value={s.personalInfo?.fullName || ""}
                         >
-                          {s.personalInfo.fullName}
+                          {s.personalInfo?.fullName || "No Name"}
                         </option>
-                      ))}                    </select>
+                      ))}                   </select>
                   </div>
                   <div>
                     <label className={labelClass}>Staff ID <span className="text-[#9CA3AF] font-normal">(System Generated)</span></label>
@@ -654,9 +691,22 @@ function EnrollForm({ onClose, onSave, editData, mode }) {
 
           <button
             onClick={() => {
-              if (step < 3) setStep(step + 1);
-              else if (!isView) onSave(form);
-              else onClose();
+              if (isView) {
+                onClose();
+                return;
+              }
+
+              if (step < 3) {
+                const isValid = validateStep();
+                if (isValid) {
+                  setStep(step + 1);
+                }
+              } else {
+                const isValid = validateStep();
+                if (isValid) {
+                  onSave(form);
+                }
+              }
             }}
             className="px-8 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors cursor-pointer"
             style={{ backgroundColor: '#E8630A', border: 'none' }}
@@ -768,6 +818,7 @@ export default function StaffEnrollment() {
             onSave={handleSave}
             editData={selectedStaff}
             mode={modalMode}
+            staff={staff}
           />
         )}
 

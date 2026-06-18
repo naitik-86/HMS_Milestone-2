@@ -1,8 +1,9 @@
-import { Routes } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 
 import PublicRoutes from "./PublicRoutes";
 import SuperAdminRoutes from "./SuperAdminRoutes";
 import ClinicAdminRoutes from "./ClinicAdminRoutes";
+import { PageNotFound } from "../modules/public/pages";
 
 function AppRoutes() {
     return (
@@ -10,6 +11,9 @@ function AppRoutes() {
             {PublicRoutes}
             {SuperAdminRoutes}
             {ClinicAdminRoutes}
+
+            <Route path="*" element={<PageNotFound />} />
+
         </Routes>
     );
 }
