@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { useEffect } from 'react';
 
 // ─── Mock data (replace with your imports) ───────────────────────────────────
 const species = ['Dog', 'Cat', 'Bird', 'Rabbit', 'Hamster', 'Guinea Pig', 'Reptile'];
@@ -372,10 +373,74 @@ export default function Groomer() {
   const [editGroomer, setEditGroomer] = useState(null);
   const [viewGroomer, setViewGroomer] = useState(null);
 
+  const [groomers, setGroomers] = useState([]);
+  const [showModal, setShowModal] = useState(false);
+  const [modalMode, setModalMode] = useState("create");
+  const [selectedGroomer, setSelectedGroomer] = useState(null);
+
+  useEffect(() => {
+    fetchGroomers();
+  }, []);
+
+  const fetchGroomers = async () => {
+    try {
+      const response = await getGroomers();
+      setGroomers(response.data || []);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const handleOpenCreate = () => {
+    setSelectedGroomer(null);
+    setModalMode("create");
+    setShowModal(true);
+  };
+
+  const handleOpenEdit = (groomer) => {
+    setSelectedGroomer(groomer);
+    setModalMode("edit");
+    setShowModal(true);
+  };
+
+  const handleOpenView = (groomer) => {
+    setSelectedGroomer(groomer);
+    setModalMode("view");
+    setShowModal(true);
+  };
+
+  const handleSave = async (form) => {
+    try {
+      if (modalMode === "edit") {
+        await updateGroomer(
+          selectedGroomer._id,
+          form
+        );
+      } else {
+        await createGroomer(form);
+      }
+
+      await fetchGroomers();
+      setShowModal(false);
+
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    try {
+      await deleteGroomer(id);
+      await fetchGroomers();
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   const openModal = (mode, data = null) => {
-    if (mode === 'add')  { setShowAddModal(true);  setEditGroomer(null);  setViewGroomer(null); }
-    if (mode === 'edit') { setEditGroomer(data);   setShowAddModal(false); setViewGroomer(null); }
-    if (mode === 'view') { setViewGroomer(data);   setShowAddModal(false); setEditGroomer(null); }
+    if (mode === 'add') { setShowAddModal(true); setEditGroomer(null); setViewGroomer(null); }
+    if (mode === 'edit') { setEditGroomer(data); setShowAddModal(false); setViewGroomer(null); }
+    if (mode === 'view') { setViewGroomer(data); setShowAddModal(false); setEditGroomer(null); }
   };
 
   const closeAll = () => { setShowAddModal(false); setEditGroomer(null); setViewGroomer(null); };
@@ -427,10 +492,12 @@ export default function Groomer() {
           <p className="text-sm text-gray-500 mt-1 mb-0">Manage grooming staff skills & service capabilities</p>
         </div>
         <button
-          onClick={() => openModal('add')}
+          onClick={handleOpenCreate}
           className="text-white rounded-lg px-5 py-2.5 text-sm font-semibold border-0 hover:opacity-90 transition-opacity cursor-pointer"
           style={{ background: '#E8630A' }}
-        >+ Add Groomer Details</button>
+        >
+          + Add Groomer Details
+        </button>
       </div>
 
       {/* ── Groomer Cards ── */}
