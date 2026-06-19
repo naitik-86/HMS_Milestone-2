@@ -28,8 +28,7 @@ export default function ReceptionSidebar() {
   ];
 
   return (
-    <aside className="w-72 h-screen sticky top-0 bg-[#0B1324] text-white flex flex-col shadow-xl">
-
+    <aside className="fixed top-0 left-0 z-50 w-[240px] h-screen bg-[#0B1324] text-white flex flex-col shadow-xl">
       {/* Logo */}
       <div className="p-6 border-b border-slate-800">
         <h1 className="text-3xl font-bold">
