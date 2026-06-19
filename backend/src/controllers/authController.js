@@ -337,22 +337,21 @@
 
 const User = require("../models/User");
 const SuperAdmin = require("../models/SuperAdmin");
+const ClinicAdmin = require("../models/ClinicAdmin");
+const LoginOtp = require('../models/LoginOtp');
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const ClinicAdmin = require("../models/ClinicAdmin")
-const LoginOtp = require('../models/LoginOtp');
+
 const { generateOTP } = require('../utils/otpService');
-const SuperAdminOtpSecret = process.env.SUPER_ADMIN_OTP_SALT || 'superadmin-otp';
-const sendEmail = require('../utils/emailService');
 const { sendOtpMultiChannel } = require('../utils/sendOtpMultiChannel');
+const sendEmail = require('../utils/emailService');
 
 /* ==========================================
-   LOGIN (EMAIL + PASSWORD ONLY)
+   UNIVERSAL LOGIN (EMAIL + PASSWORD)
 ========================================== */
 
 exports.login = async (req, res) => {
   try {
-
     const { email, password } = req.body;
 
     if (!email || !password) {
@@ -365,7 +364,7 @@ exports.login = async (req, res) => {
     /* =========================
        1. CHECK SUPER ADMIN
     ========================= */
-    const admin = await SuperAdmin.findOne({ email }).select("+password");
+    const admin = await SuperAdmin.findOne({ email: email.toLowerCase() }).select("+password");
 
     if (admin) {
       const isMatch = await bcrypt.compare(password, admin.password);
@@ -377,14 +376,10 @@ exports.login = async (req, res) => {
         });
       }
 
-      // IMPORTANT: SUPER_ADMIN login is OTP-gated as per requirement.
-      // We generate + send 2 OTPs (email + mobile), store them in DB,
-      // then client must call /auth/superadmin/verify-otp.
+      // 2FA OTP Generation for Super Admin
       const otpEmail = generateOTP();
       const otpMobile = generateOTP();
 
-      // For SuperAdmin mobile, we use env var (no mobile in SuperAdmin model)
-      // so ensure you set SUPER_ADMIN_MOBILE in .env
       const mobile = process.env.SUPER_ADMIN_MOBILE;
       if (!mobile) {
         return res.status(500).json({
@@ -393,7 +388,7 @@ exports.login = async (req, res) => {
         });
       }
 
-      const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+      const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes expiry
 
       await LoginOtp.create({
         userType: 'SUPER_ADMIN',
@@ -405,7 +400,7 @@ exports.login = async (req, res) => {
         expiresAt,
       });
 
-      // Send both OTPs
+      // Send both OTPs via Email and WhatsApp/SMS
       await sendOtpMultiChannel({
         email: admin.email,
         mobile,
@@ -417,18 +412,19 @@ exports.login = async (req, res) => {
       return res.status(200).json({
         success: true,
         message: "OTP sent to registered email and mobile. Verify to login.",
-        // Do not return JWT yet
         role: "SUPER_ADMIN",
-        user: { id: admin._id, email: admin.email, role: 'SUPER_ADMIN' },
+        user: { 
+            id: admin._id, 
+            email: admin.email, 
+            role: 'SUPER_ADMIN' 
+        },
       });
     }
 
-
-
     /* =========================
-       1. CHECK CLINIC ADMIN
+       2. CHECK CLINIC ADMIN
     ========================= */
-    const clinicAdmin = await ClinicAdmin.findOne({ email }).select("+password");
+    const clinicAdmin = await ClinicAdmin.findOne({ email: email.toLowerCase() }).select("+password");
 
     if (clinicAdmin) {
       const isMatch = await bcrypt.compare(password, clinicAdmin.password);
@@ -440,11 +436,13 @@ exports.login = async (req, res) => {
         });
       }
 
+      // Generate JWT Token (Added clinicId for Multi-tenancy)
       const token = jwt.sign(
         {
           id: clinicAdmin._id,
           role: "CLINIC_ADMIN",
           email: clinicAdmin.email,
+          clinicId: clinicAdmin.clinicId || clinicAdmin.clinic // Adjust based on your schema
         },
         process.env.JWT_SECRET,
         { expiresIn: "1d" }
@@ -455,14 +453,19 @@ exports.login = async (req, res) => {
         message: "Login successful",
         token,
         role: "CLINIC_ADMIN",
-        user: clinicAdmin,
+        user: {
+            id: clinicAdmin._id,
+            email: clinicAdmin.email,
+            role: "CLINIC_ADMIN",
+            clinicId: clinicAdmin.clinicId || clinicAdmin.clinic
+        },
       });
     }
 
     /* =========================
-       2. CHECK NORMAL USERS
+       3. CHECK NORMAL USERS (Staff/Doctors/Reception)
     ========================= */
-    const user = await User.findOne({ email }).select("+password");
+    const user = await User.findOne({ email: email.toLowerCase() }).select("+password");
 
     if (!user) {
       return res.status(404).json({
@@ -480,6 +483,7 @@ exports.login = async (req, res) => {
       });
     }
 
+    // Generate JWT Token
     const token = jwt.sign(
       {
         id: user._id,
@@ -495,14 +499,21 @@ exports.login = async (req, res) => {
       message: "Login successful",
       token,
       role: user.role,
-      user,
+      user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          clinicId: user.clinicId
+      },
     });
+
   } catch (error) {
     console.error("LOGIN ERROR:", error);
-
     return res.status(500).json({
       success: false,
-      message: error.message,
+      message: "An internal server error occurred during login.",
+      error: error.message
     });
   }
 };

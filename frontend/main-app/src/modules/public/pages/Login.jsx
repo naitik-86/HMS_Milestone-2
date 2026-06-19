@@ -48,9 +48,10 @@ export default function Login() {
         password: form.password,
       });
 
-      localStorage.setItem("token", response.token);
-      localStorage.setItem("role", response.user.role);
-
+      if (response.role !== "SUPER_ADMIN") {
+        localStorage.setItem("token", response.token);
+      }
+      localStorage.setItem("role", response.user?.role || response.role);
 
       setShowVerificationModal(true);
     } catch (error) {
@@ -103,6 +104,22 @@ export default function Login() {
   };
   const handleContinue = async () => {
     const role = localStorage.getItem("role");
+
+    if (role === "SUPER_ADMIN") {
+      try {
+        const verifyRes = await API.post("/auth/superadmin/verify-otp", {
+          email: form.email,
+          otpEmail: emailOtp,
+          otpMobile: phoneOtp
+        });
+        if (verifyRes.data?.token) {
+          localStorage.setItem("token", verifyRes.data.token);
+        }
+      } catch (error) {
+        alert(error.response?.data?.message || "OTP Verification failed");
+        return;
+      }
+    }
 
     try {
       const redirectRes = await API.get("/dashboard");

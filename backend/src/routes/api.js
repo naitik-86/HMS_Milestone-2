@@ -3,15 +3,11 @@ const router = express.Router();
 
 // Middleware Imports
 const { protect, authorize } = require('../middlewares/auth');
-const upload = require('../middlewares/upload'); // NEW: AWS S3 Multer Middleware
+const upload = require('../middlewares/upload'); // AWS S3 Multer Middleware
 
-// Controller Imports
-const { requestLoginOTP, verifyOTPAndLogin, verifySuperAdmin } = require('../controllers/authController');
+// Route & Controller Imports
+const authRoutes = require('./authRoutes');
 const authOtpRoutes = require('./authOtpRoutes');
-
-
-
-
 
 const {
   getMe,
@@ -22,8 +18,8 @@ const {
   getAllClinics,
   updateSubscription,
   getAdminDashboard,
-  updateClinicVerification, // NEW
-  uploadClinicDocuments     // NEW
+  updateClinicVerification, 
+  uploadClinicDocuments     
 } = require('../controllers/adminController');
 
 const {
@@ -50,15 +46,14 @@ const { addReview, getClinicReviews, deleteReview } = require('../controllers/re
 const { getDashboardRedirect } = require('../controllers/dashboardController');
 
 // ==========================================
-// AUTHENTICATION
+// AUTHENTICATION ROUTES (Public)
 // ==========================================
-// router.post('/auth/request-otp', requestLoginOTP);
-// router.post('/auth/login', verifySuperAdmin); // log in of superadmin via email & password
-// router.post('/auth/verify-otp', verifyOTPAndLogin);
+router.use('/auth', authRoutes);
+router.use('/auth', authOtpRoutes);
 
 
 // ==========================================
-// M1 & M4: USER & ADMIN ROUTES
+// M1 & M4: USER & ADMIN ROUTES (Protected)
 // ==========================================
 router.get('/users/me', protect, getMe);
 
@@ -67,7 +62,6 @@ router.post('/clinics', protect, authorize('SUPER_ADMIN'), createClinic);
 router.get('/clinics', protect, authorize('SUPER_ADMIN'), getAllClinics);
 router.put('/clinics/:id/subscription', protect, authorize('SUPER_ADMIN'), updateSubscription);
 router.get('/clinics/dashboard', protect, authorize('SUPER_ADMIN'), getAdminDashboard);
-// NEW: Document Upload and Verification State
 router.put('/clinics/:id/verification', protect, authorize('SUPER_ADMIN'), updateClinicVerification);
 router.post('/clinics/:id/documents', protect, authorize('SUPER_ADMIN'), upload.fields([
   { name: 'vetCouncilCertificate', maxCount: 1 },
@@ -84,7 +78,6 @@ router.delete('/users/staff/:id', protect, authorize('CLINIC_ADMIN'), deleteStaf
 // ==========================================
 // M2: RECEPTION & FRONT DESK ROUTES
 // ==========================================
-
 router.post('/owners/register', protect, authorize('RECEPTIONIST', 'CLINIC_ADMIN'), registerOwnerAndPet);
 router.get('/owners/search', protect, authorize('RECEPTIONIST', 'CLINIC_ADMIN', 'DOCTOR'), searchOwner);
 router.get('/appointments/queue', protect, authorize('RECEPTIONIST', 'CLINIC_ADMIN'), getClinicQueue);
@@ -134,13 +127,7 @@ router.delete('/reviews/:id', protect, authorize('SUPER_ADMIN'), deleteReview);
 
 // ==========================================
 // CENTRALIZED DASHBOARD REDIRECT
-// Frontend should call this after login.
-// Optional disambiguation: /dashboard?as=lab-technician for PARA_MEDICAL.
 // ==========================================
 router.get('/dashboard', protect, getDashboardRedirect);
 
-
-router.use('/auth', authOtpRoutes);
-
 module.exports = router;
-

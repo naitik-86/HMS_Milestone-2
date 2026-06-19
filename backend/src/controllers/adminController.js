@@ -221,11 +221,17 @@ exports.uploadClinicDocuments = async (req, res) => {
     if (!clinic) return res.status(404).json({ success: false, message: 'Clinic not found' });
 
     // Optionally: validate required documents exist
-    const hasAny = Boolean(
-      (req.files && req.files.vetCouncilCertificate && req.files.vetCouncilCertificate.length) ||
-      (req.files && req.files.tradeLicense && req.files.tradeLicense.length) ||
-      (req.files && req.files.cancelledCheque && req.files.cancelledCheque.length)
-    );
+    const normalize = (v) => {
+      if (!v) return [];
+      return Array.isArray(v) ? v : [v];
+    };
+
+    const vet = normalize(req.files?.vetCouncilCertificate);
+    const trade = normalize(req.files?.tradeLicense);
+    const cheque = normalize(req.files?.cancelledCheque);
+
+    const hasAny = vet.length > 0 || trade.length > 0 || cheque.length > 0;
+
 
     if (!hasAny) {
       return res.status(400).json({ success: false, message: 'No documents uploaded' });
