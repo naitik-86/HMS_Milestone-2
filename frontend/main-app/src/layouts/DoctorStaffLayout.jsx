@@ -3,12 +3,12 @@ import { Outlet } from "react-router-dom";
 
 function DoctorLayout() {
     return (
-        <div className="flex">
+        <div className="min-h-screen bg-slate-100 lg:flex">
             <DoctorSidebar />
 
-            <div className="flex-1 p-6 overflow-y-auto h-screen">
+            <main className="min-w-0 flex-1 px-4 pb-4 pt-20 sm:px-6 sm:pb-6 lg:h-screen lg:overflow-y-auto lg:p-6">
                 <Outlet />
-            </div>
+            </main>
         </div>
     );
 }

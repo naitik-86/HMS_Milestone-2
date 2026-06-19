@@ -75,12 +75,12 @@ export default function CompletedPets() {
     <div className="flex min-h-screen bg-slate-100">
 
 
-      <div className="flex-1 p-4 md:p-6 lg:p-8 overflow-x-hidden">
-
-        <Header
-          title="Completed Pets"
-          subtitle="Successfully completed consultations"
-        />
+      <div className="flex-1 p-4 md:p-6 lg:p-8 overflow-x-hidden mt-[70px] md:mt-0">
+<Header
+  title="Completed Pets"
+  subtitle="Successfully completed consultations"
+  showSearch={false}
+/>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
