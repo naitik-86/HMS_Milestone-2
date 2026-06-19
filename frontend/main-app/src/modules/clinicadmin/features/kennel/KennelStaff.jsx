@@ -1,16 +1,37 @@
-import React, { useState, useRef } from 'react';
+import {
+  useEffect,
+  useState,
+  useRef,
+} from "react";
+
+import { getStaff } from "../../api/staffApi";
+
+import {
+  getKennels,
+  createKennel,
+  updateKennel,
+  deleteKennel,
+  toggleKennelStatus,
+} from "../../api/kennelApi";
+
+import { showToast } from "../../../../shared/components/toast"
 
 // ─── Mock data (replace with your imports) ───────────────────────────────────
-const kennel_species = ['Dog', 'Cat', 'Bird', 'Rabbit', 'Hamster', 'Guinea Pig', 'Reptile', 'Fish'];
-const kennel_shifts  = ['Morning (6AM–2PM)', 'Afternoon (2PM–10PM)', 'Night (10PM–6AM)', 'Full Day', 'Flexible'];
-
-const initialKennelStaff = [
-  { id: 'KNL-001', name: 'Marcus Webb',    initials: 'MW', color: '#F97316', experience: 5, shift: 'Morning (6AM–2PM)',   firstAidCert: true,  canMedicate: true,  status: 'Active',   species: ['Dog', 'Cat', 'Rabbit'],          firstAidFile: null },
-  { id: 'KNL-002', name: 'Diana Torres',   initials: 'DT', color: '#10B981', experience: 2, shift: 'Afternoon (2PM–10PM)',firstAidCert: false, canMedicate: false, status: 'Active',   species: ['Dog', 'Bird'],                   firstAidFile: null },
-  { id: 'KNL-003', name: 'Liam Chen',      initials: 'LC', color: '#6366F1', experience: 7, shift: 'Full Day',            firstAidCert: true,  canMedicate: true,  status: 'Inactive', species: ['Cat', 'Hamster', 'Guinea Pig'],  firstAidFile: null },
+const kennel_species = ["Dog",
+  "Cat",
+  "Bird",
+  "Rabbit",
+  "Hamster",
+  "Guinea Pig",
+  "Reptile",
+  "Fish",];
+const kennel_shifts = [
+  "Day",
+  "Night",
+  "Rotating"
 ];
 
-const COLORS  = ['#F97316', '#10B981', '#6366F1', '#A855F7', '#06B6D4', '#EF4444', '#F59E0B'];
+const COLORS = ['#F97316', '#10B981', '#6366F1', '#A855F7', '#06B6D4', '#EF4444', '#F59E0B'];
 const mkInitials = (name) => name.trim().split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
 
 // ─── File Upload Zone ─────────────────────────────────────────────────────────
@@ -20,7 +41,7 @@ function FileUploadZone({ uploadedFiles, setUploadedFiles, label = 'Upload File'
 
   const process = (files) => {
     const valid = Array.from(files).filter(f => f.type === 'application/pdf' || f.type.startsWith('image/'));
-    const big   = valid.filter(f => f.size > 10 * 1024 * 1024);
+    const big = valid.filter(f => f.size > 10 * 1024 * 1024);
     if (big.length) alert(`${big.length} file(s) exceed 10 MB and were skipped.`);
     const ok = valid.filter(f => f.size <= 10 * 1024 * 1024).map(f => ({
       file: f, name: f.name, size: f.size, type: f.type,
@@ -36,7 +57,7 @@ function FileUploadZone({ uploadedFiles, setUploadedFiles, label = 'Upload File'
     return next;
   });
 
-  const fmt = (b) => b < 1024 ? `${b} B` : b < 1048576 ? `${(b/1024).toFixed(1)} KB` : `${(b/1048576).toFixed(1)} MB`;
+  const fmt = (b) => b < 1024 ? `${b} B` : b < 1048576 ? `${(b / 1024).toFixed(1)} KB` : `${(b / 1048576).toFixed(1)} MB`;
 
   return (
     <div>
@@ -111,12 +132,16 @@ function ViewModal({ staff, onClose }) {
       <div className="flex justify-between items-start mb-7 pb-5 border-b border-gray-100">
         <div className="flex items-center gap-3.5">
           <div className="rounded-full flex items-center justify-center font-bold flex-shrink-0"
-            style={{ width: 52, height: 52, fontSize: 16, background: `${staff.color}22`, border: `2px solid ${staff.color}55`, color: staff.color }}>
-            {staff.initials}
+            style={{
+              background: "#FFF7ED",
+              border: "2px solid #FDBA74",
+              color: "#EA580C"
+            }}            >
+            {staff.staffId?.name?.charAt(0)}
           </div>
           <div>
-            <h2 className="text-xl font-bold text-gray-900 m-0" style={{ fontFamily: 'Syne, sans-serif' }}>{staff.name}</h2>
-            <p className="text-xs text-gray-500 mt-0.5">{staff.id} · {staff.experience} years experience</p>
+            <h2 className="text-xl font-bold text-gray-900 m-0" style={{ fontFamily: 'Syne, sans-serif' }}>{staff.staffId?.name}</h2>
+            <p className="text-xs text-gray-500 mt-0.5">{staff.staffId?.employeeId} · {staff.experience} years experience</p>
           </div>
         </div>
         <button onClick={onClose} className="w-9 h-9 flex items-center justify-center bg-gray-50 border border-gray-200 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors cursor-pointer">✕</button>
@@ -125,11 +150,11 @@ function ViewModal({ staff, onClose }) {
       <div className="grid grid-cols-2 gap-4">
         {[
           { label: 'Employee ID', value: staff.id },
-          { label: 'Experience',  value: `${staff.experience} Years` },
-          { label: 'Shift',       value: staff.shift },
-          { label: 'Status',      value: staff.status },
-          { label: 'First Aid',   value: staff.firstAidCert ? '✓ Certified' : '✗ Not Certified' },
-          { label: 'Medication',  value: staff.canMedicate  ? '✓ Can Administer' : '✗ Cannot Administer' },
+          { label: 'Experience', value: `${staff.experience} Years` },
+          { label: 'Shift', value: staff.shift },
+          { label: 'Status', value: staff.status },
+          { label: 'First Aid', value: staff.firstAidCertified ? '✓ Certified' : '✗ Not Certified' },
+          { label: 'Medication', value: staff.canAdministerMedication ? '✓ Can Administer' : '✗ Cannot Administer' },
         ].map(({ label, value }) => (
           <div key={label} className="bg-gray-50 rounded-xl p-3.5">
             <div className="text-[10px] font-bold text-gray-400 tracking-widest mb-1">{label.toUpperCase()}</div>
@@ -141,8 +166,17 @@ function ViewModal({ staff, onClose }) {
       <div className="mt-5">
         <div className="text-[10px] font-bold text-gray-400 tracking-widest mb-2">SPECIES COMFORTABLE WITH</div>
         <div className="flex flex-wrap gap-1.5">
-          {staff.species.map(s => (
-            <span key={s} className="text-xs font-semibold px-3 py-1 rounded-full" style={{ background: 'rgba(249,115,22,0.1)', color: '#F97316' }}>{s}</span>
+          {staff.speciesComfortableWith?.map((s) => (
+            <span
+              key={s}
+              className="text-xs font-semibold px-3 py-1 rounded-full"
+              style={{
+                background: "rgba(249,115,22,0.1)",
+                color: "#F97316",
+              }}
+            >
+              {s}
+            </span>
           ))}
         </div>
       </div>
@@ -156,49 +190,127 @@ function ViewModal({ staff, onClose }) {
 
 // ─── Kennel Form ──────────────────────────────────────────────────────────────
 function KennelForm({ onClose, editData, onSave }) {
-  const [name,            setName]            = useState(editData?.name        || '');
-  const [experience,      setExperience]      = useState(editData?.experience  || '');
-  const [shift,           setShift]           = useState(editData?.shift       || '');
-  const [selectedSpecies, setSelectedSpecies] = useState(editData?.species     || []);
-  const [firstAid,        setFirstAid]        = useState(editData?.firstAidCert ?? false);
-  const [canMedicate,     setCanMedicate]     = useState(editData?.canMedicate  ?? false);
-  const [firstAidFiles,   setFirstAidFiles]   = useState([]);
-  const [errors,          setErrors]          = useState({});
+
+  console.log("Edit Data:", editData);
+  const [name, setName] = useState(editData?.name || '');
+  const [experience, setExperience] =
+    useState(editData?.experience || '');
+
+  const [shift, setShift] =
+    useState(editData?.shift || '');
+
+  const [selectedSpecies, setSelectedSpecies] =
+    useState(
+      editData?.speciesComfortableWith || []
+    );
+
+  const [firstAid, setFirstAid] =
+    useState(
+      editData?.firstAidCertified ?? false
+    );
+
+  const [canMedicate, setCanMedicate] =
+    useState(
+      editData?.canAdministerMedication ?? false
+    );
+
+  const [firstAidFiles, setFirstAidFiles] = useState([]);
+  const [errors, setErrors] = useState({});
+  const [staffId, setStaffId] = useState(
+    editData?.staffId?._id || ""
+  );
+  const [staffOptions, setStaffOptions] = useState([]);
+
+
+  useEffect(() => {
+    fetchStaff();
+  }, []);
+
+  const fetchStaff = async () => {
+    try {
+      const res = await getStaff();
+
+      console.log("Staff API Response:", res);
+
+      setStaffOptions(res.data);
+      console.log("***", res.data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const inputCls = "w-full px-3.5 py-2.5 border rounded-lg text-sm text-gray-900 bg-white outline-none transition-colors focus:border-orange-400 appearance-none";
-  const errCls   = (k) => errors[k] ? 'border-red-400' : 'border-gray-200';
+  const errCls = (k) => errors[k] ? 'border-red-400' : 'border-gray-200';
 
   const toggle = (list, setList, item) =>
     setList(list.includes(item) ? list.filter(x => x !== item) : [...list, item]);
 
   const validate = () => {
     const e = {};
-    if (!name.trim())      e.name       = 'Name is required';
+    if (!staffId)
+      e.staffId =
+        "Please select staff";
     if (!experience || isNaN(experience) || Number(experience) < 0) e.experience = 'Valid experience required';
-    if (!shift)            e.shift      = 'Please select a shift';
-    if (selectedSpecies.length === 0)   e.species   = 'Select at least one species';
+    if (!shift) e.shift = 'Please select a shift';
+    if (selectedSpecies.length === 0) e.species = 'Select at least one species';
     setErrors(e);
     return Object.keys(e).length === 0;
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!validate()) return;
-    const isEdit = !!editData;
-    const saved = {
-      id:           editData?.id || `KNL-${String(Date.now()).slice(-3)}`,
-      name:         name.trim(),
-      initials:     mkInitials(name),
-      color:        editData?.color || COLORS[Math.floor(Math.random() * COLORS.length)],
-      experience:   Number(experience),
+
+    const payload = {
+      staffId,
+
+      experience: Number(experience),
+
       shift,
-      firstAidCert: firstAid,
-      canMedicate,
-      status:       editData?.status || 'Active',
-      species:      selectedSpecies,
-      firstAidFile: firstAidFiles[0]?.name || editData?.firstAidFile || null,
+
+      firstAidCertified: firstAid,
+
+      canAdministerMedication: canMedicate,
+
+      speciesComfortableWith: selectedSpecies,
+
+      firstAidCertificate:
+        firstAidFiles?.[0] || null,
     };
-    onSave(saved, isEdit);
-    onClose();
+
+    try {
+      if (editData) {
+        await updateKennel(
+          editData._id,
+          payload
+        );
+        showToast({
+          type: "success",
+          title: "Kennel Updated",
+          description: "Kennel details have been updated successfully.",
+        });
+      } else {
+        await createKennel(
+          payload
+        );
+        showToast({
+          type: "success",
+          title: "Kennel Created",
+          description: "Kennel details have been created successfully.",
+        });
+      }
+
+      onClose();
+
+
+    } catch (err) {
+      console.error(err);
+      showToast({
+        type: "error",
+        title: "Operation Failed",
+        description: "Unable to save kennel details. Please try again.",
+      });
+    }
+
   };
 
   return (
@@ -216,7 +328,7 @@ function KennelForm({ onClose, editData, onSave }) {
               {editData ? 'Edit Kennel Staff Details' : 'Add Kennel Staff Details'}
             </h2>
             <p className="text-sm text-gray-500 mt-1 mb-0">
-              {editData ? `Editing profile for ${editData.name}` : 'Register kennel staff capabilities & certifications'}
+              {editData ? `Editing profile for ${editData?.staffId?.name} ` : 'Register kennel staff capabilities & certifications'}
             </p>
           </div>
           <button onClick={onClose}
@@ -232,10 +344,42 @@ function KennelForm({ onClose, editData, onSave }) {
         <SectionCard title="6.1 Kennel Staff Identity & Experience">
           <div className="grid grid-cols-2 gap-5">
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1.5">Full Name <span className="text-red-400">*</span></label>
-              <input className={`${inputCls} ${errCls('name')}`} placeholder="e.g. Marcus Webb"
-                value={name} onChange={e => { setName(e.target.value); setErrors(p => ({ ...p, name: '' })); }} />
-              {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name}</p>}
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                Staff Member
+                <span className="text-red-400">*</span>
+              </label>
+
+              <select
+                className={`${inputCls} ${errCls('staffId')}`}
+                value={staffId}
+                onChange={(e) => {
+                  setStaffId(e.target.value);
+
+                  setErrors((p) => ({
+                    ...p,
+                    staffId: "",
+                  }));
+                }}
+              >
+                <option value="">
+                  Select Staff Member
+                </option>
+
+                {staffOptions?.map((staff) => (
+                  <option
+                    key={staff._id}
+                    value={staff._id}
+                  >
+                    {staff.personalInfo?.fullName} ({staff.employmentInfo?.staffId})
+                  </option>
+                ))}
+              </select>
+
+              {errors.staffId && (
+                <p className="text-xs text-red-500 mt-1">
+                  {errors.staffId}
+                </p>
+              )}
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1.5">Experience in Years <span className="text-red-400">*</span></label>
@@ -327,15 +471,30 @@ function KennelForm({ onClose, editData, onSave }) {
 
 // ─── Main KennelStaff Page ────────────────────────────────────────────────────
 export default function KennelStaff() {
-  const [staff,       setStaff]       = useState(initialKennelStaff);
-  const [showAdd,     setShowAdd]     = useState(false);
-  const [editStaff,   setEditStaff]   = useState(null);
-  const [viewStaff,   setViewStaff]   = useState(null);
-  const [toast,       setToast]       = useState('');
+  const [staff, setStaff] = useState([]);
+  const [showAdd, setShowAdd] = useState(false);
+  const [editStaff, setEditStaff] = useState(null);
+  const [viewStaff, setViewStaff] = useState(null);
+  const [toast, setToast] = useState('');
 
-  const closeAll   = () => { setShowAdd(false); setEditStaff(null); setViewStaff(null); };
+  useEffect(() => {
+    fetchKennels();
+  }, []);
 
-  const showToast  = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
+
+  const fetchKennels = async () => {
+    try {
+      const res = await getKennels();
+
+      setStaff(res.data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const closeAll = () => { setShowAdd(false); setEditStaff(null); setViewStaff(null); };
+
+  const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
 
   const handleSave = (data, isEdit) => {
     if (isEdit) {
@@ -397,17 +556,23 @@ export default function KennelStaff() {
       {/* Cards */}
       <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))' }}>
         {staff.map(k => (
-          <div key={k.id} className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-gray-200 transition-all duration-200">
+          <div key={k._id} className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-gray-200 transition-all duration-200">
 
             {/* Card Header */}
             <div className="flex items-center gap-3 mb-4">
-              <div className="rounded-full flex items-center justify-center font-bold flex-shrink-0"
-                style={{ width: 44, height: 44, fontSize: 14, background: `${k.color}18`, border: `2px solid ${k.color}44`, color: k.color }}>
-                {k.initials}
+              <div
+                className="rounded-full flex items-center justify-center font-bold flex-shrink-0 bg-orange-100 text-orange-600"
+                style={{
+                  width: 44,
+                  height: 44,
+                  fontSize: 14,
+                }}
+              >
+                {k.staffId?.name?.charAt(0)}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-sm font-bold text-gray-900 truncate">{k.name}</div>
-                <div className="text-xs text-gray-500 mt-0.5">{k.id} · {k.experience} yrs exp</div>
+                <div className="text-sm font-bold text-gray-900 truncate">{k.staffId?.name}</div>
+                <div className="text-xs text-gray-500 mt-0.5">{k.staffId?.employeeId} · {k.experience} yrs exp</div>
               </div>
               <span className={`text-xs font-semibold px-2.5 py-1 rounded-full flex-shrink-0 ${k.status === 'Active' ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
                 {k.status}
@@ -423,13 +588,13 @@ export default function KennelStaff() {
               <div className="bg-gray-50 rounded-lg p-2.5">
                 <div className="text-[9px] font-bold text-gray-400 tracking-wider mb-1">FIRST AID</div>
                 <div className={`text-[11px] font-semibold ${k.firstAidCert ? 'text-green-600' : 'text-red-500'}`}>
-                  {k.firstAidCert ? '✓ Yes' : '✗ No'}
+                  {k.firstAidCertified ? '✓ Yes' : '✗ No'}
                 </div>
               </div>
               <div className="bg-gray-50 rounded-lg p-2.5">
                 <div className="text-[9px] font-bold text-gray-400 tracking-wider mb-1">MEDICATE</div>
                 <div className={`text-[11px] font-semibold ${k.canMedicate ? 'text-green-600' : 'text-red-500'}`}>
-                  {k.canMedicate ? '✓ Yes' : '✗ No'}
+                  {k.canAdministerMedication ? '✓ Yes' : '✗ No'}
                 </div>
               </div>
             </div>
@@ -438,7 +603,7 @@ export default function KennelStaff() {
             <div className="mb-4">
               <div className="text-[10px] font-bold text-gray-400 tracking-wider mb-1.5">SPECIES COMFORTABLE WITH</div>
               <div className="flex flex-wrap gap-1">
-                {k.species.map(s => (
+                {k.speciesComfortableWith?.map(s => (
                   <span key={s} className="text-[10px] font-semibold px-2.5 py-0.5 rounded-xl"
                     style={{ background: 'rgba(249,115,22,0.08)', color: '#F97316' }}>{s}</span>
                 ))}

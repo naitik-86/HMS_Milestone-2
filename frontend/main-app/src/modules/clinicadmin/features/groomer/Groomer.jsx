@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { showToast } from '../../../../shared/components/toast';
 import { useEffect } from 'react';
 import {
   getGroomerById,
@@ -464,14 +465,29 @@ export default function Groomer() {
     try {
       if (editGroomer) {
         await updateGroomer(editGroomer._id, form);
+        showToast({
+          type: "success",
+          title: "Groomer Updated",
+          description: "Groomer details have been updated successfully.",
+        });
       } else {
         await createGroomer(form);
+        showToast({
+          type: "success",
+          title: "Groomer Created",
+          description: "Groomer details have been created successfully.",
+        });
       }
 
       await fetchGroomers();
       closeAll();
     } catch (error) {
       console.error(error);
+      showToast({
+        type: "error",
+        title: "Operation Failed",
+        description: "Unable to save Groomer details. Please try again.",
+      });
     }
   };
 

@@ -54,6 +54,21 @@ export default function Login() {
       localStorage.setItem("role", response.user?.role || response.role);
 
       setShowVerificationModal(true);
+
+      const role = localStorage.getItem("role");
+
+      switch (role) {
+        case "SUPER_ADMIN":
+          return <Navigate to="/superadmin" replace />;
+
+        case "CLINIC_ADMIN":
+          return <Navigate to="/clinic" replace />;
+
+        default:
+          return <Navigate to="/login" replace />;
+      }
+
+
     } catch (error) {
       console.error("Login Error:", error);
       console.log(error.response?.data);
@@ -102,6 +117,8 @@ export default function Login() {
     setEmailVerified(true);
     console.log("Email OTP Verified");
   };
+
+
   const handleContinue = async () => {
     const role = localStorage.getItem("role");
 

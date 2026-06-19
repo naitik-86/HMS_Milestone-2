@@ -1,14 +1,23 @@
 const Kennel = require("../models/KennelModel");
 exports.createKennel = async (req, res) => {
     try {
+
+        console.log("BODY:", req.body);
         const {
             staffId,
             experience,
             shift,
             firstAidCertified,
             canAdministerMedication,
-            speciesComfortableWith,
         } = req.body;
+
+        let speciesComfortableWith =
+            req.body.speciesComfortableWith;
+
+        if (typeof speciesComfortableWith === "string") {
+            speciesComfortableWith =
+                JSON.parse(speciesComfortableWith);
+        }
 
         const existingKennel = await Kennel.findOne({ staffId });
 
@@ -103,7 +112,20 @@ exports.getKennelById = async (req, res) => {
 
 exports.updateKennel = async (req, res) => {
     try {
+
         const updateData = { ...req.body };
+        if (updateData.speciesComfortableWith) {
+            try {
+                updateData.speciesComfortableWith =
+                    JSON.parse(updateData.speciesComfortableWith);
+            } catch (err) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid speciesComfortableWith format",
+                });
+            }
+        }
+
 
         if (
             req.files &&
