@@ -29,62 +29,64 @@ export default function PreConsulatationSideBar() {
 
   return (
     <>
-      {/* Mobile Header */}
-      <div className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between bg-[#081122] px-4 py-3 text-white shadow-lg md:hidden">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500 to-blue-600">
-            🐾
+      {/* Mobile Header - Hide when Sidebar Open */}
+      {!isOpen && (
+        <div className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between bg-[#081122] px-4 py-3 text-white shadow-lg md:hidden">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500 to-blue-600">
+              🐾
+            </div>
+
+            <div>
+              <h2 className="text-sm font-bold">VetCare</h2>
+              <p className="text-[10px] text-slate-400">
+                Pre Consultation
+              </p>
+            </div>
           </div>
 
-          <div>
-            <h2 className="text-sm font-bold">
-              VetCare
-            </h2>
-
-            <p className="text-[10px] text-slate-400">
-              Pre Consultation
-            </p>
-          </div>
+          <button
+            onClick={() => setIsOpen(true)}
+            className="rounded-xl bg-white/10 p-2 text-xl"
+          >
+            ☰
+          </button>
         </div>
+      )}
 
-        <button
-          onClick={() => setIsOpen(true)}
-          className="rounded-xl bg-white/10 p-2"
-        >
-          ☰
-        </button>
-      </div>
-
-      {/* Mobile Overlay */}
+      {/* Overlay */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-30 bg-black/50 md:hidden"
+          className="fixed inset-0 z-40 bg-black/60 md:hidden"
           onClick={() => setIsOpen(false)}
         />
       )}
 
       {/* Sidebar */}
-  <div
-  className={`
-   fixed md:relative
-top-[50px] md:top-0
-left-0 z-40
-    h-screen md:min-h-screen
-    w-[280px]
-    bg-[#081122]
-    text-white
-    flex flex-col
-    shadow-2xl
-    transition-transform
-    duration-300
-    ${
-      isOpen
-        ? "translate-x-0"
-        : "-translate-x-full"
-    }
-    md:translate-x-0
-  `}
->
+      <div
+        className={`
+          fixed md:relative
+          top-0 md:top-0
+          left-0
+          z-50
+          h-screen
+          w-[280px]
+          bg-[#081122]
+          text-white
+          flex flex-col
+          overflow-y-auto
+          overflow-x-hidden
+          shadow-2xl
+          transition-transform
+          duration-300
+          ${
+            isOpen
+              ? "translate-x-0"
+              : "-translate-x-full"
+          }
+          md:translate-x-0
+        `}
+      >
         {/* Logo */}
         <div className="border-b border-slate-800 p-6">
           <div className="flex items-start justify-between">
@@ -104,7 +106,7 @@ left-0 z-40
 
             <button
               onClick={() => setIsOpen(false)}
-              className="text-2xl md:hidden"
+              className="text-3xl md:hidden"
             >
               ✕
             </button>

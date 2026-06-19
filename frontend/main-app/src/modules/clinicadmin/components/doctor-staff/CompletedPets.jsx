@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Search } from "lucide-react";
 
 export default function CompletedPets() {
   const [search, setSearch] = useState("");
@@ -20,157 +21,162 @@ export default function CompletedPets() {
     ][i % 10],
     phone: `98${String(76543210 + i).padStart(8, "0")}`,
     status: "Completed",
-    date:
-      i < 15
-        ? "Today"
-        : i < 30
-          ? "Yesterday"
-          : "Past",
+    date: i < 15 ? "Today" : i < 30 ? "Yesterday" : "Past",
   }));
 
   const filteredCases = completedCases.filter(
     (item) =>
-      (item.owner
-        .toLowerCase()
-        .includes(search.toLowerCase()) ||
+      (item.owner.toLowerCase().includes(search.toLowerCase()) ||
         item.phone.includes(search)) &&
       item.date.toLowerCase() === filter.toLowerCase()
   );
 
-  return (
-    <div className="space-y-8">
+  const filters = [
+    { label: "Today", value: "today" },
+    { label: "Yesterday", value: "yesterday" },
+    { label: "Past Cases", value: "past" },
+  ];
 
+  return (
+    <div className="space-y-5 sm:space-y-8 pt-16 md:pt-8">
 
       {/* Search */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
-
+      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
         <div className="relative">
-
-          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-lg">
-            🔍
-          </span>
+          <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
 
           <input
             type="text"
             placeholder="Search by Owner Name or Phone Number..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="
-        w-full
-        h-12
-        pl-12
-        pr-4
-        border
-        border-slate-200
-        rounded-xl
-        bg-slate-50
-        text-slate-700
-        placeholder:text-slate-400
-        focus:outline-none
-        focus:border-orange-500
-        focus:bg-white
-        transition-all
-      "
+            className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50 pl-12 pr-4 text-slate-700 transition-all placeholder:text-slate-400 focus:border-orange-500 focus:bg-white focus:outline-none"
           />
-
         </div>
-
       </div>
 
       {/* Filters */}
-      <div className="flex gap-4">
-
-        <button
-          onClick={() => setFilter("today")}
-          className={`px-6 py-3 rounded-2xl font-medium ${filter === "today"
-              ? "bg-orange-500 text-white"
-              : "bg-white"
+      <div className="flex flex-wrap gap-3 sm:gap-4">
+        {filters.map((item) => (
+          <button
+            key={item.value}
+            type="button"
+            onClick={() => setFilter(item.value)}
+            className={`rounded-xl px-4 py-3 text-sm font-medium transition sm:rounded-2xl sm:px-6 sm:text-base ${
+              filter === item.value
+                ? "bg-orange-500 text-white shadow-sm"
+                : "bg-white text-slate-700 hover:bg-orange-50"
             }`}
-        >
-          Today
-        </button>
-
-        <button
-          onClick={() => setFilter("yesterday")}
-          className={`px-6 py-3 rounded-2xl font-medium ${filter === "yesterday"
-              ? "bg-orange-500 text-white"
-              : "bg-white"
-            }`}
-        >
-          Yesterday
-        </button>
-
-        <button
-          onClick={() => setFilter("past")}
-          className={`px-6 py-3 rounded-2xl font-medium ${filter === "past"
-              ? "bg-orange-500 text-white"
-              : "bg-white"
-            }`}
-        >
-          Past Cases
-        </button>
-
+          >
+            {item.label}
+          </button>
+        ))}
       </div>
 
-      {/* Table */}
-      <div className="bg-white rounded-[30px] p-8 shadow-sm">
+      {/* Mobile Heading */}
+      <div className="md:hidden">
+        <h2 className="text-xl font-bold text-slate-800">
+          Completed Cases
+        </h2>
+      </div>
 
-        <h2 className="text-2xl font-bold mb-6">
+      {/* Mobile Cards */}
+      <div className="md:hidden space-y-4">
+        {filteredCases.map((item) => (
+          <div
+            key={item.petId}
+            className="rounded-2xl border bg-white p-4 shadow-sm"
+          >
+            <div className="mb-3 flex items-start justify-between">
+              <div>
+                <h3 className="text-lg font-bold">
+                  {item.petId}
+                </h3>
+
+                <p className="text-sm text-slate-500">
+                  {item.owner}
+                </p>
+              </div>
+
+              <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700">
+                {item.status}
+              </span>
+            </div>
+
+            <div className="space-y-2 text-sm">
+              <p>
+                <span className="font-semibold">
+                  Phone:
+                </span>{" "}
+                {item.phone}
+              </p>
+
+              <p>
+                <span className="font-semibold">
+                  Date:
+                </span>{" "}
+                {item.date}
+              </p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop Table */}
+      <div className="rounded-2xl bg-white p-4 shadow-sm sm:p-6 lg:rounded-[30px] lg:p-8">
+
+        <h2 className="hidden md:block mb-5 text-xl font-bold sm:mb-6 sm:text-2xl">
           Completed Cases List
         </h2>
 
-        <div className="overflow-x-auto">
+        <div className="hidden md:block overflow-x-auto">
 
-          <table className="w-full">
+          <table className="min-w-[720px] w-full">
 
             <thead>
-              <tr className="border-b">
-
-                <th className="text-left py-4">
+              <tr className="border-b text-sm text-slate-500">
+                <th className="py-4 pr-4 text-left font-semibold">
                   Pet ID
                 </th>
 
-                <th className="text-left py-4">
+                <th className="py-4 pr-4 text-left font-semibold">
                   Owner Name
                 </th>
 
-                <th className="text-left py-4">
+                <th className="py-4 pr-4 text-left font-semibold">
                   Phone Number
                 </th>
 
-                <th className="text-left py-4">
+                <th className="py-4 pr-4 text-left font-semibold">
                   Status
                 </th>
 
-                <th className="text-left py-4">
+                <th className="py-4 text-left font-semibold">
                   Date
                 </th>
-
               </tr>
             </thead>
 
             <tbody>
-
-              {filteredCases.map((item, index) => (
+              {filteredCases.map((item) => (
                 <tr
-                  key={index}
-                  className="border-b hover:bg-slate-50"
+                  key={item.petId}
+                  className="border-b text-sm text-slate-700 transition hover:bg-slate-50"
                 >
-
-                  <td className="py-4">
+                  <td className="py-4 pr-4 font-medium text-slate-900">
                     {item.petId}
                   </td>
 
-                  <td>
+                  <td className="pr-4">
                     {item.owner}
                   </td>
 
-                  <td>
+                  <td className="pr-4">
                     {item.phone}
                   </td>
 
-                  <td>
-                    <span className="bg-green-100 text-green-600 px-4 py-2 rounded-full text-sm">
+                  <td className="pr-4">
+                    <span className="rounded-full bg-green-100 px-4 py-2 text-sm font-medium text-green-700">
                       {item.status}
                     </span>
                   </td>
@@ -178,16 +184,13 @@ export default function CompletedPets() {
                   <td>
                     {item.date}
                   </td>
-
                 </tr>
               ))}
-
             </tbody>
 
           </table>
 
         </div>
-
       </div>
 
     </div>
