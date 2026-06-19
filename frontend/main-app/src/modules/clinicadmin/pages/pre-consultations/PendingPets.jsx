@@ -44,10 +44,10 @@ export default function PendingPets() {
   );
 
   return (
-    <div className="flex min-h-screen bg-slate-100">
+    <div className="flex-1 bg-slate-100">
 
 
-      <div className="flex-1 p-8">
+      <div className="p-4 md:p-6 lg:p-8 pt-20 md:pt-6">
 
         <Header
           title="Pending Pets"
@@ -55,7 +55,7 @@ export default function PendingPets() {
         />
 
         {/* Search */}
-        <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 mb-8">
+        <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-4 md:p-6 mb-6">
 
           <div className="relative">
 
@@ -94,11 +94,11 @@ export default function PendingPets() {
         <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
 
           {/* Table Header */}
-          <div className="flex items-center justify-between px-8 py-6 border-b border-slate-200 bg-gradient-to-r from-orange-50 to-white">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 px-4 md:px-8 py-6 border-b border-slate-200 bg-gradient-to-r from-orange-50 to-white">
 
             <div>
 
-              <h2 className="text-2xl font-bold text-slate-800">
+              <h2 className="text-xl md:text-2xl font-bold text-slate-800">
                 Pending Pets Queue
               </h2>
 
@@ -114,7 +114,7 @@ export default function PendingPets() {
 
           </div>
 
-          <div className="overflow-x-auto">
+          <div className="hidden lg:block overflow-x-auto">
 
             <table className="w-full">
 
@@ -294,8 +294,42 @@ export default function PendingPets() {
               </tbody>
 
             </table>
-
+            
           </div>
+          <div className="lg:hidden p-4 space-y-4">
+  {filteredPets.map((pet) => (
+    <div
+      key={pet.id}
+      className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm"
+    >
+      <div className="flex items-center justify-between">
+        <span className="font-bold">
+          {pet.token}
+        </span>
+
+        <span className="bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-xs font-semibold">
+          {pet.status}
+        </span>
+      </div>
+
+      <div className="mt-4 space-y-2 text-sm">
+        <p><strong>Owner:</strong> {pet.ownerName}</p>
+        <p><strong>Phone:</strong> {pet.phoneNumber}</p>
+        <p><strong>Pet:</strong> {pet.petName}</p>
+      </div>
+
+      <button
+        onClick={() => {
+          setSelectedPet(pet);
+          setOpenModal(true);
+        }}
+        className="mt-4 w-full bg-slate-800 text-white py-3 rounded-xl"
+      >
+        Edit
+      </button>
+    </div>
+  ))}
+</div>
 
         </div>
 

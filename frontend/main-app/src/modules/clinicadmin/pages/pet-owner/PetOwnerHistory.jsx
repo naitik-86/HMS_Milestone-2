@@ -32,10 +32,10 @@ const PetOwnerHistory = () => {
         <div className="min-h-screen bg-slate-50">
             <PetOwnerSidebar />
 
-            <div className="ml-[280px] p-8">
+           <div className="ml-0 lg:ml-[280px] pt-[80px] lg:pt-8 p-4 md:p-6 lg:p-8 min-w-0">
                 {/* Header */}
-                <div className="mb-8 rounded-[32px] bg-gradient-to-r from-slate-950 via-blue-900 to-blue-600 p-8 text-white shadow-2xl">
-                    <h1 className="text-4xl font-bold">
+                <div className="mb-8 rounded-[32px] bg-gradient-to-r from-slate-950 via-blue-900 to-blue-600 p-5 md:p-8 text-white shadow-2xl">
+                    <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold">
                         Pet Medical Records
                     </h1>
 
@@ -79,7 +79,7 @@ const PetOwnerHistory = () => {
                 {/* Profile */}
                 <div className="mb-8 overflow-hidden rounded-3xl bg-white shadow-xl">
                     <div className="bg-gradient-to-r from-orange-500 to-blue-600 p-6">
-                        <div className="flex items-center gap-4">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
                             <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/20 text-3xl">
                                 🐾
                             </div>
@@ -96,7 +96,7 @@ const PetOwnerHistory = () => {
                         </div>
                     </div>
 
-                    <div className="grid gap-4 p-6 md:grid-cols-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-6">
                         <Info title="Age" value={pet.age} />
                         <Info title="Gender" value={pet.gender} />
                         <Info title="Weight" value={pet.weight} />
@@ -105,7 +105,7 @@ const PetOwnerHistory = () => {
                 </div>
 
                 {/* Vitals */}
-                <div className="mb-8 grid md:grid-cols-4 gap-5">
+                <div className="mb-8 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
                     <VitalCard
                         title="Weight"
                         value={pet.weight}
@@ -145,7 +145,7 @@ const PetOwnerHistory = () => {
                 </div>
 
                 {/* Prescription + Lab */}
-                <div className="mb-8 grid lg:grid-cols-2 gap-6">
+                <div className="mb-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div className="rounded-3xl bg-white p-6 shadow-sm">
                         <h2 className="mb-5 text-xl font-bold">
                             Prescriptions
@@ -163,7 +163,7 @@ const PetOwnerHistory = () => {
                                     hover:shadow-md
                                     "
                         >
-                            <div className="flex justify-between">
+                            <div className="flex flex-col sm:flex-row gap-4 sm:items-center sm:justify-between">
                                 <div>
                                     <p className="font-semibold">
                                         Prescription June 2025
@@ -187,7 +187,7 @@ const PetOwnerHistory = () => {
                         </h2>
 
                         <div className="rounded-2xl border p-4">
-                            <div className="flex justify-between">
+                            <div className="flex flex-col sm:flex-row gap-4 sm:items-center sm:justify-between">
                                 <div>
                                     <p className="font-semibold">
                                         Blood Report
@@ -208,7 +208,7 @@ const PetOwnerHistory = () => {
                 </div>
 
                 {/* Reminder */}
-                <div className="mb-8 grid lg:grid-cols-2 gap-6">
+                <div className="mb-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div
                         className="
                                 rounded-3xl
@@ -321,7 +321,7 @@ const VitalCard = ({ title, value, icon }) => (
 );
 
 const TimelineItem = ({ date, text }) => (
-    <div className="flex gap-4">
+    <div className="flex flex-col sm:flex-row gap-4">
         <div
             className="
                     flex h-12 w-12 items-center justify-center

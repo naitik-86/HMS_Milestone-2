@@ -41,14 +41,14 @@ export default function LabDashboard() {
         setActiveStep={setActiveStep}
       />
 
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 lg:ml-[280px] overflow-x-hidden overflow-y-auto pt-[80px] lg:pt-0">
 
         {/* Header */}
 
 
-        <div className="bg-white border-b border-slate-200 px-8 py-5">
+        <div className="bg-white border-b border-slate-200 px-4 md:px-6 lg:px-8 py-5">
 
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
 
             <div>
 
@@ -62,7 +62,7 @@ export default function LabDashboard() {
 
               </div>
 
-              <h1 className="text-3xl font-bold text-slate-900">
+              <h1 className="text-2xl md:text-3xl font-bold text-slate-900">
                 Lab Dashboard
               </h1>
 
@@ -72,7 +72,7 @@ export default function LabDashboard() {
 
             </div>
 
-            <div className="flex items-center gap-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
 
               <div className="bg-orange-50 border border-orange-100 rounded-3xl px-5 py-3">
 
@@ -96,7 +96,7 @@ export default function LabDashboard() {
 
         </div>
 
-        <div className="p-8">
+        <div className="p-4 md:p-6 lg:p-8">
 
           {activeStep === "dashboard" && (
 
@@ -174,7 +174,7 @@ export default function LabDashboard() {
                             {item.title}
                           </p>
 
-                          <h2 className="mt-4 text-5xl font-bold text-slate-900">
+                          <h2 className="mt-4 text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900">
                             {item.value}
                           </h2>
 
@@ -186,9 +186,11 @@ export default function LabDashboard() {
 
                         <div
                           className={`
-                              flex
-                              h-16
-                              w-16
+                             flex
+                              h-12
+                              w-12
+                              md:h-16
+                              md:w-16
                               items-center
                               justify-center
                               rounded-3xl
@@ -229,12 +231,12 @@ export default function LabDashboard() {
                       from-slate-950
                       via-blue-900
                       to-blue-600
-                      p-8
+                      p-5 md:p-8
                       text-white
                       shadow-2xl
                       ">
 
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
 
                   <div>
 
@@ -242,7 +244,7 @@ export default function LabDashboard() {
                       Laboratory Overview
                     </p>
 
-                    <h2 className="text-5xl font-bold">
+                    <h2 className="text-2xl md:text-4xl lg:text-5xl font-bold">
                       54 Reports Uploaded Today
                     </h2>
 
@@ -282,7 +284,7 @@ export default function LabDashboard() {
 
               {/* Bottom Section */}
 
-              <div className="grid grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
 
                 <div className="
                     bg-white
@@ -323,17 +325,20 @@ export default function LabDashboard() {
 
                     {/* Activity 1 */}
                     <div className="
-                          flex
-                          items-center
-                          justify-between
-                          rounded-3xl
-                          bg-slate-50
-                          p-5
-                          transition-all
-                          hover:bg-slate-100
-                        ">
+                        flex
+                        flex-col
+                        gap-4
+                        sm:flex-row
+                        sm:items-center
+                        sm:justify-between
+                        rounded-3xl
+                        bg-slate-50
+                        p-5
+                        transition-all
+                        hover:bg-slate-100
+                  ">
 
-                      <div className="flex items-center gap-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
 
                         <div className="
                             flex
@@ -348,7 +353,16 @@ export default function LabDashboard() {
                           ✅
                         </div>
 
-                        <div>
+                        <div className="
+    flex
+    items-center
+    justify-between
+    rounded-3xl
+    bg-slate-50
+    p-5
+    transition-all
+    hover:bg-slate-100
+">
                           <h3 className="font-semibold text-slate-800">
                             LAB001 Uploaded
                           </h3>
@@ -386,7 +400,7 @@ export default function LabDashboard() {
                         hover:bg-slate-100
                       ">
 
-                      <div className="flex items-center gap-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
 
                         <div className="
                               flex
@@ -487,7 +501,7 @@ export default function LabDashboard() {
                 <div className="
                     bg-white
                     rounded-[32px]
-                    p-8
+                    p-5 md:p-8
                     shadow-xl
                     border
                     border-slate-100
