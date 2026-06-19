@@ -1,7 +1,7 @@
 require('dotenv').config({ path: require('path').resolve(__dirname, '..', '.env') });
 
-const apiRoutes = require('./routes/api');
-// const apiRoutes = require("./routes/index")
+// const apiRoutes = require('./routes/api');
+const apiRoutes = require("./routes/index")
 
 const express = require('express');
 const cors = require('cors');

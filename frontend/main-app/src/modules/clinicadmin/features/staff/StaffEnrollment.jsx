@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { showToast } from '../../../../shared/components/toast';
 import ViewStaffModal from "./ViewStaffModal";
 import { roles, departments, employmentTypes, staffData } from '../../data/staff';
 
@@ -781,8 +782,18 @@ export default function StaffEnrollment() {
           selectedStaff._id,
           form
         );
+        showToast({
+          type: "success",
+          title: "Staff Updated",
+          description: "Staff details have been updated successfully.",
+        });
       } else {
         await createStaff(form);
+        showToast({
+          type: "success",
+          title: "Staff Created",
+          description: "Staff details have been created successfully.",
+        });
       }
 
       const response = await getStaff();
@@ -792,6 +803,11 @@ export default function StaffEnrollment() {
 
     } catch (err) {
       console.error(err);
+      showToast({
+        type: "error",
+        title: "Operation Failed",
+        description: "Unable to save Staff details. Please try again.",
+      });
     }
   };
 

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { showToast } from '../../../../shared/components/toast';
 import { useEffect } from 'react';
 import { createDoctor, getDoctors, updateDoctor } from '../../api/doctorApi';
 
@@ -647,10 +648,6 @@ export default function DoctorDetails() {
     }
   };
 
-  const showToast = (msg) => {
-    setToast(msg);
-    setTimeout(() => setToast(null), 3000);
-  };
 
   const closeModal = () => setModal(null);
 
@@ -664,13 +661,22 @@ export default function DoctorDetails() {
           formData
         );
 
-        showToast("Doctor updated successfully");
+        showToast({
+          type: "success",
+          title: "Doctor Updated",
+          description: "Kennel Doctor have been updated successfully.",
+        });
+
 
       } else {
 
         await createDoctor(formData);
 
-        showToast("Doctor created successfully");
+        showToast({
+          type: "success",
+          title: "Doctor Created",
+          description: "Doctor details have been created successfully.",
+        });
       }
 
       await fetchDoctors();
@@ -680,8 +686,11 @@ export default function DoctorDetails() {
     } catch (error) {
 
       console.error(error);
-
-      showToast("Operation failed");
+      showToast({
+        type: "error",
+        title: "Operation Failed",
+        description: "Unable to save Doctor details. Please try again.",
+      });
     }
   };
 

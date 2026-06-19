@@ -7,6 +7,8 @@ import DoctorLayout from "../layouts/DoctorStaffLayout";
 import ReceptionLayout from "../layouts/ReceptionLayout";
 import ClinicAdminLayout from "../layouts/ClinicAdminLayout";
 import PreConsultationLayout from "../layouts/PreConsultationLayout";
+import LabLayout from "../layouts/LabLayout"
+
 // clinic pages
 import Dashboard from "../modules/clinicadmin/features/dashboard/Dashboard";
 import StaffEnrollment from "../modules/clinicadmin/features/staff/StaffEnrollment";
@@ -116,16 +118,24 @@ const ClinicAdminRoutes = (
             <Route path="history" element={<PetHistory />} />
         </Route>
 
-        <Route path="/clinic/lab">
+        <Route
+            path="/clinic/lab"
+            element={< LabLayout />}
+        >
             <Route index element={<LabDashboard />} />
             <Route path="upload" element={<LabReportUpload />} />
         </Route>
+
 
         <Route path="/clinic/owner">
             <Route index element={<PetOwnerDashboard />} />
             <Route path="history" element={<PetOwnerHistory />} />
             <Route path="upload" element={<PetOwnerUploadDocuments />} />
         </Route>
+
+
+
+
     </>
 );
 
