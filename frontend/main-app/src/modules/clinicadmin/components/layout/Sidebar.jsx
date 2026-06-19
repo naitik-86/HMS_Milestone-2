@@ -8,7 +8,6 @@ const Sidebar = () => {
     { id: "dashboard", label: "Dashboard", icon: "🏠" },
     { id: "staff", label: "Staff", icon: "👨‍⚕️" },
     { id: "doctors", label: "Doctors", icon: "🩺" },
-    { id: "lab", label: "Lab", icon: "🧪" },
     { id: "groomer", label: "Groomer", icon: "✂️" },
     { id: "kennel", label: "Kennel", icon: "🐾" },
     { id: "reports", label: "Reports", icon: "📊" },
