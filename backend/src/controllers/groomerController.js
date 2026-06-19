@@ -1,9 +1,10 @@
 const Groomer = require("../models/GroomerModel");
-
 exports.createGroomer = async (req, res) => {
     try {
+        console.log("from create groomer ->>>", req.body);
+        console.log("from create groomer ->>>", req.files);
+
         const {
-            employeeId,
             experience,
             previousSalon,
             licenseNumber,
@@ -21,16 +22,22 @@ exports.createGroomer = async (req, res) => {
             supervisor,
             notes,
         } = req.body;
-
-        const existingGroomer = await Groomer.findOne({
-            employeeId,
+        const lastGroomer = await Groomer.findOne().sort({
+            createdAt: -1,
         });
 
-        if (existingGroomer) {
-            return res.status(400).json({
-                success: false,
-                message: "Employee ID already exists",
-            });
+        let employeeId = "GRM-001";
+
+        if (lastGroomer?.employeeId) {
+            const lastNumber = Number(
+                lastGroomer.employeeId.split("-")[1]
+            );
+
+            if (!isNaN(lastNumber)) {
+                employeeId = `GRM-${String(
+                    lastNumber + 1
+                ).padStart(3, "0")}`;
+            }
         }
 
         const profilePhoto =
@@ -79,6 +86,7 @@ exports.createGroomer = async (req, res) => {
             message: "Groomer created successfully",
             data: groomer,
         });
+
     } catch (error) {
         return res.status(500).json({
             success: false,
@@ -93,7 +101,6 @@ exports.createGroomer = async (req, res) => {
 exports.getAllGroomers = async (req, res) => {
     try {
         const groomers = await Groomer.find()
-            .populate("supervisor")
             .sort({ createdAt: -1 });
 
         return res.status(200).json({
@@ -114,8 +121,7 @@ exports.getAllGroomers = async (req, res) => {
  */
 exports.getGroomerById = async (req, res) => {
     try {
-        const groomer = await Groomer.findById(req.params.id)
-            .populate("supervisor");
+        const groomer = await Groomer.findById(req.params.id);
 
         if (!groomer) {
             return res.status(404).json({

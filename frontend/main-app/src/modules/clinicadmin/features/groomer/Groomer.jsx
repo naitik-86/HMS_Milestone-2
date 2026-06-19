@@ -1,11 +1,23 @@
 import React, { useState, useRef } from 'react';
 import { useEffect } from 'react';
-
+import {
+  getGroomerById,
+  getGroomers,
+  createGroomer,
+  updateGroomer,
+  deleteGroomer
+} from '../../api/groomerApi';
 // ─── Mock data (replace with your imports) ───────────────────────────────────
 const species = ['Dog', 'Cat', 'Bird', 'Rabbit', 'Hamster', 'Guinea Pig', 'Reptile'];
 const groomingServices = ['Bath & Dry', 'Haircut', 'Nail Trim', 'Ear Cleaning', 'Teeth Brushing', 'De-shedding', 'Flea Treatment', 'Full Groom'];
-const certTypes = ['National Dog Groomers Association', 'International Professional Groomers', 'Pet Stylist Certification', 'Breed-Specific Certification', 'First Aid Certified'];
-const shifts = ['Morning (6AM–2PM)', 'Afternoon (2PM–10PM)', 'Night (10PM–6AM)', 'Full Day', 'Flexible'];
+const certTypes = [
+  "Certificate",
+  "Diploma",
+  "Training Course",
+  "Workshop",
+  "Other",
+];
+const shifts = ["Full Day", "Half Day", "Weekends"];
 
 const groomers = [
   { id: 'GRM-001', name: 'Sarah Mitchell', initials: 'SM', color: '#A855F7', experience: 6, shift: 'Morning', certified: true, status: 'Active', species: ['Dog', 'Cat', 'Rabbit'], services: ['Bath & Dry', 'Haircut', 'Nail Trim'] },
@@ -193,15 +205,37 @@ function SectionCard({ title, children }) {
 }
 
 // ─── Groomer Form ─────────────────────────────────────────────────────────────
-function GroomerForm({ onClose, editData }) {
+function GroomerForm({ onClose, editData, onSave }) {
   const [selectedSpecies, setSelectedSpecies] = useState(editData?.species || []);
   const [selectedServices, setSelectedServices] = useState(editData?.services || []);
-  const [certs, setCerts] = useState([{ type: '' }]);
+  const [certs, setCerts] = useState(
+    editData?.certificates?.length
+      ? editData.certificates
+      : [{ type: "" }]
+  );
   const [uploadedFiles, setUploadedFiles] = useState([]);
 
   const toggleItem = (list, setList, item) =>
     setList(list.includes(item) ? list.filter(x => x !== item) : [...list, item]);
 
+  const [formData, setFormData] = useState({
+    experience: editData?.experience || "",
+    shift: editData?.shift || "",
+  });
+
+  const handleSubmit = () => {
+    const payload = {
+      experience: Number(formData.experience),
+      shift: formData.shift,
+      species: selectedSpecies,
+      services: selectedServices,
+      certificates: certs,
+      documents: uploadedFiles.map(file => file.file),
+    };
+
+    console.log(payload);
+    onSave(payload);
+  };
   const inputCls = "w-full px-3.5 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-900 bg-white outline-none transition-colors focus:border-orange-400 appearance-none";
 
   return (
@@ -244,14 +278,28 @@ function GroomerForm({ onClose, editData }) {
                 className={inputCls}
                 type="number"
                 placeholder="e.g. 4"
-                defaultValue={editData?.experience || ''}
+                value={formData.experience}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    experience: e.target.value
+                  })
+                }
               />
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1.5">Availability / Shift</label>
               <div className="relative">
-                <select className={inputCls + " pr-9 cursor-pointer"} defaultValue={editData?.shift || ''}>
-                  <option value="">Select Shift</option>
+                <select
+                  className={inputCls + " pr-9 cursor-pointer"}
+                  value={formData.shift}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      shift: e.target.value
+                    })
+                  }
+                >                  <option value="">Select Shift</option>
                   {shifts.map(s => <option key={s}>{s}</option>)}
                 </select>
                 <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">▾</span>
@@ -266,8 +314,15 @@ function GroomerForm({ onClose, editData }) {
             {certs.map((c, i) => (
               <div key={i} className="flex gap-2.5 items-center">
                 <div className="relative flex-1">
-                  <select className={inputCls + " pr-9 cursor-pointer"}>
-                    <option value="">Select Certificate Type</option>
+                  <select
+                    className={inputCls + " pr-9 cursor-pointer"}
+                    value={c.type}
+                    onChange={(e) => {
+                      const updated = [...certs];
+                      updated[i].type = e.target.value;
+                      setCerts(updated);
+                    }}
+                  >                    <option value="">Select Certificate Type</option>
                     {certTypes.map(t => <option key={t}>{t}</option>)}
                   </select>
                   <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">▾</span>
@@ -359,6 +414,7 @@ function GroomerForm({ onClose, editData }) {
           className="bg-white text-gray-700 border border-gray-200 rounded-lg px-5 py-2.5 text-sm font-semibold hover:bg-gray-50 transition-colors cursor-pointer"
         >Cancel</button>
         <button
+          onClick={handleSubmit}
           className="text-white rounded-lg px-5 py-2.5 text-sm font-semibold border-0 hover:opacity-90 transition-opacity cursor-pointer"
           style={{ background: '#E8630A' }}
         >Save Groomer Details</button>
@@ -374,9 +430,7 @@ export default function Groomer() {
   const [viewGroomer, setViewGroomer] = useState(null);
 
   const [groomers, setGroomers] = useState([]);
-  const [showModal, setShowModal] = useState(false);
-  const [modalMode, setModalMode] = useState("create");
-  const [selectedGroomer, setSelectedGroomer] = useState(null);
+
 
   useEffect(() => {
     fetchGroomers();
@@ -389,40 +443,33 @@ export default function Groomer() {
     } catch (error) {
       console.error(error);
     }
-  };
-
-  const handleOpenCreate = () => {
-    setSelectedGroomer(null);
-    setModalMode("create");
-    setShowModal(true);
+  }; const handleOpenCreate = () => {
+    setShowAddModal(true);
+    setEditGroomer(null);
+    setViewGroomer(null);
   };
 
   const handleOpenEdit = (groomer) => {
-    setSelectedGroomer(groomer);
-    setModalMode("edit");
-    setShowModal(true);
+    setEditGroomer(groomer);
+    setShowAddModal(false);
+    setViewGroomer(null);
   };
 
   const handleOpenView = (groomer) => {
-    setSelectedGroomer(groomer);
-    setModalMode("view");
-    setShowModal(true);
+    setViewGroomer(groomer);
+    setShowAddModal(false);
+    setEditGroomer(null);
   };
-
   const handleSave = async (form) => {
     try {
-      if (modalMode === "edit") {
-        await updateGroomer(
-          selectedGroomer._id,
-          form
-        );
+      if (editGroomer) {
+        await updateGroomer(editGroomer._id, form);
       } else {
         await createGroomer(form);
       }
 
       await fetchGroomers();
-      setShowModal(false);
-
+      closeAll();
     } catch (error) {
       console.error(error);
     }
@@ -437,11 +484,7 @@ export default function Groomer() {
     }
   };
 
-  const openModal = (mode, data = null) => {
-    if (mode === 'add') { setShowAddModal(true); setEditGroomer(null); setViewGroomer(null); }
-    if (mode === 'edit') { setEditGroomer(data); setShowAddModal(false); setViewGroomer(null); }
-    if (mode === 'view') { setViewGroomer(data); setShowAddModal(false); setEditGroomer(null); }
-  };
+
 
   const closeAll = () => { setShowAddModal(false); setEditGroomer(null); setViewGroomer(null); };
 
@@ -463,7 +506,7 @@ export default function Groomer() {
             style={{ maxWidth: 1500, height: '88vh', boxShadow: '0 24px 60px rgba(0,0,0,0.18)' }}
             onClick={e => e.stopPropagation()}
           >
-            <GroomerForm onClose={closeAll} editData={editGroomer} />
+            <GroomerForm onClose={closeAll} editData={editGroomer} onSave={handleSave} />
           </div>
         </div>
       )}
@@ -504,7 +547,7 @@ export default function Groomer() {
       <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))' }}>
         {groomers.map(g => (
           <div
-            key={g.id}
+            key={g._id}
             className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-gray-200 transition-all duration-200"
           >
             {/* Card Header */}
@@ -541,8 +584,8 @@ export default function Groomer() {
             <div className="mb-2.5">
               <div className="text-[10px] font-bold text-gray-400 tracking-wider mb-1.5">SPECIES HANDLED</div>
               <div className="flex flex-wrap gap-1">
-                {g.species.map(s => (
-                  <span key={s} className="text-[10px] font-semibold px-2.5 py-0.5 rounded-xl"
+                {g.species.map((s, i) => (
+                  <span key={`${s}-${i}`} className="text-[10px] font-semibold px-2.5 py-0.5 rounded-xl"
                     style={{ background: 'rgba(168,85,247,0.08)', color: '#A855F7' }}>{s}</span>
                 ))}
               </div>
@@ -552,8 +595,8 @@ export default function Groomer() {
             <div className="mb-4">
               <div className="text-[10px] font-bold text-gray-400 tracking-wider mb-1.5">SERVICES OFFERED</div>
               <div className="flex flex-wrap gap-1">
-                {g.services.map(s => (
-                  <span key={s} className="text-[10px] font-semibold px-2.5 py-0.5 rounded-xl"
+                {g.services.map((s, i) => (
+                  <span key={`${s}-${i}`} className="text-[10px] font-semibold px-2.5 py-0.5 rounded-xl"
                     style={{ background: 'rgba(232,99,10,0.08)', color: '#E8630A' }}>{s}</span>
                 ))}
               </div>
@@ -562,16 +605,25 @@ export default function Groomer() {
             {/* Action Buttons */}
             <div className="flex gap-2 pt-3.5 border-t border-gray-100">
               <button
-                onClick={() => openModal('view', g)}
+                onClick={() => handleOpenView(g)}
                 className="flex-1 bg-gray-50 border border-gray-200 rounded-lg py-2 text-xs font-semibold text-gray-700 hover:bg-gray-100 hover:border-gray-300 transition-colors cursor-pointer"
-              >👁 View</button>
+              >
+                👁 View
+              </button>
+
               <button
-                onClick={() => openModal('edit', g)}
+                onClick={() => handleOpenEdit(g)}
                 className="flex-1 rounded-lg py-2 text-xs font-semibold border transition-colors cursor-pointer"
-                style={{ background: 'rgba(232,99,10,0.06)', borderColor: 'rgba(232,99,10,0.25)', color: '#E8630A' }}
+                style={{
+                  background: 'rgba(232,99,10,0.06)',
+                  borderColor: 'rgba(232,99,10,0.25)',
+                  color: '#E8630A'
+                }}
                 onMouseEnter={e => e.currentTarget.style.background = 'rgba(232,99,10,0.12)'}
                 onMouseLeave={e => e.currentTarget.style.background = 'rgba(232,99,10,0.06)'}
-              >✏️ Edit</button>
+              >
+                ✏️ Edit
+              </button>
             </div>
           </div>
         ))}
