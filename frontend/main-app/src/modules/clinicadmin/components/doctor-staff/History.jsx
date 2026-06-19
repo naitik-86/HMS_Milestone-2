@@ -45,37 +45,28 @@ export default function History() {
   );
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-5 sm:space-y-8 pt-16 md:pt-8">
 
       {/* Stats */}
-      <div className="grid md:grid-cols-3 gap-6">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
 
-        <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200">
-          <p className="text-slate-500">
-            Total Records
-          </p>
-
-          <h2 className="text-4xl font-bold mt-2">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:rounded-3xl sm:p-6">
+          <p className="text-slate-500">Total Records</p>
+          <h2 className="mt-2 text-3xl font-bold sm:text-4xl">
             356
           </h2>
         </div>
 
-        <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200">
-          <p className="text-slate-500">
-            Vaccinations
-          </p>
-
-          <h2 className="text-4xl font-bold mt-2">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:rounded-3xl sm:p-6">
+          <p className="text-slate-500">Vaccinations</p>
+          <h2 className="mt-2 text-3xl font-bold sm:text-4xl">
             118
           </h2>
         </div>
 
-        <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200">
-          <p className="text-slate-500">
-            Treatments
-          </p>
-
-          <h2 className="text-4xl font-bold mt-2">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:rounded-3xl sm:p-6">
+          <p className="text-slate-500">Treatments</p>
+          <h2 className="mt-2 text-3xl font-bold sm:text-4xl">
             238
           </h2>
         </div>
@@ -83,7 +74,7 @@ export default function History() {
       </div>
 
       {/* Search */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
 
         <div className="relative">
 
@@ -95,75 +86,120 @@ export default function History() {
             type="text"
             placeholder="Search Pet Name, Owner Name or Phone Number..."
             value={search}
-            onChange={(e) =>
-              setSearch(e.target.value)
-            }
-            className="w-full h-12 pl-12 pr-4 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-orange-500"
+            onChange={(e) => setSearch(e.target.value)}
+            className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50 pl-12 pr-4 text-sm outline-none focus:border-orange-500 sm:text-base"
           />
 
         </div>
 
       </div>
 
-      {/* Table */}
-      <div className="bg-white rounded-3xl p-8 shadow-sm border border-slate-200">
+      {/* Mobile Heading */}
+      <div className="md:hidden">
+        <h2 className="text-xl font-bold text-slate-800">
+          Visit Records
+        </h2>
+      </div>
 
-        <div className="flex justify-between items-center mb-8">
+      {/* Mobile Cards */}
+      <div className="md:hidden space-y-4">
+
+        {filteredData.map((item) => (
+          <div
+            key={item.petId}
+            className="rounded-2xl border bg-white p-4 shadow-sm"
+          >
+            <div className="flex items-start justify-between mb-3">
+
+              <div>
+                <h3 className="text-lg font-bold">
+                  {item.petName}
+                </h3>
+
+                <p className="text-sm text-slate-500">
+                  {item.petId}
+                </p>
+              </div>
+
+              <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700">
+                {item.status}
+              </span>
+
+            </div>
+
+            <div className="space-y-2 text-sm">
+
+              <p>
+                <span className="font-semibold">
+                  Owner:
+                </span>{" "}
+                {item.owner}
+              </p>
+
+              <p>
+                <span className="font-semibold">
+                  Phone:
+                </span>{" "}
+                {item.phone}
+              </p>
+
+              <p>
+                <span className="font-semibold">
+                  Visit:
+                </span>{" "}
+                {item.visitType}
+              </p>
+
+              <p>
+                <span className="font-semibold">
+                  Date:
+                </span>{" "}
+                {item.date}
+              </p>
+
+            </div>
+
+            <button className="mt-4 w-full rounded-xl bg-orange-500 py-3 text-white">
+              View Record
+            </button>
+
+          </div>
+        ))}
+
+      </div>
+
+      {/* Desktop Table */}
+      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6 lg:rounded-3xl lg:p-8">
+
+        <div className="hidden md:flex mb-6 flex-col gap-2 sm:mb-8 sm:flex-row sm:items-center sm:justify-between">
 
           <div>
-            <h2 className="text-2xl font-bold">
+            <h2 className="text-xl font-bold sm:text-2xl">
               Visit Records
             </h2>
 
-            <p className="text-slate-500 mt-1">
+            <p className="mt-1 text-slate-500">
               Historical consultation records
             </p>
           </div>
 
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="hidden md:block overflow-x-auto">
 
-          <table className="w-full">
+          <table className="min-w-[920px] w-full text-sm sm:text-base">
 
             <thead>
-
               <tr className="border-b border-slate-200">
-
-                <th className="text-left py-4">
-                  Pet ID
-                </th>
-
-                <th className="text-left py-4">
-                  Pet Name
-                </th>
-
-                <th className="text-left py-4">
-                  Owner
-                </th>
-
-                <th className="text-left py-4">
-                  Phone
-                </th>
-
-                <th className="text-left py-4">
-                  Visit Date
-                </th>
-
-                <th className="text-left py-4">
-                  Visit Type
-                </th>
-
-                <th className="text-left py-4">
-                  Status
-                </th>
-
-                <th className="text-left py-4">
-                  Action
-                </th>
-
+                <th className="py-4 pr-4 text-left">Pet ID</th>
+                <th className="py-4 pr-4 text-left">Pet Name</th>
+                <th className="py-4 pr-4 text-left">Owner</th>
+                <th className="py-4 pr-4 text-left">Phone</th>
+                <th className="py-4 pr-4 text-left">Visit Date</th>
+                <th className="py-4 pr-4 text-left">Visit Type</th>
+                <th className="py-4 pr-4 text-left">Status</th>
+                <th className="py-4 text-left">Action</th>
               </tr>
-
             </thead>
 
             <tbody>
@@ -173,45 +209,40 @@ export default function History() {
                   key={index}
                   className="border-b border-slate-100 hover:bg-slate-50 transition"
                 >
-
-                  <td className="py-5 font-medium">
+                  <td className="py-5 pr-4 font-medium">
                     {item.petId}
                   </td>
 
-                  <td>
+                  <td className="pr-4">
                     {item.petName}
                   </td>
 
-                  <td>
+                  <td className="pr-4">
                     {item.owner}
                   </td>
 
-                  <td>
+                  <td className="pr-4">
                     {item.phone}
                   </td>
 
-                  <td>
+                  <td className="pr-4">
                     {item.date}
                   </td>
 
-                  <td>
+                  <td className="pr-4">
                     {item.visitType}
                   </td>
 
-                  <td>
-
-                    <span className="bg-green-100 text-green-700 px-4 py-2 rounded-full text-sm font-medium">
+                  <td className="pr-4">
+                    <span className="rounded-full bg-green-100 px-4 py-2 text-sm font-medium text-green-700">
                       {item.status}
                     </span>
-
                   </td>
 
                   <td>
-
-                    <button className="bg-orange-500 hover:bg-orange-600 text-white px-5 py-2 rounded-xl transition font-medium">
+                    <button className="rounded-xl bg-orange-500 px-4 py-2 text-sm font-medium text-white hover:bg-orange-600">
                       View Record
                     </button>
-
                   </td>
 
                 </tr>

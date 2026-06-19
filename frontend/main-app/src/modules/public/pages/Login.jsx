@@ -165,7 +165,7 @@ export default function Login() {
       return navigate("/doctor/dashboard");
 
     if (role === "RECEPTIONIST")
-      return navigate("/clinic/receptionist");
+      return navigate("/clinic/reception");
 
     if (role === "PARA_MEDICAL")
       return navigate("/clinic/pre-consultation");

@@ -47,12 +47,14 @@ export default function PendingPets() {
   );
 
   return (
-    <div className="space-y-8">
+
+
+  <div className="space-y-5 sm:space-y-8 pt-16 md:pt-8">
 
 
 
       {/* Search */}
-      <div className="bg-white rounded-[30px] p-6 shadow-sm">
+      <div className="bg-white rounded-2xl p-4 shadow-sm sm:p-6 lg:rounded-[30px]">
 
         <input
           type="text"
@@ -61,45 +63,103 @@ export default function PendingPets() {
           onChange={(e) =>
             setSearch(e.target.value)
           }
-          className="w-full h-14 border border-slate-300 rounded-2xl px-5 outline-none focus:border-orange-500"
+          className="h-12 w-full rounded-xl border border-slate-300 px-4 text-sm outline-none focus:border-orange-500 sm:h-14 sm:rounded-2xl sm:px-5 sm:text-base"
         />
 
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-[30px] p-8 shadow-sm">
+      <div className="md:hidden space-y-4">
+        {/* Mobile Heading */}
+<div className="md:hidden">
+  <h2 className="mb-4 text-xl font-bold text-slate-800">
+    Pending Cases
+  </h2>
+</div>
 
-        <h2 className="text-2xl font-bold mb-6">
-          Pending Cases
-        </h2>
+  {filteredPets.map((pet) => (
+    <div
+      key={pet.id}
+      className="bg-slate-50 border rounded-2xl p-4"
+    >
+      <div className="flex justify-between items-start mb-3">
+        <div>
+          <h3 className="font-bold text-lg">
+            {pet.petName}
+          </h3>
 
-        <div className="overflow-x-auto">
+          <p className="text-sm text-slate-500">
+            {pet.id}
+          </p>
+        </div>
 
-          <table className="w-full">
+        <span className="bg-orange-100 text-orange-600 px-3 py-1 rounded-full text-xs">
+          {pet.status}
+        </span>
+      </div>
+
+      <div className="space-y-2 text-sm">
+        <p>
+          <span className="font-semibold">
+            Owner:
+          </span>{" "}
+          {pet.owner}
+        </p>
+
+        <p>
+          <span className="font-semibold">
+            Phone:
+          </span>{" "}
+          {pet.phone}
+        </p>
+      </div>
+
+      <button
+        onClick={() => {
+          setSelectedPet(pet);
+          setShowModal(true);
+        }}
+        className="w-full mt-4 bg-orange-500 text-white py-3 rounded-xl"
+      >
+        Edit
+      </button>
+    </div>
+  ))}
+
+</div>
+      <div className="bg-white rounded-2xl p-4 shadow-sm sm:p-6 lg:rounded-[30px] lg:p-8">
+
+       <h2 className="hidden md:block mb-5 text-xl font-bold sm:mb-6 sm:text-2xl">
+  Pending Cases
+</h2>
+
+       <div className="hidden md:block overflow-x-auto">
+
+  <table className="min-w-[760px] w-full text-sm sm:text-base">
 
             <thead>
               <tr className="border-b">
-                <th className="text-left py-4">
+                <th className="py-4 pr-4 text-left">
                   Pet ID
                 </th>
 
-                <th className="text-left py-4">
+                <th className="py-4 pr-4 text-left">
                   Pet Name
                 </th>
 
-                <th className="text-left py-4">
+                <th className="py-4 pr-4 text-left">
                   Owner
                 </th>
 
-                <th className="text-left py-4">
+                <th className="py-4 pr-4 text-left">
                   Phone
                 </th>
 
-                <th className="text-left py-4">
+                <th className="py-4 pr-4 text-left">
                   Status
                 </th>
 
-                <th className="text-left py-4">
+                <th className="py-4 text-left">
                   Action
                 </th>
               </tr>
@@ -112,23 +172,23 @@ export default function PendingPets() {
                   key={pet.id}
                   className="border-b hover:bg-slate-50"
                 >
-                  <td className="py-4">
+                  <td className="py-4 pr-4">
                     {pet.id}
                   </td>
 
-                  <td>
+                  <td className="pr-4">
                     {pet.petName}
                   </td>
 
-                  <td>
+                  <td className="pr-4">
                     {pet.owner}
                   </td>
 
-                  <td>
+                  <td className="pr-4">
                     {pet.phone}
                   </td>
 
-                  <td>
+                  <td className="pr-4">
                     <span className="bg-orange-100 text-orange-600 px-4 py-2 rounded-full text-sm">
                       {pet.status}
                     </span>
@@ -140,7 +200,7 @@ export default function PendingPets() {
                         setSelectedPet(pet);
                         setShowModal(true);
                       }}
-                      className="bg-orange-500 hover:bg-orange-600 text-white px-5 py-2 rounded-xl"
+                      className="rounded-xl bg-orange-500 px-4 py-2 text-sm text-white hover:bg-orange-600 sm:px-5 sm:text-base"
                     >
                       Edit
                     </button>
@@ -159,15 +219,15 @@ export default function PendingPets() {
       </div>
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
+        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 p-3 pt-20 sm:p-5 sm:pt-5">
 
-          <div className="bg-white w-[95%] h-[90vh] rounded-[30px] shadow-2xl overflow-hidden flex flex-col">
+          <div className="flex h-[92vh] w-full max-w-7xl flex-col rounded-2xl bg-white shadow-2xl sm:h-[90vh] lg:rounded-[30px]">
 
             {/* Header */}
-            <div className="flex justify-between items-center p-6 border-b">
+            <div className="flex flex-col gap-4 border-b p-4 sm:flex-row sm:items-center sm:justify-between sm:p-6">
 
               <div>
-                <h1 className="text-3xl font-bold">
+                <h1 className="text-2xl font-bold sm:text-3xl">
                   {selectedPet?.petName}
                 </h1>
 
@@ -182,7 +242,7 @@ export default function PendingPets() {
                   setSelectedPet(null);
                   setStep(1);
                 }}
-                className="bg-red-500 text-white px-5 py-2 rounded-xl"
+                className="w-full rounded-xl bg-red-500 px-5 py-2 text-white sm:w-auto"
               >
                 Close
               </button>
@@ -190,17 +250,17 @@ export default function PendingPets() {
             </div>
 
             {/* Progress Bar */}
-            <div className="p-6 border-b">
+            <div className="border-b p-4 sm:p-6">
 
-              <div className="flex justify-between">
+              <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
 
                 {steps.map((item, index) => (
                   <div
-                    key={index}
-                    className="flex flex-col items-center"
-                  >
+  key={index}
+  className="flex flex-col items-center"
+>
                     <div
-                      className={`w-12 h-12 rounded-full flex items-center justify-center font-bold
+                      className={`flex h-9 w-9 sm:h-12 sm:w-12 items-center justify-center rounded-full font-bold text-sm sm:text-base
 
                 ${step >= index + 1
                           ? "bg-orange-500 text-white"
@@ -211,7 +271,7 @@ export default function PendingPets() {
                       {index + 1}
                     </div>
 
-                    <p className="text-xs mt-2">
+                    <p className="mt-1 text-center text-[10px] leading-tight sm:text-xs">
                       {item}
                     </p>
 
@@ -223,22 +283,37 @@ export default function PendingPets() {
             </div>
 
             {/* Form Area */}
-            <div className="flex-1 overflow-y-auto p-8">
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
               {step === 1 && (
                 <div>
 
-                  <h2 className="text-3xl font-bold mb-8">
+                  <h2 className="mb-6 text-2xl font-bold sm:mb-8 sm:text-3xl">
                     🩺 History Review
                   </h2>
 
-                  <div className="grid md:grid-cols-2 gap-6">
+                  <div className="grid gap-5 md:grid-cols-2 md:gap-6">
 
                     <div>
                       <label className="block font-semibold mb-2">
                         🍖 Diet Type
                       </label>
 
-                      <select className="w-full border border-slate-300 p-3 rounded-2xl">
+                      <select
+  className="
+    w-full
+    h-12 sm:h-14
+    rounded-2xl
+    border border-slate-300
+    bg-white
+    px-4
+    text-sm sm:text-base
+    outline-none
+    focus:border-orange-500
+    focus:ring-4
+    focus:ring-orange-100
+    appearance-none
+  "
+>
                         <option>Select Diet Type</option>
                         <option>Commercial Dry</option>
                         <option>Commercial Wet</option>
@@ -260,18 +335,40 @@ export default function PendingPets() {
                       />
                     </div>
 
-                    <div>
-                      <label className="block font-semibold mb-2">
-                        💧 Water Intake
-                      </label>
+          <div>
+  <label className="block font-semibold mb-2">
+    💧 Water Intake
+  </label>
 
-                      <select className="w-full border border-slate-300 p-3 rounded-2xl">
-                        <option>Select Water Intake</option>
-                        <option>Normal</option>
-                        <option>Reduced</option>
-                        <option>Increased</option>
-                      </select>
-                    </div>
+  <div className="relative">
+    <select
+      className="
+        w-full
+        h-12 sm:h-14
+        rounded-2xl
+        border border-slate-300
+        bg-white
+        px-4
+        pr-10
+        text-sm sm:text-base
+        outline-none
+        appearance-none
+        focus:border-orange-500
+        focus:ring-4
+        focus:ring-orange-100
+      "
+    >
+      <option>Select Water Intake</option>
+      <option>Normal</option>
+      <option>Reduced</option>
+      <option>Increased</option>
+    </select>
+
+    <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2">
+      ▼
+    </span>
+  </div>
+</div>
 
                     <div>
                       <label className="block font-semibold mb-2">
@@ -342,11 +439,11 @@ export default function PendingPets() {
               {step === 2 && (
                 <div>
 
-                  <h2 className="text-3xl font-bold mb-8">
+                  <h2 className="mb-6 text-2xl font-bold sm:mb-8 sm:text-3xl">
                     🔬 Clinical Observation
                   </h2>
 
-                  <div className="grid md:grid-cols-2 gap-6">
+                  <div className="grid gap-5 md:grid-cols-2 md:gap-6">
 
                     <div>
                       <label className="block font-semibold mb-2">
@@ -511,7 +608,7 @@ export default function PendingPets() {
               {step === 3 && (
                 <div>
 
-                  <h2 className="text-3xl font-bold mb-8">
+                  <h2 className="mb-6 text-2xl font-bold sm:mb-8 sm:text-3xl">
                     🧾 Diagnosis
                   </h2>
 
@@ -596,7 +693,7 @@ export default function PendingPets() {
               {step === 4 && (
                 <div>
 
-                  <h2 className="text-3xl font-bold">
+                  <h2 className="text-2xl font-bold sm:text-3xl">
                     🧪 Lab Requisition
                   </h2>
 
@@ -604,16 +701,16 @@ export default function PendingPets() {
                     Select required laboratory tests and sample types for the pet.
                   </p>
 
-                  <div className="grid lg:grid-cols-2 gap-8">
+                  <div className="grid gap-5 lg:grid-cols-2 lg:gap-8">
 
                     {/* Tests Required */}
-                    <div className="bg-slate-50 border border-slate-200 rounded-3xl p-6">
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:rounded-3xl sm:p-6">
 
                       <label className="block font-bold text-lg mb-5">
                         🔬 Tests Required
                       </label>
 
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid gap-3 sm:grid-cols-2">
 
                         {[
                           "CBC",
@@ -629,7 +726,7 @@ export default function PendingPets() {
                         ].map((test) => (
                           <label
                             key={test}
-                            className="flex items-center gap-3 bg-white border border-slate-200 rounded-2xl p-4 cursor-pointer hover:border-orange-500 hover:bg-orange-50 transition"
+                            className="flex cursor-pointer items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3 transition hover:border-orange-500 hover:bg-orange-50 sm:p-4"
                           >
                             <input
                               type="checkbox"
@@ -647,13 +744,13 @@ export default function PendingPets() {
                     </div>
 
                     {/* Sample Type */}
-                    <div className="bg-slate-50 border border-slate-200 rounded-3xl p-6">
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:rounded-3xl sm:p-6">
 
                       <label className="block font-bold text-lg mb-5">
                         🧫 Sample Type
                       </label>
 
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid gap-3 sm:grid-cols-2">
 
                         {[
                           "Blood",
@@ -664,7 +761,7 @@ export default function PendingPets() {
                         ].map((sample) => (
                           <label
                             key={sample}
-                            className="flex items-center gap-3 bg-white border border-slate-200 rounded-2xl p-4 cursor-pointer hover:border-orange-500 hover:bg-orange-50 transition"
+                            className="flex cursor-pointer items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3 transition hover:border-orange-500 hover:bg-orange-50 sm:p-4"
                           >
                             <input
                               type="checkbox"
@@ -716,7 +813,7 @@ export default function PendingPets() {
                   </div>
 
                   {/* Info Box */}
-                  <div className="mt-8 bg-blue-50 border border-blue-200 rounded-3xl p-6">
+                  <div className="mt-8 rounded-2xl border border-blue-200 bg-blue-50 p-4 sm:rounded-3xl sm:p-6">
 
                     <h3 className="font-bold text-blue-700 text-lg mb-3">
                       ℹ️ Laboratory Workflow
@@ -735,11 +832,11 @@ export default function PendingPets() {
               {step === 5 && (
                 <div>
 
-                  <h2 className="text-3xl font-bold mb-8">
+                  <h2 className="mb-6 text-2xl font-bold sm:mb-8 sm:text-3xl">
                     💉 Treatment
                   </h2>
 
-                  <div className="grid md:grid-cols-2 gap-6">
+                  <div className="grid gap-5 md:grid-cols-2 md:gap-6">
 
                     {/* Medications */}
                     <div>
@@ -839,11 +936,11 @@ export default function PendingPets() {
               {step === 6 && (
                 <div>
 
-                  <h2 className="text-3xl font-bold mb-8">
+                  <h2 className="mb-6 text-2xl font-bold sm:mb-8 sm:text-3xl">
                     📋 Suggestions & Plans
                   </h2>
 
-                  <div className="grid md:grid-cols-2 gap-6">
+                  <div className="grid gap-5 md:grid-cols-2 md:gap-6">
 
                     {/* Dietary Advice */}
                     <div>
@@ -957,12 +1054,12 @@ export default function PendingPets() {
             </div>
 
             {/* Footer */}
-            <div className="border-t p-6 flex justify-between">
+            <div className="flex flex-col gap-3 border-t p-4 sm:flex-row sm:justify-between sm:p-6">
 
               <button
                 disabled={step === 1}
                 onClick={() => setStep(step - 1)}
-                className="px-6 py-3 bg-slate-200 rounded-xl"
+                className="w-full rounded-xl bg-slate-200 px-6 py-3 sm:w-auto"
               >
                 Previous
               </button>
@@ -970,13 +1067,13 @@ export default function PendingPets() {
               {step < 6 ? (
                 <button
                   onClick={() => setStep(step + 1)}
-                  className="px-6 py-3 bg-orange-500 text-white rounded-xl"
+                  className="w-full rounded-xl bg-orange-500 px-6 py-3 text-white sm:w-auto"
                 >
                   Next
                 </button>
               ) : (
                 <button
-                  className="px-6 py-3 bg-green-500 text-white rounded-xl"
+                  className="w-full rounded-xl bg-green-500 px-6 py-3 text-white sm:w-auto"
                 >
                   Complete Case
                 </button>

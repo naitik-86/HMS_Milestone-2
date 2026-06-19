@@ -52,6 +52,7 @@ export default function PendingPets() {
         <Header
           title="Pending Pets"
           subtitle="Manage pending pet assessments"
+          showSearch={false}
         />
 
         {/* Search */}

@@ -38,20 +38,20 @@ export default function DoctorDashboard() {
   };
 
   return (
-    <div className="flex h-screen bg-slate-100 overflow-hidden">
+    <div className="min-h-full bg-slate-100 lg:flex lg:h-full lg:overflow-hidden">
 
 
 
       {/* Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
 
         {/* Premium Header */}
-        <div className="bg-white px-8 py-4 border-b border-slate-200">
+        <div className="border-b border-slate-200 bg-white px-4 py-4 sm:px-6 lg:px-8">
 
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 
             <div>
-              <div className="flex items-center gap-3 mb-2">
+              <div className="mb-2 flex items-center gap-3">
 
                 <div className="w-3 h-3 rounded-full bg-orange-500"></div>
 
@@ -61,19 +61,19 @@ export default function DoctorDashboard() {
 
               </div>
 
-              <h1 className="text-3xl font-bold text-slate-900">
+              <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">
                 {getPageTitle()}
               </h1>
 
-              <p className="text-slate-500 mt-2">
+              <p className="mt-2 text-sm text-slate-500 sm:text-base">
                 {getPageDescription()}
               </p>
 
             </div>
 
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3 sm:gap-4">
 
-              <div className="bg-orange-50 border border-orange-100 rounded-3xl px-5 py-3">
+              <div className="rounded-2xl border border-orange-100 bg-orange-50 px-4 py-3 sm:rounded-3xl sm:px-5">
 
                 <p className="text-xs text-slate-500">
                   Active Module
@@ -85,7 +85,7 @@ export default function DoctorDashboard() {
 
               </div>
 
-              <div className="w-14 h-14 rounded-3xl bg-gradient-to-r from-orange-500 to-orange-600 text-white flex items-center justify-center text-lg font-bold shadow-lg">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-r from-orange-500 to-orange-600 text-lg font-bold text-white shadow-lg sm:h-14 sm:w-14 sm:rounded-3xl">
                 DR
               </div>
 
@@ -96,7 +96,7 @@ export default function DoctorDashboard() {
         </div>
 
         {/* Main Page */}
-        <div className="flex-1 overflow-y-auto p-8">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
 
           {activeStep === "dashboard" && (
             <Dashboard setActiveStep={setActiveStep} />

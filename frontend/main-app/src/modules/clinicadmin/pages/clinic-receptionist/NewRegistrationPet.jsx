@@ -7,15 +7,15 @@ export default function NewRegistrationPet() {
     return (
         <>
             {showModal && (
-                <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center">
+                <div className="min-h-[calc(100vh-4rem)] md:min-h-screen bg-slate-100 p-3 sm:p-4">
 
-                    <div className="bg-gradient-to-br from-white to-slate-50 w-[96%] h-[94vh] rounded-[32px] shadow-[0_20px_60px_rgba(0,0,0,0.15)] flex flex-col overflow-hidden">
+                    <div className="bg-gradient-to-br from-white to-slate-50 w-full h-[calc(100vh-5.5rem)] sm:h-[calc(100vh-6rem)] md:h-[calc(100vh-2rem)] rounded-2xl sm:rounded-[32px] shadow-[0_20px_60px_rgba(0,0,0,0.15)] flex flex-col overflow-hidden">
 
                         {/* Header */}
-                        <div className="flex justify-between items-center px-10 py-6 border-b bg-white">
+                        <div className="flex justify-between items-start sm:items-center gap-4 px-4 sm:px-6 lg:px-10 py-4 sm:py-6 border-b bg-white">
 
                             <div>
-                                <h1 className="text-4xl font-bold text-slate-800">
+                                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-800">
                                     New Pet Registration
                                 </h1>
 
@@ -26,7 +26,7 @@ export default function NewRegistrationPet() {
 
                             <button
                                 onClick={() => setShowModal(false)}
-                                className="text-3xl font-bold"
+                                className="shrink-0 text-2xl sm:text-3xl font-bold"
                             >
                                 ✕
                             </button>
@@ -34,9 +34,9 @@ export default function NewRegistrationPet() {
                         </div>
 
                         {/* Progress Bar */}
-                        <div className="px-12 py-8 bg-white border-b">
+                        <div className="px-4 sm:px-6 lg:px-12 py-4 sm:py-6 lg:py-8 bg-white border-b overflow-x-auto">
 
-                            <div className="flex items-center">
+                            <div className="flex items-center min-w-[680px]">
 
                                 {[
                                     "Owner Verification",
@@ -54,7 +54,7 @@ export default function NewRegistrationPet() {
 
                                             <div
                                                 className={`
-              w-14 h-14 rounded-full
+              w-10 h-10 sm:w-14 sm:h-14 rounded-full
               flex items-center justify-center
               font-bold text-lg text-white
               transition-all duration-300
@@ -68,7 +68,7 @@ export default function NewRegistrationPet() {
                                             </div>
 
                                             <span
-                                                className={`mt-3 text-sm font-semibold ${step >= index + 1
+                                                className={`mt-3 text-xs sm:text-sm font-semibold ${step >= index + 1
                                                     ? "text-orange-500"
                                                     : "text-slate-400"
                                                     }`}
@@ -96,16 +96,16 @@ export default function NewRegistrationPet() {
                         </div>
 
                         {/* Form Body */}
-                        <div className="flex-1 overflow-y-auto p-8">
+                        <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
 
                             {step === 1 && (
-                                <div className="bg-white rounded-[28px] p-8 shadow-lg border border-slate-100">
+                                <div className="bg-white rounded-2xl sm:rounded-[28px] p-4 sm:p-6 lg:p-8 shadow-lg border border-slate-100">
 
-                                    <h2 className="text-3xl font-bold text-slate-800 mb-8">
+                                    <h2 className="text-2xl sm:text-3xl font-bold text-slate-800 mb-6 sm:mb-8">
                                         Owner Verification
                                     </h2>
 
-                                    <div className="grid grid-cols-2 gap-5">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
 
                                         {/* Mobile Number */}
                                         <div>
@@ -113,7 +113,7 @@ export default function NewRegistrationPet() {
                                                 Mobile Number *
                                             </label>
 
-                                            <div className="flex gap-3">
+                                            <div className="flex flex-col sm:flex-row gap-3">
                                                 <input
                                                     type="text"
                                                     placeholder="Enter Mobile Number"
@@ -201,7 +201,7 @@ transition
                                         </div>
 
                                         {/* Address */}
-                                        <div className="col-span-2">
+                                        <div className="md:col-span-2">
                                             <label className="block mb-2 font-medium">
                                                 Full Address *
                                             </label>
@@ -265,13 +265,13 @@ transition
                             )}
 
                             {step === 2 && (
-                                <div className="bg-white rounded-3xl p-8 shadow-sm">
+                                <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 shadow-sm">
 
-                                    <h2 className="text-2xl font-bold mb-6">
+                                    <h2 className="text-xl sm:text-2xl font-bold mb-6">
                                         Pet Registration
                                     </h2>
 
-                                    <div className="grid grid-cols-2 gap-5">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
 
                                         {/* Pet Name */}
                                         <div>
@@ -378,7 +378,7 @@ transition
                                         </div>
 
                                         {/* Identification Area */}
-                                        <div className="col-span-2">
+                                        <div className="md:col-span-2">
                                             <label className="block mb-2 font-medium">
                                                 Identification Area
                                             </label>
@@ -415,7 +415,7 @@ transition
                                         </div>
 
                                         {/* Pet ID */}
-                                        <div className="col-span-2">
+                                        <div className="md:col-span-2">
                                             <label className="block mb-2 font-medium">
                                                 Unique Pet ID
                                             </label>
@@ -434,13 +434,13 @@ transition
                             )}
 
                             {step === 3 && (
-                                <div className="bg-white rounded-3xl p-8 shadow-sm">
+                                <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 shadow-sm">
 
-                                    <h2 className="text-2xl font-bold mb-6">
+                                    <h2 className="text-xl sm:text-2xl font-bold mb-6">
                                         Pet History
                                     </h2>
 
-                                    <div className="grid grid-cols-2 gap-5">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
 
                                         {/* Previous Vaccination */}
 
@@ -604,7 +604,7 @@ transition
 
                                         {/* Allergies */}
 
-                                        <div className="col-span-2">
+                                        <div className="md:col-span-2">
                                             <label className="block mb-2 font-medium">
                                                 Known Allergies
                                             </label>
@@ -618,7 +618,7 @@ transition
 
                                         {/* Medication */}
 
-                                        <div className="col-span-2">
+                                        <div className="md:col-span-2">
                                             <label className="block mb-2 font-medium">
                                                 Current Medications
                                             </label>
@@ -636,13 +636,13 @@ transition
                             )}
 
                             {step === 4 && (
-                                <div className="bg-white rounded-3xl p-8 shadow-sm">
+                                <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 shadow-sm">
 
-                                    <h2 className="text-2xl font-bold mb-6">
+                                    <h2 className="text-xl sm:text-2xl font-bold mb-6">
                                         Reason For Visit
                                     </h2>
 
-                                    <div className="grid grid-cols-2 gap-5">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
 
                                         {/* Primary Reason */}
 
@@ -675,7 +675,7 @@ transition
 
                                         {/* Complaint */}
 
-                                        <div className="col-span-2">
+                                        <div className="md:col-span-2">
                                             <label className="block mb-2 font-medium">
                                                 Specific Complaint
                                             </label>
@@ -735,12 +735,12 @@ transition
                         </div>
 
                         {/* Footer */}
-                        <div className="border-t p-5 flex justify-between">
+                        <div className="border-t p-4 sm:p-5 flex justify-between gap-3">
 
                             <button
                                 disabled={step === 1}
                                 onClick={() => setStep(step - 1)}
-                                className="bg-slate-100 hover:bg-slate-200 px-8 py-3 rounded-2xl font-semibold "
+                                className="bg-slate-100 hover:bg-slate-200 px-5 sm:px-8 py-3 rounded-2xl font-semibold disabled:opacity-50"
                             >
                                 Back
                             </button>

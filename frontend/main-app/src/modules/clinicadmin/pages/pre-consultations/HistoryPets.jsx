@@ -74,11 +74,12 @@ export default function HistoryPets() {
 
 
 
-<div className="flex-1 p-4 md:p-6 lg:p-8">
+<div className="flex-1 p-4 md:p-6 lg:p-8 mt-[70px] md:mt-0 overflow-x-hidden">
         <Header
 
           title="History Pets"
           subtitle="Archived pet consultation records"
+          showSearch={false}
         />
 
         {/* KPI Cards */}
