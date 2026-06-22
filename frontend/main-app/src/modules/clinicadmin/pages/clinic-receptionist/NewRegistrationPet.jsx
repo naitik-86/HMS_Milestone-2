@@ -1,8 +1,103 @@
 import { useState } from "react";
+import { showToast } from "../../../../shared/components/toast";
 
 export default function NewRegistrationPet() {
     const [showModal, setShowModal] = useState(true);
     const [step, setStep] = useState(1);
+
+    const [formData, setFormData] = useState({
+        // Owner Verification
+        mobileNumber: "",
+        otp: "",
+        visitType: "New",
+        ownerName: "",
+        ownerIdType: "Aadhaar Card",
+        email: "",
+        address: "",
+        state: "",
+        city: "",
+        district: "",
+        pincode: "",
+        petId: "",
+        tokenNumber: "",
+
+        // Pet Registration
+        petName: "",
+        species: "Dog",
+        breed: "",
+        gender: "Male",
+        dob: "",
+        age: "",
+        color: "",
+        rfid: "",
+        identificationArea: "",
+        petPhoto: null,
+        sterilized: "No",
+
+        // Pet History
+        vaccineName: "",
+        vaccinationDate: "",
+        batchNumber: "",
+        clinicName: "",
+        dewormingProduct: "",
+        dewormingDate: "",
+        dose: "",
+        surgicalProcedure: "",
+        surgeryDate: "",
+        hospital: "",
+        condition: "",
+        treatment: "",
+        treatmentDate: "",
+        allergies: "",
+        medications: "",
+
+        // Reason For Visit
+        primaryReason: "Treatment",
+        assignedDoctor: "",
+        complaint: "",
+        appointmentDate: "",
+        appointmentTime: "",
+    });
+
+
+    const handleChange = (e) => {
+        const { name, value, files } = e.target;
+
+        setFormData((prev) => ({
+            ...prev,
+            [name]: files ? files[0] : value,
+        }));
+    };
+
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+
+        try {
+
+            const response = await createPetRegistration(formData);
+
+            console.log("Registration Success:", response);
+            showToast({
+                type: "success",
+                title: "Registration Success",
+                description: "Registration  have been done successfully.",
+            });
+
+            setShowModal(false);
+
+            setStep(1);
+
+        } catch (error) {
+            console.error("Registration Failed:", error);
+
+            showToast({
+                type: "error",
+                title: "Operation Failed",
+                description: "Unable to register pet. Please try again.",
+            });
+        }
+    };
 
     return (
         <>
@@ -116,6 +211,8 @@ export default function NewRegistrationPet() {
                                             <div className="flex flex-col sm:flex-row gap-3">
                                                 <input
                                                     type="text"
+                                                    value={formData.mobileNumber}
+                                                    onChange={handleChange}
                                                     placeholder="Enter Mobile Number"
                                                     className="flex-1 border rounded-xl p-3"
                                                 />
@@ -144,6 +241,8 @@ transition
 
                                             <input
                                                 type="text"
+                                                value={formData.otp}
+                                                onChange={handleChange}
                                                 placeholder="Enter 6 Digit OTP"
                                                 className="w-full border rounded-xl p-3"
                                             />
@@ -155,9 +254,14 @@ transition
                                                 Visit Type *
                                             </label>
 
-                                            <select className="w-full border border-slate-200 rounded-2xl p-3.5 bg-white focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-orange-400 transition">
-                                                <option>New</option>
-                                                <option>Follow-up</option>
+                                            <select
+                                                name="visitType"
+                                                value={formData.visitType}
+                                                onChange={handleChange}
+                                                className="w-full border border-slate-200 rounded-2xl p-3.5 bg-white focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-orange-400 transition"
+                                            >
+                                                <option value="New">New</option>
+                                                <option value="Follow-up">Follow-up</option>
                                             </select>
                                         </div>
 
@@ -169,6 +273,8 @@ transition
 
                                             <input
                                                 type="text"
+                                                value={formData.ownerName}
+                                                onChange={handleChange}
                                                 placeholder="Owner Name"
                                                 className="w-full border rounded-xl p-3"
                                             />
@@ -180,7 +286,10 @@ transition
                                                 Owner ID Type *
                                             </label>
 
-                                            <select className="w-full border rounded-xl p-3">
+                                            <select
+                                                value={formData.ownerIdType}
+                                                onChange={handleChange}
+                                                className="w-full border rounded-xl p-3">
                                                 <option>Aadhaar Card</option>
                                                 <option>PAN Card</option>
                                                 <option>Other Govt ID</option>
@@ -194,6 +303,8 @@ transition
                                             </label>
 
                                             <input
+                                                value={formData.email}
+                                                onChange={handleChange}
                                                 type="email"
                                                 placeholder="Email Address"
                                                 className="w-full border rounded-xl p-3"
@@ -207,6 +318,8 @@ transition
                                             </label>
 
                                             <textarea
+                                                value={formData.textarea}
+                                                onChange={handleChange}
                                                 rows="3"
                                                 placeholder="Enter Full Address"
                                                 className="w-full border rounded-xl p-3"
@@ -219,7 +332,10 @@ transition
                                                 State *
                                             </label>
 
-                                            <select className="w-full border rounded-xl p-3">
+                                            <select
+                                                value={formData.state}
+                                                onChange={handleChange}
+                                                className="w-full border rounded-xl p-3">
                                                 <option>Select State</option>
                                             </select>
                                         </div>
@@ -230,7 +346,10 @@ transition
                                                 City *
                                             </label>
 
-                                            <select className="w-full border rounded-xl p-3">
+                                            <select
+                                                value={formData.city}
+                                                onChange={handleChange}
+                                                className="w-full border rounded-xl p-3">
                                                 <option>Select City</option>
                                             </select>
                                         </div>
@@ -241,7 +360,10 @@ transition
                                                 District *
                                             </label>
 
-                                            <select className="w-full border rounded-xl p-3">
+                                            <select
+                                                value={formData.district}
+                                                onChange={handleChange}
+                                                className="w-full border rounded-xl p-3">
                                                 <option>Select District</option>
                                             </select>
                                         </div>
@@ -253,6 +375,8 @@ transition
                                             </label>
 
                                             <input
+                                                value={formData.pincode}
+                                                onChange={handleChange}
                                                 type="text"
                                                 placeholder="Pincode"
                                                 className="w-full border rounded-xl p-3"
@@ -280,6 +404,8 @@ transition
                                             </label>
 
                                             <input
+                                                value={formData.petName}
+                                                onChange={handleChange}
                                                 type="text"
                                                 placeholder="Enter Pet Name"
                                                 className="w-full border rounded-xl p-3"
@@ -292,7 +418,10 @@ transition
                                                 Species *
                                             </label>
 
-                                            <select className="w-full border rounded-xl p-3">
+                                            <select
+                                                value={formData.species}
+                                                onChange={handleChange}
+                                                className="w-full border rounded-xl p-3">
                                                 <option>Dog</option>
                                                 <option>Cat</option>
                                                 <option>Rabbit</option>
@@ -308,6 +437,8 @@ transition
                                             </label>
 
                                             <input
+                                                value={formData.breed}
+                                                onChange={handleChange}
                                                 type="text"
                                                 placeholder="Breed"
                                                 className="w-full border rounded-xl p-3"
@@ -320,7 +451,10 @@ transition
                                                 Gender *
                                             </label>
 
-                                            <select className="w-full border rounded-xl p-3">
+                                            <select
+                                                value={formData.gender}
+                                                onChange={handleChange}
+                                                className="w-full border rounded-xl p-3">
                                                 <option>Male</option>
                                                 <option>Female</option>
                                             </select>
@@ -333,6 +467,8 @@ transition
                                             </label>
 
                                             <input
+                                                value={formData.dob}
+                                                onChange={handleChange}
                                                 type="date"
                                                 className="w-full border rounded-xl p-3"
                                             />
@@ -345,6 +481,8 @@ transition
                                             </label>
 
                                             <input
+                                                value={formData.age}
+                                                onChange={handleChange}
                                                 type="number"
                                                 placeholder="Age"
                                                 className="w-full border rounded-xl p-3"
@@ -358,6 +496,8 @@ transition
                                             </label>
 
                                             <input
+                                                value={formData.color}
+                                                onChange={handleChange}
                                                 type="text"
                                                 placeholder="Pet Color"
                                                 className="w-full border rounded-xl p-3"
@@ -371,6 +511,8 @@ transition
                                             </label>
 
                                             <input
+                                                value={formData.rfid}
+                                                onChange={handleChange}
                                                 type="text"
                                                 placeholder="RFID Number"
                                                 className="w-full border rounded-xl p-3"
@@ -384,6 +526,8 @@ transition
                                             </label>
 
                                             <textarea
+                                                value={formData.identificationArea}
+                                                onChange={handleChange}
                                                 rows="3"
                                                 placeholder="Enter Identification Marks"
                                                 className="w-full border rounded-xl p-3"
@@ -397,6 +541,8 @@ transition
                                             </label>
 
                                             <input
+                                                value={formData.petPhoto}
+                                                onChange={handleChange}
                                                 type="file"
                                                 className="w-full border rounded-xl p-3"
                                             />
@@ -408,7 +554,10 @@ transition
                                                 Is Sterilized?
                                             </label>
 
-                                            <select className="w-full border rounded-xl p-3">
+                                            <select
+                                                value={formData.sterilized}
+                                                onChange={handleChange}
+                                                className="w-full border rounded-xl p-3">
                                                 <option>No</option>
                                                 <option>Yes</option>
                                             </select>
@@ -421,6 +570,8 @@ transition
                                             </label>
 
                                             <input
+                                                value={formData.petId}
+                                                onChange={handleChange}
                                                 type="text"
                                                 value="PET-2026-001"
                                                 readOnly
@@ -450,6 +601,8 @@ transition
                                             </label>
 
                                             <input
+                                                value={formData.vaccineName}
+                                                onChange={handleChange}
                                                 type="text"
                                                 placeholder="Vaccine Name"
                                                 className="w-full border rounded-xl p-3"
@@ -462,6 +615,8 @@ transition
                                             </label>
 
                                             <input
+                                                value={formData.vaccinationDate}
+                                                onChange={handleChange}
                                                 type="date"
                                                 className="w-full border rounded-xl p-3"
                                             />
@@ -473,6 +628,8 @@ transition
                                             </label>
 
                                             <input
+                                                value={formData.batchNumber}
+                                                onChange={handleChange}
                                                 type="text"
                                                 placeholder="Batch Number"
                                                 className="w-full border rounded-xl p-3"
@@ -485,6 +642,8 @@ transition
                                             </label>
 
                                             <input
+                                                value={formData.clinicName}
+                                                onChange={handleChange}
                                                 type="text"
                                                 placeholder="Clinic Name"
                                                 className="w-full border rounded-xl p-3"
@@ -499,6 +658,8 @@ transition
                                             </label>
 
                                             <input
+                                                value={formData.dewormingProduct}
+                                                onChange={handleChange}
                                                 type="text"
                                                 placeholder="Product"
                                                 className="w-full border rounded-xl p-3"
@@ -511,6 +672,8 @@ transition
                                             </label>
 
                                             <input
+                                                value={formData.dewormingDate}
+                                                onChange={handleChange}
                                                 type="date"
                                                 className="w-full border rounded-xl p-3"
                                             />
@@ -522,6 +685,8 @@ transition
                                             </label>
 
                                             <input
+                                                value={formData.dose}
+                                                onChange={handleChange}
                                                 type="text"
                                                 placeholder="Dose"
                                                 className="w-full border rounded-xl p-3"
@@ -536,6 +701,8 @@ transition
                                             </label>
 
                                             <input
+                                                value={formData.surgicalProcedure}
+                                                onChange={handleChange}
                                                 type="text"
                                                 placeholder="Procedure"
                                                 className="w-full border rounded-xl p-3"
@@ -548,6 +715,8 @@ transition
                                             </label>
 
                                             <input
+                                                value={formData.surgeryDate}
+                                                onChange={handleChange}
                                                 type="date"
                                                 className="w-full border rounded-xl p-3"
                                             />
@@ -559,6 +728,8 @@ transition
                                             </label>
 
                                             <input
+                                                value={formData.hospital}
+                                                onChange={handleChange}
                                                 type="text"
                                                 placeholder="Hospital"
                                                 className="w-full border rounded-xl p-3"
@@ -573,6 +744,8 @@ transition
                                             </label>
 
                                             <input
+                                                value={formData.condition}
+                                                onChange={handleChange}
                                                 type="text"
                                                 placeholder="Condition"
                                                 className="w-full border rounded-xl p-3"
@@ -585,6 +758,8 @@ transition
                                             </label>
 
                                             <input
+                                                value={formData.treatment}
+                                                onChange={handleChange}
                                                 type="text"
                                                 placeholder="Treatment"
                                                 className="w-full border rounded-xl p-3"
@@ -597,6 +772,8 @@ transition
                                             </label>
 
                                             <input
+                                                value={formData.treatmentDate}
+                                                onChange={handleChange}
                                                 type="date"
                                                 className="w-full border rounded-xl p-3"
                                             />
@@ -610,6 +787,8 @@ transition
                                             </label>
 
                                             <textarea
+                                                value={formData.allergies}
+                                                onChange={handleChange}
                                                 rows="3"
                                                 placeholder="Known Allergies"
                                                 className="w-full border rounded-xl p-3"
@@ -624,6 +803,8 @@ transition
                                             </label>
 
                                             <textarea
+                                                value={formData.medications}
+                                                onChange={handleChange}
                                                 rows="3"
                                                 placeholder="Current Medications"
                                                 className="w-full border rounded-xl p-3"
@@ -651,7 +832,10 @@ transition
                                                 Primary Reason *
                                             </label>
 
-                                            <select className="w-full border rounded-xl p-3">
+                                            <select
+                                                value={formData.primaryReason}
+                                                onChange={handleChange}
+                                                className="w-full border rounded-xl p-3">
                                                 <option>Treatment</option>
                                                 <option>Vaccination</option>
                                                 <option>Checkup</option>
@@ -666,7 +850,10 @@ transition
                                                 Assigned Doctor *
                                             </label>
 
-                                            <select className="w-full border rounded-xl p-3">
+                                            <select
+                                                value={formData.assignedDoctor}
+                                                onChange={handleChange}
+                                                className="w-full border rounded-xl p-3">
                                                 <option>Dr. Sharma</option>
                                                 <option>Dr. Verma</option>
                                                 <option>Dr. Singh</option>
@@ -681,6 +868,8 @@ transition
                                             </label>
 
                                             <textarea
+                                                value={formData.complaint}
+                                                onChange={handleChange}
                                                 rows="4"
                                                 placeholder="Describe Problem"
                                                 className="w-full border rounded-xl p-3"
@@ -695,6 +884,8 @@ transition
                                             </label>
 
                                             <input
+                                                value={formData.tokenNumber}
+                                                onChange={handleChange}
                                                 value="TK-001"
                                                 readOnly
                                                 className="w-full border rounded-xl p-3 bg-slate-100"
@@ -709,6 +900,8 @@ transition
                                             </label>
 
                                             <input
+                                                value={formData.appointmentDate}
+                                                onChange={handleChange}
                                                 type="date"
                                                 className="w-full border rounded-xl p-3"
                                             />
@@ -722,6 +915,8 @@ transition
                                             </label>
 
                                             <input
+                                                value={formData.appointmentTime}
+                                                onChange={handleChange}
                                                 type="time"
                                                 className="w-full border rounded-xl p-3"
                                             />
@@ -749,32 +944,24 @@ transition
                                 <button
                                     onClick={() => setStep(step + 1)}
                                     className="
-bg-orange-500
-hover:bg-orange-600
-text-white
-px-8
-py-3
-rounded-2xl
-font-semibold
-shadow-lg
-shadow-orange-200
-transition
-"
+                                        bg-orange-500
+                                        hover:bg-orange-600
+                                        text-white
+                                        px-8
+                                        py-3
+                                        rounded-2xl
+                                        font-semibold
+                                        shadow-lg
+                                        shadow-orange-200
+                                        transition
+                                        "
                                 >
                                     Next
                                 </button>
                             ) : (
                                 <button
-                                    className="
-bg-green-500
-hover:bg-green-600
-text-white
-px-8
-py-3
-rounded-2xl
-font-semibold
-shadow-lg
-"
+                                    onClick={handleSubmit}
+                                    className="bg-green-500 hover:bg-green-600 text-white px-8 py-3 rounded-2xl font-semibold shadow-lg"
                                 >
                                     Submit
                                 </button>
