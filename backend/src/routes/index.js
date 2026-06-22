@@ -7,13 +7,14 @@ const clinicAdminRoutes = require('./clinicAdminRoutes');
 const doctorRoutes = require('./doctorRoutes');
 const receptionRoutes = require('./receptionRoutes');
 
-const { protect } = require('../middlewares/auth');
+const { protect, authorize } = require('../middlewares/auth');
 
 // Public routes
 router.use('/auth', authRoutes);
 // Protected role-based modules
 router.use('/super-admin', protect, superAdminRoutes);
-router.use('/clinic-admin', protect, clinicAdminRoutes);
+router.use('/clinic-admin', authorize("CLINIC_ADMIN"), protect, clinicAdminRoutes);
+
 router.use('/doctor', protect, doctorRoutes);
 router.use('/reception', protect, receptionRoutes);
 
