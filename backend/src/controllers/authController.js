@@ -4,7 +4,7 @@ const { generateOTP, sendSMS, sendWhatsApp } = require('../utils/otpService');
 
 const bcrypt = require("bcryptjs");
 const SuperAdmin = require("../models/SuperAdmin");
-
+const Clinic = require("../models/Clinic")
 
 // Temporary in-memory store for OTPs (Use Redis or MongoDB in production)
 const otpStore = new Map();
@@ -74,66 +74,164 @@ exports.verifyOTPAndLogin = async (req, res) => {
 
 
 
-exports.verifySuperAdmin = async (req, res) => {
+// exports.verifySuperAdmin = async (req, res) => {
+//   try {
+//     const { email, password } = req.body;
+
+//     console.log("Email : " + email);
+//     console.log("password : " + password);
+
+//     if (!email || !password) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Email and password are required",
+//       });
+//     }
+
+//     const admin = await SuperAdmin.findOne({ email }).select("+password");;
+//     if (!admin) {
+//       return res.status(401).json({
+//         success: false,
+//         message: "Invalid credentials",
+//       });
+//     }
+
+//     const isMatch = await bcrypt.compare(password, admin.password);
+//     if (!isMatch) {
+//       return res.status(401).json({
+//         success: false,
+//         message: "Invalid credentials **",
+//       });
+//     }
+
+//     const token = jwt.sign(
+//       {
+//         id: admin._id,
+//         role: admin.role,
+//         email: admin.email,
+//       },
+//       process.env.JWT_SECRET,
+//       {
+//         expiresIn: "1d",
+//         issuer: "HMS-app",
+//       }
+//     );
+//     console.log("GENERATED TOKEN:", token);
+//     res.status(200).json({
+//       success: true,
+//       message: "Login successful",
+//       token,
+//       user: {
+//         id: admin._id,
+//         email: admin.email,
+//         role: admin.role,
+//       },
+//     });
+
+//   } catch (error) {
+//     console.error("SUPER ADMIN LOGIN ERROR:", error);
+//     res.status(500).json({
+//       success: false,
+//       message: "Server error",
+//       error: error.message,
+//     });
+//   }
+// };
+
+
+exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    console.log("Email : " + email);
-    console.log("password : " + password);
 
-    if (!email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: "Email and password are required",
-      });
-    }
+    const admin = await SuperAdmin
+      .findOne({ email })
+      .select("+password");
 
-    const admin = await SuperAdmin.findOne({ email }).select("+password");;
-    if (!admin) {
-      return res.status(401).json({
-        success: false,
-        message: "Invalid credentials",
-      });
-    }
+    if (admin) {
+      const isMatch = await bcrypt.compare(
+        password,
+        admin.password
+      );
 
-    const isMatch = await bcrypt.compare(password, admin.password);
-    if (!isMatch) {
-      return res.status(401).json({
-        success: false,
-        message: "Invalid credentials **",
-      });
-    }
+      if (isMatch) {
+        const token = jwt.sign(
+          {
+            id: admin._id,
+            role: admin.role,
+            email: admin.email,
+          },
+          process.env.JWT_SECRET,
+          { expiresIn: "1d" }
+        );
 
-    const token = jwt.sign(
-      {
-        id: admin._id,
-        role: admin.role,
-        email: admin.email,
-      },
-      process.env.JWT_SECRET,
-      {
-        expiresIn: "1d",
-        issuer: "HMS-app",
+        return res.status(200).json({
+          success: true,
+          token,
+          user: {
+            id: admin._id,
+            role: admin.role,
+            email: admin.email,
+          },
+        });
       }
-    );
-    console.log("GENERATED TOKEN:", token);
-    res.status(200).json({
-      success: true,
-      message: "Login successful",
-      token,
-      user: {
-        id: admin._id,
-        email: admin.email,
-        role: admin.role,
-      },
+    }
+
+
+    const clinic = await Clinic
+      .findOne({ email })
+      .select("+password");
+
+    if (clinic) {
+      const isMatch = await bcrypt.compare(
+        password,
+        clinic.password
+      );
+
+      if (isMatch) {
+        const token = jwt.sign(
+          {
+            id: clinic._id,
+            role: "CLINIC_ADMIN",
+            email: clinic.email,
+          },
+          process.env.JWT_SECRET,
+          { expiresIn: "1d" }
+        );
+
+        return res.status(200).json({
+          success: true,
+          token,
+          user: {
+            id: clinic._id,
+            clinicName: clinic.name,
+
+            role: "CLINIC_ADMIN",
+
+            email: clinic.email,
+
+            paymentCompleted:
+              clinic.paymentCompleted,
+
+            subscriptionType:
+              clinic.subscriptionType,
+
+            subscriptionPrice:
+              clinic.subscriptionPrice
+          }
+        });
+      }
+    }
+
+    return res.status(401).json({
+      success: false,
+      message: "Invalid credentials"
     });
 
   } catch (error) {
-    console.error("SUPER ADMIN LOGIN ERROR:", error);
     res.status(500).json({
       success: false,
-      message: "Server error",
-      error: error.message,
+      message: error.message
     });
   }
 };

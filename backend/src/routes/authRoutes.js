@@ -4,11 +4,11 @@ const router = express.Router();
 const {
     requestLoginOTP,
     verifyOTPAndLogin,
-    verifySuperAdmin
+    login
 } = require('../controllers/authController');
 
 router.post('/request-otp', requestLoginOTP);
-router.post('/login', verifySuperAdmin);
+router.post('/login', login);
 router.post('/verify-otp', verifyOTPAndLogin);
 
 module.exports = router;

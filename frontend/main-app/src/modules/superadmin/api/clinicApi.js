@@ -25,6 +25,7 @@ export const createClinic = async (clinicData) => {
     const jsonPayload = {
         name: clinicData.clinicName,
         address: addressString,
+        email: clinicData.email,
         subscriptionType,
         maxDoctors: clinicData.maxDoctors || 5,
         maxStaff: clinicData.maxStaff || 10

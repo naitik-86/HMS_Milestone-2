@@ -2,7 +2,8 @@ const User = require('../models/User');
 const Clinic = require('../models/Clinic');
 const Owner = require('../models/Owner');
 const sendEmail = require('../utils/emailService'); // NEW: Email Trigger Utility
-
+const bcrypt = require("bcryptjs");
+const sendClinicCredentials = require("../utils/sendClinicCredentials");
 // ==========================================
 // M1: USER & ONBOARDING LOGIC
 // ==========================================
@@ -23,27 +24,96 @@ exports.getMe = async (req, res) => {
 // POST /api/clinics -> Super Admin onboarding a new clinic
 exports.createClinic = async (req, res) => {
   try {
-    const { name, address, subscriptionType, maxDoctors, maxStaff } = req.body;
-
-    let expiryDate = new Date();
-    if (subscriptionType === '6_MONTHS') expiryDate.setMonth(expiryDate.getMonth() + 6);
-    if (subscriptionType === '12_MONTHS') expiryDate.setFullYear(expiryDate.getFullYear() + 1);
-    if (subscriptionType === 'FREE_TIER') expiryDate = null;
-
-    const clinic = await Clinic.create({
+    const {
       name,
       address,
       subscriptionType,
+      maxDoctors,
+      maxStaff,
+      email,
+    } = req.body;
+
+    let expiryDate = new Date();
+    let subscriptionPrice = 0;
+
+    if (subscriptionType === "6_MONTHS") {
+      expiryDate.setMonth(expiryDate.getMonth() + 6);
+      subscriptionPrice = 4999;
+    }
+
+    if (subscriptionType === "12_MONTHS") {
+      expiryDate.setFullYear(expiryDate.getFullYear() + 1);
+      subscriptionPrice = 8999;
+    }
+
+    if (subscriptionType === "FREE_TIER") {
+      expiryDate = null;
+      subscriptionPrice = 0;
+    }
+
+    const plainPassword = Math.random()
+      .toString(36)
+      .slice(-8);
+
+    const hashedPassword = await bcrypt.hash(
+      plainPassword,
+      10
+    );
+
+    const clinic = await Clinic.create({
+      name,
+      email,
+      password: hashedPassword,
+      address,
+
+      subscriptionType,
+      subscriptionPrice,
+
       expiryDate,
-      licenseLimits: { maxDoctors, maxStaff }
+
+      licenseLimits: {
+        maxDoctors,
+        maxStaff,
+      },
     });
 
-    res.status(201).json({ success: true, data: clinic });
+    console.log("Clinic Email:", email);
+    console.log("Password:", plainPassword);
+
+
+    try {
+
+      await sendClinicCredentials({
+        clinicName: clinic.name,
+        email: clinic.email,
+        password: plainPassword,
+        planType: clinic.subscriptionType,
+        planPrice: clinic.subscriptionPrice,
+      });
+
+      console.log("Email Sent Successfully");
+
+    } catch (err) {
+
+      console.error(
+        "Email Sending Failed:",
+        err.message
+      );
+
+    }
+
+
+    res.status(201).json({
+      success: true,
+      data: clinic,
+    });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
   }
 };
-
 // POST /api/users/staff -> Clinic Admin creating doctor/staff accounts
 exports.createStaff = async (req, res) => {
   try {

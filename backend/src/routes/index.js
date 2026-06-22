@@ -6,8 +6,9 @@ const superAdminRoutes = require('./superAdminRoutes');
 const clinicAdminRoutes = require('./clinicAdminRoutes');
 const doctorRoutes = require('./doctorRoutes');
 const receptionRoutes = require('./receptionRoutes');
-
 const { protect } = require('../middlewares/auth');
+
+
 
 // Public routes
 router.use('/auth', authRoutes);
@@ -16,5 +17,4 @@ router.use('/super-admin', protect, superAdminRoutes);
 router.use('/clinic-admin', protect, clinicAdminRoutes);
 router.use('/doctor', protect, doctorRoutes);
 router.use('/reception', protect, receptionRoutes);
-
 module.exports = router;
