@@ -1,4 +1,4 @@
-import React from 'react';
+
 
 /**
  * Generic modal overlay. Click backdrop to close; click content does not.

@@ -1,15 +1,18 @@
 import { useState } from "react";
+import { Menu } from "lucide-react";
 
 export default function Header({
   title,
   subtitle,
   showSearch = true,
+  onMenuClick,
 }) {
   const [notifications] = useState(3);
   const [search, setSearch] = useState("");
 
   return (
     <div
+      className="clinic-admin-header"
       style={{
         background: "#FFFFFF",
         borderBottom: "1px solid #EAE5DC",
@@ -23,7 +26,26 @@ export default function Header({
       }}
     >
       {/* Left Side */}
-      <div>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "12px",
+          minWidth: 0,
+        }}
+      >
+        {onMenuClick && (
+          <button
+            type="button"
+            onClick={onMenuClick}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#EAE5DC] bg-white text-[#1A1D2E] lg:hidden"
+            aria-label="Open menu"
+          >
+            <Menu size={22} />
+          </button>
+        )}
+
+        <div style={{ minWidth: 0 }}>
         <h1
           style={{
             fontFamily: "Syne, sans-serif",
@@ -48,11 +70,13 @@ export default function Header({
             {subtitle}
           </p>
         )}
+        </div>
       </div>
 
       {/* Right Side */}
       {showSearch && (
         <div
+          className="clinic-admin-header-actions"
           style={{
             display: "flex",
             alignItems: "center",
@@ -61,7 +85,7 @@ export default function Header({
           }}
         >
           {/* Search */}
-          <div style={{ position: "relative" }}>
+          <div className="clinic-admin-header-search" style={{ position: "relative" }}>
             <span
               style={{
                 position: "absolute",
@@ -85,7 +109,7 @@ export default function Header({
                 borderRadius: "10px",
                 padding: "9px 14px 9px 36px",
                 fontSize: "13px",
-                width: "220px",
+                width: "min(220px, 100%)",
                 outline: "none",
               }}
             />
@@ -149,6 +173,29 @@ export default function Header({
           </div>
         </div>
       )}
+
+      <style>{`
+        @media (max-width: 767px) {
+          .clinic-admin-header {
+            padding: 14px 16px !important;
+            align-items: flex-start !important;
+          }
+
+          .clinic-admin-header-actions {
+            width: 100%;
+            justify-content: space-between;
+          }
+
+          .clinic-admin-header-search {
+            flex: 1;
+            min-width: 0;
+          }
+
+          .clinic-admin-header-search input {
+            width: 100% !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }

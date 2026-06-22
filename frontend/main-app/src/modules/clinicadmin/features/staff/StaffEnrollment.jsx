@@ -212,15 +212,15 @@ function EnrollForm({ onClose, onSave, editData, mode, staff }) {
     >
       {/* Modal Container */}
       <div
-        className="bg-white rounded-3xl shadow-2xl flex flex-col relative overflow-hidden"
-        style={{ width: '1500px', height: '88vh' }}
+        className="bg-white rounded-3xl shadow-2xl flex flex-col relative overflow-hidden w-[calc(100vw-24px)] max-w-[1500px]"
+        style={{ height: 'min(88vh, 900px)' }}
         onClick={e => e.stopPropagation()}
       >
 
         {/* ── TOP HEADER STRIP ── */}
-        <div className="px-10 pt-8 pb-6 border-b border-[#F3F4F6] flex-shrink-0">
+        <div className="px-5 sm:px-8 lg:px-10 pt-6 sm:pt-8 pb-5 sm:pb-6 border-b border-[#F3F4F6] flex-shrink-0">
           {/* Title row */}
-          <div className="flex items-start justify-between mb-6">
+          <div className="flex items-start justify-between gap-4 mb-6">
             <div>
               <h2 className="font-['Syne'] text-2xl font-bold text-[#1A1D2E] leading-tight">
                 {isView ? 'Staff Profile' : isEdit ? 'Edit Staff Member' : 'Add Staff Member'}
@@ -243,7 +243,7 @@ function EnrollForm({ onClose, onSave, editData, mode, staff }) {
           </div>
 
           {/* ── STEPPER WITH NUMBERED CIRCLES ── */}
-          <div className="flex items-center gap-0">
+          <div className="hidden md:flex items-center gap-0">
             {steps.map((s, i) => {
               const num = i + 1;
               const isActive = step === num;
@@ -289,7 +289,7 @@ function EnrollForm({ onClose, onSave, editData, mode, staff }) {
           </div>
 
           {/* ── PILL TABS ── */}
-          <div className="flex gap-2 mt-5">
+          <div className="flex gap-2 mt-5 overflow-x-auto pb-1">
             {steps.map((s, i) => {
               const num = i + 1;
               const isActive = step === num;
@@ -313,16 +313,16 @@ function EnrollForm({ onClose, onSave, editData, mode, staff }) {
         </div>
 
         {/* ── SCROLLABLE FORM BODY ── */}
-        <div className="flex-1 overflow-y-auto px-10 py-8">
+        <div className="flex-1 overflow-y-auto px-5 sm:px-8 lg:px-10 py-6 sm:py-8">
 
           {/* ─── STEP 1: Personal Information ─── */}
           {step === 1 && (
-            <div className="bg-white border border-[#F3F4F6] rounded-2xl p-8 shadow-sm">
+            <div className="bg-white border border-[#F3F4F6] rounded-2xl p-5 sm:p-8 shadow-sm">
               <h3 className="text-base font-bold text-[#1A1D2E] mb-6">Personal Identity</h3>
 
-              <div className="grid grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Full Name */}
-                <div className="col-span-2 grid grid-cols-2 gap-6">
+                <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
                   99    <div>
                     <label className={labelClass}>Full Name <span className="text-[#E8630A]">*</span></label>
                     <input
@@ -414,7 +414,7 @@ function EnrollForm({ onClose, onSave, editData, mode, staff }) {
               {/* Emergency Contact */}
               <div className="mt-8 pt-6 border-t border-[#F3F4F6]">
                 <h3 className="text-base font-bold text-[#1A1D2E] mb-5">Emergency Contact Details</h3>
-                <div className="grid grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className={labelClass}>Contact Person Name</label>
                     <input
@@ -458,9 +458,9 @@ function EnrollForm({ onClose, onSave, editData, mode, staff }) {
           {step === 2 && (
             <div className="space-y-6">
               {/* Professional Placement Card */}
-              <div className="bg-white border border-[#F3F4F6] rounded-2xl p-8 shadow-sm">
+              <div className="bg-white border border-[#F3F4F6] rounded-2xl p-5 sm:p-8 shadow-sm">
                 <h3 className="text-base font-bold text-[#1A1D2E] mb-6">Professional Placement</h3>
-                <div className="grid grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className={labelClass}>Role <span className="text-[#E8630A]">*</span></label>
                     <select
@@ -533,7 +533,7 @@ function EnrollForm({ onClose, onSave, editData, mode, staff }) {
               </div>
 
               {/* Module Access Card */}
-              <div className="bg-white border border-[#F3F4F6] rounded-2xl p-8 shadow-sm">
+              <div className="bg-white border border-[#F3F4F6] rounded-2xl p-5 sm:p-8 shadow-sm">
                 <h3 className="text-base font-bold text-[#1A1D2E] mb-2">Module Access Permissions</h3>
                 <p className="text-sm text-gray-400 mb-6">Select the modules this staff member should have access to.</p>
                 <div className="flex flex-wrap gap-3">
@@ -579,10 +579,10 @@ function EnrollForm({ onClose, onSave, editData, mode, staff }) {
 
           {/* ─── STEP 3: Security & Credentials ─── */}
           {step === 3 && (
-            <div className="bg-white border border-[#F3F4F6] rounded-2xl p-8 shadow-sm">
+            <div className="bg-white border border-[#F3F4F6] rounded-2xl p-5 sm:p-8 shadow-sm">
               <h3 className="text-base font-bold text-[#1A1D2E] mb-6">System Credentials</h3>
 
-              <div className="grid grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className={labelClass}>Username</label>
                   <input
@@ -673,7 +673,7 @@ function EnrollForm({ onClose, onSave, editData, mode, staff }) {
 
         {/* ── FOOTER ── */}
         <div
-          className="px-10 py-5 flex items-center justify-between flex-shrink-0"
+          className="px-5 sm:px-10 py-5 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-3 flex-shrink-0"
           style={{ borderTop: '1px solid #F3F4F6', backgroundColor: '#FFFFFF' }}
         >
           <button
@@ -814,7 +814,7 @@ export default function StaffEnrollment() {
   const filterSelectClass = "w-full border border-[#EAE5DC] rounded-xl px-4 py-3 text-sm text-[#1A1D2E] bg-white outline-none focus:border-[#E8630A] focus:ring-1 focus:ring-[#E8630A] transition-colors";
 
   return (
-    <div className="px-16 py-10 bg-white min-h-screen">
+    <div className="px-0 sm:px-4 lg:px-10 xl:px-16 py-4 sm:py-8 lg:py-10 bg-white min-h-screen">
       {showModal &&
         modalMode === "view" && (
           <ViewStaffModal
@@ -839,9 +839,9 @@ export default function StaffEnrollment() {
         )}
 
       {/* Title Header */}
-      <div className="flex justify-between items-end mb-10">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4 mb-8 lg:mb-10">
         <div>
-          <h1 className="font-['Syne'] text-4xl font-extrabold text-[#1A1D2E] mb-2">Staff Directory</h1>
+          <h1 className="font-['Syne'] text-3xl sm:text-4xl font-extrabold text-[#1A1D2E] mb-2">Staff Directory</h1>
           <p className="text-gray-500 text-base">Manage clinic personnel, access levels, and account credentials.</p>
         </div>
         <button
@@ -854,7 +854,7 @@ export default function StaffEnrollment() {
       </div>
 
       {/* Filters Bar */}
-      <div className="flex gap-4 mb-8 p-6 bg-gray-50 rounded-2xl border border-[#EAE5DC]">
+      <div className="flex flex-col sm:flex-row gap-4 mb-8 p-4 sm:p-6 bg-gray-50 rounded-2xl border border-[#EAE5DC]">
         <div className="flex-1">
           <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wide mb-2">
             Filter by Role
@@ -885,8 +885,8 @@ export default function StaffEnrollment() {
       </div>
 
       {/* Data Table */}
-      <div className="border border-[#EAE5DC] rounded-2xl overflow-hidden shadow-sm">
-        <table className="w-full border-collapse text-left">
+      <div className="border border-[#EAE5DC] rounded-2xl overflow-x-auto shadow-sm">
+        <table className="w-full min-w-[920px] border-collapse text-left">
           <thead>
             <tr className="bg-gray-50 border-b border-[#EAE5DC]">
               {['STAFF MEMBER', 'STAFF ID', 'ROLE / DEPT', 'EMPLOYMENT', 'STATUS', 'JOINED DATE', 'ACTIONS'].map((h, i) => (

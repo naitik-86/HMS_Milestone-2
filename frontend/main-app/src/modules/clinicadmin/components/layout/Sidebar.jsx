@@ -1,6 +1,7 @@
 import { useLocation, useNavigate } from "react-router-dom";
+import { X } from "lucide-react";
 
-const Sidebar = () => {
+const Sidebar = ({ isOpen = false, onClose }) => {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -14,8 +15,24 @@ const Sidebar = () => {
     { id: "settings", label: "Settings", icon: "⚙️" },
   ];
 
+  const handleNavigate = (item) => {
+    navigate(item.id === "dashboard" ? "/clinic" : `/clinic/${item.id}`);
+    onClose?.();
+  };
+
   return (
-    <div
+    <>
+      <div
+        className={`fixed inset-0 z-40 bg-black/40 transition-opacity duration-200 lg:hidden ${
+          isOpen ? "opacity-100" : "pointer-events-none opacity-0"
+        }`}
+        onClick={onClose}
+      />
+
+      <aside
+      className={`fixed inset-y-0 left-0 z-50 shrink-0 transform transition-transform duration-300 ease-out lg:sticky lg:top-0 lg:z-auto lg:translate-x-0 ${
+        isOpen ? "translate-x-0" : "-translate-x-full"
+      }`}
       style={{
         width: 240,
         background: "#111827",
@@ -29,17 +46,37 @@ const Sidebar = () => {
     >
       {/* TOP SECTION */}
       <div>
-        <h2
+        <div
           style={{
             marginBottom: 24,
-            fontSize: 22,
-            fontWeight: "800",
-            letterSpacing: "0.5px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 12,
           }}
         >
-          <span style={{ color: "#E8630A" }}>Clinic</span>{" "}
-          <span style={{ color: "#FFFFFF" }}>Admin</span>
-        </h2>
+          <h2
+            style={{
+              fontSize: 22,
+              fontWeight: "800",
+              letterSpacing: "0.5px",
+              margin: 0,
+            }}
+          >
+            <span style={{ color: "#E8630A" }}>Clinic</span>{" "}
+            <span style={{ color: "#FFFFFF" }}>Admin</span>
+          </h2>
+
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/10 text-white transition-colors hover:bg-white/15 lg:hidden"
+            style={{ border: "none", cursor: "pointer" }}
+            aria-label="Close clinic admin menu"
+          >
+            <X size={20} />
+          </button>
+        </div>
 
         {navItems.map((item) => {
           const isActive =
@@ -50,13 +87,7 @@ const Sidebar = () => {
           return (
             <button
               key={item.id}
-              onClick={() =>
-                navigate(
-                  item.id === "dashboard"
-                    ? "/clinic"
-                    : `/clinic/${item.id}`
-                )
-              }
+              onClick={() => handleNavigate(item)}
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -91,7 +122,10 @@ const Sidebar = () => {
 
       {/* 🔥 LOGOUT BUTTON */}
       <button
-        onClick={() => navigate("/")}
+        onClick={() => {
+          navigate("/");
+          onClose?.();
+        }}
         style={{
           display: "flex",
           alignItems: "center",
@@ -111,7 +145,8 @@ const Sidebar = () => {
       >
         {"Logout ->"}
       </button>
-    </div>
+    </aside>
+    </>
   );
 };
 
