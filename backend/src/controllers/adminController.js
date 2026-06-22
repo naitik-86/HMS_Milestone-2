@@ -79,7 +79,10 @@ exports.createClinic = async (req, res) => {
 
     console.log("Clinic Email:", email);
     console.log("Password:", plainPassword);
-
+    res.status(201).json({
+      success: true,
+      data: clinic,
+    });
 
     try {
 
@@ -103,10 +106,7 @@ exports.createClinic = async (req, res) => {
     }
 
 
-    res.status(201).json({
-      success: true,
-      data: clinic,
-    });
+
   } catch (error) {
     res.status(500).json({
       success: false,

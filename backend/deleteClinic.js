@@ -8,7 +8,8 @@ dotenv.config();
 // Emails to delete
 const emailsToDelete = [
     "ankitt16kr@gmail.com",
-    "a95105147@gmail.com"
+    "a95105147@gmail.com",
+    "ak16012006@gmail.com"
 ];
 
 const deleteClinics = async () => {
