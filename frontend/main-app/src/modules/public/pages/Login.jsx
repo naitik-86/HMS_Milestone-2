@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { authApi } from "../../auth/api/authApi";
 import API from "../../../shared/api/axios";
+import { Navigate } from "react-router-dom";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -139,7 +140,7 @@ export default function Login() {
     }
 
     try {
-      const redirectRes = await API.get("/dashboard");
+      const redirectRes = await API.get("/");
 
       const redirectUrl =
         redirectRes.data?.data?.redirectUrl;

@@ -1,5 +1,6 @@
 //newRegistrationPet.jsx
 import { useState } from "react";
+import { showToast } from "../../../../shared/components/toast";
 
 export default function NewRegistrationPet() {
   const [showModal, setShowModal] = useState(true);
