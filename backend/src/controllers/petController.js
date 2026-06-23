@@ -5,8 +5,7 @@ const MedicalRecord = require('../models/MedicalRecord');
 exports.addPet = async (req, res) => {
   try {
     const { ownerId, name, species, breed, dob, gender, color } = req.body;
-    
-    // In mobile app, ownerId comes from JWT. In reception, it comes from body.
+
     const finalOwnerId = req.user.role === 'OWNER' ? req.user.id : ownerId;
 
     const pet = await Pet.create({

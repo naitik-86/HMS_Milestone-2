@@ -43,7 +43,7 @@ function LabForm({ onClose, onSave, editData, mode }) {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex justify-between items-start gap-4 mb-8">
         <div>
           <div className="inline-block bg-[#E8630A]/10 text-[#E8630A] text-[11px] font-bold px-3 py-1 rounded-full mb-2">
             Only Visible When Role is Lab Technician
@@ -165,7 +165,7 @@ function LabForm({ onClose, onSave, editData, mode }) {
       </div>
 
       {/* Footer */}
-      <div className="mt-8 pt-6 border-t border-[#EAE5DC] flex justify-end gap-3">
+      <div className="mt-8 pt-6 border-t border-[#EAE5DC] flex flex-col-reverse sm:flex-row justify-end gap-3">
         <button
           onClick={onClose}
           className="px-6 py-3 bg-white border border-[#EAE5DC] text-[#1A1D2E] text-sm font-semibold rounded-xl hover:bg-gray-50 transition-colors cursor-pointer"
@@ -239,7 +239,7 @@ export default function LabTechnician() {
   };
 
   return (
-    <div className="p-6 bg-white min-h-screen">
+    <div className="p-0 sm:p-4 lg:p-6 bg-white min-h-screen">
 
       {/* Toast Notification */}
       {toast && (
@@ -258,13 +258,13 @@ export default function LabTechnician() {
       {/* Modal */}
       {showModal && (
         <div
-          className="fixed inset-0 bg-[#1A1D2E]/80 flex justify-center items-center z-[1000] backdrop-blur-sm"
+          className="fixed inset-0 bg-[#1A1D2E]/80 flex justify-center items-center z-[1000] backdrop-blur-sm p-3 sm:p-5"
           onClick={() => setShowModal(false)}
         >
           <div
             onClick={e => e.stopPropagation()}
-            className="bg-white border border-[#EAE5DC] rounded-3xl flex flex-col p-10 shadow-2xl relative overflow-hidden"
-            style={{ width: '1500px', height: '88vh' }}
+            className="bg-white border border-[#EAE5DC] rounded-3xl flex flex-col p-5 sm:p-8 lg:p-10 shadow-2xl relative overflow-hidden w-full max-w-[1500px]"
+            style={{ height: 'min(88vh, 900px)' }}
           >
             <LabForm
               onClose={() => setShowModal(false)}
@@ -277,7 +277,7 @@ export default function LabTechnician() {
       )}
 
       {/* Page Header */}
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
         <div>
           <h2 className="font-['Syne'] text-2xl font-bold text-[#1A1D2E]">Lab Technician</h2>
           <p className="text-gray-500 text-sm mt-1">Manage lab staff qualifications & test capabilities</p>
@@ -291,7 +291,7 @@ export default function LabTechnician() {
       </div>
 
       {/* Staff Cards Grid */}
-      <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))' }}>
+      <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 320px), 1fr))' }}>
         {staff.map(l => (
           <div
             key={l.id}

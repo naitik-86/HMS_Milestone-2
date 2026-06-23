@@ -18,7 +18,7 @@ function getInitials(name = " ") {
 const inputCls = "w-full border border-[#E5E7EB] rounded-xl px-4 py-3 text-sm text-[#1A1D2E] outline-none focus:border-[#E8630A] focus:ring-2 focus:ring-[#E8630A]/20 transition-all bg-white placeholder-gray-300";
 const inputErrCls = "w-full border border-red-400 rounded-xl px-4 py-3 text-sm text-[#1A1D2E] outline-none focus:border-red-500 focus:ring-2 focus:ring-red-200 transition-all bg-white";
 const labelCls = "block text-xs font-semibold text-[#6B7280] mb-2 tracking-wide";
-const cardCls = "bg-white border border-[#F3F4F6] rounded-2xl p-8 shadow-sm";
+const cardCls = "bg-white border border-[#F3F4F6] rounded-2xl p-5 sm:p-8 shadow-sm";
 
 function UploadBox({ id, accept, label }) {
   return (
@@ -128,19 +128,19 @@ function DoctorForm({ onClose, onSave, existingData, isEdit }) {
 
   return (
     <div
-      className="fixed inset-0 z-[1000] flex items-center justify-center"
+      className="fixed inset-0 z-[1000] flex items-center justify-center p-3 sm:p-5"
       style={{ backgroundColor: 'rgba(17,24,39,0.55)', backdropFilter: 'blur(4px)' }}
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden"
-        style={{ width: '1500px', height: '88vh' }}
+        className="bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden w-full max-w-[1500px]"
+        style={{ height: 'min(88vh, 900px)' }}
         onClick={e => e.stopPropagation()}
       >
 
         {/* ── HEADER ── */}
-        <div className="px-10 pt-8 pb-0 flex-shrink-0 border-b border-[#F3F4F6]">
-          <div className="flex items-start justify-between mb-6">
+        <div className="px-5 sm:px-8 lg:px-10 pt-6 sm:pt-8 pb-0 flex-shrink-0 border-b border-[#F3F4F6]">
+          <div className="flex items-start justify-between gap-4 mb-6">
             <div>
               <h2 className="font-['Syne'] text-2xl font-bold text-[#1A1D2E] leading-tight">
                 {isEdit ? 'Edit Doctor Details' : 'Add Doctor Details'}
@@ -157,7 +157,7 @@ function DoctorForm({ onClose, onSave, existingData, isEdit }) {
           </div>
 
           {/* Stepper */}
-          <div className="flex items-center">
+          <div className="hidden md:flex items-center">
             {steps.map((s, i) => {
               const isActive = activeStep === i;
               const isDone = activeStep > i;
@@ -193,7 +193,7 @@ function DoctorForm({ onClose, onSave, existingData, isEdit }) {
           </div>
 
           {/* Pill tabs */}
-          <div className="flex gap-2 mt-5 pb-5">
+          <div className="flex gap-2 mt-5 pb-5 overflow-x-auto">
             {steps.map((s, i) => {
               const isActive = activeStep === i;
               const isDone = activeStep > i;
@@ -221,14 +221,14 @@ function DoctorForm({ onClose, onSave, existingData, isEdit }) {
         </div>
 
         {/* ── BODY ── */}
-        <div className="flex-1 overflow-y-auto px-10 py-8">
+        <div className="flex-1 overflow-y-auto px-5 sm:px-8 lg:px-10 py-6 sm:py-8">
 
           {/* Step 0: Qualifications */}
           {activeStep === 0 && (
             <div className="space-y-6">
               <div className={cardCls}>
                 <h3 className="text-base font-bold text-[#1A1D2E] mb-6">Doctor Identity</h3>
-                <div className="grid grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className={labelCls}>Doctor Full Name <span className="text-[#E8630A]">*</span></label>
                     <input className={errors.name ? inputErrCls : inputCls} placeholder="e.g. Dr. Priya Sharma" value={formData.name} onChange={e => u('name', e.target.value)} />
@@ -255,7 +255,7 @@ function DoctorForm({ onClose, onSave, existingData, isEdit }) {
                           </button>
                         )}
                       </div>
-                      <div className="grid grid-cols-2 gap-5">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div>
                           <label className={labelCls}>Degree Type</label>
                           <select className={inputCls} value={d.degree} onChange={e => setDegrees(degrees.map((deg, j) => j === i ? { ...deg, degree: e.target.value } : deg))}>
@@ -319,7 +319,7 @@ function DoctorForm({ onClose, onSave, existingData, isEdit }) {
           {activeStep === 1 && (
             <div className={cardCls}>
               <h3 className="text-base font-bold text-[#1A1D2E] mb-6">Vet Council Registration</h3>
-              <div className="grid grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className={labelCls}>Registration Number <span className="text-[#E8630A]">*</span></label>
                   <input placeholder="e.g. VCI/MH/2020/1234" value={formData.regNumber} onChange={e => u('regNumber', e.target.value)} className={errors.regNumber ? inputErrCls : inputCls} />
@@ -367,7 +367,7 @@ function DoctorForm({ onClose, onSave, existingData, isEdit }) {
             <div className="space-y-6">
               <div className={cardCls}>
                 <h3 className="text-base font-bold text-[#1A1D2E] mb-6">Practice Settings</h3>
-                <div className="grid grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className={labelCls}>Consultation Fees (₹) <span className="text-[#E8630A]">*</span></label>
                     <input type="number" min="0" placeholder="e.g. 500" value={formData.fees} onChange={e => u('fees', e.target.value)} className={errors.fees ? inputErrCls : inputCls} />
@@ -395,7 +395,7 @@ function DoctorForm({ onClose, onSave, existingData, isEdit }) {
 
               <div className={cardCls}>
                 <h3 className="text-base font-bold text-[#1A1D2E] mb-6">Documents & Assets</h3>
-                <div className="grid grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className={labelCls}>
                       Digital Signature
@@ -506,7 +506,7 @@ function ViewProfileModal({ doctor, onClose, onEdit }) {
         <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 cursor-pointer bg-transparent border-none">✕</button>
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {statItems.map(item => (
           <div key={item.label} className="bg-gray-50 rounded-xl p-3.5 border border-[#EAE5DC]">
             <div className="text-xs text-gray-400 font-semibold uppercase tracking-wider mb-1.5">{item.label}</div>
@@ -703,7 +703,7 @@ export default function DoctorDetails() {
   }
 
   return (
-    <div className="p-6 bg-white min-h-screen">
+    <div className="p-0 sm:p-4 lg:p-6 bg-white min-h-screen">
       {toast && (
         <div className="fixed top-5 right-5 z-[2000] px-5 py-3.5 rounded-2xl shadow-lg text-sm font-semibold text-white bg-[#E8630A] flex items-center gap-2">
           ✓ {toast}
@@ -718,8 +718,8 @@ export default function DoctorDetails() {
         <div className="fixed inset-0 bg-[#1A1D2E]/80 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={closeModal}>
           <div
             onClick={e => e.stopPropagation()}
-            className="bg-white rounded-3xl shadow-2xl overflow-y-auto"
-            style={{ width: 'min(700px, 95vw)', maxHeight: '92vh', padding: '40px' }}
+            className="bg-white rounded-3xl shadow-2xl overflow-y-auto p-5 sm:p-8 lg:p-10"
+            style={{ width: 'min(700px, 95vw)', maxHeight: '92vh' }}
           >
             <ViewProfileModal
               doctor={modal.doctor}
@@ -731,7 +731,7 @@ export default function DoctorDetails() {
       )}
 
       {/* Page Header */}
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
         <div>
           <h2 className="font-['Syne'] text-2xl font-bold text-[#1A1D2E]">Doctor Details</h2>
           <p className="text-gray-500 text-sm mt-1">Manage doctor profiles, qualifications & practice settings</p>

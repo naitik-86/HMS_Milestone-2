@@ -146,7 +146,7 @@ export default function Reports() {
     <div style={{ background: SURFACE, minHeight: '100vh', fontFamily: '"Inter","Plus Jakarta Sans",system-ui,sans-serif', color: T_HI }}>
 
       {/* Nav */}
-      <div style={{
+      <div className="clinic-reports-nav" style={{
         background: WHITE, borderBottom: `1px solid ${BORDER}`,
         padding: '0 32px', height: 56,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -164,12 +164,48 @@ export default function Reports() {
             padding: '8px 18px', fontSize: 12, fontWeight: 700, cursor: 'pointer',
           }}>↓ Export PDF</button>
         </div>
+        <style>{`
+          @media (max-width: 1024px) {
+            .clinic-reports-kpis {
+              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            }
+
+            .clinic-reports-main-grid {
+              grid-template-columns: 1fr !important;
+            }
+          }
+
+          @media (max-width: 640px) {
+            .clinic-reports-nav {
+              height: auto !important;
+              padding: 12px 16px !important;
+              align-items: flex-start !important;
+              flex-direction: column !important;
+              gap: 12px !important;
+            }
+
+            .clinic-reports-content {
+              padding: 20px 0 !important;
+            }
+
+            .clinic-reports-heading {
+              flex-direction: column !important;
+              align-items: stretch !important;
+              gap: 14px !important;
+            }
+
+            .clinic-reports-kpis {
+              grid-template-columns: 1fr !important;
+            }
+          }
+        `}</style>
+
       </div>
 
-      <div style={{ padding: '28px 32px', maxWidth: 1400, margin: '0 auto' }}>
+      <div className="clinic-reports-content" style={{ padding: '28px 32px', maxWidth: 1400, margin: '0 auto' }}>
 
         {/* Heading + range toggle */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 24 }}>
+        <div className="clinic-reports-heading" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 24 }}>
           <div>
             <h1 style={{ fontSize: 22, fontWeight: 800, color: T_HI, margin: '0 0 5px', letterSpacing: '-0.02em' }}>
               Performance Overview
@@ -192,7 +228,7 @@ export default function Reports() {
         </div>
 
         {/* KPI strip */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 20 }}>
+        <div className="clinic-reports-kpis" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 20 }}>
           <KPICard label="Total Revenue" value="₹6,78,000" sub="This period" delta="+22% vs last" color={ACCENT} spark={revSpark} />
           <KPICard label="Appointments" value="653" sub="Completed visits" delta="+15% vs last" color={INDIGO} spark={apptSpark} />
           <KPICard label="New Patients" value="142" sub="First-time visits" delta="+8% vs last" color={GREEN} />
@@ -200,7 +236,7 @@ export default function Reports() {
         </div>
 
         {/* Row 2: Revenue | Goal ring | Staff pie */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 230px 270px', gap: 16, marginBottom: 16 }}>
+        <div className="clinic-reports-main-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 230px 270px', gap: 16, marginBottom: 16 }}>
 
           {/* Revenue vs Target */}
           <Card>

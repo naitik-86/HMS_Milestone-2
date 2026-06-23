@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { showToast } from '../../../../shared/components/toast';
 import { useEffect } from 'react';
 import {
@@ -149,7 +149,7 @@ function ViewModal({ groomer, onClose }) {
       </div>
 
       {/* Info Grid */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {[
           { label: 'Employee ID', value: groomer.id },
           { label: 'Experience', value: `${groomer.experience} Years` },
@@ -243,8 +243,8 @@ function GroomerForm({ onClose, editData, onSave }) {
     <div className="flex flex-col h-full font-sans">
 
       {/* ── Modal Header ── */}
-      <div className="px-8 pt-7 flex-shrink-0">
-        <div className="flex justify-between items-start mb-5">
+      <div className="px-5 sm:px-8 pt-6 sm:pt-7 flex-shrink-0">
+        <div className="flex justify-between items-start gap-4 mb-5">
           <div>
             <span
               className="inline-block text-[11px] font-bold px-3 py-1 rounded-full mb-2"
@@ -268,11 +268,11 @@ function GroomerForm({ onClose, editData, onSave }) {
       </div>
 
       {/* ── Scrollable Body ── */}
-      <div className="flex-1 overflow-y-auto px-8 py-6 flex flex-col gap-5">
+      <div className="flex-1 overflow-y-auto px-5 sm:px-8 py-5 sm:py-6 flex flex-col gap-5">
 
         {/* Section 1 — Basic Info */}
         <SectionCard title="4.1 Grooming Skills & Experience">
-          <div className="grid grid-cols-2 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1.5">Experience in Years</label>
               <input
@@ -313,7 +313,7 @@ function GroomerForm({ onClose, editData, onSave }) {
         <SectionCard title="Certificates & Training">
           <div className="flex flex-col gap-2.5 mb-3">
             {certs.map((c, i) => (
-              <div key={i} className="flex gap-2.5 items-center">
+              <div key={i} className="flex flex-col sm:flex-row gap-2.5 sm:items-center">
                 <div className="relative flex-1">
                   <select
                     className={inputCls + " pr-9 cursor-pointer"}
@@ -409,7 +409,7 @@ function GroomerForm({ onClose, editData, onSave }) {
       </div>
 
       {/* ── Sticky Footer ── */}
-      <div className="px-8 py-4 border-t border-gray-100 flex justify-end gap-2.5 flex-shrink-0 bg-white rounded-b-2xl">
+      <div className="px-5 sm:px-8 py-4 border-t border-gray-100 flex flex-col-reverse sm:flex-row justify-end gap-2.5 flex-shrink-0 bg-white rounded-b-2xl">
         <button
           onClick={onClose}
           className="bg-white text-gray-700 border border-gray-200 rounded-lg px-5 py-2.5 text-sm font-semibold hover:bg-gray-50 transition-colors cursor-pointer"
@@ -508,12 +508,12 @@ export default function Groomer() {
   const isViewOpen = !!viewGroomer;
 
   return (
-    <div className="p-7 bg-white min-h-screen font-sans">
+    <div className="p-0 sm:p-4 lg:p-7 bg-white min-h-screen font-sans">
 
       {/* ── Form Modal (Add / Edit) ── */}
       {isFormOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-5"
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5"
           style={{ background: 'rgba(17,24,39,0.45)' }}
           onClick={closeAll}
         >
@@ -545,7 +545,7 @@ export default function Groomer() {
       )}
 
       {/* ── Page Header ── */}
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
         <div>
           <h2 className="text-2xl font-bold text-gray-900 m-0" style={{ fontFamily: 'Syne, sans-serif' }}>Groomer</h2>
           <p className="text-sm text-gray-500 mt-1 mb-0">Manage grooming staff skills & service capabilities</p>
@@ -560,7 +560,7 @@ export default function Groomer() {
       </div>
 
       {/* ── Groomer Cards ── */}
-      <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))' }}>
+      <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 340px), 1fr))' }}>
         {groomers.map(g => (
           <div
             key={g._id}

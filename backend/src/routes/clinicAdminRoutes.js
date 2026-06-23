@@ -14,6 +14,7 @@ const settingsController = require('../controllers/clinicSettingsController');
 const reportsController = require('../controllers/adminReportsController');
 
 const labReportController = require("../controllers/labDashboardController");
+const petRegistrationController = require("../controllers/petRegistrationController");
 
 router.use(authorize('CLINIC_ADMIN'));
 
@@ -106,5 +107,14 @@ router.get("/reports/staff-role", reportsController.getStaffRoleReport);
 router.get("/reports/appointment-trend", reportsController.getAppointmentTrend);
 router.get("/reports/top-doctors", reportsController.getTopDoctors);
 
+
+//reception routes
+
+router.post("/new-registration", upload.single("petPhoto"), petRegistrationController.createRegistration);
+router.get("/new-registration/mobile/:mobileNumber", petRegistrationController.searchCustomer);
+router.get("/new-registration/owner/:ownerId", petRegistrationController.getOwnerDetails);
+router.post("/new-registration/owner/:ownerId/pets", petRegistrationController.addPet);
+router.post("/new-registration/owner/:ownerId/pets/:petId/visit", petRegistrationController.addVisit);
+router.get("/new-registration/owner/:ownerId/pets/:petId/history", petRegistrationController.getPetHistory);
 
 module.exports = router;

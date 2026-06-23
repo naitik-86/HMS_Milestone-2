@@ -10,7 +10,7 @@ const statCards = [
 const StatsCards = () => {
     return (
         <>
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 {statCards.map((s, i) => (
                     <div key={i} className="bg-white rounded-xl p-5 flex items-start gap-4 shadow-sm">
                         <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ background: s.bg }}>
