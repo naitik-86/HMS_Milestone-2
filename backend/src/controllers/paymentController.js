@@ -25,7 +25,7 @@ exports.createPaymentOrder = async (req, res) => {
 
     // Razorpay expects the amount in the smallest currency sub-unit (e.g., paise for INR)
     const options = {
-      amount: amount * 100, 
+      amount: amount * 100,
       currency: 'INR',
       receipt: `receipt_order_${appointmentId}`,
       payment_capture: 1 // Auto-capture payment
@@ -33,9 +33,9 @@ exports.createPaymentOrder = async (req, res) => {
 
     const order = await razorpay.orders.create(options);
 
-    res.status(200).json({ 
-      success: true, 
-      orderId: order.id, 
+    res.status(200).json({
+      success: true,
+      orderId: order.id,
       amount: order.amount,
       currency: order.currency
     });
@@ -48,9 +48,9 @@ exports.createPaymentOrder = async (req, res) => {
 // POST /api/payments/webhook -> Razorpay background confirmation
 exports.verifyRazorpayWebhook = async (req, res) => {
   try {
-    const secret = process.env.RAZORPAY_WEBHOOK_SECRET; 
+    const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
     const signature = req.headers['x-razorpay-signature'];
-    
+
     // Verify the cryptographic signature from Razorpay
     const expectedSignature = crypto
       .createHmac('sha256', secret)
@@ -62,19 +62,19 @@ exports.verifyRazorpayWebhook = async (req, res) => {
 
       if (event === 'payment.captured') {
         const paymentEntity = req.body.payload.payment.entity;
-        
+
         // Extract the Appointment ID we passed during createOrder 
         // (Assuming you pass it in the notes object when creating the order)
-        const appointmentId = paymentEntity.notes.appointmentId; 
+        const appointmentId = paymentEntity.notes.appointmentId;
 
         if (appointmentId) {
           await Appointment.findByIdAndUpdate(appointmentId, { paymentStatus: 'PAID' });
           console.log(`[Webhook] Payment verified and captured for Appointment: ${appointmentId}`);
         }
       }
-      
+
       // Always return 200 OK to Razorpay so they stop pinging the webhook
-      return res.status(200).json({ status: 'ok' }); 
+      return res.status(200).json({ status: 'ok' });
     } else {
       return res.status(400).json({ status: 'invalid signature' });
     }

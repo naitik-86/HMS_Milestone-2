@@ -44,18 +44,20 @@ export default function Login() {
 
       if (role === "CLINIC_ADMIN") {
 
+        console.log();
+
+
         if (!response.user.paymentCompleted) {
           return navigate("/payment", {
             state: {
-              clinicName: response.user.clinicName,
               email: response.user.email,
-              planType: response.user.subscriptionType,
-              planPrice: response.user.subscriptionPrice,
+              subscriptionPrice: response.user.subscriptionPrice,
+              subscriptionType: response.user.subscriptionType
             },
           });
         }
 
-        return navigate("/clinic/");
+        return navigate("/clinic");
       }
 
       if (role === "DOCTOR") {

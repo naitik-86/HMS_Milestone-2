@@ -21,7 +21,11 @@ startCronJobs();
 // Global Middlewares
 app.use(cors({
   origin: function (origin, callback) {
-    if (!origin) return callback(null, true);
+
+    // Browser direct requests / PayU callbacks
+    if (!origin || origin === "null") {
+      return callback(null, true);
+    }
 
     // Localhost
     if (
@@ -31,17 +35,20 @@ app.use(cors({
       return callback(null, true);
     }
 
-    // Production Frontend (ENV)
+    // Production Frontend
     if (origin === process.env.FRONTEND_URL) {
       return callback(null, true);
     }
 
-    // Vercel domains
-    if (/\.vercel\.app$/.test(new URL(origin).hostname)) {
-      return callback(null, true);
+    try {
+      // Vercel domains
+      if (/\.vercel\.app$/.test(new URL(origin).hostname)) {
+        return callback(null, true);
+      }
+    } catch (err) {
+      return callback(new Error("Invalid Origin"));
     }
 
-    // ✅ ADD THIS (Render frontend)
     if (origin === "https://pet-hms-frontend.onrender.com") {
       return callback(null, true);
     }
