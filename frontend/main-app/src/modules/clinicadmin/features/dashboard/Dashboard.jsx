@@ -42,10 +42,10 @@ const CustomTooltip = ({ active, payload, label }) => {
 
 export default function Dashboard() {
   return (
-    <div className="p-6 flex flex-col gap-5 animate-fade-in">
+    <div className="p-0 sm:p-2 lg:p-6 flex flex-col gap-5 animate-fade-in">
       
       {/* Top Stats */}
-      <div className="flex gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <StatCard icon="👥" label="Total Staff" value="28" change="3 this month" accent="#6366F1" />
         <StatCard icon="🩺" label="Active Doctors" value="9" change="1 this month" accent="#22C55E" />
         <StatCard icon="📅" label="Today's Appts" value="34" change="5 vs yesterday" accent="#F97316" />
@@ -53,7 +53,7 @@ export default function Dashboard() {
       </div>
 
       {/* Charts Row */}
-      <div className="flex gap-4">
+      <div className="grid grid-cols-1 xl:grid-cols-[1.5fr_1fr] gap-4">
         {/* Revenue Chart */}
         <div className="bg-white p-6 rounded-2xl border border-[#EAE5DC] flex-[1.5] shadow-sm">
           <div className="mb-4 flex justify-between items-center">
@@ -99,7 +99,7 @@ export default function Dashboard() {
       </div>
 
       {/* Lower Row */}
-      <div className="flex gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-[1fr_1fr_1.2fr] gap-4">
         {/* Recent Enrollments */}
         <div className="bg-white p-6 rounded-2xl border border-[#EAE5DC] flex-1 shadow-sm">
           <div className="flex items-center gap-2 mb-[18px]">
