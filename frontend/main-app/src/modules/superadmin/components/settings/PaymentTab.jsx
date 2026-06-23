@@ -26,7 +26,6 @@ export default function PaymentGatewaySettings() {
         try {
             setIsSaving(true);
 
-            // API Call Here
             console.log("Payment Settings:", formData);
 
             await new Promise((resolve) =>
@@ -42,12 +41,13 @@ export default function PaymentGatewaySettings() {
     };
 
     return (
-        <div className="bg-white border rounded-2xl p-6 shadow-sm">
+        <div className="bg-white border rounded-2xl p-4 md:p-6 shadow-sm">
             <h2 className="font-semibold text-lg mb-6">
                 Payment Gateway
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+
                 {/* Gateway Provider */}
                 <div>
                     <label className="block text-sm font-medium mb-2">
@@ -58,14 +58,25 @@ export default function PaymentGatewaySettings() {
                         name="provider"
                         value={formData.provider}
                         onChange={handleChange}
-                        className="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-orange-400 outline-none"
+                        className="
+                            w-full
+                            px-4
+                            py-3
+                            border
+                            rounded-xl
+                            focus:ring-2
+                            focus:ring-orange-400
+                            outline-none
+                        "
                     >
                         <option value="Razorpay">
                             Razorpay
                         </option>
+
                         <option value="Stripe">
                             Stripe
                         </option>
+
                         <option value="PayU">
                             PayU
                         </option>
@@ -84,7 +95,16 @@ export default function PaymentGatewaySettings() {
                         value={formData.apiKey}
                         onChange={handleChange}
                         placeholder="Enter API key"
-                        className="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-orange-400 outline-none"
+                        className="
+                            w-full
+                            px-4
+                            py-3
+                            border
+                            rounded-xl
+                            focus:ring-2
+                            focus:ring-orange-400
+                            outline-none
+                        "
                     />
                 </div>
 
@@ -100,7 +120,16 @@ export default function PaymentGatewaySettings() {
                         value={formData.secretKey}
                         onChange={handleChange}
                         placeholder="Enter secret key"
-                        className="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-orange-400 outline-none"
+                        className="
+                            w-full
+                            px-4
+                            py-3
+                            border
+                            rounded-xl
+                            focus:ring-2
+                            focus:ring-orange-400
+                            outline-none
+                        "
                     />
                 </div>
 
@@ -116,17 +145,40 @@ export default function PaymentGatewaySettings() {
                         value={formData.gstRate}
                         onChange={handleChange}
                         placeholder="Enter GST rate"
-                        className="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-orange-400 outline-none"
+                        className="
+                            w-full
+                            px-4
+                            py-3
+                            border
+                            rounded-xl
+                            focus:ring-2
+                            focus:ring-orange-400
+                            outline-none
+                        "
                     />
                 </div>
+
             </div>
 
-            <div className="mt-6 flex items-center gap-4">
+            {/* Save Section */}
+            <div className="mt-6 flex flex-col sm:flex-row sm:items-center gap-3">
+
                 <button
                     type="button"
                     onClick={handleSave}
                     disabled={isSaving}
-                    className="px-5 py-2 bg-orange-500 text-white rounded-xl hover:bg-orange-600 disabled:opacity-60"
+                    className="
+                        w-full
+                        sm:w-auto
+                        px-5
+                        py-3
+                        bg-orange-500
+                        text-white
+                        rounded-xl
+                        hover:bg-orange-600
+                        disabled:opacity-60
+                        transition
+                    "
                 >
                     {isSaving
                         ? "Saving..."

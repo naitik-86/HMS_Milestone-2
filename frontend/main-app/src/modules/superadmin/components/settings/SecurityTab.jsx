@@ -35,7 +35,6 @@ export default function SecuritySettings() {
         try {
             setIsSaving(true);
 
-            // API CALL HERE
             console.log("Security Settings:", settings);
 
             await new Promise((resolve) =>
@@ -54,29 +53,33 @@ export default function SecuritySettings() {
         <button
             type="button"
             onClick={onChange}
-            className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors duration-300 ${enabled ? "bg-orange-500" : "bg-gray-300"
-                }`}
+            className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors duration-300 ${
+                enabled ? "bg-orange-500" : "bg-gray-300"
+            }`}
         >
             <span
-                className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform duration-300 ${enabled ? "translate-x-8" : "translate-x-1"
-                    }`}
+                className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform duration-300 ${
+                    enabled ? "translate-x-8" : "translate-x-1"
+                }`}
             />
         </button>
     );
 
     return (
-        <div className="bg-white border rounded-2xl p-6 shadow-sm">
+        <div className="bg-white border rounded-2xl p-4 md:p-6 shadow-sm">
             <h2 className="font-semibold text-lg mb-6">
                 Security Settings
             </h2>
 
             <div className="divide-y">
+
                 {/* 2FA */}
-                <div className="flex items-center justify-between py-5">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 py-5">
                     <div>
                         <h3 className="font-medium text-base">
                             Two-Factor Authentication
                         </h3>
+
                         <p className="text-sm text-gray-500">
                             Require 2FA for all admin accounts
                         </p>
@@ -91,11 +94,12 @@ export default function SecuritySettings() {
                 </div>
 
                 {/* Password Policy */}
-                <div className="flex items-center justify-between py-5">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 py-5">
                     <div>
                         <h3 className="font-medium text-base">
                             Password Policy
                         </h3>
+
                         <p className="text-sm text-gray-500">
                             Enforce strong password requirements
                         </p>
@@ -110,11 +114,12 @@ export default function SecuritySettings() {
                 </div>
 
                 {/* IP Whitelisting */}
-                <div className="flex items-center justify-between py-5">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 py-5">
                     <div>
                         <h3 className="font-medium text-base">
                             IP Whitelisting
                         </h3>
+
                         <p className="text-sm text-gray-500">
                             Restrict access to specific IPs
                         </p>
@@ -127,6 +132,7 @@ export default function SecuritySettings() {
                         }
                     />
                 </div>
+
             </div>
 
             {/* Session Timeout */}
@@ -141,17 +147,39 @@ export default function SecuritySettings() {
                     name="sessionTimeout"
                     value={settings.sessionTimeout}
                     onChange={handleChange}
-                    className="w-full max-w-xs px-4 py-3 border rounded-xl focus:ring-2 focus:ring-orange-400 outline-none"
+                    className="
+                        w-full
+                        sm:max-w-xs
+                        px-4
+                        py-3
+                        border
+                        rounded-xl
+                        focus:ring-2
+                        focus:ring-orange-400
+                        outline-none
+                    "
                 />
             </div>
 
             {/* Save Button */}
-            <div className="mt-6 flex items-center gap-4">
+            <div className="mt-6 flex flex-col sm:flex-row sm:items-center gap-3">
+
                 <button
                     type="button"
                     onClick={handleSave}
                     disabled={isSaving}
-                    className="px-5 py-2 bg-orange-500 text-white rounded-xl hover:bg-orange-600 disabled:opacity-60"
+                    className="
+                        w-full
+                        sm:w-auto
+                        px-5
+                        py-3
+                        bg-orange-500
+                        text-white
+                        rounded-xl
+                        hover:bg-orange-600
+                        disabled:opacity-60
+                        transition
+                    "
                 >
                     {isSaving
                         ? "Saving..."

@@ -89,8 +89,8 @@ export default function ClinicForm({
 
     return (
         <form >
-            <div className="p-6 bg-gray-100 min-h-full">
-                <div className="max-w-6xl mx-auto space-y-6">
+            <div className="p-3 sm:p-4 md:p-6 bg-gray-100 min-h-full">
+                <div className="max-w-6xl mx-auto space-y-4 md:space-y-6">
 
                     {/* 1 IDENTITY */}
                     {activeTab === "identity" && (
@@ -319,7 +319,8 @@ export default function ClinicForm({
                                 name="notes"
                                 value={form.notes}
                                 onChange={handleChange}
-                                className="w-full mt-4 p-3 border rounded-xl"
+                                rows={4}
+                                className="w-full mt-4 p-3 border rounded-xl resize-none text-sm md:text-base"
                                 placeholder="Enter notes..."
                             />
 
@@ -331,7 +332,7 @@ export default function ClinicForm({
                                         FEATURE LIMITS PER PLAN
                                     </h3>
 
-                                    <div className="grid grid-cols-2 gap-4 mb-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                                         <Input
                                             requiredField
                                             name="maxStaff"
@@ -369,7 +370,7 @@ export default function ClinicForm({
                                         MODULE ACCESS
                                     </h3>
 
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
                                         {[
                                             ["labModule", "Lab Module"],
@@ -381,7 +382,7 @@ export default function ClinicForm({
                                         ].map(([key, label]) => (
                                             <label
                                                 key={key}
-                                                className="flex items-center justify-between bg-white px-4 py-3 rounded-xl border"
+                                                className="flex items-center justify-between gap-3 bg-white px-4 py-3 rounded-xl border"
                                             >
                                                 <span>{label}</span>
 
@@ -403,22 +404,23 @@ export default function ClinicForm({
 
                     {/* SAVE */}
                     <div className="flex justify-end">
-                        <div className="flex justify-end gap-3">
+                        <div className="w-full sm:w-auto flex flex-col sm:flex-row justify-end gap-3">
 
                             {activeTab !== "plan" ? (
                                 <button
                                     type="button"
                                     onClick={handleNext}
-                                    className="
-                bg-orange-500
-                hover:bg-orange-600
-                text-white
-                px-6
-                py-3
-                rounded-xl
-                font-medium
-                transition-all
-            "
+                                   className="
+w-full sm:w-auto
+bg-orange-500
+hover:bg-orange-600
+text-white
+px-6
+py-3
+rounded-xl
+font-medium
+transition-all
+"
                                 >
                                     Next →
                                 </button>
@@ -426,16 +428,17 @@ export default function ClinicForm({
                                 <button
                                     onClick={handleSubmit}
                                     type="button"
-                                    className="
-                bg-orange-500
-                hover:bg-orange-600
-                text-white
-                px-6
-                py-3
-                rounded-xl
-                font-medium
-                transition-all
-            "
+                className="
+w-full sm:w-auto
+bg-orange-500
+hover:bg-orange-600
+text-white
+px-6
+py-3
+rounded-xl
+font-medium
+transition-all
+"
                                 >
                                     Save Clinic
                                 </button>

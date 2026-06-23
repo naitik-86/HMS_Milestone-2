@@ -67,9 +67,10 @@ export default function ActivePlans() {
     ];
 
     return (
-        <div className="bg-white rounded-xl p-6 shadow-sm border">
+        <div className="bg-white rounded-xl p-4 md:p-6 shadow-sm border overflow-hidden">
+
             {/* Header */}
-            <div className="flex items-center justify-between mb-5">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-5">
                 <div>
                     <h2 className="text-base font-bold text-gray-800">
                         Active Subscription Plans
@@ -80,14 +81,13 @@ export default function ActivePlans() {
                     </p>
                 </div>
 
-                <button className="border border-gray-200 rounded-lg px-3 py-1.5 text-xs font-semibold text-gray-500 hover:bg-gray-50">
+                <button className="w-full sm:w-auto border border-gray-200 rounded-lg px-3 py-2 text-xs font-semibold text-gray-500 hover:bg-gray-50">
                     View All Plans
                 </button>
             </div>
 
-            {/* Mini Stats */}
-
-            <div className="flex gap-10 pb-5 mb-4 border-b border-gray-100">
+            {/* Stats */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 pb-5 mb-4 border-b border-gray-100">
                 {[
                     {
                         num: 5,
@@ -138,133 +138,135 @@ export default function ActivePlans() {
             </div>
 
             {/* Table */}
-
-            <table className="w-full">
-                <thead>
-                    <tr className="border-b border-gray-100">
-                        <th className="py-3 px-3 text-left w-8">
-                            <input
-                                type="checkbox"
-                                className="accent-orange-500"
-                            />
-                        </th>
-
-                        <th className="py-3 px-3 text-left text-xs font-semibold text-gray-400">
-                            Plan ID
-                        </th>
-
-                        <th className="py-3 px-3 text-left text-xs font-semibold text-gray-400">
-                            Plan Name
-                        </th>
-
-                        <th className="py-3 px-3 text-left text-xs font-semibold text-gray-400">
-                            Tier
-                        </th>
-
-                        <th className="py-3 px-3 text-left text-xs font-semibold text-gray-400">
-                            Monthly
-                        </th>
-
-                        <th className="py-3 px-3 text-left text-xs font-semibold text-gray-400">
-                            Doctors
-                        </th>
-
-                        <th className="py-3 px-3 text-left text-xs font-semibold text-gray-400">
-                            Staff
-                        </th>
-
-                        <th className="py-3 px-3 text-left text-xs font-semibold text-gray-400">
-                            Storage
-                        </th>
-
-                        <th className="py-3 px-3 text-left text-xs font-semibold text-gray-400">
-                            Status
-                        </th>
-
-                        <th />
-                    </tr>
-                </thead>
-
-                <tbody>
-                    {plans.map((plan) => (
-                        <tr
-                            key={plan.id}
-                            className="border-b border-gray-50 hover:bg-gray-50"
-                        >
-                            <td className="py-3 px-3">
+            <div className="overflow-x-auto">
+                <table className="min-w-[1100px] w-full">
+                    <thead>
+                        <tr className="border-b border-gray-100">
+                            <th className="py-3 px-3 text-left w-8">
                                 <input
                                     type="checkbox"
                                     className="accent-orange-500"
-                                    checked={!!checked[plan.id]}
-                                    onChange={() =>
-                                        setChecked((prev) => ({
-                                            ...prev,
-                                            [plan.id]: !prev[plan.id],
-                                        }))
-                                    }
                                 />
-                            </td>
+                            </th>
 
-                            <td className="py-3 px-3 text-orange-500 font-semibold">
-                                {plan.id}
-                            </td>
+                            <th className="py-3 px-3 text-left text-xs font-semibold text-gray-400">
+                                Plan ID
+                            </th>
 
-                            <td className="py-3 px-3">
-                                <div className="flex items-center gap-3">
-                                    <div
-                                        className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold"
-                                        style={{
-                                            background: plan.color,
-                                        }}
-                                    >
-                                        {plan.name
-                                            .split(" ")
-                                            .map((w) => w[0])
-                                            .join("")
-                                            .slice(0, 2)}
-                                    </div>
+                            <th className="py-3 px-3 text-left text-xs font-semibold text-gray-400">
+                                Plan Name
+                            </th>
 
-                                    <span className="font-medium text-gray-800">
-                                        {plan.name}
-                                    </span>
-                                </div>
-                            </td>
+                            <th className="py-3 px-3 text-left text-xs font-semibold text-gray-400">
+                                Tier
+                            </th>
 
-                            <td className="py-3 px-3 text-gray-600">
-                                {plan.tier}
-                            </td>
+                            <th className="py-3 px-3 text-left text-xs font-semibold text-gray-400">
+                                Monthly
+                            </th>
 
-                            <td className="py-3 px-3 font-semibold text-gray-700">
-                                ₹{plan.monthly}
-                            </td>
+                            <th className="py-3 px-3 text-left text-xs font-semibold text-gray-400">
+                                Doctors
+                            </th>
 
-                            <td className="py-3 px-3 text-gray-600">
-                                {plan.doctors}
-                            </td>
+                            <th className="py-3 px-3 text-left text-xs font-semibold text-gray-400">
+                                Staff
+                            </th>
 
-                            <td className="py-3 px-3 text-gray-600">
-                                {plan.staff}
-                            </td>
+                            <th className="py-3 px-3 text-left text-xs font-semibold text-gray-400">
+                                Storage
+                            </th>
 
-                            <td className="py-3 px-3 text-gray-600">
-                                {plan.storage}
-                            </td>
+                            <th className="py-3 px-3 text-left text-xs font-semibold text-gray-400">
+                                Status
+                            </th>
 
-                            <td className="py-3 px-3">
-                                <span className="px-3 py-1 rounded-full bg-green-100 text-green-700 text-xs font-semibold">
-                                    Active
-                                </span>
-                            </td>
-
-                            <td className="py-3 px-3">
-                                <button className="text-gray-400 hover:text-gray-600 text-lg">
-                                    ⋮
-                                </button>
-                            </td>
+                            <th />
                         </tr>
-                    ))}
-                </tbody>
-            </table>
+                    </thead>
+
+                    <tbody>
+                        {plans.map((plan) => (
+                            <tr
+                                key={plan.id}
+                                className="border-b border-gray-50 hover:bg-gray-50 transition"
+                            >
+                                <td className="py-3 px-3">
+                                    <input
+                                        type="checkbox"
+                                        className="accent-orange-500"
+                                        checked={!!checked[plan.id]}
+                                        onChange={() =>
+                                            setChecked((prev) => ({
+                                                ...prev,
+                                                [plan.id]: !prev[plan.id],
+                                            }))
+                                        }
+                                    />
+                                </td>
+
+                                <td className="py-3 px-3 text-orange-500 font-semibold">
+                                    {plan.id}
+                                </td>
+
+                                <td className="py-3 px-3">
+                                    <div className="flex items-center gap-3">
+                                        <div
+                                            className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
+                                            style={{
+                                                background: plan.color,
+                                            }}
+                                        >
+                                            {plan.name
+                                                .split(" ")
+                                                .map((w) => w[0])
+                                                .join("")
+                                                .slice(0, 2)}
+                                        </div>
+
+                                        <span className="font-medium text-gray-800 whitespace-nowrap">
+                                            {plan.name}
+                                        </span>
+                                    </div>
+                                </td>
+
+                                <td className="py-3 px-3 text-gray-600">
+                                    {plan.tier}
+                                </td>
+
+                                <td className="py-3 px-3 font-semibold text-gray-700">
+                                    ₹{plan.monthly}
+                                </td>
+
+                                <td className="py-3 px-3 text-gray-600">
+                                    {plan.doctors}
+                                </td>
+
+                                <td className="py-3 px-3 text-gray-600">
+                                    {plan.staff}
+                                </td>
+
+                                <td className="py-3 px-3 text-gray-600">
+                                    {plan.storage}
+                                </td>
+
+                                <td className="py-3 px-3">
+                                    <span className="px-3 py-1 rounded-full bg-green-100 text-green-700 text-xs font-semibold">
+                                        Active
+                                    </span>
+                                </td>
+
+                                <td className="py-3 px-3">
+                                    <button className="text-gray-400 hover:text-gray-600 text-lg">
+                                        ⋮
+                                    </button>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+
         </div>
     );
 }
