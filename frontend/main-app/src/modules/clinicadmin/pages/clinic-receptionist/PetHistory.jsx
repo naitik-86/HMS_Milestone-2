@@ -3,13 +3,19 @@ import { useState } from "react";
 export default function PetHistory() {
   const [search, setSearch] = useState("");
 
-  const visits = [
-    { date: "10 Jun 2026", petName: "Tommy", owner: "Karan Kumar", reason: "Vaccination", doctor: "Dr. Sharma", status: "Completed", bill: "Rs 500" },
-    { date: "25 May 2026", petName: "Bruno", owner: "Rahul Sharma", reason: "Checkup", doctor: "Dr. Mehta", status: "Completed", bill: "Rs 300" },
-    { date: "18 Apr 2026", petName: "Rocky", owner: "Amit Singh", reason: "Treatment", doctor: "Dr. Singh", status: "In Progress", bill: "Rs 1200" },
-  ];
 
   const filteredVisits = visits.filter((item) => {
+
+
+    const [visits, setVisits] = useState([]);
+    const [stats, setStats] = useState({
+      totalVisits: 0,
+      vaccinations: 0,
+      treatments: 0,
+      checkups: 0,
+    });
+    const [loading, setLoading] = useState(true);
+
     const value = search.toLowerCase();
     return (
       item.petName.toLowerCase().includes(value) ||

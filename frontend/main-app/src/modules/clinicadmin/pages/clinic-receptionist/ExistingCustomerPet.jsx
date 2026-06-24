@@ -3,13 +3,64 @@ import { useState } from "react";
 export default function ExistingCustomerPet() {
   const [search, setSearch] = useState("");
 
-  const customers = [
-    { id: "PET001", owner: "Karan Kumar", pet: "Tommy", reason: "Vaccination", status: "Pending" },
-    { id: "PET002", owner: "Rahul Sharma", pet: "Bruno", reason: "General Checkup", status: "In Progress" },
-    { id: "PET003", owner: "Amit Singh", pet: "Rocky", reason: "Treatment", status: "Completed" },
-    { id: "PET004", owner: "Priya Verma", pet: "Lucy", reason: "Deworming", status: "Pending" },
-    { id: "PET005", owner: "Neha Sharma", pet: "Bella", reason: "Vaccination", status: "In Progress" },
-  ];
+  const [customers, setCustomers] = useState([
+    {
+      id: "PET001",
+      owner: "Karan Kumar",
+      pet: "Tommy",
+      reason: "Vaccination",
+      status: "Pending",
+    },
+    {
+      id: "PET002",
+      owner: "Rahul Sharma",
+      pet: "Bruno",
+      reason: "General Checkup",
+      status: "In Progress",
+    },
+    {
+      id: "PET003",
+      owner: "Amit Singh",
+      pet: "Rocky",
+      reason: "Treatment",
+      status: "Completed",
+    },
+    {
+      id: "PET004",
+      owner: "Priya Verma",
+      pet: "Lucy",
+      reason: "Deworming",
+      status: "Pending",
+    },
+    {
+      id: "PET005",
+      owner: "Neha Sharma",
+      pet: "Bella",
+      reason: "Vaccination",
+      status: "In Progress",
+    },
+  ]);
+
+  const [stats, setStats] = useState([
+    {
+      label: "Total Pets",
+      value: "24",
+      color: "text-slate-800",
+      icon: "TP",
+    },
+    {
+      label: "Active Visits",
+      value: "12",
+      color: "text-blue-600",
+      icon: "AV",
+    },
+    {
+      label: "Pending",
+      value: "8",
+      color: "text-orange-500",
+      icon: "PN",
+    },
+  ]);
 
   const filteredCustomers = customers.filter((item) => {
     const value = search.toLowerCase();
@@ -31,11 +82,7 @@ export default function ExistingCustomerPet() {
     }
   };
 
-  const stats = [
-    { label: "Total Pets", value: "24", color: "text-slate-800", icon: "TP" },
-    { label: "Active Visits", value: "12", color: "text-blue-600", icon: "AV" },
-    { label: "Pending", value: "8", color: "text-orange-500", icon: "PN" },
-  ];
+
 
   return (
     <div className="min-h-screen bg-slate-100 p-4 sm:p-6 lg:p-8">
