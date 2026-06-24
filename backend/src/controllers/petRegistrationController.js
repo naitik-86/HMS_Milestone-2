@@ -262,6 +262,136 @@ const getPetHistory = async (req, res) => {
     }
 };
 
+const getDashboardStats = async (req, res) => {
+    try {
+        const owners = await PetRegistration.find();
+
+        let totalPets = 0;
+        let activeVisits = 0;
+        let pendingVisits = 0;
+
+        owners.forEach(owner => {
+            totalPets += owner.pets.length;
+
+            owner.pets.forEach(pet => {
+                const visits = pet.visits || [];
+
+                visits.forEach(v => {
+                    if (v.status === "In Progress") activeVisits++;
+                    if (v.status === "Pending") pendingVisits++;
+                });
+            });
+        });
+
+        res.status(200).json({
+            success: true,
+            data: {
+                totalPets,
+                activeVisits,
+                pendingVisits
+            }
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+const getExistingCustomers = async (req, res) => {
+    try {
+        const { search } = req.query;
+
+        const owners = await PetRegistration.find();
+
+        let result = [];
+
+        owners.forEach(owner => {
+
+            owner.pets.forEach(pet => {
+
+                const latestVisit =
+                    pet.visits?.[pet.visits.length - 1] || {};
+
+                result.push({
+                    ownerId: owner._id,
+                    petId: pet._id,
+                    petUniqueId: pet.uniquePetId,
+                    ownerName: owner.ownerName,
+                    petName: pet.petName,
+                    reason: latestVisit.primaryReason || "-",
+                    status: latestVisit.status || "Pending"
+                });
+
+            });
+
+        });
+
+        if (search) {
+            const value = search.toLowerCase();
+
+            result = result.filter(item =>
+                item.ownerName.toLowerCase().includes(value) ||
+                item.petName.toLowerCase().includes(value) ||
+                (item.petUniqueId || "").toLowerCase().includes(value)
+            );
+        }
+
+        res.status(200).json({
+            success: true,
+            count: result.length,
+            data: result
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+const getPetDetails = async (req, res) => {
+    try {
+
+        const { ownerId, petId } = req.params;
+
+        const owner = await PetRegistration.findById(ownerId);
+
+        if (!owner) {
+            return res.status(404).json({
+                success: false,
+                message: "Owner not found"
+            });
+        }
+
+        const pet = owner.pets.id(petId);
+
+        if (!pet) {
+            return res.status(404).json({
+                success: false,
+                message: "Pet not found"
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            data: {
+                owner,
+                pet
+            }
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
 module.exports = {
     createRegistration,
     searchCustomer,
@@ -269,4 +399,7 @@ module.exports = {
     addPet,
     addVisit,
     getPetHistory,
+    getDashboardStats,
+    getPetDetails,
+    getExistingCustomers
 };

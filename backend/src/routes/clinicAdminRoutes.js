@@ -110,11 +110,15 @@ router.get("/reports/top-doctors", reportsController.getTopDoctors);
 
 //reception routes
 
-router.post("/new-registration", upload.single("petPhoto"), petRegistrationController.createRegistration);
-router.get("/new-registration/mobile/:mobileNumber", petRegistrationController.searchCustomer);
-router.get("/new-registration/owner/:ownerId", petRegistrationController.getOwnerDetails);
-router.post("/new-registration/owner/:ownerId/pets", petRegistrationController.addPet);
-router.post("/new-registration/owner/:ownerId/pets/:petId/visit", petRegistrationController.addVisit);
-router.get("/new-registration/owner/:ownerId/pets/:petId/history", petRegistrationController.getPetHistory);
+router.post("/reception/new-registration", upload.single("petPhoto"), petRegistrationController.createRegistration);
+router.get("/reception/new-registration/mobile/:mobileNumber", petRegistrationController.searchCustomer);
+router.get("/reception/new-registration/owner/:ownerId", petRegistrationController.getOwnerDetails);
+router.post("/reception/new-registration/owner/:ownerId/pets", petRegistrationController.addPet);
+router.post("/reception/new-registration/owner/:ownerId/pets/:petId/visit", petRegistrationController.addVisit);
+router.get("/reception/new-registration/owner/:ownerId/pets/:petId/history", petRegistrationController.getPetHistory);
+
+router.get("/reception/existing-customers/stats", petRegistrationController.getDashboardStats);
+router.get("/reception/existing-customers", petRegistrationController.getExistingCustomers);
+router.get("/reception/existing-customers/:ownerId/pets/:petId", petRegistrationController.getPetDetails);
 
 module.exports = router;
