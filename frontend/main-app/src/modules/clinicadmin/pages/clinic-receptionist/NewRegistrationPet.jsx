@@ -300,7 +300,8 @@ export default function NewRegistrationPet() {
                     {/* Email */}
                     <div>
                       <label className="block mb-2 font-medium">
-                        Email Address
+                        Email Address :
+
                       </label>
 
                       <input
