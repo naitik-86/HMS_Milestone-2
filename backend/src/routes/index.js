@@ -13,9 +13,6 @@ const { protect, authorize } = require('../middlewares/auth');
 router.use('/auth', authRoutes);
 // Protected role-based modules
 router.use('/super-admin', protect, superAdminRoutes);
-router.use('/clinic-admin', protect, authorize("CLINIC_ADMIN"), clinicAdminRoutes);
-
-router.use('/doctor', protect, doctorRoutes);
-router.use('/reception', protect, receptionRoutes);
+router.use('/clinic', protect, authorize("CLINIC_ADMIN"), clinicAdminRoutes);
 
 module.exports = router;

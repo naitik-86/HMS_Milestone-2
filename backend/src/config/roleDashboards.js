@@ -1,6 +1,5 @@
 // Central mapping for dashboard access.
 // Frontend should call GET /api/v1/dashboard with JWT and then navigate using redirectUrl.
-
 const DASHBOARD = {
   SUPER_ADMIN: '/super-admin/dashboard',
   CLINIC_ADMIN: '/clinic-admin/dashboard',

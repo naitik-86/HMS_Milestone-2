@@ -12,7 +12,6 @@ exports.getDashboardStats = async (req, res) => {
         const criticalCases = await LabReport.countDocuments({
             status: "Critical",
         });
-
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 

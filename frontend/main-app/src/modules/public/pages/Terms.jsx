@@ -1,4 +1,4 @@
-import { LegalPage } from "../components"
+import { LegalPage } from "../components";
 const sections = [
   {
     title: "Acceptance of Terms",
