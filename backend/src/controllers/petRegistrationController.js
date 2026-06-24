@@ -262,43 +262,7 @@ const getPetHistory = async (req, res) => {
     }
 };
 
-const getDashboardStats = async (req, res) => {
-    try {
-        const owners = await PetRegistration.find();
 
-        let totalPets = 0;
-        let activeVisits = 0;
-        let pendingVisits = 0;
-
-        owners.forEach(owner => {
-            totalPets += owner.pets.length;
-
-            owner.pets.forEach(pet => {
-                const visits = pet.visits || [];
-
-                visits.forEach(v => {
-                    if (v.status === "In Progress") activeVisits++;
-                    if (v.status === "Pending") pendingVisits++;
-                });
-            });
-        });
-
-        res.status(200).json({
-            success: true,
-            data: {
-                totalPets,
-                activeVisits,
-                pendingVisits
-            }
-        });
-
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: error.message
-        });
-    }
-};
 
 const getExistingCustomers = async (req, res) => {
     try {
@@ -391,6 +355,108 @@ const getPetDetails = async (req, res) => {
         });
     }
 };
+
+const getDashboardStats = async (req, res) => {
+    try {
+        const owners = await PetRegistration.find();
+
+        let totalPets = 0;
+        let activeVisits = 0;
+        let pendingVisits = 0;
+
+        owners.forEach(owner => {
+            totalPets += owner.pets.length;
+
+            owner.pets.forEach(pet => {
+                const visits = pet.visits || [];
+
+                visits.forEach(v => {
+                    if (v.status === "In Progress") activeVisits++;
+                    if (v.status === "Pending") pendingVisits++;
+                });
+            });
+        });
+
+        res.status(200).json({
+            success: true,
+            data: {
+                totalPets,
+                activeVisits,
+                pendingVisits
+            }
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+
+// // GET all
+// exports.getAll = async (req, res) => {
+//   try {
+//     const data = await Registration.find().sort({ createdAt: -1 });
+//     res.json(data);
+//   } catch (err) {
+//     res.status(500).json({ message: err.message });
+//   }
+// };
+
+// // CREATE
+// exports.create = async (req, res) => {
+//   try {
+//     const newReg = await Registration.create(req.body);
+//     res.status(201).json(newReg);
+//   } catch (err) {
+//     res.status(500).json({ message: err.message });
+//   }
+// };
+
+// // UPDATE (Edit)
+// exports.update = async (req, res) => {
+//   try {
+//     const updated = await Registration.findOneAndUpdate(
+//       { token: req.params.token },
+//       req.body,
+//       { new: true }
+//     );
+//     res.json(updated);
+//   } catch (err) {
+//     res.status(500).json({ message: err.message });
+//   }
+// };
+
+// // DELETE (optional)
+// exports.remove = async (req, res) => {
+//   try {
+//     await Registration.findOneAndDelete({ token: req.params.token });
+//     res.json({ message: "Deleted successfully" });
+//   } catch (err) {
+//     res.status(500).json({ message: err.message });
+//   }
+// };
+
+// // STATS (for your dashboard cards)
+// exports.getStats = async (req, res) => {
+//   try {
+//     const total = await Registration.countDocuments();
+//     const pending = await Registration.countDocuments({ status: "Pending" });
+//     const completed = await Registration.countDocuments({ status: "Completed" });
+
+//     res.json({
+//       todayVisits: 124,
+//       newPets: total,
+//       appointments: 32,
+//       pending,
+//       completed,
+//     });
+//   } catch (err) {
+//     res.status(500).json({ message: err.message });
+//   }
+// };
 
 module.exports = {
     createRegistration,

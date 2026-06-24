@@ -2,7 +2,6 @@ const jwt = require('jsonwebtoken');
 
 const SuperAdmin = require('../models/SuperAdmin');
 const LoginOtp = require('../models/LoginOtp');
-
 // ==========================================
 // SUPER_ADMIN OTP VERIFY
 // ==========================================

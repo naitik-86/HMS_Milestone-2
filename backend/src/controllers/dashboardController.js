@@ -25,7 +25,6 @@ exports.getDashboardRedirect = async (req, res) => {
     if (as.includes('lab')) normalizedRoleKey = 'LAB_TECHNICIAN';
     else normalizedRoleKey = 'PRE_CONSULTATION';
   }
-
   if (!normalizedRoleKey) {
     return res.status(403).json({
       success: false,

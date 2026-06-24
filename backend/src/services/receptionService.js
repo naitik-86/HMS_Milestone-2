@@ -6,7 +6,6 @@ const MedicalRecord = require("../models/MedicalRecord");
 class ReceptionService {
 
     /* ================= OWNER ================= */
-
     async findOwnerByMobile(mobile, clinicId) {
         const owner = await Owner.findOne({ mobile, clinicId }).lean();
         if (!owner) return null;
