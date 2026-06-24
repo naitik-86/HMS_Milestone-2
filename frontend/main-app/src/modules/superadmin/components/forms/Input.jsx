@@ -4,8 +4,8 @@ export default function Input({
     ...props
 }) {
     return (
-        <div>
-            <label className="text-sm">
+        <div className="w-full">
+            <label className="text-sm font-medium text-slate-700">
                 {label}
                 {requiredField && (
                     <span className="text-red-500"> *</span>
@@ -17,7 +17,21 @@ export default function Input({
                 required={requiredField}
                 value={props.value ?? ""}
                 onChange={props.onChange}
-                className="w-full border p-2 rounded-xl mt-1"
+                className="
+                    w-full
+                    mt-1
+                    px-3
+                    py-2.5
+                    text-sm md:text-base
+                    border
+                    border-slate-300
+                    rounded-xl
+                    outline-none
+                    focus:ring-2
+                    focus:ring-orange-400
+                    focus:border-orange-400
+                    transition
+                "
             />
         </div>
     );

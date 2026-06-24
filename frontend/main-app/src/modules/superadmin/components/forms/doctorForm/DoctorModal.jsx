@@ -128,14 +128,14 @@ export default function DoctorModal({ onClose }) {
         tabs.findIndex(([key]) => key === activeTab) + 1;
 
     return (
-        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center">
-            <div className="bg-white w-[95%] h-[95vh] rounded-3xl shadow-xl flex flex-col overflow-hidden">
+       <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-0 sm:p-4">
+    <div className="bg-white w-full sm:w-[95%] h-screen sm:h-[95vh] rounded-none sm:rounded-3xl shadow-xl flex flex-col overflow-hidden">
 
                 {/* HEADER */}
 
-                <div className="flex justify-between items-center px-8 py-3  bg-white">
+                <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center px-4 sm:px-8 py-4 bg-white">
                     <div>
-                        <h2 className="text-3xl font-bold bg-linear-to-r from-orange-500 to-orange-700 bg-clip-text text-transparent">
+                        <h2 className="text-2xl sm:text-3xl font-bold bg-linear-to-r from-orange-500 to-orange-700 bg-clip-text text-transparent">
                             Add Veterinarian
                         </h2>
 
@@ -161,7 +161,7 @@ export default function DoctorModal({ onClose }) {
 
                 {/* TABS */}
                 <div className="bg-slate-100 py-3">
-                    <div className="flex justify-center items-center gap-3 flex-wrap">
+                    <div className="flex gap-2 px-3 sm:px-6 overflow-x-auto whitespace-nowrap">
                         {tabs.map(([key, label]) => (
                             <button
                                 key={key}
@@ -180,11 +180,19 @@ export default function DoctorModal({ onClose }) {
 
                                     setActiveTab(key);
                                 }}
-                                className={`px-5 py-2.5 rounded-2xl text-sm font-medium transition-all duration-200
-                ${activeTab === key
-                                        ? "bg-orange-500 text-white shadow-md"
-                                        : "bg-white text-slate-600 hover:bg-orange-50 hover:text-orange-500"
-                                    }`}
+className={`
+shrink-0
+px-4 sm:px-5
+py-2 sm:py-2.5
+rounded-xl sm:rounded-2xl
+text-xs sm:text-sm
+font-medium
+transition-all duration-200
+${activeTab === key
+    ? "bg-orange-500 text-white shadow-md"
+    : "bg-white text-slate-600 hover:bg-orange-50 hover:text-orange-500"
+}
+`}
                             >
                                 {label}
                             </button>
@@ -194,7 +202,7 @@ export default function DoctorModal({ onClose }) {
 
 
                 {/* FORM */}
-                <div className="flex-1 overflow-y-auto">
+               <div className="flex-1 overflow-y-auto px-3 sm:px-6 pb-6">
                     <DoctorForm
                         activeTab={activeTab}
                         form={form}

@@ -1,13 +1,16 @@
 function ReportsHeader() {
     return (
-        <div>
-            <h1 className="text-3xl font-bold text-black">
-                Reports & Analytics
-            </h1>
+        <div className="mb-6 md:mb-8">
+            <div className="flex flex-col gap-2">
+                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-black">
+                    Reports & Analytics
+                </h1>
 
-            <p className="text-gray-500 mt-2">
-                Generate and export platform reports
-            </p>
+                <p className="text-sm sm:text-base text-gray-500 max-w-2xl">
+                    Generate, export and analyze platform reports across clinics,
+                    veterinarians, subscriptions, revenue and verification data.
+                </p>
+            </div>
         </div>
     );
 }

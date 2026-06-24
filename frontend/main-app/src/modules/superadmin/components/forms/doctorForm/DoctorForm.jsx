@@ -84,7 +84,7 @@ export default function DoctorForm({ activeTab, form, setForm, qualifications, s
 
     return (
         <form >
-            <div className="p-6 bg-gray-100 min-h-full">
+            <div className="p-3 sm:p-4 md:p-6 bg-gray-100 min-h-full">
                 <div className="max-w-6xl mx-auto">
 
                     {/* PERSONAL */}
@@ -108,7 +108,7 @@ export default function DoctorForm({ activeTab, form, setForm, qualifications, s
 
                                 <Full>
                                     <label>Languages Spoken <span className="text-red-500"> *</span></label>
-                                    <div className="flex gap-4 flex-wrap">
+                                   <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 flex-wrap mt-2">
                                         {["English", "Hindi", "Bengali"].map((l) => (
                                             <label key={l}>
                                                 <input
@@ -129,7 +129,7 @@ export default function DoctorForm({ activeTab, form, setForm, qualifications, s
                                         value={form.address}
                                         id="address"
                                         name="address"
-                                        className="w-full border p-2 rounded-xl"
+                                        className="w-full border p-3 rounded-xl resize-none"
                                         placeholder="Enter full address"
                                         onChange={handleChange}
                                     />
@@ -208,7 +208,17 @@ export default function DoctorForm({ activeTab, form, setForm, qualifications, s
                             ))}
                             <button
                                 type="button"
-                                className="m-2"
+                                className="
+mt-4
+w-full sm:w-auto
+bg-orange-500
+hover:bg-orange-600
+text-white
+px-4
+py-2
+rounded-xl
+transition
+"
                                 onClick={() =>
                                     setQualifications([
                                         ...qualifications,
@@ -249,7 +259,7 @@ export default function DoctorForm({ activeTab, form, setForm, qualifications, s
                                     </Full>
                                 </Full>
                                 <Input requiredField={true} type="date" value={form.certificateValidityDate} name="certificateValidityDate" label="Certificate Validity Date" onChange={handleChange} />
-                                <label>
+                                <label className="flex items-center gap-2">
                                     <input type="checkbox" name="isRenewable" onChange={handleChange} /> Is Registration Renewable?
                                 </label>
                             </Grid>
@@ -272,8 +282,8 @@ export default function DoctorForm({ activeTab, form, setForm, qualifications, s
                                 <label>
                                     <input type="checkbox" name="emergencyAvailable" onChange={handleChange} /> Available for Emergency Calls?
                                 </label>
-                                <Input requiredField={true} requiredField={true} name="serviceAreas" value={form.serviceAreas} label="Service Areas / Pincodes" onChange={handleChange} />
-                                <Input requiredField={true} requiredField={true} name="gstPan" value={form.gstPan} label="GST / PAN" onChange={handleChange} />
+                                <Input requiredField={true}  name="serviceAreas" value={form.serviceAreas} label="Service Areas / Pincodes" onChange={handleChange} />
+                                <Input requiredField={true} name="gstPan" value={form.gstPan} label="GST / PAN" onChange={handleChange} />
                             </Grid>
                         </Card>
                     )}
@@ -294,13 +304,25 @@ export default function DoctorForm({ activeTab, form, setForm, qualifications, s
 
                     {/* SAVE */}
                     <div className="flex justify-end mt-6">
+    <div className="w-full sm:w-auto">
                         <button
                             type="button"
                             onClick={handleSubmit}
-                            className="bg-orange-500 text-white px-6 py-3 rounded-xl"
+                           className="
+w-full sm:w-auto
+bg-orange-500
+hover:bg-orange-600
+text-white
+px-6
+py-3
+rounded-xl
+font-medium
+transition
+"
                         >
                             Save Doctor
                         </button>
+                        </div>
                     </div>
                 </div>
             </div>
