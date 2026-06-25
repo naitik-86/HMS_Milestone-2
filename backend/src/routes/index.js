@@ -17,8 +17,5 @@ router.use('/super-admin', protect, superAdminRoutes);
 router.use('/clinic', protect, authorize("CLINIC_ADMIN"), clinicAdminRoutes);
 
 // Pre Consultation
-router.use(
-  "/preconsultation",
-  preConsultationRoutes
-);
+router.use( "/pre-consultation",preConsultationRoutes);
 module.exports = router;
