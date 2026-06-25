@@ -206,7 +206,6 @@ const getStaffById = async (
         });
     }
 };
-
 const updateStaff = async (
     req,
     res

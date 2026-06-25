@@ -27,7 +27,6 @@ exports.getClinicReviews = async (req, res) => {
       .populate('ownerId', 'name')
       .sort({ createdAt: -1 });
 
-    // Calculate average rating
     const avgRating = reviews.reduce((acc, item) => item.rating + acc, 0) / (reviews.length || 1);
 
     res.status(200).json({ success: true, average: avgRating.toFixed(1), count: reviews.length, data: reviews });
@@ -36,7 +35,6 @@ exports.getClinicReviews = async (req, res) => {
   }
 };
 
-// DELETE /api/reviews/:id -> Super Admin removing abusive feedback
 exports.deleteReview = async (req, res) => {
   try {
     const review = await Review.findByIdAndDelete(req.params.id);

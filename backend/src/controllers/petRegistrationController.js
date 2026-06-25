@@ -22,7 +22,6 @@ const createRegistration = async (req, res) => {
         let owner = await PetRegistration.findOne({
             mobileNumber,
         });
-
         const uniquePetId = `PET-${Date.now()}`;
 
         const tokenNumber = `TK-${Date.now()}`;
@@ -97,17 +96,15 @@ const searchCustomer = async (req, res) => {
     try {
         const { mobileNumber } = req.params;
 
-        const customer =
-            await PetRegistration.findOne({
-                mobileNumber,
-            });
+        const customer = await PetRegistration.findOne({
+            mobileNumber
+        });
 
-        if (!customer) {
-            return res.status(404).json({
-                success: false,
-                message: "Customer Not Found",
-            });
+        if (customer) {
+            customer.isMobileVerified = true;
+            await customer.save();
         }
+
 
         return res.status(200).json({
             success: true,

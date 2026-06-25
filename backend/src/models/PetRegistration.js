@@ -42,6 +42,7 @@ const visitSchema = new mongoose.Schema({
     }
 });
 
+
 const petSchema = new mongoose.Schema({
     petName: {
         type: String,
@@ -85,7 +86,12 @@ const ownerSchema = new mongoose.Schema(
         mobileNumber: {
             type: String,
             required: true,
-            unique: true
+            unique: true,
+            match: /^[6-9]\d{9}$/
+        },
+        isMobileVerified: {
+            type: Boolean,
+            default: false
         },
 
         ownerName: {
@@ -99,25 +105,22 @@ const ownerSchema = new mongoose.Schema(
         },
 
         ownerIdType: String,
-
-        email: String,
-
+        email: {
+            type: String,
+            trim: true,
+            lowercase: true
+        },
         address: String,
-
         state: String,
-
         city: String,
-
         district: String,
-
         pincode: String,
 
         pets: [petSchema]
     },
     {
         timestamps: true
-    }
-);
+    });
 
 module.exports = mongoose.model(
     "PetRegistration",
