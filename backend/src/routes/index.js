@@ -7,6 +7,7 @@ const clinicAdminRoutes = require('./clinicAdminRoutes');
 const doctorRoutes = require('./doctorRoutes');
 const receptionRoutes = require('./receptionRoutes');
 const preConsultationRoutes =require("./preConsultationRoutes");
+const petOwnerRoutes = require("./petOwnerRoutes");
 
 const { protect, authorize } = require('../middlewares/auth');
 
@@ -18,4 +19,6 @@ router.use('/clinic', protect, authorize("CLINIC_ADMIN"), clinicAdminRoutes);
 
 // Pre Consultation
 router.use( "/pre-consultation",preConsultationRoutes);
+// Owner Pet
+router.use("/pet-owner", petOwnerRoutes);
 module.exports = router;
