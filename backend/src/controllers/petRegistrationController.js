@@ -22,7 +22,6 @@ const createRegistration = async (req, res) => {
         let owner = await PetRegistration.findOne({
             mobileNumber,
         });
-
         const uniquePetId = `PET-${Date.now()}`;
 
         const tokenNumber = `TK-${Date.now()}`;
@@ -97,17 +96,15 @@ const searchCustomer = async (req, res) => {
     try {
         const { mobileNumber } = req.params;
 
-        const customer =
-            await PetRegistration.findOne({
-                mobileNumber,
-            });
+        const customer = await PetRegistration.findOne({
+            mobileNumber
+        });
 
-        if (!customer) {
-            return res.status(404).json({
-                success: false,
-                message: "Customer Not Found",
-            });
+        if (customer) {
+            customer.isMobileVerified = true;
+            await customer.save();
         }
+
 
         return res.status(200).json({
             success: true,
@@ -393,70 +390,6 @@ const getDashboardStats = async (req, res) => {
         });
     }
 };
-
-
-// // GET all
-// exports.getAll = async (req, res) => {
-//   try {
-//     const data = await Registration.find().sort({ createdAt: -1 });
-//     res.json(data);
-//   } catch (err) {
-//     res.status(500).json({ message: err.message });
-//   }
-// };
-
-// // CREATE
-// exports.create = async (req, res) => {
-//   try {
-//     const newReg = await Registration.create(req.body);
-//     res.status(201).json(newReg);
-//   } catch (err) {
-//     res.status(500).json({ message: err.message });
-//   }
-// };
-
-// // UPDATE (Edit)
-// exports.update = async (req, res) => {
-//   try {
-//     const updated = await Registration.findOneAndUpdate(
-//       { token: req.params.token },
-//       req.body,
-//       { new: true }
-//     );
-//     res.json(updated);
-//   } catch (err) {
-//     res.status(500).json({ message: err.message });
-//   }
-// };
-
-// // DELETE (optional)
-// exports.remove = async (req, res) => {
-//   try {
-//     await Registration.findOneAndDelete({ token: req.params.token });
-//     res.json({ message: "Deleted successfully" });
-//   } catch (err) {
-//     res.status(500).json({ message: err.message });
-//   }
-// };
-
-// // STATS (for your dashboard cards)
-// exports.getStats = async (req, res) => {
-//   try {
-//     const total = await Registration.countDocuments();
-//     const pending = await Registration.countDocuments({ status: "Pending" });
-//     const completed = await Registration.countDocuments({ status: "Completed" });
-
-//     res.json({
-//       todayVisits: 124,
-//       newPets: total,
-//       appointments: 32,
-//       pending,
-//       completed,
-//     });
-//   } catch (err) {
-//     res.status(500).json({ message: err.message });
-//   }
-// };
 
 module.exports = {
     createRegistration,
