@@ -2,50 +2,228 @@ const mongoose = require("mongoose");
 
 const preConsultationSchema = new mongoose.Schema(
   {
-    ownerId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "PetRegistration",
-      required: true,
-    },
+    // ======================================================
+    // PET INFORMATION
+    // ======================================================
+
+    // ownerId: {
+    //   type: mongoose.Schema.Types.ObjectId,
+    //   ref: "PetRegistration",
+    //   required: true,
+    // },
 
     uniquePetId: {
       type: String,
       required: true,
+      trim: true,
     },
 
     tokenNumber: {
       type: String,
       required: true,
+      trim: true,
     },
 
-    bodyTemperature: Number,
-    heartRate: Number,
-    respiratoryRate: Number,
-    bloodPressure: String,
-    spo2: Number,
-    bodyWeight: Number,
-    bcs: String,
-    recordedBy: String,
+    // ======================================================
+    // STEP 1 : VITALS & INITIAL ASSESSMENT
+    // ======================================================
 
-    durationOfIllness: String,
-    onset: String,
-    progression: String,
-    recentTravel: Boolean,
-    animalContact: Boolean,
-    previousEpisodes: String,
+    bodyTemperature: {
+      type: Number,
+      required: true,
+    },
 
-    primaryComplaint: String,
-    associatedSymptoms: String,
-    severity: String,
+    heartRate: {
+      type: Number,
+      required: true,
+    },
 
-    generalDemeanour: String,
-    gaitAndPosture: String,
-    visibleLesions: String,
-    eyesAbnormality: String,
-    noseAbnormality: String,
-    earAbnormality: String,
-    skinCondition: String,
-    staffNotes: String,
+    respiratoryRate: {
+      type: Number,
+      required: true,
+    },
+
+    bloodPressure: {
+      type: String,
+      enum: ["Low", "Normal", "High"],
+      required: true,
+    },
+
+    spo2: {
+      type: Number,
+      min: 0,
+      max: 100,
+      required: true,
+    },
+
+    bodyWeight: {
+      type: Number,
+      required: true,
+    },
+
+    bcs: {
+      type: Number,
+      min: 1,
+      max: 5,
+      required: true,
+    },
+
+    recordedBy: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    vitalsRecordedAt: {
+      type: Date,
+      default: Date.now,
+    },
+
+    // ======================================================
+    // STEP 2 : BRIEF HISTORY OF PROBLEM
+    // ======================================================
+
+    durationOfIllness: {
+      value: {
+        type: Number,
+        required: true,
+      },
+
+      unit: {
+        type: String,
+        enum: ["Days", "Weeks", "Months", "Years"],
+        required: true,
+      },
+    },
+
+    onset: {
+      type: String,
+      enum: ["Sudden", "Gradual"],
+      required: true,
+    },
+
+    progression: {
+      type: String,
+      enum: ["Improving", "Worsening", "Stable"],
+      required: true,
+    },
+
+    previousEpisodes: {
+      hasPreviousEpisodes: {
+        type: Boolean,
+        default: false,
+      },
+
+      description: {
+        type: String,
+        trim: true,
+        default: "",
+      },
+    },
+
+    recentTravel: {
+      type: Boolean,
+      default: false,
+    },
+
+    animalContact: {
+      type: Boolean,
+      default: false,
+    },
+
+    // ======================================================
+    // STEP 3 : PROBLEM DESCRIPTION
+    // ======================================================
+
+    primaryComplaint: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    associatedSymptoms: [
+      {
+        type: String,
+        enum: [
+          "Vomiting",
+          "Diarrhea",
+          "Lethargy",
+          "Coughing",
+          "Sneezing",
+          "Discharge",
+          "Skin Lesion",
+          "Lameness",
+          "Other",
+        ],
+      },
+    ],
+
+    severity: {
+      type: String,
+      enum: ["Mild", "Moderate", "Severe"],
+      required: true,
+    },
+
+    // ======================================================
+    // STEP 4 : OBSERVATION
+    // ======================================================
+
+    generalDemeanour: {
+      type: String,
+      enum: [
+        "Alert",
+        "Depressed",
+        "Anxious",
+        "Unconscious",
+      ],
+      required: true,
+    },
+
+    gaitAndPosture: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
+    visibleLesions: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
+    eyesAbnormality: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
+    noseAbnormality: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
+    earAbnormality: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
+    skinCondition: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
+    staffNotes: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
+    // ======================================================
+    // WORKFLOW STATUS
+    // ======================================================
 
     status: {
       type: String,
@@ -53,7 +231,9 @@ const preConsultationSchema = new mongoose.Schema(
       default: "PENDING",
     },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+  }
 );
 
 module.exports = mongoose.model(

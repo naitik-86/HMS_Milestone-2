@@ -1,12 +1,50 @@
 const PreConsultation = require("../models/PreConsultation");
 
-exports.createPreConsultation = async (req, res) => {
+// ===============================================
+// Create Pre Consultation
+// ===============================================
+
+exports.savePreConsultation = async (req, res) => {
   try {
-    const preConsultation = await PreConsultation.create(req.body);
+    const {
+      uniquePetId,
+      tokenNumber,
+    } = req.body;
+
+    // Check if record already exists
+    const existingRecord = await PreConsultation.findOne({
+      uniquePetId,
+    });
+
+    if (existingRecord) {
+      const updatedRecord =
+        await PreConsultation.findByIdAndUpdate(
+          existingRecord._id,
+          req.body,
+          {
+            new: true,
+            runValidators: true,
+          }
+        );
+
+      return res.status(200).json({
+        success: true,
+        message:
+          "Pre Consultation Updated Successfully",
+        data: updatedRecord,
+      });
+    }
+
+    const preConsultation =
+      await PreConsultation.create({
+        ...req.body,
+        status: "COMPLETED",
+      });
 
     return res.status(201).json({
       success: true,
-      message: "Pre Consultation Created Successfully",
+      message:
+        "Pre Consultation Saved Successfully",
       data: preConsultation,
     });
   } catch (error) {
@@ -17,71 +55,84 @@ exports.createPreConsultation = async (req, res) => {
   }
 };
 
-exports.getPendingPets = async (req, res) => {
-  try {
-    const pets = await PreConsultation.find({
-      status: "PENDING",
-    }).sort({ createdAt: -1 });
-
-    return res.status(200).json({
-      success: true,
-      count: pets.length,
-      data: pets,
-    });
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-};
-
-exports.getCompletedPets = async (req, res) => {
-  try {
-    const pets = await PreConsultation.find({
-      status: "COMPLETED",
-    }).sort({ createdAt: -1 });
-
-    return res.status(200).json({
-      success: true,
-      count: pets.length,
-      data: pets,
-    });
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-};
+// ===============================================
+// Dashboard
+// ===============================================
 
 exports.getDashboard = async (req, res) => {
   try {
-    const totalPatients =
-      await PreConsultation.countDocuments();
+    // ===========================================
+    // Dashboard Cards
+    // ===========================================
 
-    const pendingPatients =
-      await PreConsultation.countDocuments({
-        status: "PENDING",
-      });
+    const todayPatients = await PreConsultation.countDocuments({
+      createdAt: {
+        $gte: new Date(new Date().setHours(0, 0, 0, 0)),
+      },
+    });
 
-    const completedPatients =
-      await PreConsultation.countDocuments({
-        status: "COMPLETED",
-      });
+    const vitalsPending = await PreConsultation.countDocuments({
+      status: "PENDING",
+    });
 
-    const observationPatients =
-      await PreConsultation.countDocuments({
-        severity: "Severe",
-      });
+    const observations = await PreConsultation.countDocuments({
+      severity: "Severe",
+    });
+
+    const completed = await PreConsultation.countDocuments({
+      status: "COMPLETED",
+    });
+
+    // ===========================================
+    // Today's Queue
+    // ===========================================
+
+    const todaysQueue = await PreConsultation.find()
+      .select(
+        "uniquePetId tokenNumber status severity createdAt"
+      )
+      .sort({ createdAt: -1 })
+      .limit(5);
+
+    // ===========================================
+    // Recent Completed Pets
+    // ===========================================
+
+    const recentCompletedPets = await PreConsultation.find({
+      status: "COMPLETED",
+    })
+      .select(
+        "uniquePetId tokenNumber status updatedAt"
+      )
+      .sort({ updatedAt: -1 })
+      .limit(5);
+
+    // ===========================================
+    // Recent Activity
+    // ===========================================
+
+    const recentActivity = await PreConsultation.find()
+      .select(
+        "uniquePetId tokenNumber status severity updatedAt"
+      )
+      .sort({ updatedAt: -1 })
+      .limit(5);
 
     return res.status(200).json({
       success: true,
       data: {
-        totalPatients,
-        pendingPatients,
-        completedPatients,
-        observationPatients,
+        cards: {
+          todayPatients,
+          vitalsPending,
+          observations,
+          completed,
+        },
+
+        todaysQueue,
+
+        recentCompletedPets,
+
+        recentActivity,
       },
     });
   } catch (error) {
@@ -92,22 +143,175 @@ exports.getDashboard = async (req, res) => {
   }
 };
 
-exports.updatePreConsultation = async (req, res) => {
+// ===============================================
+// Get Pending Pets
+// ===============================================
+
+exports.getPendingPets = async (req, res) => {
   try {
+    const pendingPets = await PreConsultation.find({
+      status: "PENDING",
+    })
+      .sort({ createdAt: -1 });
+
+    return res.status(200).json({
+      success: true,
+      count: pendingPets.length,
+      data: pendingPets,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// ===============================================
+// Get Completed Pets
+// ===============================================
+
+exports.getCompletedPets = async (req, res) => {
+  try {
+    // ===========================================
+    // Dashboard Stats
+    // ===========================================
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const completedToday =
+      await PreConsultation.countDocuments({
+        status: "COMPLETED",
+        updatedAt: {
+          $gte: today,
+        },
+      });
+
+    const startOfWeek = new Date();
+    startOfWeek.setDate(
+      startOfWeek.getDate() - startOfWeek.getDay()
+    );
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    const completedThisWeek =
+      await PreConsultation.countDocuments({
+        status: "COMPLETED",
+        updatedAt: {
+          $gte: startOfWeek,
+        },
+      });
+
+    const totalCompleted =
+      await PreConsultation.countDocuments({
+        status: "COMPLETED",
+      });
+
+    // ===========================================
+    // Completed Pets List
+    // ===========================================
+
+    const completedPets = await PreConsultation.find({
+      status: "COMPLETED",
+    })
+      .select(
+        "uniquePetId tokenNumber status updatedAt"
+      )
+      .sort({ updatedAt: -1 });
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        stats: {
+          completedToday,
+          completedThisWeek,
+          totalCompleted,
+        },
+
+        pets: completedPets,
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// ===============================================
+// Get History Pets
+// ===============================================
+
+exports.getHistoryPets = async (req, res) => {
+  try {
+    // ===========================================
+    // Dashboard Stats
+    // ===========================================
+
+    const totalRecords = await PreConsultation.countDocuments();
+
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+
+    const thisMonth = await PreConsultation.countDocuments({
+      createdAt: {
+        $gte: startOfMonth,
+      },
+    });
+
+    const archivedCases = await PreConsultation.countDocuments({
+      status: "COMPLETED",
+    });
+
+    // ===========================================
+    // History Records
+    // ===========================================
+
+    const history = await PreConsultation.find()
+      .select(
+        "uniquePetId tokenNumber status severity createdAt updatedAt"
+      )
+      .sort({ createdAt: -1 });
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        stats: {
+          totalRecords,
+          thisMonth,
+          archivedCases,
+        },
+        records: history,
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// ===============================================
+// Get Single Pre Consultation
+// ===============================================
+
+exports.getSinglePreConsultation = async (
+  req,
+  res
+) => {
+  try {
+    const { id } = req.params;
+
     const preConsultation =
-      await PreConsultation.findByIdAndUpdate(
-        req.params.id,
-        req.body,
-        {
-          new: true,
-          runValidators: true,
-        }
-      );
+      await PreConsultation.findById(id);
 
     if (!preConsultation) {
       return res.status(404).json({
         success: false,
-        message: "Record Not Found",
+        message: "Pre Consultation Record Not Found",
       });
     }
 
@@ -123,23 +327,44 @@ exports.updatePreConsultation = async (req, res) => {
   }
 };
 
-exports.getSinglePreConsultation = async (req, res) => {
-  try {
-    const record =
-      await PreConsultation.findById(
-        req.params.id
-      );
+// ===============================================
+// Update Pre Consultation
+// ===============================================
 
-    if (!record) {
+exports.updatePreConsultation = async (
+  req,
+  res
+) => {
+  try {
+    const { id } = req.params;
+
+    const preConsultation =
+      await PreConsultation.findById(id);
+
+    if (!preConsultation) {
       return res.status(404).json({
         success: false,
-        message: "Record Not Found",
+        message: "Pre Consultation Record Not Found",
       });
     }
 
+    const updatedRecord =
+      await PreConsultation.findByIdAndUpdate(
+        id,
+        {
+          ...req.body,
+        },
+        {
+          new: true,
+          runValidators: true,
+        }
+      );
+
     return res.status(200).json({
       success: true,
-      data: record,
+      message:
+        "Pre Consultation Updated Successfully",
+      data: updatedRecord,
     });
   } catch (error) {
     return res.status(500).json({
@@ -149,23 +374,41 @@ exports.getSinglePreConsultation = async (req, res) => {
   }
 };
 
-exports.deletePreConsultation = async (req, res) => {
+exports.searchHistoryPets = async (req, res) => {
   try {
-    const record =
-      await PreConsultation.findByIdAndDelete(
-        req.params.id
-      );
+    const { phoneNumber, uniquePetId, tokenNumber } = req.query;
 
-    if (!record) {
-      return res.status(404).json({
-        success: false,
-        message: "Record Not Found",
-      });
+    const filter = {};
+
+    if (phoneNumber) {
+      filter.ownerPhoneNumber = {
+        $regex: phoneNumber,
+        $options: "i",
+      };
     }
+
+    if (uniquePetId) {
+      filter.uniquePetId = {
+        $regex: uniquePetId,
+        $options: "i",
+      };
+    }
+
+    if (tokenNumber) {
+      filter.tokenNumber = {
+        $regex: tokenNumber,
+        $options: "i",
+      };
+    }
+
+    const records = await PreConsultation.find(filter).sort({
+      createdAt: -1,
+    });
 
     return res.status(200).json({
       success: true,
-      message: "Deleted Successfully",
+      count: records.length,
+      data: records,
     });
   } catch (error) {
     return res.status(500).json({
