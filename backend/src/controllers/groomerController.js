@@ -119,6 +119,33 @@ exports.getAllGroomers = async (req, res) => {
 /**
  * Get Groomer By Id
  */
+exports.deleteGroomer = async (req, res) => {
+    try {
+
+        const groomer = await Groomer.findById(req.params.id);
+
+        if (!groomer) {
+            return res.status(404).json({
+                success: false,
+                message: "Groomer not found",
+            });
+        }
+
+        await Groomer.findByIdAndDelete(req.params.id);
+
+        return res.status(200).json({
+            success: true,
+            message: "Groomer deleted successfully",
+        });
+
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
+
 exports.getGroomerById = async (req, res) => {
     try {
         const groomer = await Groomer.findById(req.params.id);

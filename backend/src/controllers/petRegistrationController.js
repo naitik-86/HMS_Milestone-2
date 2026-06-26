@@ -89,9 +89,7 @@ const createRegistration = async (req, res) => {
             message: error.message,
         });
     }
-};
-
-// Search Existing Customer
+}
 const searchCustomer = async (req, res) => {
     try {
         const { mobileNumber } = req.params;
@@ -390,7 +388,6 @@ const getDashboardStats = async (req, res) => {
         });
     }
 };
-
 module.exports = {
     createRegistration,
     searchCustomer,

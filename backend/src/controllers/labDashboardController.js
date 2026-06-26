@@ -1,6 +1,4 @@
 const LabReport = require("../models/LabReport");
-
-// Dashboard Stats
 exports.getDashboardStats = async (req, res) => {
     try {
         const totalReports = await LabReport.countDocuments();
@@ -8,7 +6,6 @@ exports.getDashboardStats = async (req, res) => {
         const pendingUploads = await LabReport.countDocuments({
             status: "Pending",
         });
-
         const criticalCases = await LabReport.countDocuments({
             status: "Critical",
         });
