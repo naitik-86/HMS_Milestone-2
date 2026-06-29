@@ -118,8 +118,7 @@ router.post("/reception/new-registration/owner/:ownerId/pets", petRegistrationCo
 router.post("/reception/new-registration/owner/:ownerId/pets/:petId/visit", petRegistrationController.addVisit);
 router.get("/reception/new-registration/owner/:ownerId/pets/:petId/history", petRegistrationController.getPetHistory);
 
-
-
+//clinic reception routes for checking history
 router.get("/reception/existing-customers/stats", petRegistrationController.getDashboardStats);
 router.get("/reception/existing-customers", petRegistrationController.getExistingCustomers);
 router.get("/reception/existing-customers/:ownerId/pets/:petId", petRegistrationController.getPetDetails);

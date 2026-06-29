@@ -6,11 +6,11 @@ const preConsultationSchema = new mongoose.Schema(
     // PET INFORMATION
     // ======================================================
 
-    // ownerId: {
-    //   type: mongoose.Schema.Types.ObjectId,
-    //   ref: "PetRegistration",
-    //   required: true,
-    // },
+    ownerId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "PetRegistration",
+      required: true,
+    },
 
     uniquePetId: {
       type: String,
