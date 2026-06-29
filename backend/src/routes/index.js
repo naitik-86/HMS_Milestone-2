@@ -19,6 +19,7 @@ router.use('/clinic', protect, authorize("CLINIC_ADMIN"), clinicAdminRoutes);
 
 // Pre Consultation
 router.use( "/pre-consultation",preConsultationRoutes);
+
 // Owner Pet
 router.use("/pet-owner", petOwnerRoutes);
 module.exports = router;
