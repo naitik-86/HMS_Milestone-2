@@ -7,9 +7,9 @@ RUN npm ci
 
 COPY . .
 
-# VITE_API_URL is injected at build time via --build-arg
-ARG VITE_API_URL=http://localhost:5000
-ENV VITE_API_URL=$VITE_API_URL
+# VITE_BACKEND_URL is injected at build time via --build-arg
+ARG VITE_BACKEND_URL=http://localhost:5000/api/v1
+ENV VITE_BACKEND_URL=$VITE_BACKEND_URL
 
 RUN npm run build
 

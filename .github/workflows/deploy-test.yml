@@ -43,7 +43,7 @@ jobs:
       - name: Build & push frontend image
         run: |
           docker build \
-            --build-arg VITE_API_URL=${{ secrets.VITE_API_URL }} \
+            --build-arg VITE_BACKEND_URL=${{ secrets.VITE_BACKEND_URL }} \
             -t $ECR_REGISTRY/$FRONTEND_REPO:$GITHUB_SHA \
             -t $ECR_REGISTRY/$FRONTEND_REPO:latest \
             ./frontend/main-app
@@ -85,7 +85,7 @@ jobs:
             # Export env vars for compose
             export ECR_REGISTRY=${{ secrets.ECR_REGISTRY }}
             export IMAGE_TAG=${{ github.sha }}
-            export VITE_API_URL=${{ secrets.VITE_API_URL }}
+            export VITE_BACKEND_URL=${{ secrets.VITE_BACKEND_URL }}
 
             # Pull new images and restart (zero-downtime via depends_on + healthcheck)
             docker compose pull
