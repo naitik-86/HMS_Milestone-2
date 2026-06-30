@@ -123,4 +123,10 @@ router.get("/reception/existing-customers/stats", petRegistrationController.getD
 router.get("/reception/existing-customers", petRegistrationController.getExistingCustomers);
 router.get("/reception/existing-customers/:ownerId/pets/:petId", petRegistrationController.getPetDetails);
 
+
+router.get("/", petRegistrationController.controller.getAll);
+router.post("/", petRegistrationController.controller.create);
+router.put("/:token", petRegistrationController.controller.update);
+router.delete("/:token", petRegistrationController.controller.remove)
+
 module.exports = router;
