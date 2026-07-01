@@ -29,7 +29,6 @@ exports.searchOwner = async (req, res) => {
 };
 
 // POST /api/owners/register -> Create owner + one pet (used by reception desk)
-// Important: Does NOT change DB schema; only uses existing models.
 exports.registerOwnerAndPet = async (req, res) => {
   try {
     // Support BOTH:
@@ -347,72 +346,5 @@ exports.getPendingRegistrations = async (req, res) => {
       success: false,
       error: error.message,
     });
-  }
-};
-
-/////////////////////////////++++++++++++++++++
-
-const Registration = require("../models/Registration");
-
-// GET all
-exports.getAll = async (req, res) => {
-  try {
-    const data = await Registration.find().sort({ createdAt: -1 });
-    res.json(data);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-};
-
-// CREATE
-exports.create = async (req, res) => {
-  try {
-    const newReg = await Registration.create(req.body);
-    res.status(201).json(newReg);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-};
-
-// UPDATE (Edit)
-exports.update = async (req, res) => {
-  try {
-    const updated = await Registration.findOneAndUpdate(
-      { token: req.params.token },
-      req.body,
-      { new: true }
-    );
-    res.json(updated);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-};
-
-// DELETE (optional)
-exports.remove = async (req, res) => {
-  try {
-    await Registration.findOneAndDelete({ token: req.params.token });
-    res.json({ message: "Deleted successfully" });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-};
-
-// STATS (for your dashboard cards)
-exports.getStats = async (req, res) => {
-  try {
-    const total = await Registration.countDocuments();
-    const pending = await Registration.countDocuments({ status: "Pending" });
-    const completed = await Registration.countDocuments({ status: "Completed" });
-
-    res.json({
-      todayVisits: 124,
-      newPets: total,
-      appointments: 32,
-      pending,
-      completed,
-    });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
   }
 };
