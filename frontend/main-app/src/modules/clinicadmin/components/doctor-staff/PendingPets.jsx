@@ -1,6 +1,10 @@
+/* eslint-disable react-hooks/immutability */
 import { useState } from "react";
+import axios from "axios";
+import {useEffect } from "react";
 
 export default function PendingPets() {
+
   const [search, setSearch] = useState("");
   const [selectedPet, setSelectedPet] = useState(null);
   const [showModal, setShowModal] = useState(false);
@@ -14,37 +18,249 @@ export default function PendingPets() {
     "Treatment",
     "Plans",
   ];
+const [formData, setFormData] = useState({
 
-  const pendingPets = [
-    {
-      id: "PET001",
-      petName: "Bruno",
-      owner: "Rahul Sharma",
-      phone: "9876543210",
-      status: "Pending",
-    },
-    {
-      id: "PET002",
-      petName: "Tommy",
-      owner: "Amit Verma",
-      phone: "9876541230",
-      status: "Pending",
-    },
-    {
-      id: "PET003",
-      petName: "Max",
-      owner: "Rohan Singh",
-      phone: "9988776655",
-      status: "Pending",
-    },
-  ];
+  history: {
+    dietType: "",
+    dietFrequency: "",
+    waterIntake: "",
+    behaviour: "",
+    exercise: "",
+    currentMedication: "",
+    vaccinationStatus: "",
+    allergies: "",
+  },
 
-  const filteredPets = pendingPets.filter(
-    (pet) =>
-      pet.phone.includes(search) ||
-      pet.owner.toLowerCase().includes(search.toLowerCase()) ||
-      pet.id.toLowerCase().includes(search.toLowerCase())
-  );
+  clinicalObservation: {
+    cardiovascular: "",
+    respiratory: "",
+    digestive: "",
+    musculoskeletal: "",
+    neurological: "",
+    urogenital: "",
+    skin: "",
+    eyes: "",
+    ears: "",
+    nose: "",
+    throat: "",
+    lymphNodes: "",
+    doctorNotes: "",
+  },
+
+  diagnosis: {
+    provisionalDiagnosis: "",
+    differentialDiagnosis: "",
+    confirmedDiagnosis: "",
+    raiseLab: false,
+  },
+
+  labRequisition: {
+    tests: [],
+    sampleType: [],
+    instructions: "",
+    labOrderId: "",
+  },
+
+  treatment: {
+    medicines: "",
+    procedures: "",
+    vaccinations: "",
+    deworming: "",
+    fluids: "",
+    followUp: "",
+    treatmentNotes: "",
+  },
+
+  suggestion: {
+    dietAdvice: "",
+    activityRestriction: "",
+    homeCare: "",
+    preventiveCare: "",
+    prognosis: "",
+    followUpDate: "",
+    finalNotes: "",
+  },
+
+});
+
+
+const handleChange = (section, field, value) => {
+
+    setFormData((prev) => ({
+
+        ...prev,
+
+        [section]: {
+
+            ...prev[section],
+
+            [field]: value
+
+        }
+
+    }));
+
+};
+const [pendingPets, setPendingPets] = useState([]);
+const [loading, setLoading] = useState(true);
+
+useEffect(() => {
+    getPendingPets();
+}, []);
+
+
+const getPendingPets = async () => {
+
+    try {
+
+        const res = await axios.get(
+            "http://localhost:5000/api/v1/doctorModule/pending-pets"
+        );
+
+        setPendingPets(res.data.data);
+
+    } catch (error) {
+
+        console.log(error);
+
+    } finally {
+
+        setLoading(false);
+
+    }
+
+};
+
+const completeCase = async () => {
+
+    if (!selectedPet?._id) {
+        alert("Please select a pet first");
+        return;
+    }
+
+    try {
+
+        const response = await axios.put(
+
+            `http://localhost:5000/api/v1/doctorModule/patient/${selectedPet._id}`,
+
+            {
+                ...formData,
+                status: "COMPLETED"
+            }
+
+        );
+
+        if (response.data.success) {
+
+            alert("Case Completed Successfully");
+
+            // Refresh Pending List
+            await getPendingPets();
+
+            // Close Modal
+            setShowModal(false);
+
+            // Reset States
+            setSelectedPet(null);
+            setStep(1);
+
+            // Reset Form
+            setFormData({
+
+                history: {
+                    dietType: "",
+                    dietFrequency: "",
+                    waterIntake: "",
+                    behaviour: "",
+                    exercise: "",
+                    currentMedication: "",
+                    vaccinationStatus: "",
+                    allergies: "",
+                },
+
+                clinicalObservation: {
+                    cardiovascular: "",
+                    respiratory: "",
+                    digestive: "",
+                    musculoskeletal: "",
+                    neurological: "",
+                    urogenital: "",
+                    skin: "",
+                    eyes: "",
+                    ears: "",
+                    nose: "",
+                    throat: "",
+                    lymphNodes: "",
+                    doctorNotes: "",
+                },
+
+                diagnosis: {
+                    provisionalDiagnosis: "",
+                    differentialDiagnosis: "",
+                    confirmedDiagnosis: "",
+                    raiseLab: false,
+                },
+
+                labRequisition: {
+                    tests: [],
+                    sampleType: [],
+                    instructions: "",
+                    labOrderId: "",
+                },
+
+                treatment: {
+                    medicines: "",
+                    procedures: "",
+                    vaccinations: "",
+                    deworming: "",
+                    fluids: "",
+                    followUp: "",
+                    treatmentNotes: "",
+                },
+
+                suggestion: {
+                    dietAdvice: "",
+                    activityRestriction: "",
+                    homeCare: "",
+                    preventiveCare: "",
+                    prognosis: "",
+                    followUpDate: "",
+                    finalNotes: "",
+                }
+
+            });
+
+        }
+
+    } catch (error) {
+
+        console.log(error);
+
+        alert(
+            error.response?.data?.message ||
+            "Something went wrong"
+        );
+
+    }
+
+};
+
+if (loading) {
+
+    return (
+        <div className="flex justify-center items-center h-screen">
+            Loading...
+        </div>
+    );
+
+}
+
+const filteredPets = pendingPets.filter((pet) =>
+  (pet.petId || "").toLowerCase().includes(search.toLowerCase()) ||
+  (pet.ownerId || "").toLowerCase().includes(search.toLowerCase()) ||
+  (pet.phone || "").includes(search)
+);
 
   return (
 
@@ -79,7 +295,7 @@ export default function PendingPets() {
 
   {filteredPets.map((pet) => (
     <div
-      key={pet.id}
+      key={pet._id}
       className="bg-slate-50 border rounded-2xl p-4"
     >
       <div className="flex justify-between items-start mb-3">
@@ -89,7 +305,7 @@ export default function PendingPets() {
           </h3>
 
           <p className="text-sm text-slate-500">
-            {pet.id}
+            {pet.petId}
           </p>
         </div>
 
@@ -103,7 +319,7 @@ export default function PendingPets() {
           <span className="font-semibold">
             Owner:
           </span>{" "}
-          {pet.owner}
+          {pet.ownerId}
         </p>
 
         <p>
@@ -116,8 +332,38 @@ export default function PendingPets() {
 
       <button
         onClick={() => {
-          setSelectedPet(pet);
-          setShowModal(true);
+         setSelectedPet(pet);
+
+setFormData((prev) => ({
+    ...prev,
+    ...pet,
+    history: {
+        ...prev.history,
+        ...(pet.history || {})
+    },
+    clinicalObservation: {
+        ...prev.clinicalObservation,
+        ...(pet.clinicalObservation || {})
+    },
+    diagnosis: {
+        ...prev.diagnosis,
+        ...(pet.diagnosis || {})
+    },
+    labRequisition: {
+        ...prev.labRequisition,
+        ...(pet.labRequisition || {})
+    },
+    treatment: {
+        ...prev.treatment,
+        ...(pet.treatment || {})
+    },
+    suggestion: {
+        ...prev.suggestion,
+        ...(pet.suggestion || {})
+    }
+}));
+
+setShowModal(true);
         }}
         className="w-full mt-4 bg-orange-500 text-white py-3 rounded-xl"
       >
@@ -169,11 +415,11 @@ export default function PendingPets() {
 
               {filteredPets.map((pet) => (
                 <tr
-                  key={pet.id}
+                  key={pet._id}
                   className="border-b hover:bg-slate-50"
                 >
                   <td className="py-4 pr-4">
-                    {pet.id}
+                    {pet.petId}
                   </td>
 
                   <td className="pr-4">
@@ -181,7 +427,7 @@ export default function PendingPets() {
                   </td>
 
                   <td className="pr-4">
-                    {pet.owner}
+                   {pet.ownerId}
                   </td>
 
                   <td className="pr-4">
@@ -197,9 +443,39 @@ export default function PendingPets() {
                   <td>
                     <button
                       onClick={() => {
-                        setSelectedPet(pet);
-                        setShowModal(true);
-                      }}
+    setSelectedPet(pet);
+
+setFormData((prev) => ({
+    ...prev,
+    ...pet,
+    history: {
+        ...prev.history,
+        ...(pet.history || {})
+    },
+    clinicalObservation: {
+        ...prev.clinicalObservation,
+        ...(pet.clinicalObservation || {})
+    },
+    diagnosis: {
+        ...prev.diagnosis,
+        ...(pet.diagnosis || {})
+    },
+    labRequisition: {
+        ...prev.labRequisition,
+        ...(pet.labRequisition || {})
+    },
+    treatment: {
+        ...prev.treatment,
+        ...(pet.treatment || {})
+    },
+    suggestion: {
+        ...prev.suggestion,
+        ...(pet.suggestion || {})
+    }
+}));
+
+setShowModal(true);
+}}
                       className="rounded-xl bg-orange-500 px-4 py-2 text-sm text-white hover:bg-orange-600 sm:px-5 sm:text-base"
                     >
                       Edit
@@ -232,7 +508,7 @@ export default function PendingPets() {
                 </h1>
 
                 <p className="text-slate-500">
-                  {selectedPet?.owner}
+                  {selectedPet?.ownerId}
                 </p>
               </div>
 
@@ -298,7 +574,12 @@ export default function PendingPets() {
                         🍖 Diet Type
                       </label>
 
-                      <select
+                      <select 
+
+                      value={formData.history.dietType}
+  onChange={(e) =>
+    handleChange("history", "dietType", e.target.value)
+  }
   className="
     w-full
     h-12 sm:h-14
@@ -328,11 +609,15 @@ export default function PendingPets() {
                         🍽️ Diet Frequency (Meals Per Day)
                       </label>
 
-                      <input
-                        type="number"
-                        placeholder="Enter Meals Per Day"
-                        className="w-full border border-slate-300 p-3 rounded-2xl"
-                      />
+                     <input
+  type="number"
+  value={formData.history.dietFrequency}
+  onChange={(e) =>
+    handleChange("history", "dietFrequency", e.target.value)
+  }
+  placeholder="Enter Meals Per Day"
+  className="w-full border border-slate-300 p-3 rounded-2xl"
+/>
                     </div>
 
           <div>
@@ -341,7 +626,11 @@ export default function PendingPets() {
   </label>
 
   <div className="relative">
-    <select
+   <select
+  value={formData.history.waterIntake}
+  onChange={(e) =>
+    handleChange("history", "waterIntake", e.target.value)
+  }
       className="
         w-full
         h-12 sm:h-14
@@ -377,6 +666,10 @@ export default function PendingPets() {
 
                       <textarea
                         rows="3"
+                        value={formData.history.behaviour}
+  onChange={(e) =>
+    handleChange("history", "behaviour", e.target.value)
+  }
                         placeholder="Behavioral Habits"
                         className="w-full border border-slate-300 p-3 rounded-2xl"
                       />
@@ -387,7 +680,13 @@ export default function PendingPets() {
                         🏃 Exercise Level
                       </label>
 
-                      <select className="w-full border border-slate-300 p-3 rounded-2xl">
+                     <select
+  value={formData.history.exercise}
+  onChange={(e) =>
+    handleChange("history", "exercise", e.target.value)
+  }
+  className="w-full border border-slate-300 p-3 rounded-2xl"
+>
                         <option>Select Exercise Level</option>
                         <option>Indoor</option>
                         <option>Outdoor</option>
@@ -404,6 +703,10 @@ export default function PendingPets() {
 
                       <textarea
                         rows="3"
+                        value={formData.history.currentMedication}
+  onChange={(e) =>
+    handleChange("history", "currentMedication", e.target.value)
+  }
                         placeholder="Current Medications"
                         className="w-full border border-slate-300 p-3 rounded-2xl"
                       />
@@ -414,7 +717,13 @@ export default function PendingPets() {
                         💉 Vaccination Status
                       </label>
 
-                      <select className="w-full border border-slate-300 p-3 rounded-2xl">
+                     <select
+  value={formData.history.vaccinationStatus}
+  onChange={(e) =>
+    handleChange("history", "vaccinationStatus", e.target.value)
+  }
+  className="w-full border border-slate-300 p-3 rounded-2xl"
+>
                         <option>Verified</option>
                         <option>Pending</option>
                       </select>
@@ -425,11 +734,15 @@ export default function PendingPets() {
                         ⚠️ Known Allergies
                       </label>
 
-                      <textarea
-                        rows="3"
-                        placeholder="Known Allergies"
-                        className="w-full border border-slate-300 p-3 rounded-2xl"
-                      />
+                   <textarea
+  rows="3"
+  value={formData.history.allergies}
+  onChange={(e) =>
+    handleChange("history", "allergies", e.target.value)
+  }
+  placeholder="Known Allergies"
+  className="w-full border border-slate-300 p-3 rounded-2xl"
+/>
                     </div>
 
                   </div>
@@ -450,11 +763,19 @@ export default function PendingPets() {
                         ❤️ Cardiovascular System
                       </label>
 
-                      <textarea
-                        rows="4"
-                        placeholder="Enter cardiovascular observations..."
-                        className="w-full border border-slate-300 p-3 rounded-2xl"
-                      />
+                    <textarea
+  rows="4"
+  value={formData.clinicalObservation.cardiovascular || ""}
+  onChange={(e) =>
+    handleChange(
+      "clinicalObservation",
+      "cardiovascular",
+      e.target.value
+    )
+  }
+  placeholder="Enter cardiovascular observations..."
+  className="w-full border border-slate-300 p-3 rounded-2xl"
+/>
                     </div>
 
                     <div>
@@ -462,11 +783,19 @@ export default function PendingPets() {
                         🫁 Respiratory System
                       </label>
 
-                      <textarea
-                        rows="4"
-                        placeholder="Enter respiratory observations..."
-                        className="w-full border border-slate-300 p-3 rounded-2xl"
-                      />
+                     <textarea
+  rows="4"
+  value={formData.clinicalObservation.respiratory}
+  onChange={(e) =>
+    handleChange(
+      "clinicalObservation",
+      "respiratory",
+      e.target.value
+    )
+  }
+  placeholder="Enter respiratory observations..."
+  className="w-full border border-slate-300 p-3 rounded-2xl"
+/>
                     </div>
 
                     <div>
@@ -474,11 +803,19 @@ export default function PendingPets() {
                         🍖 Digestive System
                       </label>
 
-                      <textarea
-                        rows="4"
-                        placeholder="Enter digestive observations..."
-                        className="w-full border border-slate-300 p-3 rounded-2xl"
-                      />
+                     <textarea
+  rows="4"
+  value={formData.clinicalObservation.digestive}
+  onChange={(e) =>
+    handleChange(
+      "clinicalObservation",
+      "digestive",
+      e.target.value
+    )
+  }
+  placeholder="Enter digestive observations..."
+  className="w-full border border-slate-300 p-3 rounded-2xl"
+/>
                     </div>
 
                     <div>
@@ -486,11 +823,19 @@ export default function PendingPets() {
                         🦴 Musculoskeletal System
                       </label>
 
-                      <textarea
-                        rows="4"
-                        placeholder="Enter musculoskeletal observations..."
-                        className="w-full border border-slate-300 p-3 rounded-2xl"
-                      />
+                   <textarea
+  rows="4"
+  value={formData.clinicalObservation.musculoskeletal}
+  onChange={(e) =>
+    handleChange(
+      "clinicalObservation",
+      "musculoskeletal",
+      e.target.value
+    )
+  }
+  placeholder="Enter musculoskeletal observations..."
+  className="w-full border border-slate-300 p-3 rounded-2xl"
+/>
                     </div>
 
                     <div>
@@ -499,10 +844,18 @@ export default function PendingPets() {
                       </label>
 
                       <textarea
-                        rows="4"
-                        placeholder="Enter neurological observations..."
-                        className="w-full border border-slate-300 p-3 rounded-2xl"
-                      />
+  rows="4"
+  value={formData.clinicalObservation.neurological}
+  onChange={(e) =>
+    handleChange(
+      "clinicalObservation",
+      "neurological",
+      e.target.value
+    )
+  }
+  placeholder="Enter neurological observations..."
+  className="w-full border border-slate-300 p-3 rounded-2xl"
+/>
                     </div>
 
                     <div>
@@ -511,10 +864,18 @@ export default function PendingPets() {
                       </label>
 
                       <textarea
-                        rows="4"
-                        placeholder="Enter urogenital observations..."
-                        className="w-full border border-slate-300 p-3 rounded-2xl"
-                      />
+  rows="4"
+  value={formData.clinicalObservation.urogenital}
+  onChange={(e) =>
+    handleChange(
+      "clinicalObservation",
+      "urogenital",
+      e.target.value
+    )
+  }
+  placeholder="Enter urogenital observations..."
+  className="w-full border border-slate-300 p-3 rounded-2xl"
+/>
                     </div>
 
                     <div>
@@ -523,10 +884,18 @@ export default function PendingPets() {
                       </label>
 
                       <textarea
-                        rows="4"
-                        placeholder="Enter skin and coat observations..."
-                        className="w-full border border-slate-300 p-3 rounded-2xl"
-                      />
+  rows="4"
+  value={formData.clinicalObservation.skin}
+  onChange={(e) =>
+    handleChange(
+      "clinicalObservation",
+      "skin",
+      e.target.value
+    )
+  }
+  placeholder="Enter skin observations..."
+  className="w-full border border-slate-300 p-3 rounded-2xl"
+/>
                     </div>
 
                     <div>
@@ -534,11 +903,19 @@ export default function PendingPets() {
                         👀 Eyes
                       </label>
 
-                      <textarea
-                        rows="4"
-                        placeholder="Enter eye observations..."
-                        className="w-full border border-slate-300 p-3 rounded-2xl"
-                      />
+                     <textarea
+  rows="4"
+  value={formData.clinicalObservation.eyes}
+  onChange={(e) =>
+    handleChange(
+      "clinicalObservation",
+      "eyes",
+      e.target.value
+    )
+  }
+  placeholder="Enter eye observations..."
+  className="w-full border border-slate-300 p-3 rounded-2xl"
+/>
                     </div>
 
                     <div>
@@ -546,11 +923,19 @@ export default function PendingPets() {
                         👂 Ears
                       </label>
 
-                      <textarea
-                        rows="4"
-                        placeholder="Enter ear observations..."
-                        className="w-full border border-slate-300 p-3 rounded-2xl"
-                      />
+                  <textarea
+  rows="4"
+  value={formData.clinicalObservation.ears}
+  onChange={(e) =>
+    handleChange(
+      "clinicalObservation",
+      "ears",
+      e.target.value
+    )
+  }
+  placeholder="Enter ear observations..."
+  className="w-full border border-slate-300 p-3 rounded-2xl"
+/>
                     </div>
 
                     <div>
@@ -558,11 +943,19 @@ export default function PendingPets() {
                         👃 Nose
                       </label>
 
-                      <textarea
-                        rows="4"
-                        placeholder="Enter nose observations..."
-                        className="w-full border border-slate-300 p-3 rounded-2xl"
-                      />
+                     <textarea
+  rows="4"
+  value={formData.clinicalObservation.nose}
+  onChange={(e) =>
+    handleChange(
+      "clinicalObservation",
+      "nose",
+      e.target.value
+    )
+  }
+  placeholder="Enter nose observations..."
+  className="w-full border border-slate-300 p-3 rounded-2xl"
+/>
                     </div>
 
                     <div>
@@ -571,10 +964,18 @@ export default function PendingPets() {
                       </label>
 
                       <textarea
-                        rows="4"
-                        placeholder="Enter throat observations..."
-                        className="w-full border border-slate-300 p-3 rounded-2xl"
-                      />
+  rows="4"
+  value={formData.clinicalObservation.throat}
+  onChange={(e) =>
+    handleChange(
+      "clinicalObservation",
+      "throat",
+      e.target.value
+    )
+  }
+  placeholder="Enter throat observations..."
+  className="w-full border border-slate-300 p-3 rounded-2xl"
+/>
                     </div>
 
                     <div>
@@ -583,10 +984,18 @@ export default function PendingPets() {
                       </label>
 
                       <textarea
-                        rows="4"
-                        placeholder="Enter lymph node observations..."
-                        className="w-full border border-slate-300 p-3 rounded-2xl"
-                      />
+  rows="4"
+  value={formData.clinicalObservation.lymphNodes}
+  onChange={(e) =>
+    handleChange(
+      "clinicalObservation",
+      "lymphNodes",
+      e.target.value
+    )
+  }
+  placeholder="Enter lymph node observations..."
+  className="w-full border border-slate-300 p-3 rounded-2xl"
+/>
                     </div>
 
                   </div>
@@ -596,11 +1005,19 @@ export default function PendingPets() {
                       📝 Doctor's Detailed Notes
                     </label>
 
-                    <textarea
-                      rows="6"
-                      placeholder="Enter detailed clinical notes..."
-                      className="w-full border border-slate-300 p-3 rounded-2xl"
-                    />
+                  <textarea
+  rows="5"
+  value={formData.clinicalObservation.doctorNotes}
+  onChange={(e) =>
+    handleChange(
+      "clinicalObservation",
+      "doctorNotes",
+      e.target.value
+    )
+  }
+  placeholder="Enter doctor's notes..."
+  className="w-full border border-slate-300 p-3 rounded-2xl"
+/>
                   </div>
 
                 </div>
@@ -620,11 +1037,19 @@ export default function PendingPets() {
                         🔍 Provisional Diagnosis
                       </label>
 
-                      <textarea
-                        rows="4"
-                        placeholder="Enter provisional diagnosis (ICD / VeNom Code if available)..."
-                        className="w-full border border-slate-300 p-3 rounded-2xl"
-                      />
+                    <textarea
+  rows="4"
+  value={formData.diagnosis.provisionalDiagnosis}
+  onChange={(e) =>
+    handleChange(
+      "diagnosis",
+      "provisionalDiagnosis",
+      e.target.value
+    )
+  }
+  placeholder="Enter provisional diagnosis (ICD / VeNom Code if available)..."
+  className="w-full border border-slate-300 p-3 rounded-2xl"
+/>
                     </div>
 
                     {/* Differential Diagnosis */}
@@ -633,11 +1058,19 @@ export default function PendingPets() {
                         📋 Differential Diagnosis
                       </label>
 
-                      <textarea
-                        rows="4"
-                        placeholder="Enter differential diagnosis..."
-                        className="w-full border border-slate-300 p-3 rounded-2xl"
-                      />
+                   <textarea
+  rows="4"
+  value={formData.diagnosis.differentialDiagnosis}
+  onChange={(e) =>
+    handleChange(
+      "diagnosis",
+      "differentialDiagnosis",
+      e.target.value
+    )
+  }
+  placeholder="Enter differential diagnosis..."
+  className="w-full border border-slate-300 p-3 rounded-2xl"
+/>
                     </div>
 
                     {/* Confirmed Diagnosis */}
@@ -646,11 +1079,19 @@ export default function PendingPets() {
                         ✅ Confirmed Diagnosis
                       </label>
 
-                      <textarea
-                        rows="4"
-                        placeholder="Enter confirmed diagnosis after reports..."
-                        className="w-full border border-slate-300 p-3 rounded-2xl"
-                      />
+                  <textarea
+  rows="4"
+  value={formData.diagnosis.confirmedDiagnosis}
+  onChange={(e) =>
+    handleChange(
+      "diagnosis",
+      "confirmedDiagnosis",
+      e.target.value
+    )
+  }
+  placeholder="Enter confirmed diagnosis after reports..."
+  className="w-full border border-slate-300 p-3 rounded-2xl"
+/>
                     </div>
 
                     {/* Lab Requisition Toggle */}
@@ -658,10 +1099,18 @@ export default function PendingPets() {
 
                       <label className="flex items-center gap-3 font-semibold">
 
-                        <input
-                          type="checkbox"
-                          className="w-5 h-5"
-                        />
+                       <input
+  type="checkbox"
+  checked={formData.diagnosis.raiseLab}
+  onChange={(e) =>
+    handleChange(
+      "diagnosis",
+      "raiseLab",
+      e.target.checked
+    )
+  }
+  className="w-5 h-5"
+/>
 
                         🧪 Raise Lab Requisition
 
@@ -728,10 +1177,34 @@ export default function PendingPets() {
                             key={test}
                             className="flex cursor-pointer items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3 transition hover:border-orange-500 hover:bg-orange-50 sm:p-4"
                           >
-                            <input
-                              type="checkbox"
-                              className="w-4 h-4 accent-orange-500"
-                            />
+                           <input
+type="checkbox"
+checked={formData.labRequisition.tests.includes(test)}
+onChange={(e)=>{
+
+if(e.target.checked){
+
+handleChange(
+"labRequisition",
+"tests",
+[...formData.labRequisition.tests,test]
+);
+
+}else{
+
+handleChange(
+"labRequisition",
+"tests",
+formData.labRequisition.tests.filter(
+(t)=>t!==test
+)
+);
+
+}
+
+}}
+className="w-4 h-4 accent-orange-500"
+/>
 
                             <span className="font-medium">
                               {test}
@@ -764,9 +1237,36 @@ export default function PendingPets() {
                             className="flex cursor-pointer items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3 transition hover:border-orange-500 hover:bg-orange-50 sm:p-4"
                           >
                             <input
-                              type="checkbox"
-                              className="w-4 h-4 accent-orange-500"
-                            />
+type="checkbox"
+checked={formData.labRequisition.sampleType.includes(sample)}
+onChange={(e)=>{
+
+if(e.target.checked){
+
+handleChange(
+"labRequisition",
+"sampleType",
+[
+...formData.labRequisition.sampleType,
+sample
+]
+);
+
+}else{
+
+handleChange(
+"labRequisition",
+"sampleType",
+formData.labRequisition.sampleType.filter(
+(s)=>s!==sample
+)
+);
+
+}
+
+}}
+className="w-4 h-4 accent-orange-500"
+/>
 
                             <span className="font-medium">
                               {sample}
@@ -787,11 +1287,18 @@ export default function PendingPets() {
                       📝 Special Instructions For Lab
                     </label>
 
-                    <textarea
-                      rows="5"
-                      placeholder="Enter any special instructions for laboratory..."
-                      className="w-full border border-slate-300 rounded-3xl p-4 focus:outline-none focus:border-orange-500"
-                    />
+              <textarea
+rows="5"
+value={formData.labRequisition.instructions}
+onChange={(e)=>
+handleChange(
+"labRequisition",
+"instructions",
+e.target.value
+)}
+placeholder="Enter any special instructions for laboratory..."
+className="w-full border border-slate-300 rounded-3xl p-4 focus:outline-none focus:border-orange-500"
+/>
 
                   </div>
 
@@ -803,7 +1310,7 @@ export default function PendingPets() {
                     </label>
 
                     <div className="bg-slate-100 border border-slate-200 rounded-3xl p-4 text-orange-600 font-bold text-lg">
-                      LAB-2026-001
+                     {formData.labRequisition.labOrderId || "LAB-2026-001"}
                     </div>
 
                     <p className="text-sm text-slate-500 mt-2">
@@ -844,11 +1351,18 @@ export default function PendingPets() {
                         💊 Medications Prescribed
                       </label>
 
-                      <textarea
-                        rows="5"
-                        placeholder="Enter medications with dosage..."
-                        className="w-full border border-slate-300 p-3 rounded-2xl"
-                      />
+                     <textarea
+rows="5"
+value={formData.treatment.medicines}
+onChange={(e)=>
+handleChange(
+"treatment",
+"medicines",
+e.target.value
+)}
+placeholder="Enter medications with dosage..."
+className="w-full border border-slate-300 p-3 rounded-2xl"
+/>
                     </div>
 
                     {/* Procedures */}
@@ -857,11 +1371,18 @@ export default function PendingPets() {
                         🩺 Procedures Performed
                       </label>
 
-                      <textarea
-                        rows="5"
-                        placeholder="Enter procedures performed..."
-                        className="w-full border border-slate-300 p-3 rounded-2xl"
-                      />
+                     <textarea
+rows="5"
+value={formData.treatment.procedures}
+onChange={(e)=>
+handleChange(
+"treatment",
+"procedures",
+e.target.value
+)}
+placeholder="Enter procedures performed..."
+className="w-full border border-slate-300 p-3 rounded-2xl"
+/>
                     </div>
 
                     {/* Vaccination */}
@@ -870,11 +1391,18 @@ export default function PendingPets() {
                         💉 Vaccination Administered
                       </label>
 
-                      <input
-                        type="text"
-                        placeholder="Vaccination Name"
-                        className="w-full border border-slate-300 p-3 rounded-2xl"
-                      />
+                   <input
+type="text"
+value={formData.treatment.vaccinations}
+onChange={(e)=>
+handleChange(
+"treatment",
+"vaccinations",
+e.target.value
+)}
+placeholder="Vaccination Name"
+className="w-full border border-slate-300 p-3 rounded-2xl"
+/>
                     </div>
 
                     {/* Deworming */}
@@ -883,11 +1411,20 @@ export default function PendingPets() {
                         🪱 Deworming Administered
                       </label>
 
-                      <input
-                        type="text"
-                        placeholder="Deworming Details"
-                        className="w-full border border-slate-300 p-3 rounded-2xl"
-                      />
+                  <input
+type="text"
+value={formData.treatment.deworming}
+
+onChange={(e)=>
+
+handleChange(
+"treatment",
+"deworming",
+e.target.value
+)}
+placeholder="Vaccination Name"
+className="w-full border border-slate-300 p-3 rounded-2xl"
+/>
                     </div>
 
                     {/* IV Fluids */}
@@ -896,11 +1433,20 @@ export default function PendingPets() {
                         💧 IV Fluids Given
                       </label>
 
-                      <input
-                        type="text"
-                        placeholder="IV Fluid Details"
-                        className="w-full border border-slate-300 p-3 rounded-2xl"
-                      />
+                     <input
+type="text"
+value={formData.treatment.fluids}
+
+onChange={(e)=>
+
+handleChange(
+"treatment",
+"fluids",
+e.target.value
+)}
+placeholder="Deworming Details"
+className="w-full border border-slate-300 p-3 rounded-2xl"
+/>
                     </div>
 
                     {/* Follow-up */}
@@ -909,10 +1455,20 @@ export default function PendingPets() {
                         📅 Follow-Up Required
                       </label>
 
-                      <select className="w-full border border-slate-300 p-3 rounded-2xl">
-                        <option>Yes</option>
-                        <option>No</option>
-                      </select>
+                     <select
+value={formData.treatment.followUp}
+onChange={(e)=>
+handleChange(
+"treatment",
+"followUp",
+e.target.value
+)}
+className="w-full border border-slate-300 p-3 rounded-2xl"
+>
+<option value="">Select</option>
+<option value="Yes">Yes</option>
+<option value="No">No</option>
+</select>
                     </div>
 
                   </div>
@@ -923,11 +1479,27 @@ export default function PendingPets() {
                       📝 Treatment Notes
                     </label>
 
-                    <textarea
-                      rows="6"
-                      placeholder="Additional treatment notes..."
-                      className="w-full border border-slate-300 p-3 rounded-2xl"
-                    />
+                   <textarea
+
+rows="6"
+
+value={formData.treatment.treatmentNotes}
+
+onChange={(e)=>
+
+handleChange(
+"treatment",
+"treatmentNotes",
+e.target.value
+)
+
+}
+
+placeholder="Additional treatment notes..."
+
+className="w-full border border-slate-300 p-3 rounded-2xl"
+
+/>
 
                   </div>
 
@@ -948,11 +1520,19 @@ export default function PendingPets() {
                         🍖 Dietary Advice
                       </label>
 
-                      <textarea
-                        rows="4"
-                        placeholder="Enter dietary recommendations..."
-                        className="w-full border border-slate-300 p-3 rounded-2xl"
-                      />
+                     <textarea
+  rows="4"
+  value={formData.suggestion.dietAdvice}
+  onChange={(e) =>
+    handleChange(
+      "suggestion",
+      "dietAdvice",
+      e.target.value
+    )
+  }
+  placeholder="Enter dietary recommendations..."
+  className="w-full border border-slate-300 p-3 rounded-2xl"
+/>
                     </div>
 
                     {/* Activity Restriction */}
@@ -961,11 +1541,19 @@ export default function PendingPets() {
                         🏃 Activity Restriction
                       </label>
 
-                      <textarea
-                        rows="4"
-                        placeholder="Activity restrictions..."
-                        className="w-full border border-slate-300 p-3 rounded-2xl"
-                      />
+                    <textarea
+  rows="4"
+  value={formData.suggestion.activityRestriction}
+  onChange={(e) =>
+    handleChange(
+      "suggestion",
+      "activityRestriction",
+      e.target.value
+    )
+  }
+  placeholder="Activity restrictions..."
+  className="w-full border border-slate-300 p-3 rounded-2xl"
+/>
                     </div>
 
                     {/* Home Care */}
@@ -974,11 +1562,19 @@ export default function PendingPets() {
                         🏠 Home Care Instructions
                       </label>
 
-                      <textarea
-                        rows="4"
-                        placeholder="Enter home care instructions..."
-                        className="w-full border border-slate-300 p-3 rounded-2xl"
-                      />
+                   <textarea
+  rows="4"
+  value={formData.suggestion.homeCare}
+  onChange={(e) =>
+    handleChange(
+      "suggestion",
+      "homeCare",
+      e.target.value
+    )
+  }
+  placeholder="Enter home care instructions..."
+  className="w-full border border-slate-300 p-3 rounded-2xl"
+/>
                     </div>
 
                     {/* Preventive Care */}
@@ -987,11 +1583,19 @@ export default function PendingPets() {
                         🛡️ Preventive Care Recommendations
                       </label>
 
-                      <textarea
-                        rows="4"
-                        placeholder="Preventive care recommendations..."
-                        className="w-full border border-slate-300 p-3 rounded-2xl"
-                      />
+                  <textarea
+  rows="4"
+  value={formData.suggestion.preventiveCare}
+  onChange={(e) =>
+    handleChange(
+      "suggestion",
+      "preventiveCare",
+      e.target.value
+    )
+  }
+  placeholder="Preventive care recommendations..."
+  className="w-full border border-slate-300 p-3 rounded-2xl"
+/>
                     </div>
 
                     {/* Prognosis */}
@@ -999,13 +1603,23 @@ export default function PendingPets() {
                       <label className="block font-semibold mb-2">
                         📈 Prognosis
                       </label>
-
-                      <select className="w-full border border-slate-300 p-3 rounded-2xl">
-                        <option>Good</option>
-                        <option>Fair</option>
-                        <option>Guarded</option>
-                        <option>Poor</option>
-                      </select>
+<select
+  value={formData.suggestion.prognosis}
+  onChange={(e) =>
+    handleChange(
+      "suggestion",
+      "prognosis",
+      e.target.value
+    )
+  }
+  className="w-full border border-slate-300 p-3 rounded-2xl"
+>
+  <option value="">Select Prognosis</option>
+  <option value="Good">Good</option>
+  <option value="Fair">Fair</option>
+  <option value="Guarded">Guarded</option>
+  <option value="Poor">Poor</option>
+</select>
                     </div>
 
                     {/* Follow-up Date */}
@@ -1014,10 +1628,18 @@ export default function PendingPets() {
                         📅 Follow-Up Date
                       </label>
 
-                      <input
-                        type="date"
-                        className="w-full border border-slate-300 p-3 rounded-2xl"
-                      />
+                     <input
+  type="date"
+  value={formData.suggestion.followUpDate}
+  onChange={(e) =>
+    handleChange(
+      "suggestion",
+      "followUpDate",
+      e.target.value
+    )
+  }
+  className="w-full border border-slate-300 p-3 rounded-2xl"
+/>
                     </div>
 
                   </div>
@@ -1028,11 +1650,19 @@ export default function PendingPets() {
                       📌 Final Doctor Notes
                     </label>
 
-                    <textarea
-                      rows="6"
-                      placeholder="Final recommendations and notes..."
-                      className="w-full border border-slate-300 p-3 rounded-2xl"
-                    />
+             <textarea
+  rows="6"
+  value={formData.suggestion.finalNotes}
+  onChange={(e) =>
+    handleChange(
+      "suggestion",
+      "finalNotes",
+      e.target.value
+    )
+  }
+  placeholder="Final recommendations and notes..."
+  className="w-full border border-slate-300 p-3 rounded-2xl"
+/>
 
                   </div>
 
@@ -1072,11 +1702,12 @@ export default function PendingPets() {
                   Next
                 </button>
               ) : (
-                <button
-                  className="w-full rounded-xl bg-green-500 px-6 py-3 text-white sm:w-auto"
-                >
-                  Complete Case
-                </button>
+               <button
+    onClick={completeCase}
+    className="w-full rounded-xl bg-green-500 px-6 py-3 text-white sm:w-auto"
+>
+    Complete Case
+</button>
               )}
 
             </div>

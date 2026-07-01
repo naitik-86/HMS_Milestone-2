@@ -1,35 +1,36 @@
 const mongoose = require("mongoose");
 
 const doctorSchema = new mongoose.Schema(
+
 {
-    appointmentId: {
-        type: mongoose.Schema.Types.ObjectId,
-    
-    
-        ref: "Appointment"
-    },
 
-    petId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Pet"
-    },
+    appointmentId: String,
 
-    ownerId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Owner"
-    },
+    petId: String,
+    petName: String,
+    petSpecies: String,
+    petBreed: String,
+    petAge: Number,
+    petGender: String,
+    petWeight: Number,
 
-    doctorId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "DoctorDetails"
-    },
+    ownerId: String,
+    ownerName: String,
+    phone: String,
+    email: String,
+    address: String,
 
-    clinicId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Clinic"
-    },
+    doctorId: String,
+    doctorName: String,
 
+    clinicId: String,
+    clinicName: String,
+
+    // ===========================
+    // History
+    // ===========================
     history: {
+
         dietType: String,
         dietFrequency: String,
         waterIntake: String,
@@ -38,9 +39,14 @@ const doctorSchema = new mongoose.Schema(
         currentMedication: String,
         vaccinationStatus: String,
         allergies: String
+
     },
 
+    // ===========================
+    // Clinical Observation
+    // ===========================
     clinicalObservation: {
+
         cardiovascular: String,
         respiratory: String,
         digestive: String,
@@ -54,84 +60,134 @@ const doctorSchema = new mongoose.Schema(
         throat: String,
         lymphNodes: String,
         doctorNotes: String
+
     },
 
+    // ===========================
+    // Diagnosis
+    // ===========================
     diagnosis: {
+
         provisionalDiagnosis: String,
         differentialDiagnosis: String,
         confirmedDiagnosis: String,
-        icdCode: String,
-        venomCode: String,
+
         raiseLab: {
             type: Boolean,
             default: false
         }
+
     },
 
+    // ===========================
+    // Lab Requisition
+    // ===========================
     labRequisition: {
+
         labOrderId: String,
+
         tests: [String],
-        sampleType: String,
+
+        sampleType: [String],
+
         instructions: String,
+
         status: {
+
             type: String,
+
             enum: [
                 "PENDING",
                 "IN_PROGRESS",
                 "COMPLETED"
             ],
+
             default: "PENDING"
+
         }
+
     },
 
+    // ===========================
+    // Treatment
+    // ===========================
     treatment: {
-        medicines: [
-            {
-                medicineName: String,
-                dosage: String,
-                frequency: String,
-                duration: String
-            }
-        ],
 
-        procedures: [String],
+        medicines: String,
 
-        vaccinations: [String],
+        procedures: String,
 
-        deworming: [String],
+        vaccinations: String,
 
-        fluids: [String]
+        deworming: String,
+
+        fluids: String,
+
+        followUp: String,
+
+        treatmentNotes: String
+
     },
 
+    // ===========================
+    // Suggestions
+    // ===========================
     suggestion: {
+
         dietAdvice: String,
+
         activityRestriction: String,
+
         homeCare: String,
+
         preventiveCare: String,
+
         prognosis: String,
-        followUpDate: Date,
-        nextVaccination: Date
+
+        followUpDate: String,
+
+        finalNotes: String
+
     },
 
+    // ===========================
+    // Prescription
+    // ===========================
     prescription: {
+
         prescriptionNo: String,
+
         pdfUrl: String,
+
         generatedAt: Date
+
     },
 
+    // ===========================
+    // Status
+    // ===========================
     status: {
+
         type: String,
+
         enum: [
             "PENDING",
             "IN_PROGRESS",
             "COMPLETED"
         ],
+
         default: "PENDING"
+
     }
 
 },
-{
-    timestamps: true
-});
 
-module.exports = mongoose.model("Doctor", doctorSchema);
+{
+
+    timestamps: true
+
+}
+
+);
+
+module.exports = mongoose.model("DoctorModule", doctorSchema);
