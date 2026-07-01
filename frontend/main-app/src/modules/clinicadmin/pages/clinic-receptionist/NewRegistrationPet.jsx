@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { showToast } from "../../../../shared/components/toast";
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from "react-router-dom";
 import { registerOwnerAndPet } from "../../api/receptionApi";
-
 
 export default function NewRegistrationPet() {
   const [showModal, setShowModal] = useState(true);
@@ -63,7 +62,6 @@ export default function NewRegistrationPet() {
     appointmentTime: "",
   });
 
-
   const handleChange = (e) => {
     const { name, value, files } = e.target;
 
@@ -73,12 +71,10 @@ export default function NewRegistrationPet() {
     }));
   };
 
-
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     try {
-
       const response = await registerOwnerAndPet(formData);
 
       console.log("Registration Success:", response);
@@ -89,8 +85,7 @@ export default function NewRegistrationPet() {
         description: "Registration  have been done successfully.",
       });
 
-      navigate("/clinic/reception")
-
+      navigate("/clinic/reception");
     } catch (error) {
       console.error("Registration Failed:", error);
 
@@ -106,12 +101,9 @@ export default function NewRegistrationPet() {
     <>
       {showModal && (
         <div className="min-h-[calc(100vh-4rem)] md:min-h-screen bg-slate-100 p-3 sm:p-4">
-
           <div className="bg-gradient-to-br from-white to-slate-50 w-full h-[calc(100vh-5.5rem)] sm:h-[calc(100vh-6rem)] md:h-[calc(100vh-2rem)] rounded-2xl sm:rounded-[32px] shadow-[0_20px_60px_rgba(0,0,0,0.15)] flex flex-col overflow-hidden">
-
             {/* Header */}
             <div className="flex justify-between items-start sm:items-center gap-4 px-4 sm:px-6 lg:px-10 py-4 sm:py-6 border-b bg-white">
-
               <div>
                 <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-800">
                   New Pet Registration
@@ -121,85 +113,67 @@ export default function NewRegistrationPet() {
                   Veterinary Registration Management
                 </p>
               </div>
-
-
-
             </div>
 
             {/* Progress Bar */}
             <div className="px-4 sm:px-6 lg:px-12 py-4 sm:py-6 lg:py-8 bg-white border-b overflow-x-auto">
-
               <div className="flex items-center min-w-[680px]">
-
                 {[
                   "Owner Verification",
                   "Pet Registration",
                   "Pet History",
                   "Reason For Visit",
                 ].map((item, index) => (
-
-                  <div
-                    key={index}
-                    className="flex items-center flex-1"
-                  >
-
+                  <div key={index} className="flex items-center flex-1">
                     <div className="flex flex-col items-center">
-
                       <div
                         className={`
               w-10 h-10 sm:w-14 sm:h-14 rounded-full
               flex items-center justify-center
               font-bold text-lg text-white
               transition-all duration-300
-              ${step >= index + 1
-                            ? "bg-orange-500 shadow-lg shadow-orange-300"
-                            : "bg-slate-300"
-                          }
+              ${
+                step >= index + 1
+                  ? "bg-orange-500 shadow-lg shadow-orange-300"
+                  : "bg-slate-300"
+              }
             `}
                       >
                         {index + 1}
                       </div>
 
                       <span
-                        className={`mt-3 text-xs sm:text-sm font-semibold ${step >= index + 1
-                          ? "text-orange-500"
-                          : "text-slate-400"
-                          }`}
+                        className={`mt-3 text-xs sm:text-sm font-semibold ${
+                          step >= index + 1
+                            ? "text-orange-500"
+                            : "text-slate-400"
+                        }`}
                       >
                         {item}
                       </span>
-
                     </div>
 
                     {index !== 3 && (
                       <div
-                        className={`h-1 flex-1 mx-4 rounded-full ${step > index + 1
-                          ? "bg-orange-500"
-                          : "bg-slate-200"
-                          }`}
+                        className={`h-1 flex-1 mx-4 rounded-full ${
+                          step > index + 1 ? "bg-orange-500" : "bg-slate-200"
+                        }`}
                       />
                     )}
-
                   </div>
-
                 ))}
-
               </div>
-
             </div>
 
             {/* Form Body */}
             <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
-
               {step === 1 && (
                 <div className="bg-white rounded-2xl sm:rounded-[28px] p-4 sm:p-6 lg:p-8 shadow-lg border border-slate-100">
-
                   <h2 className="text-2xl sm:text-3xl font-bold text-slate-800 mb-6 sm:mb-8">
                     Owner Verification
                   </h2>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
-
                     {/* Mobile Number */}
                     <div>
                       <label className="block mb-2 font-medium">
@@ -216,7 +190,8 @@ export default function NewRegistrationPet() {
                           className="flex-1 border rounded-xl p-3"
                         />
 
-                        <button className="
+                        <button
+                          className="
                             bg-orange-500
                             hover:bg-orange-600
                             text-white
@@ -225,7 +200,8 @@ export default function NewRegistrationPet() {
                             font-semibold
                             shadow-md
                             transition
-                            ">
+                            "
+                        >
                           Send OTP
                         </button>
                       </div>
@@ -290,7 +266,8 @@ export default function NewRegistrationPet() {
                         name="ownerIdType"
                         value={formData.ownerIdType}
                         onChange={handleChange}
-                        className="w-full border rounded-xl p-3">
+                        className="w-full border rounded-xl p-3"
+                      >
                         <option>Aadhaar Card</option>
                         <option>PAN Card</option>
                         <option>Other Govt ID</option>
@@ -301,7 +278,6 @@ export default function NewRegistrationPet() {
                     <div>
                       <label className="block mb-2 font-medium">
                         Email Address :
-
                       </label>
 
                       <input
@@ -332,9 +308,7 @@ export default function NewRegistrationPet() {
 
                     {/* State */}
                     <div>
-                      <label className="block mb-2 font-medium">
-                        State *
-                      </label>
+                      <label className="block mb-2 font-medium">State *</label>
 
                       <input
                         type="text"
@@ -347,9 +321,7 @@ export default function NewRegistrationPet() {
                     </div>
 
                     <div>
-                      <label className="block mb-2 font-medium">
-                        City *
-                      </label>
+                      <label className="block mb-2 font-medium">City *</label>
 
                       <input
                         type="text"
@@ -392,21 +364,17 @@ export default function NewRegistrationPet() {
                         className="w-full border rounded-xl p-3"
                       />
                     </div>
-
                   </div>
-
                 </div>
               )}
 
               {step === 2 && (
                 <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 shadow-sm">
-
                   <h2 className="text-xl sm:text-2xl font-bold mb-6">
                     Pet Registration
                   </h2>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
-
                     {/* Pet Name */}
                     <div>
                       <label className="block mb-2 font-medium">
@@ -433,7 +401,8 @@ export default function NewRegistrationPet() {
                         name="species"
                         value={formData.species}
                         onChange={handleChange}
-                        className="w-full border rounded-xl p-3">
+                        className="w-full border rounded-xl p-3"
+                      >
                         <option>Dog</option>
                         <option>Cat</option>
                         <option>Rabbit</option>
@@ -444,9 +413,7 @@ export default function NewRegistrationPet() {
 
                     {/* Breed */}
                     <div>
-                      <label className="block mb-2 font-medium">
-                        Breed *
-                      </label>
+                      <label className="block mb-2 font-medium">Breed *</label>
 
                       <input
                         name="breed"
@@ -460,15 +427,14 @@ export default function NewRegistrationPet() {
 
                     {/* Gender */}
                     <div>
-                      <label className="block mb-2 font-medium">
-                        Gender *
-                      </label>
+                      <label className="block mb-2 font-medium">Gender *</label>
 
                       <select
                         name="gender"
                         value={formData.gender}
                         onChange={handleChange}
-                        className="w-full border rounded-xl p-3">
+                        className="w-full border rounded-xl p-3"
+                      >
                         <option>Male</option>
                         <option>Female</option>
                       </select>
@@ -491,9 +457,7 @@ export default function NewRegistrationPet() {
 
                     {/* Age */}
                     <div>
-                      <label className="block mb-2 font-medium">
-                        Age
-                      </label>
+                      <label className="block mb-2 font-medium">Age</label>
 
                       <input
                         name="age"
@@ -507,9 +471,7 @@ export default function NewRegistrationPet() {
 
                     {/* Color */}
                     <div>
-                      <label className="block mb-2 font-medium">
-                        Color
-                      </label>
+                      <label className="block mb-2 font-medium">Color</label>
 
                       <input
                         name="color"
@@ -577,7 +539,8 @@ export default function NewRegistrationPet() {
                         name="sterilized"
                         value={formData.sterilized}
                         onChange={handleChange}
-                        className="w-full border rounded-xl p-3">
+                        className="w-full border rounded-xl p-3"
+                      >
                         <option>No</option>
                         <option>Yes</option>
                       </select>
@@ -599,21 +562,17 @@ export default function NewRegistrationPet() {
                         className="w-full border rounded-xl p-3 bg-slate-100"
                       />
                     </div>
-
                   </div>
-
                 </div>
               )}
 
               {step === 3 && (
                 <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 shadow-sm">
-
                   <h2 className="text-xl sm:text-2xl font-bold mb-6">
                     Pet History
                   </h2>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
-
                     {/* Previous Vaccination */}
 
                     <div>
@@ -707,9 +666,7 @@ export default function NewRegistrationPet() {
                     </div>
 
                     <div>
-                      <label className="block mb-2 font-medium">
-                        Dose
-                      </label>
+                      <label className="block mb-2 font-medium">Dose</label>
 
                       <input
                         name="dose"
@@ -753,9 +710,7 @@ export default function NewRegistrationPet() {
                     </div>
 
                     <div>
-                      <label className="block mb-2 font-medium">
-                        Hospital
-                      </label>
+                      <label className="block mb-2 font-medium">Hospital</label>
 
                       <input
                         name="hospital"
@@ -846,21 +801,17 @@ export default function NewRegistrationPet() {
                         className="w-full border rounded-xl p-3"
                       />
                     </div>
-
                   </div>
-
                 </div>
               )}
 
               {step === 4 && (
                 <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 shadow-sm">
-
                   <h2 className="text-xl sm:text-2xl font-bold mb-6">
                     Reason For Visit
                   </h2>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
-
                     {/* Primary Reason */}
 
                     <div>
@@ -872,7 +823,8 @@ export default function NewRegistrationPet() {
                         name="primaryReason"
                         value={formData.primaryReason}
                         onChange={handleChange}
-                        className="w-full border rounded-xl p-3">
+                        className="w-full border rounded-xl p-3"
+                      >
                         <option>Treatment</option>
                         <option>Vaccination</option>
                         <option>Checkup</option>
@@ -891,7 +843,8 @@ export default function NewRegistrationPet() {
                         name="assignedDoctor"
                         value={formData.assignedDoctor}
                         onChange={handleChange}
-                        className="w-full border rounded-xl p-3">
+                        className="w-full border rounded-xl p-3"
+                      >
                         <option>Dr. Sharma</option>
                         <option>Dr. Verma</option>
                         <option>Dr. Singh</option>
@@ -963,17 +916,13 @@ export default function NewRegistrationPet() {
                         className="w-full border rounded-xl p-3"
                       />
                     </div>
-
                   </div>
-
                 </div>
               )}
-
             </div>
 
             {/* Footer */}
             <div className="border-t p-4 sm:p-5 flex justify-between gap-3">
-
               <button
                 disabled={step === 1}
                 onClick={() => setStep(step - 1)}
@@ -1008,11 +957,8 @@ export default function NewRegistrationPet() {
                   Submit
                 </button>
               )}
-
             </div>
-
           </div>
-
         </div>
       )}
     </>
