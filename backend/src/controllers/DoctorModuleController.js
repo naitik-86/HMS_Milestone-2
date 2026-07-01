@@ -6,6 +6,8 @@ const Doctor = require("../models/DoctorModuleModel");
 exports.getDashboard = async (req, res) => {
     try {
 
+
+        
         const totalPets = await Doctor.countDocuments();
 
         const pendingPets = await Doctor.countDocuments({
