@@ -261,8 +261,6 @@ exports.updateAppointmentStatus = async (req, res) => {
 };
 
 
-
-
 exports.getDashboardStats = async (req, res) => {
   try {
     const clinicId = req.user.clinicId;
@@ -348,3 +346,4 @@ exports.getPendingRegistrations = async (req, res) => {
     });
   }
 };
+
