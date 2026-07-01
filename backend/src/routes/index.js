@@ -8,7 +8,7 @@ const doctorRoutes = require('./doctorRoutes');
 const receptionRoutes = require('./receptionRoutes');
 const preConsultationRoutes =require("./preConsultationRoutes");
 const petOwnerRoutes = require("./petOwnerRoutes");
-
+const doctorModule = require('./DoctorModuleRoutes')
 const { protect, authorize } = require('../middlewares/auth');
 
 // Public routes
@@ -22,4 +22,9 @@ router.use( "/pre-consultation",preConsultationRoutes);
 
 // Owner Pet
 router.use("/pet-owner", petOwnerRoutes);
+
+// Doctor Module
+router.use("/doctorModule", doctorModule)
+
+
 module.exports = router;

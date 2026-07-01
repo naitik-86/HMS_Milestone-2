@@ -1,35 +1,81 @@
-import { CalendarDays, CheckCircle2, Clock3, PawPrint } from "lucide-react";
+import { useEffect, useState } from "react";
+import axios from "axios";
+import {
+  CalendarDays,
+  CheckCircle2,
+  Clock3,
+  PawPrint,
+} from "lucide-react";
 
 export default function Dashboard() {
+  const [dashboard, setDashboard] = useState({
+    totalPets: 0,
+    pendingPets: 0,
+    completedPets: 0,
+    todaysVisits: 0,
+    recentActivity: [],
+  });
+
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchDashboard();
+  }, []);
+
+  const fetchDashboard = async () => {
+    try {
+      const res = await axios.get(
+        "http://localhost:5000/api/v1/doctorModule/dashboard"
+      );
+
+      setDashboard(res.data.dashboard);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const stats = [
     {
       title: "Total Pets",
-      value: "248",
+      value: dashboard.totalPets,
       icon: PawPrint,
       color: "bg-blue-50 text-blue-600",
     },
     {
       title: "Pending Pets",
-      value: "32",
+      value: dashboard.pendingPets,
       icon: Clock3,
       color: "bg-orange-50 text-orange-600",
     },
     {
       title: "Completed Cases",
-      value: "216",
+      value: dashboard.completedPets,
       icon: CheckCircle2,
       color: "bg-green-50 text-green-600",
     },
     {
       title: "Today's Visits",
-      value: "18",
+      value: dashboard.todaysVisits,
       icon: CalendarDays,
       color: "bg-purple-50 text-purple-600",
     },
   ];
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <h2 className="text-xl font-semibold text-slate-600">
+          Loading Dashboard...
+        </h2>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-5 sm:space-y-8">
+      {/* Welcome Card */}
       <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm sm:p-6 lg:rounded-[30px] lg:p-8">
         <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl lg:text-4xl">
           Welcome Back Doctor
@@ -40,6 +86,7 @@ export default function Dashboard() {
         </p>
       </div>
 
+      {/* Statistics */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4 xl:gap-6">
         {stats.map((item) => (
           <div
@@ -47,10 +94,8 @@ export default function Dashboard() {
             className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm transition-all hover:shadow-lg sm:p-6 lg:rounded-[30px]"
           >
             <div className="flex items-start justify-between gap-4">
-              <div className="min-w-0">
-                <p className="text-sm text-slate-500">
-                  {item.title}
-                </p>
+              <div>
+                <p className="text-sm text-slate-500">{item.title}</p>
 
                 <h2 className="mt-3 text-3xl font-bold text-slate-900 sm:text-4xl">
                   {item.value}
@@ -58,7 +103,7 @@ export default function Dashboard() {
               </div>
 
               <div
-                className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl sm:h-14 sm:w-14 ${item.color}`}
+                className={`flex h-12 w-12 items-center justify-center rounded-2xl sm:h-14 sm:w-14 ${item.color}`}
               >
                 <item.icon className="h-6 w-6" />
               </div>
@@ -67,29 +112,38 @@ export default function Dashboard() {
         ))}
       </div>
 
+      {/* Recent Activity */}
       <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm sm:p-6 lg:rounded-[30px] lg:p-8">
-        <div className="mb-6 flex items-center justify-between gap-4">
+        <div className="mb-6 flex items-center justify-between">
           <h2 className="text-xl font-bold sm:text-2xl">
             Recent Activity
           </h2>
 
-          <span className="shrink-0 font-medium text-orange-500">
+          <span className="font-medium text-orange-500">
             Today
           </span>
         </div>
 
         <div className="space-y-4">
-          <div className="rounded-2xl bg-slate-50 p-4 text-sm sm:text-base">
-            Bruno checked in for Vaccination
-          </div>
-
-          <div className="rounded-2xl bg-slate-50 p-4 text-sm sm:text-base">
-            Kitty consultation completed
-          </div>
-
-          <div className="rounded-2xl bg-slate-50 p-4 text-sm sm:text-base">
-            New pet registration completed
-          </div>
+          {dashboard.recentActivity.length > 0 ? (
+            dashboard.recentActivity.map((activity) => (
+              <div
+                key={activity._id}
+                className="rounded-2xl bg-slate-50 p-4 text-sm sm:text-base"
+              >
+                <p>
+                  <span className="font-semibold">
+                    {activity.petId}
+                  </span>{" "}
+                  - {activity.status}
+                </p>
+              </div>
+            ))
+          ) : (
+            <div className="rounded-2xl bg-slate-50 p-4 text-center text-slate-500">
+              No Recent Activity Found
+            </div>
+          )}
         </div>
       </div>
     </div>
