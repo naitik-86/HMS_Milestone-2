@@ -271,7 +271,7 @@ exports.getHistoryPets = async (req, res) => {
 
     const history = await PreConsultation.find()
       .select(
-        "uniquePetId tokenNumber status severity createdAt updatedAt"
+        "uniquePetId tokenNumber status severity createdAt updatedAt recordedBy ownerId"
       )
       .sort({ createdAt: -1 });
 

@@ -203,7 +203,7 @@ export default function HistoryPets() {
                   </th>
 
                   <th className="px-6 py-4 text-left text-xs font-bold uppercase text-slate-500">
-                    Visit Type
+                    Severity
                   </th>
 
                   <th className="px-6 py-4 text-left text-xs font-bold uppercase text-slate-500">
@@ -228,7 +228,7 @@ export default function HistoryPets() {
                     >
 
                       <td className="px-6 py-5 font-semibold text-slate-800">
-                        {item.token}
+                        {item.tokenNumber}
                       </td>
 
                       <td className="px-6 py-5">
@@ -242,7 +242,7 @@ export default function HistoryPets() {
                           <div>
 
                             <p className="font-semibold text-slate-800">
-                              {item.ownerId?.ownerName}
+                              {item?.ownerId}
                             </p>
 
                             <p className="text-sm text-slate-500">
@@ -266,7 +266,7 @@ export default function HistoryPets() {
                           <div>
 
                             <p className="font-semibold text-slate-800">
-                              {item.ownerId?.petName}
+                              {item.uniquePetId}
                             </p>
 
                             <p className="text-sm text-slate-500">
@@ -286,7 +286,7 @@ export default function HistoryPets() {
                       <td className="px-6 py-5">
 
                         <span className="bg-blue-100 text-blue-700 px-4 py-2 rounded-full text-sm font-semibold">
-                          { }
+                          {item?.severity}
                         </span>
 
                       </td>
