@@ -23,8 +23,8 @@ const seedDb = async () => {
         const pendingPets = [
             {
                 ownerId: "6a461ba48da2777cd0e11153",
-                uniquePetId: "PET001",
-                tokenNumber: "T001",
+                uniquePetId: "PET0054",
+                tokenNumber: "T005",
 
                 bodyTemperature: 101.5,
                 heartRate: 92,
