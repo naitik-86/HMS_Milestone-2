@@ -1,86 +1,104 @@
 import { useState } from "react";
-// import Sidebar from "../components/Sidebar";
+import formatDate from "../../../../shared/utils/formatDate";
 import { Header } from "../../components";
-
+import { useEffect } from "react";
+import { getCompletedPets } from "../../api/preConsultationApi";
 
 export default function CompletedPets() {
   const [search, setSearch] = useState("");
 
-  const completedPets = [
-    {
-      id: 1,
-      token: "TK-001",
-      ownerName: "Rahul Sharma",
-      phoneNumber: "+91 9876543210",
-      petName: "Bruno",
-      completedDate: "12 Jun 2026",
-      completedBy: "Dr. Amit",
-      status: "Completed",
-    },
-    {
-      id: 2,
-      token: "TK-002",
-      ownerName: "Aman Verma",
-      phoneNumber: "+91 9876543211",
-      petName: "Max",
-      completedDate: "12 Jun 2026",
-      completedBy: "Dr. Karan",
-      status: "Completed",
-    },
-    {
-      id: 3,
-      token: "TK-003",
-      ownerName: "Rohit Kumar",
-      phoneNumber: "+91 9876543212",
-      petName: "Rocky",
-      completedDate: "11 Jun 2026",
-      completedBy: "Dr. Vivek",
-      status: "Completed",
-    },
-  ];
+  const [completedPets, setCompletedPets] = useState([]);
+  const [stats, setStats] = useState({
+    completedToday: 0,
+    completedThisWeek: 0,
+    totalCompleted: 0,
+  });
 
-  const filteredPets = completedPets.filter(
-    (pet) =>
-      pet.token.toLowerCase().includes(search.toLowerCase()) ||
-      pet.ownerName.toLowerCase().includes(search.toLowerCase()) ||
-      pet.petName.toLowerCase().includes(search.toLowerCase()) ||
-      pet.phoneNumber.toLowerCase().includes(search.toLowerCase())
-  );
+  useEffect(() => {
+    fetchCompletedPets();
+  }, []);
+
+  const fetchCompletedPets = async () => {
+    try {
+      const res = await getCompletedPets();
+
+      setCompletedPets(res.data.pets);
+      setStats(res.data.stats);
+
+
+
+    } catch (err) {
+      console.error(err);
+    }
+  };
+  console.log(completedPets);
+  const filteredPets = completedPets;
+  // completedPets.filter(
+  //   (pet) =>
+  //     pet.token.toLowerCase().includes(search.toLowerCase()) ||
+  //     pet.ownerName.toLowerCase().includes(search.toLowerCase()) ||
+  //     pet.petName.toLowerCase().includes(search.toLowerCase()) ||
+  //     pet.phoneNumber.toLowerCase().includes(search.toLowerCase())
+  // );
+
+  // const cards = [
+  //   {
+  //     title: "Completed Today",
+  //     value: "18",
+  //     icon: "✅",
+  //     color: "bg-green-50",
+  //     text: "text-green-600",
+  //   },
+  //   {
+  //     title: "This Week",
+  //     value: "96",
+  //     icon: "📅",
+  //     color: "bg-blue-50",
+  //     text: "text-blue-600",
+  //   },
+  //   {
+  //     title: "Total Completed",
+  //     value: "1248",
+  //     icon: "🏆",
+  //     color: "bg-purple-50",
+  //     text: "text-purple-600",
+  //   },
+  // ];
+
 
   const cards = [
     {
       title: "Completed Today",
-      value: "18",
+      value: stats.completedToday,
       icon: "✅",
       color: "bg-green-50",
       text: "text-green-600",
     },
     {
       title: "This Week",
-      value: "96",
+      value: stats.completedThisWeek,
       icon: "📅",
       color: "bg-blue-50",
       text: "text-blue-600",
     },
     {
       title: "Total Completed",
-      value: "1248",
+      value: stats.totalCompleted,
       icon: "🏆",
       color: "bg-purple-50",
       text: "text-purple-600",
     },
   ];
-
   return (
     <div className="flex min-h-screen bg-slate-100">
 
 
       <div className="flex-1 p-4 md:p-6 lg:p-8 overflow-x-hidden mt-[70px] md:mt-0">
-<Header
-  title="Completed Pets"
-  subtitle="Successfully completed consultations"
-  showSearch={false}
-/>
+        <Header
+          title="Completed Pets"
+          subtitle="Successfully completed consultations"
+          showSearch={false}
+        />
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
@@ -139,7 +157,7 @@ export default function CompletedPets() {
         <div className="bg-white rounded-3xl shadow-sm overflow-hidden border border-slate-200">
 
           {/* Header */}
-         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between px-4 md:px-8 py-6 border-b border-slate-200">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between px-4 md:px-8 py-6 border-b border-slate-200">
 
             <div>
               <h2 className="text-xl font-bold text-slate-800">
@@ -157,7 +175,7 @@ export default function CompletedPets() {
 
           </div>
 
-         <div className="hidden lg:block overflow-x-auto">
+          <div className="hidden lg:block overflow-x-auto">
 
             <table className="w-full">
 
@@ -202,29 +220,29 @@ export default function CompletedPets() {
                 {filteredPets.length > 0 ? (
                   filteredPets.map((pet) => (
                     <tr
-                      key={pet.id}
+                      key={pet._id}
                       className="border-t border-slate-100 hover:bg-green-50/30 transition-all"
                     >
 
                       <td className="px-6 py-5 font-semibold text-slate-800">
-                        {pet.token}
+                        {pet.tokenNumber}
                       </td>
 
                       <td className="px-6 py-5">
 
                         <div className="flex items-center gap-4">
 
-                          <div className="w-11 h-11 rounded-2xl bg-green-100 flex items-center justify-center font-bold text-green-600">
+                          {/* <div className="w-11 h-11 rounded-2xl bg-green-100 flex items-center justify-center font-bold text-green-600">
                             {pet.ownerName.charAt(0)}
-                          </div>
+                          </div> */}
 
                           <div>
                             <p className="font-semibold text-slate-800">
-                              {pet.ownerName}
+                              {pet.ownerId}
                             </p>
 
                             <p className="text-sm text-slate-500">
-                              {pet.phoneNumber}
+                              N/A
                             </p>
                           </div>
 
@@ -242,7 +260,7 @@ export default function CompletedPets() {
 
                           <div>
                             <p className="font-semibold text-slate-800">
-                              {pet.petName}
+                              {pet._id}
                             </p>
 
                             <p className="text-sm text-slate-500">
@@ -255,11 +273,11 @@ export default function CompletedPets() {
                       </td>
 
                       <td className="px-6 py-5 text-slate-700">
-                        {pet.completedDate}
+                        {formatDate(pet.vitalsRecordedAt)}
                       </td>
 
                       <td className="px-6 py-5 text-slate-700">
-                        {pet.completedBy}
+                        {pet.recordedBy}
                       </td>
 
                       <td className="px-6 py-5">
@@ -319,50 +337,50 @@ export default function CompletedPets() {
 
           </div>
           <div className="lg:hidden p-4 space-y-4">
-  {filteredPets.map((pet) => (
-    <div
-      key={pet.id}
-      className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm"
-    >
+            {filteredPets.map((pet) => (
+              <div
+                key={pet._id}
+                className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm"
+              >
 
-<div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <span className="font-bold text-slate-800">
-          {pet.token}
-        </span>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <span className="font-bold text-slate-800">
+                    {pet.token}
+                  </span>
 
-        <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
-          {pet.status}
-        </span>
-      </div>
+                  <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
+                    {pet.status}
+                  </span>
+                </div>
 
-      <div className="mt-4 space-y-2">
-        <p>
-          <strong>Owner:</strong> {pet.ownerName}
-        </p>
+                <div className="mt-4 space-y-2">
+                  <p>
+                    <strong>Owner:</strong> {pet.ownerName}
+                  </p>
 
-        <p>
-          <strong>Phone:</strong> {pet.phoneNumber}
-        </p>
+                  <p>
+                    <strong>Phone:</strong> {pet.phoneNumber}
+                  </p>
 
-        <p>
-          <strong>Pet:</strong> {pet.petName}
-        </p>
+                  <p>
+                    <strong>Pet:</strong> {pet.petName}
+                  </p>
 
-        <p>
-          <strong>Date:</strong> {pet.completedDate}
-        </p>
+                  <p>
+                    <strong>Date:</strong> {pet.completedDate}
+                  </p>
 
-        <p>
-          <strong>Doctor:</strong> {pet.completedBy}
-        </p>
-      </div>
+                  <p>
+                    <strong>Doctor:</strong> {pet.completedBy}
+                  </p>
+                </div>
 
-      <button className="mt-4 w-full rounded-xl bg-blue-500 py-3 text-white font-medium hover:bg-blue-600 transition-all">
-        👁 View
-      </button>
-    </div>
-  ))}
-</div>
+                <button className="mt-4 w-full rounded-xl bg-blue-500 py-3 text-white font-medium hover:bg-blue-600 transition-all">
+                  👁 View
+                </button>
+              </div>
+            ))}
+          </div>
 
         </div>
 

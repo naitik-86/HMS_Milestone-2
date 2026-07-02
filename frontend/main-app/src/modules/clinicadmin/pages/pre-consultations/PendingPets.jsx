@@ -334,6 +334,7 @@ export default function PendingPets() {
               setOpenModal(false);
               setSelectedPet(null);
             }}
+            onCompleted={fetchPendingPets}
           />
         )}
 

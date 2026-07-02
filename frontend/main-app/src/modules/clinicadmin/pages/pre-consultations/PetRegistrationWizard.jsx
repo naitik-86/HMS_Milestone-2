@@ -7,14 +7,14 @@ import {
   ObservationForm,
 } from "../../components";
 
-export default function PetRegistrationWizard({ onClose }) {
+export default function PetRegistrationWizard({ onClose, petData, onCompleted }) {
   const [step, setStep] = useState(1);
   const scrollRef = useRef(null);
 
   const handleFinish = async () => {
     try {
-      await completePreConsultation(petData._id);
-
+      await completePreConsultation(petData);
+      onCompleted();
       onClose();
     } catch (err) {
       console.error(err);

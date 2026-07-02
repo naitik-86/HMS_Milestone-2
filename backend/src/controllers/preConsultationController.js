@@ -215,7 +215,7 @@ exports.getCompletedPets = async (req, res) => {
       status: "COMPLETED",
     })
       .select(
-        "uniquePetId tokenNumber status updatedAt"
+        "uniquePetId tokenNumber status updatedAt ownerId vitalsRecordedAt recordedBy"
       )
       .sort({ updatedAt: -1 });
 
@@ -420,27 +420,38 @@ exports.searchHistoryPets = async (req, res) => {
 
 exports.completePreConsultation = async (req, res) => {
   try {
-    const pet = await PreConsultation.findByIdAndUpdate(
-      req.params.id,
-      {
-        status: "COMPLETED",
-        completedAt: new Date(),
-        completedBy: req.user?.name || "Doctor"
-      },
-      {
-        new: true
-      }
-    );
+    const { id } = req.params;
 
-    res.json({
+    console.log(id);
+
+
+    const updatedPreConsultation =
+      await PreConsultation.findByIdAndUpdate(
+        id,
+        {
+          ...req.body,
+          status: "COMPLETED",
+        },
+        {
+          new: true,
+          runValidators: true,
+        }
+      );
+
+    if (!updatedPreConsultation) {
+      return res.status(404).json({
+        message: "Pre Consultation not found",
+      });
+    }
+
+    res.status(200).json({
       success: true,
-      data: pet
+      data: updatedPreConsultation,
     });
-
-  } catch (err) {
+  } catch (error) {
     res.status(500).json({
       success: false,
-      message: err.message
+      message: error.message,
     });
   }
 };
