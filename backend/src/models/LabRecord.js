@@ -1,30 +1,67 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
-const labRecordSchema = new mongoose.Schema({
-  appointmentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Appointment' },
-  clinicId: { type: mongoose.Schema.Types.ObjectId, ref: 'Clinic', required: true },
-  petId: { type: mongoose.Schema.Types.ObjectId, ref: 'Pet', required: true },
-  doctorId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  
-  // Requisition (Filled by Doctor during Consultation)
-  requisition: {
+const labRecordSchema = new mongoose.Schema(
+  {
+    labOrderId: {
+      type: String,
+      required: true,
+      unique: true,
+    },
+
+    appointmentId: String,
+
+    clinicId: String,
+
+    petId: String,
+
+    ownerId: String,
+
+    doctorId: String,
+
+    labTechnicianId: String,
+
     testsRequired: [String],
-    sampleType: [String],
-    specialInstructions: String
-  },
-  
-  // Results (Filled by Lab Tech or Owner via App)
-  results: {
-    testsCompleted: [String],
-    reportFiles: [String], // Array of secure URLs (e.g., AWS S3 links)
-    sampleCollectedAt: Date,
-    reportDate: Date,
-    externalLabName: String,
-    criticalValuesFlag: Boolean,
-    criticalNotes: String,
-    remarks: String,
-    uploadedByRole: { type: String, enum: ['LAB_TECH', 'OWNER'], required: true }
-  }
-}, { timestamps: true });
 
-module.exports = mongoose.model('LabRecord', labRecordSchema);
+    testsCompleted: [String],
+
+    reportFiles: [String], // Cloudinary URLs
+
+    sampleCollectedAt: Date,
+
+    reportDate: Date,
+
+    externalLabName: String,
+
+    criticalValuesFlag: {
+      type: Boolean,
+      default: false,
+    },
+
+    criticalNotes: String,
+
+    remarks: String,
+
+    status: {
+      type: String,
+      enum: [
+        "Pending",
+        "Sample Collected",
+        "Processing",
+        "Completed",
+      ],
+      default: "Pending",
+    },
+
+    doctorTreatmentUnlocked: {
+      type: Boolean,
+      default: false,
+    },
+
+    uploadedBy: String,
+  },
+  {
+    timestamps: true,
+  }
+);
+
+module.exports = mongoose.model("LabRecord", labRecordSchema);

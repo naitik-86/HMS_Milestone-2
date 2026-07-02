@@ -1,48 +1,100 @@
-import { useState } from "react";
+/* eslint-disable react-hooks/set-state-in-effect */
+import { useEffect, useState } from "react";
+import axios from "axios";
 
 export default function History() {
   const [search, setSearch] = useState("");
 
-  const historyData = [
-    {
-      petId: "PET001",
-      petName: "Bruno",
-      owner: "Rahul Sharma",
-      phone: "9876543210",
-      date: "11 Jun 2026",
-      visitType: "Checkup",
-      status: "Completed",
-    },
-    {
-      petId: "PET002",
-      petName: "Tommy",
-      owner: "Amit Verma",
-      phone: "9876541230",
-      date: "10 Jun 2026",
-      visitType: "Vaccination",
-      status: "Completed",
-    },
-    {
-      petId: "PET003",
-      petName: "Max",
-      owner: "Rohan Singh",
-      phone: "9988776655",
-      date: "09 Jun 2026",
-      visitType: "Treatment",
-      status: "Completed",
-    },
-  ];
+  const [historyData, setHistoryData] = useState([]);
 
-  const filteredData = historyData.filter(
-    (item) =>
-      item.owner
-        .toLowerCase()
-        .includes(search.toLowerCase()) ||
-      item.petName
-        .toLowerCase()
-        .includes(search.toLowerCase()) ||
-      item.phone.includes(search)
-  );
+  const [loading, setLoading] = useState(true);
+
+  const [stats, setStats] = useState({
+
+    totalRecords: 0,
+
+    vaccinations: 0,
+
+    treatments: 0
+
+  });
+  const getHistory = async () => {
+
+    try {
+
+      const res = await axios.get(
+        "http://localhost:5000/api/v1/doctorModule/history"
+      );
+
+      setHistoryData(res.data.data);
+
+      setStats({
+
+        totalRecords: res.data.total,
+
+        vaccinations: res.data.vaccinations,
+
+        treatments: res.data.treatments
+
+      });
+
+    } catch (error) {
+
+      console.log(error);
+
+    } finally {
+
+      setLoading(false);
+
+    }
+
+  };
+  useEffect(() => {
+
+    getHistory();
+
+  }, []);
+
+  if (loading) {
+
+    return (
+
+      <div className="flex h-96 items-center justify-center">
+
+        <h2 className="text-xl font-semibold">
+
+          Loading...
+
+        </h2>
+
+      </div>
+
+    );
+
+  }
+
+  const filteredData = historyData.filter((item) => {
+
+    const owner =
+      item.ownerName?.toLowerCase() || "";
+
+    const petName =
+      item.petName?.toLowerCase() || "";
+
+    const phone =
+      item.phone || "";
+
+    return (
+
+      owner.includes(search.toLowerCase()) ||
+
+      petName.includes(search.toLowerCase()) ||
+
+      phone.includes(search)
+
+    );
+
+  });
 
   return (
     <div className="space-y-5 sm:space-y-8 pt-16 md:pt-8">
@@ -53,21 +105,21 @@ export default function History() {
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:rounded-3xl sm:p-6">
           <p className="text-slate-500">Total Records</p>
           <h2 className="mt-2 text-3xl font-bold sm:text-4xl">
-            356
+            {stats.totalRecords}
           </h2>
         </div>
 
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:rounded-3xl sm:p-6">
           <p className="text-slate-500">Vaccinations</p>
           <h2 className="mt-2 text-3xl font-bold sm:text-4xl">
-            118
+            {stats.vaccinations}
           </h2>
         </div>
 
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:rounded-3xl sm:p-6">
           <p className="text-slate-500">Treatments</p>
           <h2 className="mt-2 text-3xl font-bold sm:text-4xl">
-            238
+            {stats.treatments}
           </h2>
         </div>
 
@@ -106,7 +158,7 @@ export default function History() {
 
         {filteredData.map((item) => (
           <div
-            key={item.petId}
+            key={item._id}
             className="rounded-2xl border bg-white p-4 shadow-sm"
           >
             <div className="flex items-start justify-between mb-3">
@@ -133,7 +185,7 @@ export default function History() {
                 <span className="font-semibold">
                   Owner:
                 </span>{" "}
-                {item.owner}
+                {item.ownerName}
               </p>
 
               <p>
@@ -147,14 +199,14 @@ export default function History() {
                 <span className="font-semibold">
                   Visit:
                 </span>{" "}
-                {item.visitType}
+                {item.diagnosis?.confirmedDiagnosis || "-"}
               </p>
 
               <p>
                 <span className="font-semibold">
                   Date:
                 </span>{" "}
-                {item.date}
+                {new Date(item.updatedAt).toLocaleDateString()}
               </p>
 
             </div>
@@ -201,52 +253,73 @@ export default function History() {
                 <th className="py-4 text-left">Action</th>
               </tr>
             </thead>
-
             <tbody>
 
-              {filteredData.map((item, index) => (
-                <tr
-                  key={index}
-                  className="border-b border-slate-100 hover:bg-slate-50 transition"
-                >
-                  <td className="py-5 pr-4 font-medium">
-                    {item.petId}
-                  </td>
+              {filteredData.length === 0 ? (
 
-                  <td className="pr-4">
-                    {item.petName}
-                  </td>
+                <tr>
 
-                  <td className="pr-4">
-                    {item.owner}
-                  </td>
+                  <td
+                    colSpan="8"
+                    className="py-10 text-center text-slate-500"
+                  >
 
-                  <td className="pr-4">
-                    {item.phone}
-                  </td>
+                    No History Found
 
-                  <td className="pr-4">
-                    {item.date}
-                  </td>
-
-                  <td className="pr-4">
-                    {item.visitType}
-                  </td>
-
-                  <td className="pr-4">
-                    <span className="rounded-full bg-green-100 px-4 py-2 text-sm font-medium text-green-700">
-                      {item.status}
-                    </span>
-                  </td>
-
-                  <td>
-                    <button className="rounded-xl bg-orange-500 px-4 py-2 text-sm font-medium text-white hover:bg-orange-600">
-                      View Record
-                    </button>
                   </td>
 
                 </tr>
-              ))}
+
+              ) : (
+
+                filteredData.map((item) => (
+
+                  <tr
+                    key={item._id}
+                    className="border-b border-slate-100 hover:bg-slate-50 transition"
+                  >
+
+                    <td className="py-5 pr-4 font-medium">
+                      {item.petId}
+                    </td>
+
+                    <td className="pr-4">
+                      {item.petName}
+                    </td>
+
+                    <td className="pr-4">
+                      {item.ownerName}
+                    </td>
+
+                    <td className="pr-4">
+                      {item.phone || "-"}
+                    </td>
+
+                    <td className="pr-4">
+                      {new Date(item.updatedAt).toLocaleDateString()}
+                    </td>
+
+                    <td className="pr-4">
+                      {item.diagnosis?.confirmedDiagnosis || "-"}
+                    </td>
+
+                    <td className="pr-4">
+                      <span className="rounded-full bg-green-100 px-4 py-2 text-sm font-medium text-green-700">
+                        {item.status}
+                      </span>
+                    </td>
+
+                    <td>
+                      <button className="rounded-xl bg-orange-500 px-4 py-2 text-sm font-medium text-white hover:bg-orange-600">
+                        View Record
+                      </button>
+                    </td>
+
+                  </tr>
+
+                ))
+
+              )}
 
             </tbody>
 
