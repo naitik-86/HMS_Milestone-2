@@ -1,4 +1,4 @@
-import PendingPets from "../../components/doctor-staff/PendingPets";
+import PendingPets from "../../components/common/doctor-staff/PendingPets";
 
 export default function DoctorPendingPetsPage() {
 

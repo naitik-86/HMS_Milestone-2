@@ -52,6 +52,7 @@ const labRecordSchema = new mongoose.Schema(
       default: "Pending",
     },
 
+    
     doctorTreatmentUnlocked: {
       type: Boolean,
       default: false,

@@ -1,4 +1,4 @@
-import CompletedPets from "../../components/doctor-staff/CompletedPets";
+import CompletedPets from "../../components/common/doctor-staff/CompletedPets";
 
 export default function DoctorCompletedPetsPage() {
     return (

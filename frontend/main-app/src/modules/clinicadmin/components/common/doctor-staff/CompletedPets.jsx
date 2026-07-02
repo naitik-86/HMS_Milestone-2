@@ -9,6 +9,7 @@ export default function CompletedPets() {
   const [loading, setLoading] = useState(true);
 
 
+  
   useEffect(() => {
 
     getCompletedPets();

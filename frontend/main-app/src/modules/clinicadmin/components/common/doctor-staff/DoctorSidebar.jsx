@@ -10,6 +10,7 @@ import {
   X,
 } from "lucide-react";
 
+
 export default function DoctorSidebar() {
   const [isOpen, setIsOpen] = useState(false);
 
