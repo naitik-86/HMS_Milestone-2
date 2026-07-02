@@ -4,6 +4,7 @@ const generateDoctorId = require("../utils/generateDoctorId.js");
 
 const createDoctor = async (req, res) => {
     try {
+        console.log(req.files);
         const {
             experience,
             name,
@@ -115,6 +116,7 @@ const createDoctor = async (req, res) => {
 
 const getAllDoctors = async (req, res) => {
     try {
+        console.log("reached");
 
         const doctors = await Doctor.find()
             .sort({ createdAt: -1 });

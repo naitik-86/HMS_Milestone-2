@@ -1,6 +1,6 @@
 import API from "../../../shared/api/axios";
 
-const BASE_URL = "/clinic-admin/kennel";
+const BASE_URL = "/clinic/kennel";
 
 
 export const getKennels = async () => {
