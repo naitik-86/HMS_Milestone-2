@@ -1,6 +1,6 @@
 import API from "../../../shared/api/axios";
 
-const BASE_URL = "/clinic-admin/staff";
+const BASE_URL = "/clinic/staff";
 
 export const getStaff = async () => {
     const res = await API.get(BASE_URL);

@@ -1,6 +1,6 @@
 import API from "../../../shared/api/axios";
 
-const BASE_URL = "/clinic-admin/reception";
+const BASE_URL = "/clinic/reception";
 
 // Create Registration
 export const registerOwnerAndPet = async (createRegistration) => {

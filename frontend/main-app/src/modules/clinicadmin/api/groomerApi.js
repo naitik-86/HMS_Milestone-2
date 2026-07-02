@@ -1,6 +1,6 @@
 import API from "../../../shared/api/axios";
 
-const BASE_URL = "/clinic-admin/groomers";
+const BASE_URL = "/clinic/groomers";
 
 export const getGroomers = async () => {
     const res = await API.get(BASE_URL);
@@ -16,7 +16,7 @@ export const createGroomer = async (groomerData) => {
 
     const formData = buildGroomerFormData(groomerData);
 
-
+    console.log(Object.fromEntries(formData));
 
     const res = await API.post(
         `${BASE_URL}/create`,
@@ -89,14 +89,6 @@ const buildGroomerFormData = (groomer) => {
         });
     }
 
-    // Profile photo
-    if (groomer.profilePhoto) {
-        formData.append(
-            "profilePhoto",
-            groomer.profilePhoto
-        );
-    }
-
 
     if (groomer.certified) {
         formData.append("certified", groomer.certified);
@@ -133,7 +125,7 @@ const buildGroomerFormData = (groomer) => {
     // Other details
     formData.append(
         "weeklyDays",
-        groomer.weeklyDays || ""
+        JSON.stringify(groomer.weeklyDays || [])
     );
 
     formData.append(

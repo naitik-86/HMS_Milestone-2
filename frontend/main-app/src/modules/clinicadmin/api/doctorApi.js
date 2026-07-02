@@ -1,6 +1,6 @@
 import API from "../../../shared/api/axios";
 
-const BASE_URL = "/clinic-admin/doctors";
+const BASE_URL = "/clinic/doctors";
 
 /* GET ALL DOCTORS */
 export const getDoctors = async () => {
@@ -25,11 +25,7 @@ export const createDoctor = async (doctorData) => {
     const res = await API.post(
         `${BASE_URL}/create`,
         formData,
-        {
-            headers: {
-                "Content-Type": "multipart/form-data",
-            },
-        }
+
     );
 
     return res.data;

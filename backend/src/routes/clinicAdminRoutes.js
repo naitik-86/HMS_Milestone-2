@@ -27,12 +27,14 @@ router.put('/staff/:id', staffController.updateStaff);
 router.delete('/staff/:id', staffController.deleteStaff);
 
 /* DOCTORS */
-router.post('/doctors/create', upload.fields([
-    { name: "degreeCertificates", maxCount: 10 },
-    { name: "registrationCertificate", maxCount: 1 },
-    { name: "digitalSignature", maxCount: 1 },
-    { name: "doctorLetterhead", maxCount: 1 },
-]), doctorController.createDoctor);
+router.post('/doctors/create', upload.fields(
+    [
+        { name: "degreeCertificates", maxCount: 10 },
+        { name: "registrationCertificate", maxCount: 1 },
+        { name: "digitalSignature", maxCount: 1 },
+        { name: "doctorLetterhead", maxCount: 1 },
+    ]
+), doctorController.createDoctor);
 
 router.get('/doctors', doctorController.getAllDoctors);
 router.get('/doctors/:id', doctorController.getDoctorById);

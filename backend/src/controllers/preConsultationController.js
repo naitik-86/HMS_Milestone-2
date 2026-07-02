@@ -417,3 +417,30 @@ exports.searchHistoryPets = async (req, res) => {
     });
   }
 };
+
+exports.completePreConsultation = async (req, res) => {
+  try {
+    const pet = await PreConsultation.findByIdAndUpdate(
+      req.params.id,
+      {
+        status: "COMPLETED",
+        completedAt: new Date(),
+        completedBy: req.user?.name || "Doctor"
+      },
+      {
+        new: true
+      }
+    );
+
+    res.json({
+      success: true,
+      data: pet
+    });
+
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: err.message
+    });
+  }
+};

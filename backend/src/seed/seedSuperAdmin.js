@@ -1,9 +1,13 @@
-const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs'); 
-require('dotenv').config();
+const path = require("path");
+const mongoose = require("mongoose");
+require("dotenv").config({
+  path: path.resolve(__dirname, "../../.env"),
+});
+const bcrypt = require('bcryptjs');
+
 
 // Import your SuperAdmin model
-const SuperAdmin = require('./src/models/SuperAdmin'); 
+const SuperAdmin = require('../models/SuperAdmin');
 
 const seedDb = async () => {
   try {
