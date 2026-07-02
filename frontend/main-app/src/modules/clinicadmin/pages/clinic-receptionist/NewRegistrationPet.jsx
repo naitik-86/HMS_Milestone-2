@@ -101,7 +101,7 @@ export default function NewRegistrationPet() {
     <>
       {showModal && (
         <div className="min-h-[calc(100vh-4rem)] md:min-h-screen bg-slate-100 p-3 sm:p-4">
-          <div className="bg-gradient-to-br from-white to-slate-50 w-full h-[calc(100vh-5.5rem)] sm:h-[calc(100vh-6rem)] md:h-[calc(100vh-2rem)] rounded-2xl sm:rounded-[32px] shadow-[0_20px_60px_rgba(0,0,0,0.15)] flex flex-col overflow-hidden">
+          <div className="bg-linear-to-br from-white to-slate-50 w-full h-[calc(100vh-5.5rem)] sm:h-[calc(100vh-6rem)] md:h-[calc(100vh-2rem)] rounded-2xl sm:rounded-4xl shadow-[0_20px_60px_rgba(0,0,0,0.15)] flex flex-col overflow-hidden">
             {/* Header */}
             <div className="flex justify-between items-start sm:items-center gap-4 px-4 sm:px-6 lg:px-10 py-4 sm:py-6 border-b bg-white">
               <div>
@@ -117,7 +117,7 @@ export default function NewRegistrationPet() {
 
             {/* Progress Bar */}
             <div className="px-4 sm:px-6 lg:px-12 py-4 sm:py-6 lg:py-8 bg-white border-b overflow-x-auto">
-              <div className="flex items-center min-w-[680px]">
+              <div className="flex items-center min-w-170">
                 {[
                   "Owner Verification",
                   "Pet Registration",
@@ -132,22 +132,20 @@ export default function NewRegistrationPet() {
               flex items-center justify-center
               font-bold text-lg text-white
               transition-all duration-300
-              ${
-                step >= index + 1
-                  ? "bg-orange-500 shadow-lg shadow-orange-300"
-                  : "bg-slate-300"
-              }
+              ${step >= index + 1
+                            ? "bg-orange-500 shadow-lg shadow-orange-300"
+                            : "bg-slate-300"
+                          }
             `}
                       >
                         {index + 1}
                       </div>
 
                       <span
-                        className={`mt-3 text-xs sm:text-sm font-semibold ${
-                          step >= index + 1
+                        className={`mt-3 text-xs sm:text-sm font-semibold ${step >= index + 1
                             ? "text-orange-500"
                             : "text-slate-400"
-                        }`}
+                          }`}
                       >
                         {item}
                       </span>
@@ -155,9 +153,8 @@ export default function NewRegistrationPet() {
 
                     {index !== 3 && (
                       <div
-                        className={`h-1 flex-1 mx-4 rounded-full ${
-                          step > index + 1 ? "bg-orange-500" : "bg-slate-200"
-                        }`}
+                        className={`h-1 flex-1 mx-4 rounded-full ${step > index + 1 ? "bg-orange-500" : "bg-slate-200"
+                          }`}
                       />
                     )}
                   </div>

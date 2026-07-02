@@ -47,7 +47,7 @@ export default function PetRegistrationWizard({ onClose, petData, onCompleted })
 
           <button
             onClick={onClose}
-            className="flex-shrink-0 w-10 h-10 md:w-12 md:h-12 rounded-2xl bg-slate-100 hover:bg-slate-200 text-xl font-bold"
+            className="shrink-0 w-10 h-10 md:w-12 md:h-12 rounded-2xl bg-slate-100 hover:bg-slate-200 text-xl font-bold"
           >
             ✕
           </button>
@@ -57,7 +57,7 @@ export default function PetRegistrationWizard({ onClose, petData, onCompleted })
         {/* Stepper */}
         <div className="px-3 py-2 md:p-8 border-b border-slate-200 overflow-x-auto">
 
-          <div className="flex min-w-[500px] md:min-w-0 items-center justify-between">
+          <div className="flex min-w-125 md:min-w-0 items-center justify-between">
 
             {steps.map((item, index) => (
               <div

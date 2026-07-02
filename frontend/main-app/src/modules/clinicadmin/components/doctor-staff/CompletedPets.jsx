@@ -62,11 +62,10 @@ export default function CompletedPets() {
             key={item.value}
             type="button"
             onClick={() => setFilter(item.value)}
-            className={`rounded-xl px-4 py-3 text-sm font-medium transition sm:rounded-2xl sm:px-6 sm:text-base ${
-              filter === item.value
+            className={`rounded-xl px-4 py-3 text-sm font-medium transition sm:rounded-2xl sm:px-6 sm:text-base ${filter === item.value
                 ? "bg-orange-500 text-white shadow-sm"
                 : "bg-white text-slate-700 hover:bg-orange-50"
-            }`}
+              }`}
           >
             {item.label}
           </button>
@@ -131,7 +130,7 @@ export default function CompletedPets() {
 
         <div className="hidden md:block overflow-x-auto">
 
-          <table className="min-w-[720px] w-full">
+          <table className="min-w-180 w-full">
 
             <thead>
               <tr className="border-b text-sm text-slate-500">

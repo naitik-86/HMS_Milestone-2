@@ -54,10 +54,10 @@ export default function PreConsultationDashboard() {
   ];
 
   return (
-<div className="flex-1 bg-slate-100">
-<div className="p-4 md:p-6 pt-20 md:pt-6">
+    <div className="flex-1 bg-slate-100">
+      <div className="p-4 md:p-6 pt-20 md:pt-6">
         {/* Hero Section */}
-<div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 rounded-3xl p-4 md:p-6 text-white shadow-xl mb-6">
+        <div className="bg-linear-to-r from-slate-900 via-slate-800 to-slate-900 rounded-3xl p-4 md:p-6 text-white shadow-xl mb-6">
           <div className="flex flex-col lg:flex-row justify-between items-center">
 
             <div>
@@ -82,8 +82,8 @@ export default function PreConsultationDashboard() {
                   Today's Performance
                 </p>
 
-                  <h2 className="text-2xl md:text-3xl font-bold mt-2">
-                    42
+                <h2 className="text-2xl md:text-3xl font-bold mt-2">
+                  42
                 </h2>
 
                 <p className="text-green-400 mt-2">
@@ -99,7 +99,7 @@ export default function PreConsultationDashboard() {
         </div>
 
         {/* KPI Cards */}
-<div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
           {cards.map((card, index) => (
             <div
               key={index}
@@ -124,7 +124,7 @@ export default function PreConsultationDashboard() {
                   <p className="text-slate-500 text-sm">
                     {card.title}
                   </p>
-<h2 className="text-2xl md:text-3xl font-bold mt-2 text-slate-800">
+                  <h2 className="text-2xl md:text-3xl font-bold mt-2 text-slate-800">
                     {card.value}
                   </h2>
 
@@ -155,7 +155,7 @@ export default function PreConsultationDashboard() {
         </div>
 
         {/* Main Grid */}
-<div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           {/* Queue */}
           <div className="lg:col-span-2 bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
 
@@ -301,7 +301,7 @@ export default function PreConsultationDashboard() {
         </div>
 
         {/* Bottom Grid */}
-<div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mt-6">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mt-6">
           {/* Recent Completed */}
           <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-6">
 
@@ -322,7 +322,7 @@ export default function PreConsultationDashboard() {
               {["Bruno", "Max", "Tommy"].map((pet, index) => (
                 <div
                   key={index}
-                 className="flex justify-between items-center border border-slate-200 rounded-2xl p-3"
+                  className="flex justify-between items-center border border-slate-200 rounded-2xl p-3"
                 >
 
                   <div className="flex items-center gap-3">

@@ -87,7 +87,7 @@ export default function PendingPets() {
         <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
 
           {/* Table Header */}
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 px-4 md:px-8 py-6 border-b border-slate-200 bg-gradient-to-r from-orange-50 to-white">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 px-4 md:px-8 py-6 border-b border-slate-200 bg-linear-to-r from-orange-50 to-white">
 
             <div>
 

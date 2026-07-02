@@ -93,7 +93,7 @@ export default function CompletedPets() {
     <div className="flex min-h-screen bg-slate-100">
 
 
-      <div className="flex-1 p-4 md:p-6 lg:p-8 overflow-x-hidden mt-[70px] md:mt-0">
+      <div className="flex-1 p-4 md:p-6 lg:p-8 overflow-x-hidden mt-17.5 md:mt-0">
         <Header
           title="Completed Pets"
           subtitle="Successfully completed consultations"

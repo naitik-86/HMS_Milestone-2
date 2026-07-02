@@ -128,18 +128,18 @@ function DoctorForm({ onClose, onSave, existingData, isEdit }) {
 
   return (
     <div
-      className="fixed inset-0 z-[1000] flex items-center justify-center p-3 sm:p-5"
+      className="fixed inset-0 z-1000 flex items-center justify-center p-3 sm:p-5"
       style={{ backgroundColor: 'rgba(17,24,39,0.55)', backdropFilter: 'blur(4px)' }}
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden w-full max-w-[1500px]"
+        className="bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden w-full max-w-375"
         style={{ height: 'min(88vh, 900px)' }}
         onClick={e => e.stopPropagation()}
       >
 
         {/* ── HEADER ── */}
-        <div className="px-5 sm:px-8 lg:px-10 pt-6 sm:pt-8 pb-0 flex-shrink-0 border-b border-[#F3F4F6]">
+        <div className="px-5 sm:px-8 lg:px-10 pt-6 sm:pt-8 pb-0 shrink-0 border-b border-[#F3F4F6]">
           <div className="flex items-start justify-between gap-4 mb-6">
             <div>
               <h2 className="font-['Syne'] text-2xl font-bold text-[#1A1D2E] leading-tight">
@@ -163,9 +163,9 @@ function DoctorForm({ onClose, onSave, existingData, isEdit }) {
               const isDone = activeStep > i;
               return (
                 <React.Fragment key={i}>
-                  <div className="flex items-center gap-2.5 flex-shrink-0">
+                  <div className="flex items-center gap-2.5 shrink-0">
                     <div
-                      className="w-8 h-8 flex items-center justify-center rounded-full text-sm font-bold flex-shrink-0 transition-all"
+                      className="w-8 h-8 flex items-center justify-center rounded-full text-sm font-bold shrink-0sition-all"
                       style={{
                         backgroundColor: isDone || isActive ? '#E8630A' : '#FEF3EB',
                         color: isDone || isActive ? '#fff' : '#E8630A',
@@ -385,7 +385,7 @@ function DoctorForm({ onClose, onSave, existingData, isEdit }) {
                   </div>
                   <div
                     onClick={() => u('emergency', !formData.emergency)}
-                    className="relative rounded-full cursor-pointer flex-shrink-0 transition-colors"
+                    className="relative rounded-full cursor-pointer shrink-0 transition-colors"
                     style={{ width: '46px', height: '24px', backgroundColor: formData.emergency ? '#E8630A' : '#D1D5DB' }}
                   >
                     <div className="absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-all" style={{ left: formData.emergency ? '23px' : '3px' }} />
@@ -448,7 +448,7 @@ function DoctorForm({ onClose, onSave, existingData, isEdit }) {
         </div>
 
         {/* ── FOOTER ── */}
-        <div className="px-10 py-5 flex items-center justify-between flex-shrink-0 border-t border-[#F3F4F6]">
+        <div className="px-10 py-5 flex items-center justify-between shrink-0 border-t border-[#F3F4F6]">
           <button
             onClick={() => activeStep > 0 ? setActiveStep(activeStep - 1) : onClose()}
             className="px-7 py-2.5 rounded-xl text-sm font-semibold border border-[#E5E7EB] text-[#374151] bg-white hover:bg-gray-50 cursor-pointer transition-colors"
@@ -488,7 +488,7 @@ function ViewProfileModal({ doctor, onClose, onEdit }) {
     <div className="flex flex-col gap-5 overflow-y-auto">
       <div className="flex justify-between items-start">
         <div className="flex items-center gap-4">
-          <div className="w-20 h-20 rounded-2xl flex items-center justify-center text-2xl font-bold flex-shrink-0"
+          <div className="w-20 h-20 rounded-2xl flex items-center justify-center text-2xl font-bold shrink-0"
             style={{ background: `${doctor.color}20`, border: `2px solid ${doctor.color}50`, color: doctor.color }}>
             {doctor.initials}
           </div>
@@ -696,7 +696,7 @@ export default function DoctorDetails() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-[400px]">
+      <div className="flex justify-center items-center h-100">
         Loading doctors...
       </div>
     );
@@ -705,7 +705,7 @@ export default function DoctorDetails() {
   return (
     <div className="p-0 sm:p-4 lg:p-6 bg-white min-h-screen">
       {toast && (
-        <div className="fixed top-5 right-5 z-[2000] px-5 py-3.5 rounded-2xl shadow-lg text-sm font-semibold text-white bg-[#E8630A] flex items-center gap-2">
+        <div className="fixed top-5 right-5 z-2000 px-5 py-3.5 rounded-2xl shadow-lg text-sm font-semibold text-white bg-[#E8630A] flex items-center gap-2">
           ✓ {toast}
         </div>
       )}
@@ -757,7 +757,7 @@ export default function DoctorDetails() {
             <div key={d._id} className="bg-white border border-[#EAE5DC] rounded-2xl p-5 hover:shadow-lg transition-all duration-200 group">
               <div className="flex items-center gap-3 mb-4">
                 <div
-                  className="w-12 h-12 rounded-xl flex items-center justify-center text-base font-bold flex-shrink-0 group-hover:scale-105 transition-transform"
+                  className="w-12 h-12 rounded-xl flex items-center justify-center text-base font-bold shrink-0 group-hover:scale-105 transition-transform"
                   style={{ background: `${d.color}20`, border: `2px solid ${d.color}40`, color: d.color }}
                 >
                   {d.initials}
@@ -766,7 +766,7 @@ export default function DoctorDetails() {
                   <div className="text-sm font-bold text-[#1A1D2E] truncate">{d.name}</div>
                   <div className="text-xs text-gray-400 mt-0.5">{d._id}</div>
                 </div>
-                <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-green-100 text-green-600 flex-shrink-0">{d.status}</span>
+                <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-green-100 text-green-600 shrink-0">{d.status}</span>
               </div>
 
               <div className="grid grid-cols-2 gap-2 mb-4">

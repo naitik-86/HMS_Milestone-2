@@ -113,8 +113,8 @@ export default function ExistingCustomerPet() {
         ))}
       </div>
 
-      <div className="bg-white rounded-2xl sm:rounded-[32px] shadow-lg border border-slate-200 overflow-hidden">
-        <div className="bg-gradient-to-r from-orange-500 to-orange-600 px-5 sm:px-8 py-5 sm:py-6">
+      <div className="bg-white rounded-2xl sm:rounded-4xl shadow-lg border border-slate-200 overflow-hidden">
+        <div className="bg-linear-to-r from-orange-500 to-orange-600 px-5 sm:px-8 py-5 sm:py-6">
           <h2 className="text-xl sm:text-2xl font-bold text-white">
             Existing Customer Records
           </h2>
@@ -175,7 +175,7 @@ export default function ExistingCustomerPet() {
           </div>
 
           <div className="hidden md:block overflow-x-auto">
-            <table className="w-full min-w-[820px]">
+            <table className="w-full min-w-205">
               <thead>
                 <tr className="bg-slate-50 border-b">
                   <th className="p-4 sm:p-5 text-left font-semibold text-slate-700">Pet ID</th>

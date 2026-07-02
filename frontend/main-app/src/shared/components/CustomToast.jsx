@@ -32,7 +32,7 @@ export default function CustomToast({
         <div
             className={`
         relative overflow-hidden
-        w-[380px]
+        w-95
         rounded-[18px]
         px-5 py-4
         flex gap-4
@@ -41,7 +41,7 @@ export default function CustomToast({
       `}
         >
 
-            <div className="absolute bottom-0 left-0 h-[4px] w-full bg-black/10">
+            <div className="absolute bottom-0 left-0 h-1 w-full bg-black/10">
                 <div
                     className={`h-full ${isSuccess ? "bg-green-600" : "bg-red-600"
                         } transition-all`}
