@@ -20,7 +20,7 @@ export const completePreConsultation = async (petData) => {
 
 
     const res = await API.patch(
-        `${BASE_URL}/${id}`,
+        `${BASE_URL}/${id}/complete`,
         petData
     );
 

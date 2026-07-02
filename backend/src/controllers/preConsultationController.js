@@ -1,9 +1,41 @@
 const PreConsultation = require("../models/PreConsultation");
+const PetRegistration = require("../models/PetRegistration");
 
-// ===============================================
-// Create Pre Consultation
-// ===============================================
+const attachOwnerAndPet = (records) => {
+  return records.map((record) => {
+    const owner = record.ownerId;
 
+    let pet = null;
+
+    if (owner?.pets?.length) {
+      pet = owner.pets.find(
+        (p) => p.uniquePetId === record.uniquePetId
+      );
+    }
+
+    const data = record.toObject();
+
+    data.owner = owner
+      ? {
+        _id: owner._id,
+        ownerName: owner.ownerName,
+        mobileNumber: owner.mobileNumber,
+        email: owner.email,
+        address: owner.address,
+        city: owner.city,
+        district: owner.district,
+        state: owner.state,
+        pincode: owner.pincode,
+      }
+      : null;
+
+    data.pet = pet || null;
+
+    delete data.ownerId;
+
+    return data;
+  });
+};
 exports.savePreConsultation = async (req, res) => {
   try {
     const {
@@ -152,12 +184,19 @@ exports.getPendingPets = async (req, res) => {
     const pendingPets = await PreConsultation.find({
       status: "PENDING",
     })
+      .populate({
+        path: "ownerId",
+        select:
+          "ownerName mobileNumber email address city district state pincode pets",
+      })
       .sort({ createdAt: -1 });
+
+    const data = attachOwnerAndPet(pendingPets);
 
     return res.status(200).json({
       success: true,
-      count: pendingPets.length,
-      data: pendingPets,
+      count: data.length,
+      data,
     });
   } catch (error) {
     return res.status(500).json({
@@ -173,10 +212,6 @@ exports.getPendingPets = async (req, res) => {
 
 exports.getCompletedPets = async (req, res) => {
   try {
-    // ===========================================
-    // Dashboard Stats
-    // ===========================================
-
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -207,17 +242,17 @@ exports.getCompletedPets = async (req, res) => {
         status: "COMPLETED",
       });
 
-    // ===========================================
-    // Completed Pets List
-    // ===========================================
-
     const completedPets = await PreConsultation.find({
       status: "COMPLETED",
     })
-      .select(
-        "uniquePetId tokenNumber status updatedAt ownerId vitalsRecordedAt recordedBy"
-      )
+      .populate({
+        path: "ownerId",
+        select:
+          "ownerName mobileNumber email address city district state pincode pets",
+      })
       .sort({ updatedAt: -1 });
+
+    const pets = attachOwnerAndPet(completedPets);
 
     return res.status(200).json({
       success: true,
@@ -227,8 +262,7 @@ exports.getCompletedPets = async (req, res) => {
           completedThisWeek,
           totalCompleted,
         },
-
-        pets: completedPets,
+        pets,
       },
     });
   } catch (error) {
@@ -238,42 +272,42 @@ exports.getCompletedPets = async (req, res) => {
     });
   }
 };
-
 // ===============================================
 // Get History Pets
 // ===============================================
 
 exports.getHistoryPets = async (req, res) => {
   try {
-    // ===========================================
-    // Dashboard Stats
-    // ===========================================
-
-    const totalRecords = await PreConsultation.countDocuments();
+    const totalRecords =
+      await PreConsultation.countDocuments();
 
     const startOfMonth = new Date();
     startOfMonth.setDate(1);
     startOfMonth.setHours(0, 0, 0, 0);
 
-    const thisMonth = await PreConsultation.countDocuments({
-      createdAt: {
-        $gte: startOfMonth,
-      },
-    });
+    const thisMonth =
+      await PreConsultation.countDocuments({
+        createdAt: {
+          $gte: startOfMonth,
+        },
+      });
 
-    const archivedCases = await PreConsultation.countDocuments({
-      status: "COMPLETED",
-    });
+    const archivedCases =
+      await PreConsultation.countDocuments({
+        status: "COMPLETED",
+      });
 
-    // ===========================================
-    // History Records
-    // ===========================================
+    const records = await PreConsultation.find()
+      .populate({
+        path: "ownerId",
+        select:
+          "ownerName mobileNumber email address city district state pincode pets",
+      })
+      .sort({
+        createdAt: -1,
+      });
 
-    const history = await PreConsultation.find()
-      .select(
-        "uniquePetId tokenNumber status severity createdAt updatedAt recordedBy ownerId"
-      )
-      .sort({ createdAt: -1 });
+    const history = attachOwnerAndPet(records);
 
     return res.status(200).json({
       success: true,

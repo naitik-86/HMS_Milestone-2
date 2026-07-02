@@ -236,17 +236,17 @@ export default function HistoryPets() {
                         <div className="flex items-center gap-4">
 
                           <div className="w-11 h-11 rounded-2xl bg-blue-100 flex items-center justify-center font-bold text-blue-600">
-                            {item.ownerId?.ownerName?.charAt(0)}
+                            {item.owner?.ownerName?.charAt(0)}
                           </div>
 
                           <div>
 
                             <p className="font-semibold text-slate-800">
-                              {item?.ownerId}
+                              {item?.owner?.ownerName}
                             </p>
 
                             <p className="text-sm text-slate-500">
-                              {item.ownerId?.phoneNumber}
+                              {item.owner?.mobileNumber}
                             </p>
 
                           </div>

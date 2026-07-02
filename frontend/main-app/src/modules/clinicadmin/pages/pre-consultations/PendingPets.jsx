@@ -171,18 +171,18 @@ export default function PendingPets() {
 
                         <div className="flex items-center gap-4">
 
-                          {/* <div className="w-12 h-12 rounded-2xl bg-orange-100 flex items-center justify-center font-bold text-orange-600">
-                            {pet.ownerName.charAt(0)}
-                          </div> */}
+                          <div className="w-12 h-12 rounded-2xl bg-orange-100 flex items-center justify-center font-bold text-orange-600">
+                            {pet?.owner?.ownerName?.charAt(0)}
+                          </div>
 
                           <div>
 
                             <p className="font-semibold text-slate-800">
-                              {pet.ownerId}
+                              {pet?.owner?.ownerName}
                             </p>
 
                             <p className="text-sm text-slate-500">
-                              N/A
+                              {pet?.owner?.mobileNumber}
                             </p>
 
                           </div>

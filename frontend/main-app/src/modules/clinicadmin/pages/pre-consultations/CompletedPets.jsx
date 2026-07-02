@@ -33,37 +33,6 @@ export default function CompletedPets() {
   };
   console.log(completedPets);
   const filteredPets = completedPets;
-  // completedPets.filter(
-  //   (pet) =>
-  //     pet.token.toLowerCase().includes(search.toLowerCase()) ||
-  //     pet.ownerName.toLowerCase().includes(search.toLowerCase()) ||
-  //     pet.petName.toLowerCase().includes(search.toLowerCase()) ||
-  //     pet.phoneNumber.toLowerCase().includes(search.toLowerCase())
-  // );
-
-  // const cards = [
-  //   {
-  //     title: "Completed Today",
-  //     value: "18",
-  //     icon: "✅",
-  //     color: "bg-green-50",
-  //     text: "text-green-600",
-  //   },
-  //   {
-  //     title: "This Week",
-  //     value: "96",
-  //     icon: "📅",
-  //     color: "bg-blue-50",
-  //     text: "text-blue-600",
-  //   },
-  //   {
-  //     title: "Total Completed",
-  //     value: "1248",
-  //     icon: "🏆",
-  //     color: "bg-purple-50",
-  //     text: "text-purple-600",
-  //   },
-  // ];
 
 
   const cards = [
@@ -232,17 +201,17 @@ export default function CompletedPets() {
 
                         <div className="flex items-center gap-4">
 
-                          {/* <div className="w-11 h-11 rounded-2xl bg-green-100 flex items-center justify-center font-bold text-green-600">
-                            {pet.ownerName.charAt(0)}
-                          </div> */}
+                          <div className="w-11 h-11 rounded-2xl bg-green-100 flex items-center justify-center font-bold text-green-600">
+                            {pet?.owner?.ownerName.charAt(0)}
+                          </div>
 
                           <div>
                             <p className="font-semibold text-slate-800">
-                              {pet.ownerId}
+                              {pet?.owner?.ownerName}
                             </p>
 
                             <p className="text-sm text-slate-500">
-                              N/A
+                              {pet?.owner?.mobileNumber}
                             </p>
                           </div>
 
@@ -260,7 +229,7 @@ export default function CompletedPets() {
 
                           <div>
                             <p className="font-semibold text-slate-800">
-                              {pet._id}
+                              {pet.uniquePetId}
                             </p>
 
                             <p className="text-sm text-slate-500">
