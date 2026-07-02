@@ -1,25 +1,29 @@
-import { useState } from "react";
-
+import { useEffect, useState } from "react";
+import { getPetHistory } from "../../api/receptionApi";
+import { useParams } from "react-router-dom";
 export default function PetHistory() {
+  console.log("PetHistory Rendered");
   const [search, setSearch] = useState("");
+  const [visits, setVisits] = useState([]);
 
+  const fetchPetHistory = async () => {
+    console.log("API Calling...");
 
-  const filteredVisits = visits.filter((item) => {
+    const response = await getPetHistory();
 
+    console.log("API Response:", response);
+  };
+  useEffect(() => {
+    console.log("useEffect fired");
 
-    const [visits, setVisits] = useState([]);
-    const [stats, setStats] = useState({
-      totalVisits: 0,
-      vaccinations: 0,
-      treatments: 0,
-      checkups: 0,
-    });
-    const [loading, setLoading] = useState(true);
+    fetchPetHistory();
+  }, []);
 
+  const filteredVisits = visits.filter((items) => {
     const value = search.toLowerCase();
     return (
-      item.petName.toLowerCase().includes(value) ||
-      item.owner.toLowerCase().includes(value)
+      items.petName?.toLowerCase().includes(value) ||
+      items.owner?.toLowerCase().includes(value)
     );
   });
 
@@ -49,7 +53,10 @@ export default function PetHistory() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
         {stats.map((item) => (
-          <div key={item.label} className="bg-white rounded-2xl sm:rounded-[28px] p-5 sm:p-6 shadow-sm">
+          <div
+            key={item.label}
+            className="bg-white rounded-2xl sm:rounded-[28px] p-5 sm:p-6 shadow-sm"
+          >
             <p className="text-slate-500">{item.label}</p>
             <h2 className={`text-3xl sm:text-4xl font-bold mt-2 ${item.color}`}>
               {item.value}
@@ -84,13 +91,22 @@ export default function PetHistory() {
 
           <div className="md:hidden space-y-4">
             {filteredVisits.map((visit) => (
-              <div key={`${visit.date}-${visit.petName}`} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <div
+                key={`${visit.date}-${visit.petName}`}
+                className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
+              >
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="text-xs font-semibold uppercase text-slate-400">Pet Name</p>
-                    <h3 className="text-lg font-bold text-slate-800">{visit.petName}</h3>
+                    <p className="text-xs font-semibold uppercase text-slate-400">
+                      Pet Name
+                    </p>
+                    <h3 className="text-lg font-bold text-slate-800">
+                      {visit.petName}
+                    </h3>
                   </div>
-                  <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(visit.status)}`}>
+                  <span
+                    className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(visit.status)}`}
+                  >
                     {visit.status}
                   </span>
                 </div>
@@ -99,25 +115,35 @@ export default function PetHistory() {
                   <div className="grid grid-cols-2 gap-3">
                     <div className="rounded-xl bg-white p-3">
                       <p className="text-xs text-slate-500">Date</p>
-                      <p className="font-semibold text-slate-800">{visit.date}</p>
+                      <p className="font-semibold text-slate-800">
+                        {visit.date}
+                      </p>
                     </div>
                     <div className="rounded-xl bg-white p-3">
                       <p className="text-xs text-slate-500">Bill</p>
-                      <p className="font-semibold text-slate-800">{visit.bill}</p>
+                      <p className="font-semibold text-slate-800">
+                        {visit.bill}
+                      </p>
                     </div>
                   </div>
                   <div className="rounded-xl bg-white p-3">
                     <p className="text-xs text-slate-500">Owner</p>
-                    <p className="font-semibold text-slate-800">{visit.owner}</p>
+                    <p className="font-semibold text-slate-800">
+                      {visit.owner}
+                    </p>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="rounded-xl bg-white p-3">
                       <p className="text-xs text-slate-500">Reason</p>
-                      <p className="font-semibold text-slate-800">{visit.reason}</p>
+                      <p className="font-semibold text-slate-800">
+                        {visit.reason}
+                      </p>
                     </div>
                     <div className="rounded-xl bg-white p-3">
                       <p className="text-xs text-slate-500">Doctor</p>
-                      <p className="font-semibold text-slate-800">{visit.doctor}</p>
+                      <p className="font-semibold text-slate-800">
+                        {visit.doctor}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -145,14 +171,19 @@ export default function PetHistory() {
               </thead>
               <tbody>
                 {filteredVisits.map((visit) => (
-                  <tr key={`${visit.date}-${visit.petName}`} className="border-b hover:bg-slate-50">
+                  <tr
+                    key={`${visit.date}-${visit.petName}`}
+                    className="border-b hover:bg-slate-50"
+                  >
                     <td className="p-4">{visit.date}</td>
                     <td className="p-4 font-medium">{visit.petName}</td>
                     <td className="p-4">{visit.owner}</td>
                     <td className="p-4">{visit.reason}</td>
                     <td className="p-4">{visit.doctor}</td>
                     <td className="p-4">
-                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(visit.status)}`}>
+                      <span
+                        className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(visit.status)}`}
+                      >
                         {visit.status}
                       </span>
                     </td>
@@ -177,7 +208,9 @@ export default function PetHistory() {
         <div className="space-y-6">
           {visits.map((visit, index) => (
             <div key={`${visit.date}-${visit.owner}`} className="flex gap-4">
-              <div className={`w-4 h-4 rounded-full mt-2 ${index === 0 ? "bg-orange-500" : index === 1 ? "bg-blue-500" : "bg-green-500"}`} />
+              <div
+                className={`w-4 h-4 rounded-full mt-2 ${index === 0 ? "bg-orange-500" : index === 1 ? "bg-blue-500" : "bg-green-500"}`}
+              />
               <div>
                 <h3 className="font-semibold">{visit.reason}</h3>
                 <p className="text-slate-500">

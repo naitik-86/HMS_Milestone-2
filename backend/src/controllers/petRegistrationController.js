@@ -224,39 +224,44 @@ const addVisit = async (req, res) => {
 
 // Get Pet History
 const getPetHistory = async (req, res) => {
-    try {
-        const { ownerId, petId } = req.params;
+    return res.status(200).json({
+        message: "end of Url"
+    })
+}
+//     try {
+//         console.log("---------------------------------------------------------")
+//         const { ownerId, petId } = req.params;
 
-        const owner =
-            await PetRegistration.findById(ownerId);
+//         const owner =
+//             await PetRegistration.findById(ownerId);
 
-        if (!owner) {
-            return res.status(404).json({
-                success: false,
-                message: "Owner Not Found",
-            });
-        }
+//         if (!owner) {
+//             return res.status(404).json({
+//                 success: false,
+//                 message: "Owner Not Found",
+//             });
+//         }
 
-        const pet = owner.pets.id(petId);
+//         const pet = owner.pets.id(petId);
 
-        if (!pet) {
-            return res.status(404).json({
-                success: false,
-                message: "Pet Not Found",
-            });
-        }
+//         if (!pet) {
+//             return res.status(404).json({
+//                 success: false,
+//                 message: "Pet Not Found",
+//             });
+//         }
 
-        return res.status(200).json({
-            success: true,
-            data: pet.history,
-        });
-    } catch (error) {
-        return res.status(500).json({
-            success: false,
-            message: error.message,
-        });
-    }
-};
+//         return res.status(200).json({
+//             success: true,
+//             data: pet.history,
+//         });
+//     } catch (error) {
+//         return res.status(500).json({
+//             success: false,
+//             message: error.message,
+//         });
+//     }
+// };
 
 
 

@@ -69,9 +69,10 @@ export const addVisit = async (ownerId, petId, visitData) => {
 };
 
 // To Get Pet History
-export const getPetHistory = async (ownerId, petId) => {
+export const getPetHistory = async () => {
+    console.log("API reached ...")
     const response = await API.get(
-        `${BASE_URL}/new-registration/owner/${ownerId}/pets/${petId}/history`
+        `${BASE_URL}/petHistory`
     );
 
     return response.data;

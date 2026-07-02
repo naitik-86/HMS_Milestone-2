@@ -1,13 +1,27 @@
 import { useEffect, useState } from "react";
 import { getExistingCustomers } from "../../api/receptionApi";
+import { useNavigate } from "react-router-dom";
 
 export default function ExistingCustomerPet() {
   const [search, setSearch] = useState("");
+  const navigate = useNavigate();
 
   const [customers, setCustomers] = useState([]);
+
   useEffect(() => {
-    getExistingCustomers();
-  });
+    const fetchCustomers = async () => {
+      try {
+        const response = await getExistingCustomers();
+        console.log("API Response:", response);
+        setCustomers(response.data);
+      } catch (error) {
+        console.log("failed to fetch customer data " + error);
+      }
+    };
+    fetchCustomers();
+  }, []);
+  console.log("++++++++++++++++++++++++++++++++++++++++++++++++++");
+  console.log(customers);
   const [stats, setStats] = useState([
     {
       label: "Total Pets",
@@ -28,15 +42,16 @@ export default function ExistingCustomerPet() {
       icon: "PN",
     },
   ]);
+  // const filteredCustomers = (customers || []).filter((item) => {
+  //   const value = search.toLowerCase();
 
-  const filteredCustomers = customers.filter((item) => {
-    const value = search.toLowerCase();
-    return (
-      item.owner.toLowerCase().includes(value) ||
-      item.id.toLowerCase().includes(value) ||
-      item.pet.toLowerCase().includes(value)
-    );
-  });
+  //   return (
+  //     item.owner?.toLowerCase().includes(value) ||
+  //     item.id?.toLowerCase().includes(value) ||
+  //     item.pet?.toLowerCase().includes(value)
+  //   );
+  // });
+  const filteredCustomers = customers;
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -110,7 +125,7 @@ export default function ExistingCustomerPet() {
           <div className="md:hidden space-y-4">
             {filteredCustomers.map((item) => (
               <div
-                key={item.id}
+                key={item.petId}
                 className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
               >
                 <div className="flex items-start justify-between gap-3">
@@ -119,7 +134,7 @@ export default function ExistingCustomerPet() {
                       Pet ID
                     </p>
                     <h3 className="text-lg font-bold text-slate-800">
-                      {item.id}
+                      {item.petId}
                     </h3>
                   </div>
                   <span
@@ -132,12 +147,16 @@ export default function ExistingCustomerPet() {
                 <div className="mt-4 space-y-3">
                   <div className="rounded-xl bg-white p-3">
                     <p className="text-xs text-slate-500">Owner Name</p>
-                    <p className="font-semibold text-slate-800">{item.owner}</p>
+                    <p className="font-semibold text-slate-800">
+                      {item.ownerName}
+                    </p>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="rounded-xl bg-white p-3">
                       <p className="text-xs text-slate-500">Pet Name</p>
-                      <p className="font-semibold text-slate-800">{item.pet}</p>
+                      <p className="font-semibold text-slate-800">
+                        {item.petName}
+                      </p>
                     </div>
                     <div className="rounded-xl bg-white p-3">
                       <p className="text-xs text-slate-500">Reason</p>
@@ -148,7 +167,12 @@ export default function ExistingCustomerPet() {
                   </div>
                 </div>
 
-                <button className="mt-4 w-full px-5 py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-semibold transition shadow-sm">
+                <button
+                  onClick={() =>
+                    navigate(`/pet-history/${item.ownerId}/${item.petId}`)
+                  }
+                  className="mt-4 w-full px-5 py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-semibold transition shadow-sm"
+                >
                   View Details
                 </button>
               </div>
@@ -182,14 +206,14 @@ export default function ExistingCustomerPet() {
               <tbody>
                 {filteredCustomers.map((item) => (
                   <tr
-                    key={item.id}
+                    key={item.petId}
                     className="border-b hover:bg-slate-50 transition"
                   >
                     <td className="p-4 sm:p-5 font-semibold text-slate-700">
-                      {item.id}
+                      {item.petUniqueId}
                     </td>
-                    <td className="p-4 sm:p-5">{item.owner}</td>
-                    <td className="p-4 sm:p-5">{item.pet}</td>
+                    <td className="p-4 sm:p-5">{item.ownerName}</td>
+                    <td className="p-4 sm:p-5">{item.petName}</td>
                     <td className="p-4 sm:p-5">{item.reason}</td>
                     <td className="p-4 sm:p-5">
                       <span
@@ -199,7 +223,12 @@ export default function ExistingCustomerPet() {
                       </span>
                     </td>
                     <td className="p-4 sm:p-5">
-                      <button className="px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-medium transition shadow-sm">
+                      <button
+                        onClick={() =>
+                          navigate(`/pet-history/${item.ownerId}/${item.petId}`)
+                        }
+                        className="px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-medium transition shadow-sm"
+                      >
                         View Details
                       </button>
                     </td>

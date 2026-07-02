@@ -118,7 +118,7 @@ router.get("/reception/new-registration/mobile/:mobileNumber", petRegistrationCo
 router.get("/reception/new-registration/owner/:ownerId", petRegistrationController.getOwnerDetails);
 router.post("/reception/new-registration/owner/:ownerId/pets", petRegistrationController.addPet);
 router.post("/reception/new-registration/owner/:ownerId/pets/:petId/visit", petRegistrationController.addVisit);
-router.get("/reception/new-registration/owner/:ownerId/pets/:petId/history", petRegistrationController.getPetHistory);
+router.get("/reception/petHistory", petRegistrationController.getPetHistory);
 
 //clinic reception routes for checking history
 router.get("/reception/existing-customers/stats", petRegistrationController.getDashboardStats);
