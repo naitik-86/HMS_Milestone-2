@@ -7,6 +7,25 @@ const labRecordSchema = new mongoose.Schema(
       required: true,
       unique: true,
     },
+    petName: {
+    type: String,
+    required: true,
+},
+
+ownerName: {
+    type: String,
+    required: true,
+},
+
+ownerPhone: {
+    type: String,
+    required: true,
+},
+
+reportType: {
+    type: String,
+    required: true,
+},
 
     appointmentId: String,
 
