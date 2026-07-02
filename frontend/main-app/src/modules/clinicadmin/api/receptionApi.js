@@ -1,9 +1,10 @@
 import API from "../../../shared/api/axios";
 
-const BASE_URL = "/clinic-admin/reception";
+const BASE_URL = "/clinic/reception";
 
 // Create Registration
 export const registerOwnerAndPet = async (createRegistration) => {
+    console.log(createRegistration)
     const response = await API.post(
         `${BASE_URL}/new-registration`,
         createRegistration,
@@ -11,6 +12,18 @@ export const registerOwnerAndPet = async (createRegistration) => {
             headers: {
                 "Content-Type": "multipart/form-data",
             },
+        }
+    );
+
+    return response.data;
+};
+
+// Existing Customers List
+export const getExistingCustomers = async (params = {}) => {
+    const response = await API.get(
+        `${BASE_URL}/existing-customers`,
+        {
+            params,
         }
     );
 
@@ -73,18 +86,6 @@ export const getDashboardStats = async () => {
     return response.data;
 };
 
-// Existing Customers List
-export const getExistingCustomers = async (params = {}) => {
-    const response = await API.get(
-        `${BASE_URL}/existing-customers`,
-        {
-            params,
-        }
-    );
-
-    return response.data;
-};
-
 // Single Pet Details
 export const getPetDetails = async (ownerId, petId) => {
     const response = await API.get(
@@ -93,28 +94,6 @@ export const getPetDetails = async (ownerId, petId) => {
 
     return response.data;
 };
-
-// Register Owner & Pet
-// export const registerOwnerAndPet = async (data) => {
-//     const response = await API.post(
-//         `${BASE_URL}/owners/register`,
-//         data
-//     );
-
-//     return response.data;
-// };
-
-// Search Owner
-// export const searchOwner = async (params) => {
-//     const response = await API.get(
-//         `${BASE_URL}/owners/search`,
-//         {
-//             params,
-//         }
-//     );
-
-//     return response.data;
-// };
 
 // Get Clinic Queue
 export const getClinicQueue = async () => {

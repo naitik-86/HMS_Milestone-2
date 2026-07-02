@@ -1,8 +1,9 @@
 const PetRegistration = require("../models/PetRegistration");
 
-// Create Registration
 const createRegistration = async (req, res) => {
+
     try {
+        console.log("++++++++++++++++++++++++++++++++++++++++++++++")
         const {
             mobileNumber,
             ownerName,
@@ -399,5 +400,3 @@ module.exports = {
     getPetDetails,
     getExistingCustomers
 };
-
-
