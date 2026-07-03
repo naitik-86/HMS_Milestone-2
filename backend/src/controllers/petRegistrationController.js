@@ -20,6 +20,9 @@ const createRegistration = async (req, res) => {
             visit,
         } = req.body;
 
+        console.log(req.body);
+
+
         let owner = await PetRegistration.findOne({
             mobileNumber,
         });
@@ -76,6 +79,11 @@ const createRegistration = async (req, res) => {
             pincode,
             pets: [petData],
         });
+
+        console.log("submitted");
+
+        console.log(owner);
+
 
         return res.status(201).json({
             success: true,
@@ -262,23 +270,24 @@ const getPetHistoryByID = async (req, res) => {
 const getPetHistory = async (req, res) => {
     try {
         const owners = await PetRegistration.find();
-
         const history = [];
 
         owners.forEach((owner) => {
             owner.pets.forEach((pet) => {
 
+                // No visits at all
                 if (!pet.visits || pet.visits.length === 0) {
                     history.push({
                         ownerId: owner._id,
                         petId: pet._id,
-                        petName: pet.petName,
-                        owner: owner.ownerName,
+                        petName: pet.petName || "-",
+                        owner: owner.ownerName || "-",
                         reason: "-",
                         doctor: "-",
-                        status: "No Visit",
-                        bill: "-",
-                        date: owner.createdAt
+                        status: "-",
+                        age: pet.age || "-",
+                        date: owner.createdAt,
+                        formattedDate: owner.createdAt
                             ? new Date(owner.createdAt).toLocaleDateString()
                             : "-"
                     });
@@ -287,49 +296,55 @@ const getPetHistory = async (req, res) => {
                 }
 
                 pet.visits.forEach((visit) => {
+                    const hasRealVisitData =
+                        visit.primaryReason ||
+                        visit.assignedDoctor ||
+                        visit.appointmentDate ||
+                        visit.complaint;
+
                     history.push({
                         ownerId: owner._id,
                         petId: pet._id,
+                        petName: pet.petName || "-",
+                        owner: owner.ownerName || "-",
 
-                        petName: pet.petName,
-                        owner: owner.ownerName,
-
-                        reason: visit.primaryReason || "-",
-                        doctor: visit.assignedDoctor || "-",
-
+                        reason: hasRealVisitData ? visit.primaryReason || "-" : "-",
+                        doctor: hasRealVisitData ? visit.assignedDoctor || "-" : "-",
                         status: visit.status || "Pending",
 
+                        age: pet.age || "-",
                         bill: "-",
 
-                        date: visit.appointmentDate
-                            ? new Date(
-                                visit.appointmentDate
-                            ).toLocaleDateString()
-                            : "-",
+                        date: hasRealVisitData
+                            ? visit.appointmentDate || owner.createdAt
+                            : owner.createdAt,
 
-                        tokenNumber: visit.tokenNumber,
-                        appointmentTime:
-                            visit.appointmentTime,
-                        complaint: visit.complaint
+                        formattedDate: hasRealVisitData
+                            ? new Date(
+                                visit.appointmentDate || owner.createdAt
+                            ).toLocaleDateString()
+                            : new Date(owner.createdAt).toLocaleDateString(),
+
+                        tokenNumber: visit.tokenNumber || "-",
+                        appointmentTime: visit.appointmentTime || "-",
+                        complaint: visit.complaint || "-",
                     });
                 });
             });
         });
 
-        history.sort((a, b) => {
-            return new Date(b.date) - new Date(a.date);
-        });
+        history.sort((a, b) => new Date(b.date) - new Date(a.date));
 
         return res.status(200).json({
             success: true,
             count: history.length,
-            data: history
+            data: history,
         });
 
     } catch (error) {
         return res.status(500).json({
             success: false,
-            message: error.message
+            message: error.message,
         });
     }
 };
@@ -340,9 +355,13 @@ const getExistingCustomers = async (req, res) => {
 
         const owners = await PetRegistration.find();
 
+        console.log(owners);
+
+
+
         let result = [];
 
-        owners.forEach(owner => {
+        owners.reverse().forEach(owner => {
 
             owner.pets.forEach(pet => {
 
@@ -353,8 +372,20 @@ const getExistingCustomers = async (req, res) => {
                     ownerId: owner._id,
                     petId: pet._id,
                     petUniqueId: pet.uniquePetId,
+
                     ownerName: owner.ownerName,
+                    mobileNumber: owner.mobileNumber,
+
+
                     petName: pet.petName,
+                    species: pet.species,
+                    breed: pet.breed,
+                    gender: pet.gender,
+                    age: pet.age,
+                    color: pet.color,
+                    sterilized: pet.sterilized,
+
+
                     reason: latestVisit.primaryReason || "-",
                     status: latestVisit.status || "Pending"
                 });

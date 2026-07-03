@@ -5,13 +5,18 @@ export default function PetHistory() {
   console.log("PetHistory Rendered");
   const [search, setSearch] = useState("");
   const [visits, setVisits] = useState([]);
-
   const fetchPetHistory = async () => {
-    console.log("API Calling...");
+    try {
+      console.log("API Calling...");
 
-    const response = await getPetHistory();
+      const response = await getPetHistory();
 
-    console.log("API Response:", response);
+      console.log("API Response:", response);
+
+      setVisits(response.data);
+    } catch (error) {
+      console.error("Error fetching pet history:", error);
+    }
   };
   useEffect(() => {
     console.log("useEffect fired");
@@ -19,13 +24,12 @@ export default function PetHistory() {
     fetchPetHistory();
   }, []);
 
-  const filteredVisits = visits.filter((items) => {
-    const value = search.toLowerCase();
-    return (
-      items.petName?.toLowerCase().includes(value) ||
-      items.owner?.toLowerCase().includes(value)
-    );
-  });
+  const filteredVisits = visits.filter(
+    (visit) =>
+      visit.petName?.toLowerCase().includes(search.toLowerCase()) ||
+      visit.owner?.toLowerCase().includes(search.toLowerCase())
+  );
+
 
   const getStatusColor = (status) => {
     if (status === "Completed") return "bg-green-100 text-green-700";
@@ -52,9 +56,9 @@ export default function PetHistory() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
-        {stats.map((item) => (
+        {stats.map((item, index) => (
           <div
-            key={item.label}
+            key={index}
             className="bg-white rounded-2xl sm:rounded-[28px] p-5 sm:p-6 shadow-sm"
           >
             <p className="text-slate-500">{item.label}</p>
@@ -92,7 +96,7 @@ export default function PetHistory() {
           <div className="md:hidden space-y-4">
             {filteredVisits.map((visit) => (
               <div
-                key={`${visit.date}-${visit.petName}`}
+                key={`${visit.ownerId}-${visit.petId}-${visit.tokenNumber}`}
                 className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
               >
                 <div className="flex items-start justify-between gap-3">
@@ -165,16 +169,13 @@ export default function PetHistory() {
                   <th className="p-4 text-left">Reason</th>
                   <th className="p-4 text-left">Doctor</th>
                   <th className="p-4 text-left">Status</th>
-                  <th className="p-4 text-left">Bill</th>
+                  <th className="p-4 text-left">Age</th>
                   <th className="p-4 text-left">Action</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredVisits.map((visit) => (
-                  <tr
-                    key={`${visit.date}-${visit.petName}`}
-                    className="border-b hover:bg-slate-50"
-                  >
+                  <tr key={`${visit.ownerId}-${visit.petId}-${visit.tokenNumber}`}>
                     <td className="p-4">{visit.date}</td>
                     <td className="p-4 font-medium">{visit.petName}</td>
                     <td className="p-4">{visit.owner}</td>
@@ -187,7 +188,7 @@ export default function PetHistory() {
                         {visit.status}
                       </span>
                     </td>
-                    <td className="p-4 font-semibold">{visit.bill}</td>
+                    <td className="p-4 font-semibold">{visit.age}</td>
                     <td className="p-4">
                       <button className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-xl transition">
                         View
@@ -207,7 +208,7 @@ export default function PetHistory() {
         </h2>
         <div className="space-y-6">
           {visits.map((visit, index) => (
-            <div key={`${visit.date}-${visit.owner}`} className="flex gap-4">
+            <div key={`${visit.ownerId}-${visit.petId}-${visit.tokenNumber}`} className="flex gap-4">
               <div
                 className={`w-4 h-4 rounded-full mt-2 ${index === 0 ? "bg-orange-500" : index === 1 ? "bg-blue-500" : "bg-green-500"}`}
               />

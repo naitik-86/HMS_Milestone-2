@@ -3,21 +3,78 @@ import API from "../../../shared/api/axios";
 const BASE_URL = "/clinic/reception";
 
 // Create Registration
-export const registerOwnerAndPet = async (createRegistration) => {
-    console.log(createRegistration)
+export const registerOwnerAndPet = async (data) => {
+    console.log("RAW FORM DATA:", data);
+
+    const formData = {
+        mobileNumber: data.mobileNumber,
+        ownerName: data.ownerName,
+        visitType: data.visitType,
+        ownerIdType: data.ownerIdType,
+        email: data.email,
+        address: data.address,
+        state: data.state,
+        city: data.city,
+        district: data.district,
+        pincode: data.pincode,
+
+        // ✅ PET
+        pet: {
+            petName: data.petName,
+            species: data.species,
+            breed: data.breed,
+            gender: data.gender,
+            age: data.age,
+            color: data.color,
+            sterilized: data.sterilized === "Yes"
+        },
+
+        // ✅ VISIT
+        visit: {
+            primaryReason: data.primaryReason,
+            complaint: data.complaint,
+            condition: data.condition,
+            treatment: data.treatment,
+            treatmentDate: data.treatmentDate,
+            appointmentDate: data.appointmentDate,
+            appointmentTime: data.appointmentTime,
+            assignedDoctor: data.assignedDoctor,
+            hospital: data.hospital,
+            status: "Pending"
+        },
+
+        // ✅ HISTORY
+        history: {
+            vaccinations: data.vaccinationDate
+                ? [{ date: data.vaccinationDate, name: data.vaccineName }]
+                : [],
+
+            dewormings: data.dewormingDate
+                ? [{ date: data.dewormingDate, product: data.dewormingProduct }]
+                : [],
+
+            surgeries: data.surgeryDate
+                ? [{ date: data.surgeryDate, procedure: data.surgicalProcedure }]
+                : [],
+
+            treatments: data.treatmentDate
+                ? [{ date: data.treatmentDate, details: data.treatment }]
+                : [],
+
+            allergies: data.allergies,
+            currentMedications: data.medications
+        }
+    };
+
+    console.log("FINAL PAYLOAD:", formData);
+
     const response = await API.post(
         `${BASE_URL}/new-registration`,
-        createRegistration,
-        {
-            headers: {
-                "Content-Type": "multipart/form-data",
-            },
-        }
+        formData
     );
 
     return response.data;
 };
-
 // Existing Customers List
 export const getExistingCustomers = async (params = {}) => {
     const response = await API.get(
