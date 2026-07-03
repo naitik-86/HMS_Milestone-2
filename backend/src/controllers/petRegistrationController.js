@@ -222,48 +222,117 @@ const addVisit = async (req, res) => {
     }
 };
 
-// Get Pet History
+// Get Pet History by Id
+const getPetHistoryByID = async (req, res) => {
+    try {
+        console.log("---------------------------------------------------------")
+        const { ownerId, petId } = req.params;
+
+        const owner =
+            await PetRegistration.findById(ownerId);
+
+        if (!owner) {
+            return res.status(404).json({
+                success: false,
+                message: "Owner Not Found",
+            });
+        }
+
+        const pet = owner.pets.id(petId);
+
+        if (!pet) {
+            return res.status(404).json({
+                success: false,
+                message: "Pet Not Found",
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            data: pet.history,
+        });
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
+
 const getPetHistory = async (req, res) => {
-    return res.status(200).json({
-        message: "end of Url"
-    })
-}
-//     try {
-//         console.log("---------------------------------------------------------")
-//         const { ownerId, petId } = req.params;
+    try {
+        const owners = await PetRegistration.find();
 
-//         const owner =
-//             await PetRegistration.findById(ownerId);
+        const history = [];
 
-//         if (!owner) {
-//             return res.status(404).json({
-//                 success: false,
-//                 message: "Owner Not Found",
-//             });
-//         }
+        owners.forEach((owner) => {
+            owner.pets.forEach((pet) => {
 
-//         const pet = owner.pets.id(petId);
+                if (!pet.visits || pet.visits.length === 0) {
+                    history.push({
+                        ownerId: owner._id,
+                        petId: pet._id,
+                        petName: pet.petName,
+                        owner: owner.ownerName,
+                        reason: "-",
+                        doctor: "-",
+                        status: "No Visit",
+                        bill: "-",
+                        date: owner.createdAt
+                            ? new Date(owner.createdAt).toLocaleDateString()
+                            : "-"
+                    });
 
-//         if (!pet) {
-//             return res.status(404).json({
-//                 success: false,
-//                 message: "Pet Not Found",
-//             });
-//         }
+                    return;
+                }
 
-//         return res.status(200).json({
-//             success: true,
-//             data: pet.history,
-//         });
-//     } catch (error) {
-//         return res.status(500).json({
-//             success: false,
-//             message: error.message,
-//         });
-//     }
-// };
+                pet.visits.forEach((visit) => {
+                    history.push({
+                        ownerId: owner._id,
+                        petId: pet._id,
 
+                        petName: pet.petName,
+                        owner: owner.ownerName,
 
+                        reason: visit.primaryReason || "-",
+                        doctor: visit.assignedDoctor || "-",
+
+                        status: visit.status || "Pending",
+
+                        bill: "-",
+
+                        date: visit.appointmentDate
+                            ? new Date(
+                                visit.appointmentDate
+                            ).toLocaleDateString()
+                            : "-",
+
+                        tokenNumber: visit.tokenNumber,
+                        appointmentTime:
+                            visit.appointmentTime,
+                        complaint: visit.complaint
+                    });
+                });
+            });
+        });
+
+        history.sort((a, b) => {
+            return new Date(b.date) - new Date(a.date);
+        });
+
+        return res.status(200).json({
+            success: true,
+            count: history.length,
+            data: history
+        });
+
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
 
 const getExistingCustomers = async (req, res) => {
     try {
@@ -401,6 +470,7 @@ module.exports = {
     addPet,
     addVisit,
     getPetHistory,
+    getPetHistoryByID,
     getDashboardStats,
     getPetDetails,
     getExistingCustomers
