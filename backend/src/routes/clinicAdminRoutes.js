@@ -122,6 +122,7 @@ router.post("/reception/new-registration/owner/:ownerId/pets", petRegistrationCo
 router.post("/reception/new-registration/owner/:ownerId/pets/:petId/visit", petRegistrationController.addVisit);
 router.get("/reception/petHistory", petRegistrationController.getPetHistory);
 
+
 //clinic reception routes for checking history
 router.get("/reception/existing-customers/stats", petRegistrationController.getDashboardStats);
 router.get("/reception/existing-customers", petRegistrationController.getExistingCustomers);
@@ -129,4 +130,17 @@ router.get("/reception/existing-customers/:ownerId/pets/:petId", petRegistration
 
 router.use("/pre-consultation", preConsultationRoutes);
 
+/* LAB WORKFLOW (Reception -> Pre -> Doctor -> Lab -> Doctor -> Closed) */
+// Lab technician queue: appointments waiting for lab results
+router.get('/lab/queue-pending', labController.getLabPendingQueue);
+
+// Lab uploads results for a specific appointment and moves it back to doctor
+// Body should match LabRecord.results fields
+router.put('/lab/records/:appointmentId/results', labController.uploadLabResults);
+
+/* Doctor close-case after lab */
+// router.put('/doctorModule/close-case/:appointmentId', doctorController.closeCase);
+
 module.exports = router;
+
+

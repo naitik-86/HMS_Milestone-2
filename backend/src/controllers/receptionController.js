@@ -238,10 +238,12 @@ exports.updateAppointmentStatus = async (req, res) => {
     }
 
     // Allowed manual overrides by receptionist
-    const allowedStatuses = ['WAITING', 'NO_SHOW', 'CANCELLED'];
+    // Reception can start flow by moving to IN_CONSULTATION.
+    const allowedStatuses = ['WAITING', 'IN_CONSULTATION', 'NO_SHOW', 'CANCELLED'];
     if (!allowedStatuses.includes(status)) {
       return res.status(400).json({ success: false, message: 'Invalid status update' });
     }
+
 
     // Ensure the receptionist only updates appointments belonging to their clinic
     const appointment = await Appointment.findOneAndUpdate(

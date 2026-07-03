@@ -6,6 +6,7 @@ import Privacy from "./Privacy"
 import Terms from "./Terms"
 import Cookies from "./Cookies"
 import PageNotFound from "./PageNotFound"
+import Info from "./Info"
 
 export {
     About,
@@ -16,5 +17,5 @@ export {
     Terms,
     Cookies,
     PageNotFound,
-
+    Info
 }

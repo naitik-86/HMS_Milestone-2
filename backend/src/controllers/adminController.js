@@ -1,5 +1,9 @@
 const User = require('../models/User');
 const Clinic = require('../models/Clinic');
+const Groomer = require('../models/GroomerModel')
+const Kennel = require('../models/KennelModel')
+const LabTechnician = require('../models/LabTechnician')
+const DoctorDetails = require('../models/DoctorDetails')
 const Owner = require('../models/Owner');
 const sendEmail = require('../utils/emailService'); // NEW: Email Trigger Utility
 
@@ -206,6 +210,55 @@ exports.updateClinicVerification = async (req, res) => {
     res.status(200).json({ success: true, data: clinic });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+
+
+exports.getTotalUsers = async (req, res) => {
+  try {
+    const [
+      users,
+      clinics,
+      groomers,
+      kennels,
+      labTechs,
+      doctors
+    ] = await Promise.all([
+      User.countDocuments(),
+      Clinic.countDocuments(),
+      Groomer.countDocuments(),
+      Kennel.countDocuments(),
+      LabTechnician.countDocuments(),
+      DoctorDetails.countDocuments()
+    ]);
+
+    const totalUsers =
+      users +
+      clinics +
+      groomers +
+      kennels +
+      labTechs +
+      doctors;
+
+    res.status(200).json({
+      success: true,
+      data: {
+        users,
+        clinics,
+        groomers,
+        kennels,
+        labTechnicians: labTechs,
+        doctors,
+        totalUsers
+      }
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching total users"
+    });
   }
 };
 
