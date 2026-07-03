@@ -46,7 +46,6 @@ const visitSchema = new mongoose.Schema({
 const petSchema = new mongoose.Schema({
     petName: {
         type: String,
-        required: true
     },
 
     species: String,

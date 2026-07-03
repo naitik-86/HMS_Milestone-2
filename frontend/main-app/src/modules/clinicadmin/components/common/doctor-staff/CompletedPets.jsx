@@ -1,3 +1,5 @@
+/* eslint-disable no-useless-assignment */
+/* eslint-disable react-hooks/immutability */
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { Search } from "lucide-react";

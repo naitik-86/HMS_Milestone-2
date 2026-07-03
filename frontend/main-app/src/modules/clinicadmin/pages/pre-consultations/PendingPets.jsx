@@ -1,47 +1,39 @@
 import { useState } from "react";
 import { Header } from "../../components";
 import PetRegistrationWizard from "./PetRegistrationWizard";
+import { getPendingPets } from "../../api/preConsultationApi";
+import { useEffect } from "react";
 
 export default function PendingPets() {
   const [search, setSearch] = useState("");
   const [openModal, setOpenModal] = useState(false);
   const [selectedPet, setSelectedPet] = useState(null);
 
-  // Backend Data Will Come Here
-  const pets = [
-    {
-      id: 1,
-      token: "TK-001",
-      ownerName: "Rahul Sharma",
-      petName: "Bruno",
-      phoneNumber: "+91 9876543210",
-      status: "Pending",
-    },
-    {
-      id: 2,
-      token: "TK-002",
-      ownerName: "Amit Verma",
-      petName: "Max",
-      phoneNumber: "+91 9876543211",
-      status: "Pending",
-    },
-    {
-      id: 3,
-      token: "TK-003",
-      ownerName: "Karan Kumar",
-      petName: "Rocky",
-      phoneNumber: "+91 9876543000",
-      status: "Pending",
-    },
-  ];
+  const [pets, setPets] = useState([]);
 
+  useEffect(() => {
+    fetchPendingPets();
+  }, []);
+
+  const fetchPendingPets = async () => {
+    try {
+      const res = await getPendingPets();
+      console.log(res.data);
+
+      setPets(res.data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+  // const filteredPets = pets
   const filteredPets = pets.filter(
     (pet) =>
-      pet.token?.toLowerCase().includes(search.toLowerCase()) ||
+      pet.tokenNumber?.toLowerCase().includes(search.toLowerCase()) ||
       pet.ownerName?.toLowerCase().includes(search.toLowerCase()) ||
       pet.petName?.toLowerCase().includes(search.toLowerCase()) ||
       pet.phoneNumber?.toLowerCase().includes(search.toLowerCase())
   );
+
 
   return (
     <div className="flex-1 bg-slate-100">
@@ -95,7 +87,7 @@ export default function PendingPets() {
         <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
 
           {/* Table Header */}
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 px-4 md:px-8 py-6 border-b border-slate-200 bg-gradient-to-r from-orange-50 to-white">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 px-4 md:px-8 py-6 border-b border-slate-200 bg-linear-to-r from-orange-50 to-white">
 
             <div>
 
@@ -152,7 +144,7 @@ export default function PendingPets() {
                 {filteredPets.length > 0 ? (
                   filteredPets.map((pet) => (
                     <tr
-                      key={pet.id}
+                      key={pet._id}
                       className="border-t border-slate-100 hover:bg-orange-50/30 transition-all duration-200"
                     >
 
@@ -169,7 +161,7 @@ export default function PendingPets() {
                           font-semibold
                           "
                         >
-                          {pet.token}
+                          {pet.tokenNumber}
                         </span>
 
                       </td>
@@ -180,17 +172,17 @@ export default function PendingPets() {
                         <div className="flex items-center gap-4">
 
                           <div className="w-12 h-12 rounded-2xl bg-orange-100 flex items-center justify-center font-bold text-orange-600">
-                            {pet.ownerName.charAt(0)}
+                            {pet?.owner?.ownerName?.charAt(0)}
                           </div>
 
                           <div>
 
                             <p className="font-semibold text-slate-800">
-                              {pet.ownerName}
+                              {pet?.owner?.ownerName}
                             </p>
 
                             <p className="text-sm text-slate-500">
-                              {pet.phoneNumber}
+                              {pet?.owner?.mobileNumber}
                             </p>
 
                           </div>
@@ -211,7 +203,7 @@ export default function PendingPets() {
                           <div>
 
                             <p className="font-semibold text-slate-800">
-                              {pet.petName}
+                              {pet.uniquePetId}
                             </p>
 
                             <p className="text-sm text-slate-500">
@@ -295,42 +287,42 @@ export default function PendingPets() {
               </tbody>
 
             </table>
-            
+
           </div>
           <div className="lg:hidden p-4 space-y-4">
-  {filteredPets.map((pet) => (
-    <div
-      key={pet.id}
-      className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm"
-    >
-      <div className="flex items-center justify-between">
-        <span className="font-bold">
-          {pet.token}
-        </span>
+            {filteredPets.map((pet) => (
+              <div
+                key={pet._id}
+                className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-bold">
+                    {pet.token}
+                  </span>
 
-        <span className="bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-xs font-semibold">
-          {pet.status}
-        </span>
-      </div>
+                  <span className="bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-xs font-semibold">
+                    {pet.status}
+                  </span>
+                </div>
 
-      <div className="mt-4 space-y-2 text-sm">
-        <p><strong>Owner:</strong> {pet.ownerName}</p>
-        <p><strong>Phone:</strong> {pet.phoneNumber}</p>
-        <p><strong>Pet:</strong> {pet.petName}</p>
-      </div>
+                <div className="mt-4 space-y-2 text-sm">
+                  <p><strong>Owner:</strong> {pet.ownerName}</p>
+                  <p><strong>Phone:</strong> {pet.phoneNumber}</p>
+                  <p><strong>Pet:</strong> {pet.petName}</p>
+                </div>
 
-      <button
-        onClick={() => {
-          setSelectedPet(pet);
-          setOpenModal(true);
-        }}
-        className="mt-4 w-full bg-slate-800 text-white py-3 rounded-xl"
-      >
-        Edit
-      </button>
-    </div>
-  ))}
-</div>
+                <button
+                  onClick={() => {
+                    setSelectedPet(pet);
+                    setOpenModal(true);
+                  }}
+                  className="mt-4 w-full bg-slate-800 text-white py-3 rounded-xl"
+                >
+                  Edit
+                </button>
+              </div>
+            ))}
+          </div>
 
         </div>
 
@@ -342,6 +334,7 @@ export default function PendingPets() {
               setOpenModal(false);
               setSelectedPet(null);
             }}
+            onCompleted={fetchPendingPets}
           />
         )}
 

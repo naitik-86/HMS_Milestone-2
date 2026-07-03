@@ -1,6 +1,18 @@
 const Groomer = require("../models/GroomerModel");
+
+const safeParse = (data) => {
+    try {
+        if (!data) return [];
+        return typeof data === "string" ? JSON.parse(data) : data;
+    } catch (err) {
+        return [];
+    }
+};
+
 exports.createGroomer = async (req, res) => {
     try {
+        console.log("reached");
+
         console.log("from create groomer ->>>", req.body);
         console.log("from create groomer ->>>", req.files);
 
@@ -40,8 +52,7 @@ exports.createGroomer = async (req, res) => {
             }
         }
 
-        const profilePhoto =
-            req.files?.profilePhoto?.[0]?.path || "";
+
 
         const certificateDocument =
             req.files?.certificateDocument?.[0]?.path || "";
@@ -65,20 +76,12 @@ exports.createGroomer = async (req, res) => {
             supervisor,
             notes,
 
-            profilePhoto,
+
             certificateDocument,
 
-            certificates: req.body.certificates
-                ? JSON.parse(req.body.certificates)
-                : [],
-
-            species: req.body.species
-                ? JSON.parse(req.body.species)
-                : [],
-
-            services: req.body.services
-                ? JSON.parse(req.body.services)
-                : [],
+            certificates: safeParse(req.body.certificates),
+            species: safeParse(req.body.species),
+            services: safeParse(req.body.services),
         });
 
         return res.status(201).json({
@@ -88,9 +91,12 @@ exports.createGroomer = async (req, res) => {
         });
 
     } catch (error) {
+        console.error("🔥 ERROR IN CREATE GROOMER:", error);
+
         return res.status(500).json({
             success: false,
             message: error.message,
+            stack: error.stack,
         });
     }
 };

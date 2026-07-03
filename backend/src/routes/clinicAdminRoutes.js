@@ -16,6 +16,8 @@ const reportsController = require('../controllers/adminReportsController');
 const labReportController = require("../controllers/labDashboardController");
 const petRegistrationController = require("../controllers/petRegistrationController");
 
+const preConsultationRoutes = require("../routes/preConsultationRoutes")
+
 router.use(authorize('CLINIC_ADMIN'));
 
 /* STAFF */
@@ -27,12 +29,14 @@ router.put('/staff/:id', staffController.updateStaff);
 router.delete('/staff/:id', staffController.deleteStaff);
 
 /* DOCTORS */
-router.post('/doctors/create', upload.fields([
-    { name: "degreeCertificates", maxCount: 10 },
-    { name: "registrationCertificate", maxCount: 1 },
-    { name: "digitalSignature", maxCount: 1 },
-    { name: "doctorLetterhead", maxCount: 1 },
-]), doctorController.createDoctor);
+router.post('/doctors/create', upload.fields(
+    [
+        { name: "degreeCertificates", maxCount: 10 },
+        { name: "registrationCertificate", maxCount: 1 },
+        { name: "digitalSignature", maxCount: 1 },
+        { name: "doctorLetterhead", maxCount: 1 },
+    ]
+), doctorController.createDoctor);
 
 router.get('/doctors', doctorController.getAllDoctors);
 router.get('/doctors/:id', doctorController.getDoctorById);
@@ -116,11 +120,13 @@ router.get("/reception/new-registration/mobile/:mobileNumber", petRegistrationCo
 router.get("/reception/new-registration/owner/:ownerId", petRegistrationController.getOwnerDetails);
 router.post("/reception/new-registration/owner/:ownerId/pets", petRegistrationController.addPet);
 router.post("/reception/new-registration/owner/:ownerId/pets/:petId/visit", petRegistrationController.addVisit);
-router.get("/reception/new-registration/owner/:ownerId/pets/:petId/history", petRegistrationController.getPetHistory);
+router.get("/reception/petHistory", petRegistrationController.getPetHistory);
 
 //clinic reception routes for checking history
 router.get("/reception/existing-customers/stats", petRegistrationController.getDashboardStats);
 router.get("/reception/existing-customers", petRegistrationController.getExistingCustomers);
 router.get("/reception/existing-customers/:ownerId/pets/:petId", petRegistrationController.getPetDetails);
+
+router.use("/pre-consultation", preConsultationRoutes);
 
 module.exports = router;
