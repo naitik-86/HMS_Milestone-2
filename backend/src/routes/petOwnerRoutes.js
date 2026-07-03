@@ -47,4 +47,6 @@ router.delete(
     petOwnerController.deleteOwnerReport
 );
 
+router.get("/pets", petOwnerController.getOwnerPets);
+
 module.exports = router;

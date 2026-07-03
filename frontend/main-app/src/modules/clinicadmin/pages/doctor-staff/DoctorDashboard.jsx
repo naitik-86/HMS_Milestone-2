@@ -11,6 +11,7 @@ import {
 export default function DoctorDashboard() {
   const [activeStep, setActiveStep] = useState("dashboard");
 
+  
   const getPageTitle = () => {
     switch (activeStep) {
       case "pendingPets":

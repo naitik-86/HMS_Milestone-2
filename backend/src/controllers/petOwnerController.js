@@ -364,3 +364,46 @@ exports.getPetHistory = async (req, res) => {
     });
   }
 };
+
+// ======================================
+// Get Owner Pets
+// GET /api/v1/pet-owner/pets
+// ======================================
+
+exports.getOwnerPets = async (req, res) => {
+  try {
+    const pets = [
+      {
+        _id: "pet001",
+        petName: "Bruno",
+        breed: "Golden Retriever",
+        species: "Dog",
+        age: 4,
+        gender: "Male",
+        weight: 28,
+        status: "Healthy",
+      },
+      {
+        _id: "pet002",
+        petName: "Milo",
+        breed: "Persian",
+        species: "Cat",
+        age: 2,
+        gender: "Female",
+        weight: 5,
+        status: "Healthy",
+      },
+    ];
+
+    res.status(200).json({
+      success: true,
+      count: pets.length,
+      data: pets,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
