@@ -9,6 +9,7 @@ import {
     Terms,
     Privacy,
     Cookies,
+    Info
 } from "../modules/public/pages";
 
 const PublicRoutes = (
@@ -20,7 +21,7 @@ const PublicRoutes = (
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/cookies" element={<Cookies />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/total-users" element={<Login />} />
+        <Route path="/total-users" element={<Info />} />
     </Route>
 );
 
