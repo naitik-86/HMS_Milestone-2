@@ -1,9 +1,9 @@
 import API from "../../../shared/api/axios";
 
 /* GET ALL users */
-export const getDoctors = async () => {
+export const getUsers = async () => {
+    console.log("***");
     const res = await API.get("/total-users");
 
-    console.log(res.data);
-    return res.data;
+    return res;
 };
