@@ -220,3 +220,68 @@ exports.deleteLabTechnician =
             });
         }
     };
+
+// ============================
+// Lab workflow endpoints
+// ============================
+const Appointment = require('../models/Appointment');
+const LabRecord = require('../models/LabRecord');
+
+// GET /api/lab/queue-pending
+// Lists appointments waiting for lab results.
+exports.getLabPendingQueue = async (req, res) => {
+    try {
+        const clinicId = req.user.clinicId;
+        const pending = await Appointment.find({
+            clinicId,
+            status: 'LAB_PENDING'
+        }).populate('petId ownerId doctorId');
+
+        res.status(200).json({ success: true, count: pending.length, data: pending });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// PUT /api/lab/records/:appointmentId/results
+// Saves lab results in LabRecord and moves appointment back to doctor.
+exports.uploadLabResults = async (req, res) => {
+    try {
+        const { appointmentId } = req.params;
+        const clinicId = req.user.clinicId;
+
+        const appointment = await Appointment.findOne({ _id: appointmentId, clinicId });
+        if (!appointment) {
+            return res.status(404).json({ success: false, message: 'Appointment not found' });
+        }
+        if (appointment.status !== 'LAB_PENDING') {
+            return res.status(400).json({ success: false, message: 'Appointment is not waiting for lab' });
+        }
+
+        const { testsCompleted, reportFiles, sampleCollectedAt, reportDate, externalLabName, criticalValuesFlag, criticalNotes, remarks, uploadedByRole } = req.body;
+
+        const up = await LabRecord.findOneAndUpdate(
+            { appointmentId },
+            {
+                results: {
+                    testsCompleted: testsCompleted || [],
+                    reportFiles: reportFiles || [],
+                    sampleCollectedAt,
+                    reportDate,
+                    externalLabName,
+                    criticalValuesFlag,
+                    criticalNotes,
+                    remarks,
+                    uploadedByRole: uploadedByRole || 'LAB_TECH'
+                }
+            },
+            { new: true, upsert: true, runValidators: true }
+        );
+
+        await Appointment.findByIdAndUpdate(appointmentId, { status: 'LAB_COMPLETED' });
+
+        res.status(200).json({ success: true, labRecord: up });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
