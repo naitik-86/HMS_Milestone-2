@@ -1,3 +1,8 @@
+/* eslint-disable react-hooks/set-state-in-effect */
+/* eslint-disable react-hooks/immutability */
+import { useEffect, useState } from "react";
+import axios from "axios";
+
 import {
   FaPaw,
   FaFileMedical,
@@ -6,34 +11,80 @@ import {
   FaArrowUp,
 } from "react-icons/fa";
 
-const cards = [
-  {
-    title: "Total Visits",
-    value: "12",
-    icon: <FaPaw />,
-    bg: "from-slate-900 via-slate-800 to-slate-700",
-  },
-  {
-    title: "Lab Reports",
-    value: "08",
-    icon: <FaFileMedical />,
-    bg: "from-orange-500 via-orange-600 to-orange-700",
-  },
-  {
-    title: "Vaccinations",
-    value: "05",
-    icon: <FaSyringe />,
-    bg: "from-blue-500 via-blue-600 to-blue-700",
-  },
-  {
-    title: "Documents",
-    value: "16",
-    icon: <FaFolderOpen />,
-    bg: "from-emerald-500 via-emerald-600 to-emerald-700",
-  },
-];
-
 const PetOwnerDashboardCards = () => {
+  const [dashboard, setDashboard] = useState({
+    cards: {
+      totalVisits: 0,
+      totalLabReports: 0,
+      totalVaccinations: 0,
+      totalDocuments: 0,
+    },
+    recentActivities: [],
+    upcomingVaccination: null,
+  });
+
+  const [loading, setLoading] = useState(false);
+
+  const fetchDashboard = async () => {
+    try {
+      setLoading(true);
+
+      const response = await axios.get(
+        "http://localhost:5000/api/v1/pet-owner/dashboard"
+      );
+
+      if (response.data.success) {
+        setDashboard(response.data.dashboard);
+      }
+    } catch (error) {
+      console.error("Dashboard Error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDashboard();
+  }, []);
+
+  const cards = [
+    {
+      title: "Total Visits",
+      value: dashboard.cards.totalVisits,
+      icon: <FaPaw />,
+      bg: "from-slate-900 via-slate-800 to-slate-700",
+    },
+    {
+      title: "Lab Reports",
+      value: dashboard.cards.totalLabReports,
+      icon: <FaFileMedical />,
+      bg: "from-orange-500 via-orange-600 to-orange-700",
+    },
+    {
+      title: "Vaccinations",
+      value: dashboard.cards.totalVaccinations,
+      icon: <FaSyringe />,
+      bg: "from-blue-500 via-blue-600 to-blue-700",
+    },
+    {
+      title: "Documents",
+      value: dashboard.cards.totalDocuments,
+      icon: <FaFolderOpen />,
+      bg: "from-emerald-500 via-emerald-600 to-emerald-700",
+    },
+  ];
+
+  if (loading) {
+    return (
+      <div className="flex h-40 items-center justify-center">
+        <p className="text-slate-500">Loading Dashboard...</p>
+      </div>
+    );
+  }
+
+
+
+
   return (
     <>
       {/* Stats Cards */}
@@ -87,64 +138,42 @@ const PetOwnerDashboardCards = () => {
           </div>
 
           <div className="space-y-4">
-            <div className="rounded-2xl bg-slate-50 p-5 transition hover:bg-slate-100">
-              <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-                <div className="rounded-xl bg-green-100 p-3 text-xl">
-                  ✅
-                </div>
+            {dashboard.recentActivities.length > 0 ? (
+              dashboard.recentActivities.map((activity, index) => (
+                <div
+                  key={index}
+                  className="rounded-2xl bg-slate-50 p-5 transition hover:bg-slate-100"
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                    <div className="rounded-xl bg-green-100 p-3 text-xl">
+                      📌
+                    </div>
 
-                <div>
-                  <h4 className="font-semibold">
-                    Vaccination Completed
-                  </h4>
+                    <div>
+                      <h4 className="font-semibold">
+                        {activity.status ||
+                          activity.reportName ||
+                          activity.labName ||
+                          "Activity"}
+                      </h4>
 
-                  <p className="text-sm text-slate-500">
-                    Rabies vaccination successfully completed
-                  </p>
+                      <p className="text-sm text-slate-500">
+                        {new Date(activity.createdAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
                 </div>
+              ))
+            ) : (
+              <div className="rounded-2xl bg-slate-50 p-5 text-center text-slate-500">
+                No Recent Activities
               </div>
-            </div>
-
-            <div className="rounded-2xl bg-slate-50 p-5 transition hover:bg-slate-100">
-              <div className="flex items-center gap-4">
-                <div className="rounded-xl bg-orange-100 p-3 text-xl">
-                  📄
-                </div>
-
-                <div>
-                  <h4 className="font-semibold">
-                    Lab Report Uploaded
-                  </h4>
-
-                  <p className="text-sm text-slate-500">
-                    Blood test report uploaded
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="rounded-2xl bg-slate-50 p-5 transition hover:bg-slate-100">
-              <div className="flex items-center gap-4">
-                <div className="rounded-xl bg-blue-100 p-3 text-xl">
-                  🩺
-                </div>
-
-                <div>
-                  <h4 className="font-semibold">
-                    Doctor Consultation
-                  </h4>
-
-                  <p className="text-sm text-slate-500">
-                    Consultation completed successfully
-                  </p>
-                </div>
-              </div>
-            </div>
+            )}
           </div>
         </div>
 
         {/* Reminder Card */}
-       <div className="rounded-3xl bg-gradient-to-br from-orange-500 to-orange-700 p-5 md:p-8 text-white shadow-xl">
+        <div className="rounded-3xl bg-gradient-to-br from-orange-500 to-orange-700 p-5 md:p-8 text-white shadow-xl">
           <div className="mb-6 flex items-center justify-between gap-4">
             <h3 className="text-xl md:text-2xl font-bold">
               Upcoming Vaccine
@@ -155,16 +184,20 @@ const PetOwnerDashboardCards = () => {
 
           <div className="rounded-2xl bg-white/10 p-5 backdrop-blur-sm">
             <h4 className="text-xl font-bold">
-              Rabies Vaccine
+              {dashboard.upcomingVaccination?.vaccineName || "No Upcoming Vaccine"}
             </h4>
 
             <p className="mt-2 text-orange-100">
-              Due on 15 July 2025
+              {dashboard.upcomingVaccination?.nextVaccinationDate
+                ? `Due on ${new Date(
+                  dashboard.upcomingVaccination.nextVaccinationDate
+                ).toLocaleDateString()}`
+                : "No Upcoming Vaccination"}
             </p>
 
             <div className="mt-6">
               <button
-              className="
+                className="
 w-full sm:w-auto
 rounded-xl
 bg-white

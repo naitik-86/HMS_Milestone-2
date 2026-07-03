@@ -1,6 +1,8 @@
 import { FaDownload } from "react-icons/fa";
 
-const PetOwnerHistoryTable = () => {
+const PetOwnerHistoryTable = ({ history }) => {
+  const prescriptions = history?.prescription || [];
+
   return (
     <div className="mt-4 overflow-hidden rounded-3xl bg-white shadow-lg">
       <div className="border-b p-5">
@@ -32,47 +34,55 @@ const PetOwnerHistoryTable = () => {
           </thead>
 
           <tbody>
-            <tr className="border-t hover:bg-slate-50">
-              <td className="px-5 py-4">
-                10-06-2025
-              </td>
+            {prescriptions.length > 0 ? (
+              prescriptions.map((item, index) => (
+                <tr
+                  key={index}
+                  className="border-t hover:bg-slate-50"
+                >
+                  <td className="px-5 py-4">
+                    {item.issuedDate
+                      ? new Date(item.issuedDate).toLocaleDateString()
+                      : "--"}
+                  </td>
 
-              <td className="px-5 py-4">
-                Dr. Sharma
-              </td>
+                  <td className="px-5 py-4">
+                    {history?.petProfile?.doctorName || "--"}
+                  </td>
 
-              <td className="px-5 py-4">
-                Fever
-              </td>
+                  <td className="px-5 py-4">
+                    {history?.diagnosis || "--"}
+                  </td>
 
-              <td className="px-5 py-4">
-                <button className="flex items-center gap-2 rounded-xl bg-orange-500 px-4 py-2 text-sm font-medium text-white hover:bg-orange-600">
-                  <FaDownload />
-                  Download PDF
-                </button>
-              </td>
-            </tr>
-
-            <tr className="border-t hover:bg-slate-50">
-              <td className="px-5 py-4">
-                22-05-2025
-              </td>
-
-              <td className="px-5 py-4">
-                Dr. Kumar
-              </td>
-
-              <td className="px-5 py-4">
-                Vaccination
-              </td>
-
-              <td className="px-5 py-4">
-                <button className="flex items-center gap-2 rounded-xl bg-orange-500 px-4 py-2 text-sm font-medium text-white hover:bg-orange-600">
-                  <FaDownload />
-                  Download PDF
-                </button>
-              </td>
-            </tr>
+                  <td className="px-5 py-4">
+                    {item.pdfUrl ? (
+                      <a
+                        href={item.pdfUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-2 rounded-xl bg-orange-500 px-4 py-2 text-sm font-medium text-white hover:bg-orange-600"
+                      >
+                        <FaDownload />
+                        Download PDF
+                      </a>
+                    ) : (
+                      <span className="text-slate-400">
+                        No PDF
+                      </span>
+                    )}
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td
+                  colSpan={4}
+                  className="py-8 text-center text-slate-500"
+                >
+                  No Medical History Available
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import axios from "axios";
 import PetOwnerSidebar from "../../components/pet-owner/PetOwnerSidebar";
 import {
   FaCloudUploadAlt,
@@ -10,6 +11,118 @@ import {
 
 const PetOwnerUploadDocuments = () => {
   const [showModal, setShowModal] = useState(false);
+
+  const [loading, setLoading] = useState(false);
+
+  const [pets, setPets] = useState([]);
+
+  const [formData, setFormData] = useState({
+    petId: "",
+    labName: "",
+    reportTitle: "",
+    reportDate: "",
+    notes: "",
+    file: null,
+  });
+
+  useEffect(() => {
+    fetchPets();
+  }, []);
+
+  const fetchPets = async () => {
+    try {
+      const response = await axios.get(
+        "http://localhost:5000/api/v1/pet-owner/pets"
+      );
+
+      if (response.data.success) {
+        setPets(response.data.data);
+      }
+    } catch (error) {
+      console.error("Pets Error:", error);
+    }
+  };
+
+  const handleChange = (e) => {
+    setFormData((prev) => ({
+      ...prev,
+      [e.target.name]: e.target.value,
+    }));
+  };
+
+  const handleFileChange = (e) => {
+    setFormData((prev) => ({
+      ...prev,
+      file: e.target.files[0],
+    }));
+  };
+
+  const resetForm = () => {
+    setFormData({
+      petId: "",
+      labName: "",
+      reportTitle: "",
+      reportDate: "",
+      notes: "",
+      file: null,
+    });
+  };
+
+  const handleSubmit = async () => {
+    try {
+      if (!formData.petId) {
+        return alert("Please select your pet.");
+      }
+
+      if (!formData.file) {
+        return alert("Please upload report.");
+      }
+
+      if (!formData.labName) {
+        return alert("Please enter lab name.");
+      }
+
+      if (!formData.reportDate) {
+        return alert("Please select report date.");
+      }
+
+      setLoading(true);
+
+      const uploadData = new FormData();
+
+      uploadData.append("petId", formData.petId);
+      uploadData.append("labName", formData.labName);
+      uploadData.append("reportTitle", formData.reportTitle);
+      uploadData.append("reportDate", formData.reportDate);
+      uploadData.append("notes", formData.notes);
+      uploadData.append("file", formData.file);
+
+      const response = await axios.post(
+        "http://localhost:5000/api/v1/pet-owner/report/upload",
+        uploadData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      alert(response.data.message);
+
+      resetForm();
+
+      setShowModal(false);
+    } catch (error) {
+      console.error(error);
+
+      alert(
+        error.response?.data?.message ||
+        "Upload Failed"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-100 via-slate-50 to-blue-50">
@@ -78,7 +191,7 @@ const PetOwnerUploadDocuments = () => {
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
             <div className="mx-4 w-full max-w-2xl rounded-3xl bg-white shadow-2xl max-h-[90vh] overflow-y-auto">
               {/* Modal Header */}
-             <div className="flex items-start md:items-center justify-between gap-3 border-b p-4 md:p-6">
+              <div className="flex items-start md:items-center justify-between gap-3 border-b p-4 md:p-6">
                 <h2 className="text-lg md:text-xl lg:text-2xl font-bold text-slate-800">
                   Upload External Lab Report
                 </h2>
@@ -108,15 +221,46 @@ const PetOwnerUploadDocuments = () => {
 
                   <input
                     type="file"
+                    name="file"
                     accept=".pdf,image/*"
+                    onChange={handleFileChange}
                     className="
-                    w-full
-                    rounded-2xl
-                    border
-                    border-slate-200
-                    p-3
-                  "
+    w-full
+    rounded-2xl
+    border
+    border-slate-200
+    p-3
+  "
                   />
+                </div>
+                {/* Select Pet */}
+                <div>
+                  <label className="mb-2 flex items-center gap-2 font-semibold text-slate-700">
+                    🐾 Select Pet
+                  </label>
+
+                  <select
+                    name="petId"
+                    value={formData.petId}
+                    onChange={handleChange}
+                    className="
+      w-full
+      rounded-2xl
+      border
+      border-slate-200
+      p-3
+      outline-none
+      focus:border-orange-500
+    "
+                  >
+                    <option value="">Select Your Pet</option>
+
+                    {pets.map((pet) => (
+                      <option key={pet._id} value={pet._id}>
+                        {pet.petName}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 {/* Description */}
@@ -128,19 +272,48 @@ const PetOwnerUploadDocuments = () => {
 
                   <input
                     type="text"
+                    name="labName"
+                    value={formData.labName}
+                    onChange={handleChange}
                     placeholder="Enter lab name"
                     className="
-                    w-full
-                    rounded-2xl
-                    border
-                    border-slate-200
-                    p-3
-                    outline-none
-                    focus:border-orange-500
-                  "
+    w-full
+    rounded-2xl
+    border
+    border-slate-200
+    p-3
+    outline-none
+    focus:border-orange-500
+  "
                   />
                 </div>
 
+
+                {/* Report Title */}
+                <div>
+                  <label className="mb-2 flex items-center gap-2 font-semibold text-slate-700">
+                    📄 Report Title
+                  </label>
+
+                  <input
+                    type="text"
+                    name="reportTitle"
+                    value={formData.reportTitle}
+                    onChange={handleChange}
+                    placeholder="Enter Report Title"
+                    className="
+      w-full
+      rounded-2xl
+      border
+      border-slate-200
+      p-3
+      outline-none
+      focus:border-orange-500
+    "
+                  />
+                </div>
+
+                {/* Date */}
                 {/* Date */}
                 <div>
                   <label className="mb-2 flex items-center gap-2 font-semibold text-slate-700">
@@ -150,17 +323,21 @@ const PetOwnerUploadDocuments = () => {
 
                   <input
                     type="date"
+                    name="reportDate"
+                    value={formData.reportDate}
+                    onChange={handleChange}
                     className="
-                    w-full
-                    rounded-2xl
-                    border
-                    border-slate-200
-                    p-3
-                    outline-none
-                    focus:border-orange-500
-                  "
+      w-full
+      rounded-2xl
+      border
+      border-slate-200
+      p-3
+      outline-none
+      focus:border-orange-500
+    "
                   />
                 </div>
+
 
                 {/* Notes */}
                 <div>
@@ -171,25 +348,28 @@ const PetOwnerUploadDocuments = () => {
 
                   <textarea
                     rows={4}
+                    name="notes"
+                    value={formData.notes}
+                    onChange={handleChange}
                     placeholder="Write your notes..."
                     className="
-                    w-full
-                    rounded-2xl
-                    border
-                    border-slate-200
-                    p-3
-                    outline-none
-                    focus:border-orange-500
-                  "
+    w-full
+    rounded-2xl
+    border
+    border-slate-200
+    p-3
+    outline-none
+    focus:border-orange-500
+  "
                   />
                 </div>
               </div>
 
               {/* Footer */}
-             <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 border-t p-4 md:p-6">
+              <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 border-t p-4 md:p-6">
                 <button
                   onClick={() => setShowModal(false)}
-                 className="
+                  className="
 w-full sm:w-auto
 rounded-2xl
 border
@@ -203,21 +383,23 @@ hover:bg-slate-50
                 </button>
 
                 <button
-                className="
-w-full sm:w-auto
-rounded-2xl
-bg-gradient-to-r
-from-orange-500
-to-orange-600
-px-6
-py-3
-font-medium
-text-white
-shadow-lg
-hover:shadow-xl
-"
+                  onClick={handleSubmit}
+                  disabled={loading}
+                  className="
+    w-full sm:w-auto
+    rounded-2xl
+    bg-gradient-to-r
+    from-orange-500
+    to-orange-600
+    px-6
+    py-3
+    font-medium
+    text-white
+    shadow-lg
+    hover:shadow-xl
+  "
                 >
-                  Submit Report
+                  {loading ? "Uploading..." : "Submit Report"}
                 </button>
               </div>
             </div>
