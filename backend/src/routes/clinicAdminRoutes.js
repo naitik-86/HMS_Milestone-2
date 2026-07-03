@@ -139,7 +139,11 @@ router.get('/lab/queue-pending', labController.getLabPendingQueue);
 router.put('/lab/records/:appointmentId/results', labController.uploadLabResults);
 
 /* Doctor close-case after lab */
-// router.put('/doctorModule/close-case/:appointmentId', doctorController.closeCase);
+// <<<<<<< HEAD
+// //router.put('/doctorModule/close-case/:appointmentId', doctorController.closeCase);
+// =======
+// // router.put('/doctorModule/close-case/:appointmentId', doctorController.closeCase);
+// >>>>>>> 5606716492815681e88d6735fe893702c2f51a40
 
 module.exports = router;
 
