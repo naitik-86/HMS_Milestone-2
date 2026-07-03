@@ -1,6 +1,6 @@
 import API from "../../../shared/api/axios";
 
-const BASE_URL = "/pre-consultation";
+const BASE_URL = "/clinic/pre-consultation";
 
 /* GET ALL PENDING PETS */
 export const getPendingPets = async () => {
@@ -10,11 +10,30 @@ export const getPendingPets = async () => {
     return res.data;
 };
 
-export const completePreConsultation = async (id) => {
+export const completePreConsultation = async (petData) => {
+
+    console.log("this is the id from preconsulatation pets  ", petData);
+
+    const id = petData._id
+
+    console.log(`${BASE_URL}/${id}/complete`);
+
+
     const res = await API.patch(
-        `/pre-consultation/${id}/complete`
+        `${BASE_URL}/${id}/complete`,
+        petData
     );
 
+    return res.data;
+};
+
+export const getCompletedPets = async () => {
+    const res = await API.get(`${BASE_URL}/completed`);
+    return res.data;
+};
+
+export const getHistoryPets = async () => {
+    const res = await API.get(`${BASE_URL}/history`);
     return res.data;
 };
 
@@ -30,8 +49,3 @@ export const completePreConsultation = async (id) => {
 //     return res.data;
 // };
 
-// /* MARK PRE CONSULTATION AS COMPLETED */
-// export const completePreConsultation = async (id) => {
-//     const res = await API.patch(`${BASE_URL}/${id}/complete`);
-//     return res.data;
-// };

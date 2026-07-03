@@ -1,72 +1,67 @@
 import { useState } from "react";
-// import Sidebar from "../components/Sidebar";
-// import Header from "../components/Header";
-
+import { useEffect } from "react";
 import { Header } from "../../components";
+import { getHistoryPets } from "../../api/preConsultationApi";
+import formatDate from "../../../../shared/utils/formatDate";
 
 export default function HistoryPets() {
   const [search, setSearch] = useState("");
 
-  const historyData = [
-    {
-      id: 1,
-      token: "TK-001",
-      ownerName: "Rahul Sharma",
-      phoneNumber: "+91 9876543210",
-      petName: "Bruno",
-      visitDate: "12 Jun 2026",
-      visitType: "Checkup",
-      doctor: "Dr. Amit",
-    },
-    {
-      id: 2,
-      token: "TK-002",
-      ownerName: "Amit Verma",
-      phoneNumber: "+91 9876543211",
-      petName: "Max",
-      visitDate: "11 Jun 2026",
-      visitType: "Vaccination",
-      doctor: "Dr. Karan",
-    },
-    {
-      id: 3,
-      token: "TK-003",
-      ownerName: "Karan Kumar",
-      phoneNumber: "+91 9876543212",
-      petName: "Rocky",
-      visitDate: "10 Jun 2026",
-      visitType: "Consultation",
-      doctor: "Dr. Vivek",
-    },
-  ];
+  const [historyData, setHistoryData] = useState([]);
+  const [cards, setCards] = useState([]);
 
-  const cards = [
-    {
-      title: "Total Records",
-      value: "2458",
-      icon: "📚",
-      color: "bg-blue-50",
-    },
-    {
-      title: "This Month",
-      value: "148",
-      icon: "📅",
-      color: "bg-purple-50",
-    },
-    {
-      title: "Archived Cases",
-      value: "982",
-      icon: "🗂️",
-      color: "bg-orange-50",
-    },
-  ];
+  useEffect(() => {
+    fetchHistory();
+  }, []);
+
+  const fetchHistory = async () => {
+    try {
+      const res = await getHistoryPets();
+
+      setHistoryData(res.data.records);
+
+      setCards([
+        {
+          title: "Total Records",
+          value: res.data.stats.totalRecords,
+          icon: "📚",
+          color: "bg-blue-50",
+        },
+        {
+          title: "This Month",
+          value: res.data.stats.thisMonth,
+          icon: "📅",
+          color: "bg-purple-50",
+        },
+        {
+          title: "Archived Cases",
+          value: res.data.stats.archivedCases,
+          icon: "🗂️",
+          color: "bg-orange-50",
+        },
+      ]);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  console.log(historyData);
+
 
   const filteredRecords = historyData.filter(
     (item) =>
-      item.token.toLowerCase().includes(search.toLowerCase()) ||
-      item.ownerName.toLowerCase().includes(search.toLowerCase()) ||
-      item.petName.toLowerCase().includes(search.toLowerCase()) ||
-      item.phoneNumber.toLowerCase().includes(search.toLowerCase())
+      item.tokenNumber
+        ?.toLowerCase()
+        .includes(search.toLowerCase()) ||
+      item.ownerId?.ownerName
+        ?.toLowerCase()
+        .includes(search.toLowerCase()) ||
+      item.ownerId?.petName
+        ?.toLowerCase()
+        .includes(search.toLowerCase()) ||
+      item.ownerId?.phoneNumber
+        ?.toLowerCase()
+        .includes(search.toLowerCase())
   );
 
   return (
@@ -74,7 +69,7 @@ export default function HistoryPets() {
 
 
 
-<div className="flex-1 p-4 md:p-6 lg:p-8 mt-[70px] md:mt-0 overflow-x-hidden">
+      <div className="flex-1 p-4 md:p-6 lg:p-8 mt-17.5 md:mt-0 overflow-x-hidden">
         <Header
 
           title="History Pets"
@@ -83,7 +78,7 @@ export default function HistoryPets() {
         />
 
         {/* KPI Cards */}
-<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           {cards.map((card, index) => (
             <div
               key={index}
@@ -97,9 +92,9 @@ export default function HistoryPets() {
                     {card.title}
                   </p>
 
-                    <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-slate-800 mt-3">
-  {card.value}
-</h2>
+                  <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-slate-800 mt-3">
+                    {card.value}
+                  </h2>
                 </div>
 
                 <div
@@ -116,56 +111,56 @@ export default function HistoryPets() {
         </div>
 
         {/* Search Section */}
-{/* Search Section */}
-<div className="bg-white rounded-3xl shadow-sm p-4 md:p-6 mb-8">
+        {/* Search Section */}
+        <div className="bg-white rounded-3xl shadow-sm p-4 md:p-6 mb-8">
 
-  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
 
-    {/* Search Input */}
-    <div className="relative sm:col-span-2 xl:col-span-1">
+            {/* Search Input */}
+            <div className="relative sm:col-span-2 xl:col-span-1">
 
-      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
-        🔍
-      </span>
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
+                🔍
+              </span>
 
-      <input
-        type="text"
-        placeholder="Search Pet / Owner / Token..."
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        className="w-full pl-12 pr-4 py-4 border border-slate-200 rounded-2xl bg-slate-50 outline-none focus:bg-white focus:border-orange-500 focus:ring-4 focus:ring-orange-100"
-      />
+              <input
+                type="text"
+                placeholder="Search Pet / Owner / Token..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-12 pr-4 py-4 border border-slate-200 rounded-2xl bg-slate-50 outline-none focus:bg-white focus:border-orange-500 focus:ring-4 focus:ring-orange-100"
+              />
 
-    </div>
+            </div>
 
-    {/* Date */}
-    <input
-      type="date"
-      className="w-full border border-slate-200 rounded-2xl px-5 py-4"
-    />
+            {/* Date */}
+            <input
+              type="date"
+              className="w-full border border-slate-200 rounded-2xl px-5 py-4"
+            />
 
-    {/* Visit Type */}
-    <select className="w-full border border-slate-200 rounded-2xl px-5 py-4">
-      <option>All Visit Types</option>
-      <option>Checkup</option>
-      <option>Vaccination</option>
-      <option>Consultation</option>
-    </select>
+            {/* Visit Type */}
+            <select className="w-full border border-slate-200 rounded-2xl px-5 py-4">
+              <option>All Visit Types</option>
+              <option>Checkup</option>
+              <option>Vaccination</option>
+              <option>Consultation</option>
+            </select>
 
-    {/* Button */}
-   <button className="w-full bg-orange-500 hover:bg-orange-600 text-white rounded-2xl font-medium py-4">
-  Search Records
-</button>
+            {/* Button */}
+            <button className="w-full bg-orange-500 hover:bg-orange-600 text-white rounded-2xl font-medium py-4">
+              Search Records
+            </button>
 
-  </div>
+          </div>
 
-</div>
+        </div>
 
         {/* Table */}
         <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
 
           {/* Table Header */}
-<div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 px-4 md:px-8 py-6 border-b border-slate-200">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 px-4 md:px-8 py-6 border-b border-slate-200">
             <div>
 
               <h2 className="text-xl font-bold text-slate-800">
@@ -184,8 +179,8 @@ export default function HistoryPets() {
 
           </div>
 
-        <div className="hidden lg:block overflow-x-auto">
-  <table className="w-full">
+          <div className="hidden lg:block overflow-x-auto">
+            <table className="w-full">
 
               <thead className="bg-slate-50">
 
@@ -208,7 +203,7 @@ export default function HistoryPets() {
                   </th>
 
                   <th className="px-6 py-4 text-left text-xs font-bold uppercase text-slate-500">
-                    Visit Type
+                    Severity
                   </th>
 
                   <th className="px-6 py-4 text-left text-xs font-bold uppercase text-slate-500">
@@ -228,12 +223,12 @@ export default function HistoryPets() {
                 {filteredRecords.length > 0 ? (
                   filteredRecords.map((item) => (
                     <tr
-                      key={item.id}
+                      key={item._id}
                       className="border-t border-slate-100 hover:bg-blue-50/30 transition-all"
                     >
 
                       <td className="px-6 py-5 font-semibold text-slate-800">
-                        {item.token}
+                        {item.tokenNumber}
                       </td>
 
                       <td className="px-6 py-5">
@@ -241,17 +236,17 @@ export default function HistoryPets() {
                         <div className="flex items-center gap-4">
 
                           <div className="w-11 h-11 rounded-2xl bg-blue-100 flex items-center justify-center font-bold text-blue-600">
-                            {item.ownerName.charAt(0)}
+                            {item.owner?.ownerName?.charAt(0)}
                           </div>
 
                           <div>
 
                             <p className="font-semibold text-slate-800">
-                              {item.ownerName}
+                              {item?.owner?.ownerName}
                             </p>
 
                             <p className="text-sm text-slate-500">
-                              {item.phoneNumber}
+                              {item.owner?.mobileNumber}
                             </p>
 
                           </div>
@@ -271,7 +266,7 @@ export default function HistoryPets() {
                           <div>
 
                             <p className="font-semibold text-slate-800">
-                              {item.petName}
+                              {item.uniquePetId}
                             </p>
 
                             <p className="text-sm text-slate-500">
@@ -285,19 +280,19 @@ export default function HistoryPets() {
                       </td>
 
                       <td className="px-6 py-5 text-slate-700">
-                        {item.visitDate}
+                        {formatDate(item.createdAt)}
                       </td>
 
                       <td className="px-6 py-5">
 
                         <span className="bg-blue-100 text-blue-700 px-4 py-2 rounded-full text-sm font-semibold">
-                          {item.visitType}
+                          {item?.severity}
                         </span>
 
                       </td>
 
                       <td className="px-6 py-5 text-slate-700">
-                        {item.doctor}
+                        {item.recordedBy}
                       </td>
 
                       <td className="px-6 py-5">
@@ -342,39 +337,39 @@ export default function HistoryPets() {
               </tbody>
 
             </table>
-</div>
-{/* Mobile Cards */}
-<div className="lg:hidden p-4 space-y-4">
-  {filteredRecords.map((item) => (
-    <div
-      key={item.id}
-      className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm"
-    >
-      <div className="flex items-center justify-between">
-        <span className="font-bold text-slate-800">
-          {item.token}
-        </span>
+          </div>
+          {/* Mobile Cards */}
+          <div className="lg:hidden p-4 space-y-4">
+            {filteredRecords.map((item) => (
+              <div
+                key={item._id}
+                className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-slate-800">
+                    {item.tokenNumber}
+                  </span>
 
-        <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">
-          {item.visitType}
-        </span>
-      </div>
+                  <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">
+                    {item.visitType}
+                  </span>
+                </div>
 
-      <div className="mt-4 space-y-2 text-sm">
-        <p><strong>Owner:</strong> {item.ownerName}</p>
-        <p><strong>Phone:</strong> {item.phoneNumber}</p>
-        <p><strong>Pet:</strong> {item.petName}</p>
-        <p><strong>Date:</strong> {item.visitDate}</p>
-        <p><strong>Doctor:</strong> {item.doctor}</p>
-      </div>
+                <div className="mt-4 space-y-2 text-sm">
+                  <p><strong>Owner:</strong> {item.ownerName}</p>
+                  <p><strong>Phone:</strong> {item.phoneNumber}</p>
+                  <p><strong>Pet:</strong> {item.petName}</p>
+                  <p><strong>Date:</strong> {item.visitDate}</p>
+                  <p><strong>Doctor:</strong> {item.doctor}</p>
+                </div>
 
-      <button className="mt-4 w-full rounded-xl bg-slate-800 py-3 text-white">
-        📄 View Record
-      </button>
-    </div>
-  ))}
-</div>
-          
+                <button className="mt-4 w-full rounded-xl bg-slate-800 py-3 text-white">
+                  📄 View Record
+                </button>
+              </div>
+            ))}
+          </div>
+
 
         </div>
 

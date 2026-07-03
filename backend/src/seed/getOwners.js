@@ -7,6 +7,8 @@ require("dotenv").config({
 });
 
 const Owner = require("../models/Owner");
+const Preconsultation = require("../models/PreConsultation")
+const PetRegistration = require("../models/PetRegistration")
 
 const getOwners = async () => {
     try {
@@ -14,7 +16,7 @@ const getOwners = async () => {
 
         console.log("Connected to MongoDB.\n");
 
-        const owners = await Owner.find().select("_id name mobile email");
+        const owners = await PetRegistration.find().select("_id name mobile email");
 
         if (owners.length === 0) {
             console.log("No owners found.");
@@ -31,6 +33,14 @@ const getOwners = async () => {
             console.log(`Email  : ${owner.email || "N/A"}`);
             console.log("----------------------------------");
         });
+
+        const found = await PetRegistration.findOne({
+            _id: "6a46a0b7e079bd5e161fcadc"
+        })
+        console.log("***************");
+
+        console.log(found);
+
 
         process.exit(0);
     } catch (error) {

@@ -16,6 +16,8 @@ const reportsController = require('../controllers/adminReportsController');
 const labReportController = require("../controllers/labDashboardController");
 const petRegistrationController = require("../controllers/petRegistrationController");
 
+const preConsultationRoutes = require("../routes/preConsultationRoutes")
+
 router.use(authorize('CLINIC_ADMIN'));
 
 /* STAFF */
@@ -124,5 +126,7 @@ router.get("/reception/new-registration/owner/:ownerId/pets/:petId/history", pet
 router.get("/reception/existing-customers/stats", petRegistrationController.getDashboardStats);
 router.get("/reception/existing-customers", petRegistrationController.getExistingCustomers);
 router.get("/reception/existing-customers/:ownerId/pets/:petId", petRegistrationController.getPetDetails);
+
+router.use("/pre-consultation", preConsultationRoutes);
 
 module.exports = router;

@@ -9,6 +9,7 @@ const {
   getHistoryPets,
   getSinglePreConsultation,
   updatePreConsultation,
+  completePreConsultation
 } = require("../controllers/preConsultationController");
 
 // Dashboard
@@ -31,5 +32,10 @@ router.post("/", savePreConsultation);
 
 // Update Pre Consultation
 router.put("/:id", updatePreConsultation);
+
+router.patch(
+  "/:id/complete",
+  completePreConsultation
+);
 
 module.exports = router;

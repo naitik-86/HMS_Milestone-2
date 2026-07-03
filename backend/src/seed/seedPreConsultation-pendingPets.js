@@ -20,11 +20,13 @@ const seedDb = async () => {
 
         console.log("Connected to MongoDB.");
 
+        // await PreConsultation.deleteMany({});
+
         const pendingPets = [
             {
-                ownerId: "6a461ba48da2777cd0e11153",
-                uniquePetId: "PET001",
-                tokenNumber: "T001",
+                ownerId: "6a46a0b7e079bd5e161fcadc",
+                uniquePetId: "PET007",
+                tokenNumber: "T007",
 
                 bodyTemperature: 101.5,
                 heartRate: 92,

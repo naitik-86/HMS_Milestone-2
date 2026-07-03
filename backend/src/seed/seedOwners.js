@@ -1,68 +1,212 @@
-// seedOwners.js
+// seedPetRegistration.js
+
 const path = require("path");
 const mongoose = require("mongoose");
+
 require("dotenv").config({
     path: path.resolve(__dirname, "../../.env"),
 });
 
-const Owner = require("../models/Owner");
+const PetRegistration = require("../models/PetRegistration");
 
-const seedOwners = async () => {
+const seedPetRegistrations = async () => {
     try {
         await mongoose.connect(process.env.MONGO_URI);
 
-        console.log("Connected to MongoDB.");
+        console.log("Connected to MongoDB");
 
-        const owners = [
+        // Uncomment if you want fresh data
+        // await PetRegistration.deleteMany({});
+
+        const registrations = [
             {
-                name: "Rishi Kumar",
-                mobile: "9876543210",
-                alternateMobile: "9123456780",
-                email: "rishi@example.com",
-                govtId: "A123456789",
-                address: "Patna, Bihar",
-                location: {
-                    type: "Point",
-                    coordinates: [85.1376, 25.5941],
-                },
+                ownerName: "Rahul Verma",
+                mobileNumber: "9876543210",
+                isMobileVerified: true,
+                visitType: "New",
+                ownerIdType: "Aadhar",
+                email: "rahul.verma@example.com",
+                address: "45 MG Road",
+                city: "Bengaluru",
+                district: "Bengaluru Urban",
+                state: "Karnataka",
+                pincode: "560001",
+
+                pets: [
+                    {
+                        petName: "Bruno",
+                        species: "Dog",
+                        breed: "Labrador Retriever",
+                        gender: "Male",
+                        dob: new Date("2021-05-10"),
+                        age: 5,
+                        color: "Golden",
+                        rfid: "RF1001",
+                        identificationArea: "Neck",
+                        petPhoto: "",
+                        sterilized: true,
+                        uniquePetId: "PET001",
+
+                        history: {
+                            vaccinations: [
+                                {
+                                    vaccineName: "Rabies",
+                                    vaccinationDate: new Date("2025-01-15"),
+                                    batchNumber: "RB001",
+                                    clinicName: "City Vet Clinic",
+                                },
+                            ],
+                            dewormings: [
+                                {
+                                    product: "Drontal",
+                                    dewormingDate: new Date("2025-02-01"),
+                                    dose: "1 Tablet",
+                                },
+                            ],
+                            surgeries: [],
+                            treatments: [],
+                            allergies: "None",
+                            currentMedications: "None",
+                        },
+
+                        visits: [
+                            {
+                                primaryReason: "Checkup",
+                                assignedDoctor: "Dr. Sharma",
+                                complaint: "Routine Checkup",
+                                tokenNumber: "T001",
+                                appointmentDate: new Date(),
+                                appointmentTime: "10:00 AM",
+                                status: "Pending",
+                            },
+                        ],
+                    },
+                ],
             },
+
             {
-                name: "Aman Singh",
-                mobile: "9876543211",
-                alternateMobile: "9123456781",
-                email: "aman@example.com",
-                govtId: "B987654321",
-                address: "Ranchi, Jharkhand",
-                location: {
-                    type: "Point",
-                    coordinates: [85.3096, 23.3441],
-                },
+                ownerName: "Sneha Kapoor",
+                mobileNumber: "9876543211",
+                isMobileVerified: true,
+                visitType: "Follow-up",
+                ownerIdType: "Driving License",
+                email: "sneha.kapoor@example.com",
+                address: "22 Lake View",
+                city: "Pune",
+                district: "Pune",
+                state: "Maharashtra",
+                pincode: "411001",
+
+                pets: [
+                    {
+                        petName: "Milo",
+                        species: "Cat",
+                        breed: "Persian",
+                        gender: "Male",
+                        dob: new Date("2022-03-18"),
+                        age: 3,
+                        color: "White",
+                        rfid: "RF1002",
+                        identificationArea: "Chest",
+                        petPhoto: "",
+                        sterilized: false,
+                        uniquePetId: "PET002",
+
+                        history: {
+                            vaccinations: [],
+                            dewormings: [],
+                            surgeries: [],
+                            treatments: [],
+                            allergies: "Fish",
+                            currentMedications: "",
+                        },
+
+                        visits: [
+                            {
+                                primaryReason: "Vaccination",
+                                assignedDoctor: "Dr. Mehta",
+                                complaint: "Annual Vaccine",
+                                tokenNumber: "T002",
+                                appointmentDate: new Date(),
+                                appointmentTime: "11:30 AM",
+                                status: "Pending",
+                            },
+                        ],
+                    },
+                ],
             },
+
             {
-                name: "Priya Sharma",
-                mobile: "9876543212",
-                alternateMobile: "9123456782",
-                email: "priya@example.com",
-                govtId: "C456789123",
-                address: "Delhi",
-                location: {
-                    type: "Point",
-                    coordinates: [77.1025, 28.7041],
-                },
+                ownerName: "Arjun Nair",
+                mobileNumber: "9876543212",
+                isMobileVerified: true,
+                visitType: "New",
+                ownerIdType: "Passport",
+                email: "arjun.nair@example.com",
+                address: "18 Green Park",
+                city: "Kochi",
+                district: "Ernakulam",
+                state: "Kerala",
+                pincode: "682001",
+
+                pets: [
+                    {
+                        petName: "Rocky",
+                        species: "Dog",
+                        breed: "German Shepherd",
+                        gender: "Male",
+                        dob: new Date("2020-08-22"),
+                        age: 5,
+                        color: "Black & Tan",
+                        rfid: "RF1003",
+                        identificationArea: "Back",
+                        petPhoto: "",
+                        sterilized: true,
+                        uniquePetId: "PET003",
+
+                        history: {
+                            vaccinations: [],
+                            dewormings: [],
+                            surgeries: [],
+                            treatments: [],
+                            allergies: "",
+                            currentMedications: "",
+                        },
+
+                        visits: [
+                            {
+                                primaryReason: "Treatment",
+                                assignedDoctor: "Dr. Joseph",
+                                complaint: "Vomiting",
+                                tokenNumber: "T003",
+                                appointmentDate: new Date(),
+                                appointmentTime: "2:00 PM",
+                                status: "Pending",
+                            },
+                        ],
+                    },
+                ],
             },
         ];
 
-        // Uncomment if you want a fresh start every time
-        // await Owner.deleteMany({});
+        const result = await PetRegistration.insertMany(registrations);
 
-        await Owner.insertMany(owners);
+        console.log("Seed completed successfully.\n");
 
-        console.log(`${owners.length} owners created successfully.`);
+        result.forEach((owner, index) => {
+            console.log(`Owner ${index + 1}`);
+            console.log("Mongo ID :", owner._id);
+            console.log("Owner    :", owner.ownerName);
+            console.log("Pet      :", owner.pets[0].petName);
+            console.log("Pet ID   :", owner.pets[0].uniquePetId);
+            console.log("--------------------------------------");
+        });
+
         process.exit(0);
-    } catch (error) {
-        console.error("Error:", error);
+    } catch (err) {
+        console.error(err);
         process.exit(1);
     }
 };
 
-seedOwners();
+seedPetRegistrations();

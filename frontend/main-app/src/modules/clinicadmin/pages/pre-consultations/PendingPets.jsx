@@ -87,7 +87,7 @@ export default function PendingPets() {
         <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
 
           {/* Table Header */}
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 px-4 md:px-8 py-6 border-b border-slate-200 bg-gradient-to-r from-orange-50 to-white">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 px-4 md:px-8 py-6 border-b border-slate-200 bg-linear-to-r from-orange-50 to-white">
 
             <div>
 
@@ -171,18 +171,18 @@ export default function PendingPets() {
 
                         <div className="flex items-center gap-4">
 
-                          {/* <div className="w-12 h-12 rounded-2xl bg-orange-100 flex items-center justify-center font-bold text-orange-600">
-                            {pet.ownerName.charAt(0)}
-                          </div> */}
+                          <div className="w-12 h-12 rounded-2xl bg-orange-100 flex items-center justify-center font-bold text-orange-600">
+                            {pet?.owner?.ownerName?.charAt(0)}
+                          </div>
 
                           <div>
 
                             <p className="font-semibold text-slate-800">
-                              {pet.ownerId}
+                              {pet?.owner?.ownerName}
                             </p>
 
                             <p className="text-sm text-slate-500">
-                              N/A
+                              {pet?.owner?.mobileNumber}
                             </p>
 
                           </div>
@@ -334,6 +334,7 @@ export default function PendingPets() {
               setOpenModal(false);
               setSelectedPet(null);
             }}
+            onCompleted={fetchPendingPets}
           />
         )}
 
