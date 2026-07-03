@@ -6,7 +6,7 @@ const superAdminRoutes = require('./superAdminRoutes');
 const clinicAdminRoutes = require('./clinicAdminRoutes');
 const doctorRoutes = require('./doctorRoutes');
 const receptionRoutes = require('./receptionRoutes');
-// const preConsultationRoutes = require("./preConsultationRoutes");
+const preConsultationRoutes = require("./preConsultationRoutes");
 const petOwnerRoutes = require("./petOwnerRoutes");
 const doctorModule = require('./DoctorModuleRoutes')
 const { protect, authorize } = require('../middlewares/auth');
@@ -18,7 +18,7 @@ router.use('/super-admin', protect, superAdminRoutes);
 // router.use('/clinic', protect, authorize("CLINIC_ADMIN"), clinicAdminRoutes);
 
 
-
+router.use('/pre',preConsultationRoutes)
 // Owner Pet
 router.use("/pet-owner", petOwnerRoutes);
 
