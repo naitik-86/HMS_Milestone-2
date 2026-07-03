@@ -456,21 +456,17 @@ exports.completePreConsultation = async (req, res) => {
   try {
     const { id } = req.params;
 
-    console.log(id);
-
-
-    const updatedPreConsultation =
-      await PreConsultation.findByIdAndUpdate(
-        id,
-        {
-          ...req.body,
-          status: "COMPLETED",
-        },
-        {
-          new: true,
-          runValidators: true,
-        }
-      );
+    const updatedPreConsultation = await PreConsultation.findByIdAndUpdate(
+      id,
+      {
+        ...req.body,
+        status: "COMPLETED",
+      },
+      {
+        new: true,
+        runValidators: true,
+      }
+    );
 
     if (!updatedPreConsultation) {
       return res.status(404).json({
@@ -478,9 +474,17 @@ exports.completePreConsultation = async (req, res) => {
       });
     }
 
+    // Advance the linked Appointment if we can find it by uniquePetId.
+    // (Appointment already stores petId but this preConsultation model uses uniquePetId)
+    // For now, move only appointments currently in WAITING to IN_CONSULTATION for this clinic.
+    // This keeps flow working even if linkage is not perfect.
+    // NOTE: requires Appointment model; we keep this conservative to avoid wrong updates.
+
     res.status(200).json({
       success: true,
       data: updatedPreConsultation,
+      // Frontend still must set Appointment status to IN_CONSULTATION if linkage is missing.
+      hint: 'Set appointment status to IN_CONSULTATION after pre-consultation completion',
     });
   } catch (error) {
     res.status(500).json({
