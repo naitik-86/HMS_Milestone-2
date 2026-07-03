@@ -14,8 +14,6 @@ const ownerReportSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
-
-
     ownerMobile: {
       type: String,
       required: true,

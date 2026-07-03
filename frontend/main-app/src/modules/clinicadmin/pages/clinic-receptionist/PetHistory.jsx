@@ -5,7 +5,6 @@ export default function PetHistory() {
   console.log("PetHistory Rendered");
   const [search, setSearch] = useState("");
   const [visits, setVisits] = useState([]);
-
   const fetchPetHistory = async () => {
     try {
       console.log("API Calling...");
@@ -25,13 +24,12 @@ export default function PetHistory() {
     fetchPetHistory();
   }, []);
 
-  const filteredVisits = visits.filter((items) => {
-    const value = search.toLowerCase();
-    return (
-      items.petName?.toLowerCase().includes(value) ||
-      items.owner?.toLowerCase().includes(value)
-    );
-  });
+  const filteredVisits = visits.filter(
+    (visit) =>
+      visit.petName?.toLowerCase().includes(search.toLowerCase()) ||
+      visit.owner?.toLowerCase().includes(search.toLowerCase())
+  );
+
 
   const getStatusColor = (status) => {
     if (status === "Completed") return "bg-green-100 text-green-700";
@@ -58,9 +56,9 @@ export default function PetHistory() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
-        {stats.map((item) => (
+        {stats.map((item, index) => (
           <div
-            key={item.label}
+            key={index}
             className="bg-white rounded-2xl sm:rounded-[28px] p-5 sm:p-6 shadow-sm"
           >
             <p className="text-slate-500">{item.label}</p>
@@ -171,7 +169,7 @@ export default function PetHistory() {
                   <th className="p-4 text-left">Reason</th>
                   <th className="p-4 text-left">Doctor</th>
                   <th className="p-4 text-left">Status</th>
-                  <th className="p-4 text-left">Bill</th>
+                  <th className="p-4 text-left">Age</th>
                   <th className="p-4 text-left">Action</th>
                 </tr>
               </thead>
@@ -193,7 +191,7 @@ export default function PetHistory() {
                         {visit.status}
                       </span>
                     </td>
-                    <td className="p-4 font-semibold">{visit.bill}</td>
+                    <td className="p-4 font-semibold">{visit.age}</td>
                     <td className="p-4">
                       <button className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-xl transition">
                         View

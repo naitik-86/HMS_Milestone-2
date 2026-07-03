@@ -139,16 +139,31 @@ exports.getHistory = async (req, res) => {
 
     try {
 
-        const history = await Doctor.find()
-        .sort({
+        const history = await Doctor.find().sort({
             updatedAt: -1
         });
+
+        const vaccinations = history.filter(
+            item =>
+                item.treatment?.vaccinations &&
+                item.treatment.vaccinations.trim() !== ""
+        ).length;
+
+        const treatments = history.filter(
+            item =>
+                item.treatment?.medicines &&
+                item.treatment.medicines.trim() !== ""
+        ).length;
 
         return res.status(200).json({
 
             success: true,
 
             total: history.length,
+
+            vaccinations,
+
+            treatments,
 
             data: history
 
@@ -452,4 +467,24 @@ exports.updatePatient = async (req, res) => {
 
     }
 
+};
+
+
+
+//  Delete after refrence will create
+exports.createPatient = async (req, res) => {
+    try {
+        const patient = await Doctor.create(req.body);
+
+        return res.status(201).json({
+            success: true,
+            message: "Patient Created Successfully",
+            data: patient
+        });
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
 };

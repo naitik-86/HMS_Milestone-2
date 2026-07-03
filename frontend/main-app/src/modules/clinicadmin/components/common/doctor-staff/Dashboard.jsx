@@ -7,6 +7,7 @@ import {
   PawPrint,
 } from "lucide-react";
 
+
 export default function Dashboard() {
   const [dashboard, setDashboard] = useState({
     totalPets: 0,

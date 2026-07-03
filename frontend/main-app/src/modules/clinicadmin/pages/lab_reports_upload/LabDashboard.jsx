@@ -1,31 +1,120 @@
+/* eslint-disable react-hooks/set-state-in-effect */
+import { useEffect, useState } from "react";
+import axios from "axios";
+
+const BASE_URL = "http://localhost:5000/api/v1/lab";
+
 export default function LabDashboard() {
 
-  const stats = [
-    {
-      title: "Total Reports",
-      value: "1,245",
-      icon: "🧪",
-      color: "blue",
-    },
-    {
-      title: "Pending Uploads",
-      value: "32",
-      icon: "⏳",
-      color: "orange",
-    },
-    {
-      title: "Critical Cases",
-      value: "8",
-      icon: "🚨",
-      color: "red",
-    },
-    {
-      title: "Today's Reports",
-      value: "54",
-      icon: "📄",
-      color: "blue",
-    },
-  ];
+    const [stats, setStats] = useState([]);
+    const [recentActivities, setRecentActivities] = useState([]);
+    const [pendingSummary, setPendingSummary] = useState([]);
+
+    // ================= Dashboard =================
+
+    const getDashboardStats = async () => {
+        try {
+
+            const res = await axios.get(`${BASE_URL}/dashboard`);
+
+            console.log("Dashboard :", res.data);
+
+            setStats([
+                {
+                    title: "Total Reports",
+                    value: res.data.data.totalReports,
+                    icon: "🧪",
+                    color: "blue",
+                },
+                {
+                    title: "Pending Uploads",
+                    value: res.data.data.pendingUploads,
+                    icon: "⏳",
+                    color: "orange",
+                },
+                {
+                    title: "Critical Cases",
+                    value: res.data.data.criticalCases,
+                    icon: "🚨",
+                    color: "red",
+                },
+                {
+                    title: "Today's Reports",
+                    value: res.data.data.todayReports,
+                    icon: "📄",
+                    color: "blue",
+                },
+            ]);
+
+        } catch (error) {
+
+            console.error("Dashboard Error :", error);
+
+        }
+    };
+
+
+
+    // ================= Recent Activity =================
+
+    const getRecentActivities = async () => {
+
+        try {
+
+            const res = await axios.get(`${BASE_URL}/recent`);
+
+            console.log("Recent Activity :", res.data);
+
+            setRecentActivities(res.data.data || []);
+
+        } catch (error) {
+
+            console.error("Recent Activity Error :", error);
+
+        }
+
+    };
+
+
+
+    // ================= Pending Summary =================
+
+    const getPendingSummary = async () => {
+
+        try {
+
+            const res = await axios.get(`${BASE_URL}/pending-summary`);
+
+            console.log("Pending Summary :", res.data);
+
+            setPendingSummary(res.data.data || []);
+
+        } catch (error) {
+
+            console.error("Pending Summary Error :", error);
+
+        }
+
+    };
+
+
+
+    // ================= Initial Load =================
+
+    useEffect(() => {
+
+        getDashboardStats();
+        getRecentActivities();
+        getPendingSummary();
+
+    }, []);
+
+
+    // ================= Debug =================
+
+    console.log("Recent Activities State :", recentActivities);
+    console.log("Pending Summary State :", pendingSummary);
+
 
   return (
     <div className="min-h-screen bg-slate-100">
@@ -234,7 +323,7 @@ export default function LabDashboard() {
                   </p>
 
                   <h2 className="text-2xl md:text-4xl lg:text-5xl font-bold">
-                    54 Reports Uploaded Today
+                  {stats[3]?.value} Reports Uploaded Today
                   </h2>
 
                   <p className="mt-4 max-w-xl text-white/70">
@@ -313,175 +402,46 @@ export default function LabDashboard() {
                 <div className="space-y-4">
 
                   {/* Activity 1 */}
-                  <div className="
-                        flex
-                        flex-col
-                        gap-4
-                        sm:flex-row
-                        sm:items-center
-                        sm:justify-between
-                        rounded-3xl
-                        bg-slate-50
-                        p-5
-                        transition-all
-                        hover:bg-slate-100
-                  ">
+{recentActivities.map((item) => (
+    <div
+        key={item._id}
+        className="flex items-center justify-between rounded-3xl bg-slate-50 p-5 transition-all hover:bg-slate-100"
+    >
+        <div className="flex items-center gap-4">
 
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-green-100 text-2xl">
+                {item.status === "Completed"
+                    ? "✅"
+                    : item.status === "Pending"
+                    ? "⏳"
+                    : "🚨"}
+            </div>
 
-                      <div className="
-                            flex
-                            h-14
-                            w-14
-                            items-center
-                            justify-center
-                            rounded-2xl
-                            bg-green-100
-                            text-2xl
-                          ">
-                        ✅
-                      </div>
+            <div>
+                <h3 className="font-semibold text-slate-800">
+                    {item.labOrderId}
+                </h3>
 
-                      <div className="
-    flex
-    items-center
-    justify-between
-    rounded-3xl
-    bg-slate-50
-    p-5
-    transition-all
-    hover:bg-slate-100
-">
-                        <h3 className="font-semibold text-slate-800">
-                          LAB001 Uploaded
-                        </h3>
+                <p className="text-sm text-slate-500">
+                    {item.petName} • {item.reportType}
+                </p>
+            </div>
 
-                        <p className="text-sm text-slate-500">
-                          Bruno • Blood Test
-                        </p>
-                      </div>
+        </div>
 
-                    </div>
-
-                    <span className="
-                          rounded-xl
-                          bg-green-100
-                          px-3
-                          py-1
-                          text-sm
-                          font-bold
-                          text-green-600
-                        ">
-                      Completed
-                    </span>
-
-                  </div>
-
-                  {/* Activity 2 */}
-                  <div className="
-                        flex
-                        items-center
-                        justify-between
-                        rounded-3xl
-                        bg-slate-50
-                        p-5
-                        transition-all
-                        hover:bg-slate-100
-                      ">
-
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-
-                      <div className="
-                              flex
-                              h-14
-                              w-14
-                              items-center
-                              justify-center
-                              rounded-2xl
-                              bg-orange-100
-                              text-2xl
-                            ">
-                        ⏳
-                      </div>
-
-                      <div>
-                        <h3 className="font-semibold text-slate-800">
-                          LAB002 Pending
-                        </h3>
-
-                        <p className="text-sm text-slate-500">
-                          Rocky • CBC Report
-                        </p>
-                      </div>
-
-                    </div>
-
-                    <span className="
-                        rounded-xl
-                        bg-orange-100
-                        px-3
-                        py-1
-                        text-sm
-                        font-bold
-                        text-orange-600
-                      ">
-                      Pending
-                    </span>
-
-                  </div>
-
-                  {/* Activity 3 */}
-                  <div className="
-                            flex
-                            items-center
-                            justify-between
-                            rounded-3xl
-                            bg-slate-50
-                            p-5
-                            transition-all
-                            hover:bg-slate-100
-                          ">
-
-                    <div className="flex items-center gap-4">
-
-                      <div className="
-                              flex
-                              h-14
-                              w-14
-                              items-center
-                              justify-center
-                              rounded-2xl
-                              bg-red-100
-                              text-2xl
-                            ">
-                        🚨
-                      </div>
-
-                      <div>
-                        <h3 className="font-semibold text-slate-800">
-                          LAB003 Critical
-                        </h3>
-
-                        <p className="text-sm text-slate-500">
-                          Max • X-Ray Review
-                        </p>
-                      </div>
-
-                    </div>
-
-                    <span className="
-                          rounded-xl
-                          bg-red-100
-                          px-3
-                          py-1
-                          text-sm
-                          font-bold
-                          text-red-600
-                        ">
-                      Critical
-                    </span>
-
-                  </div>
+        <span
+            className={`rounded-xl px-3 py-1 text-sm font-bold ${
+                item.status === "Completed"
+                    ? "bg-green-100 text-green-600"
+                    : item.status === "Pending"
+                    ? "bg-orange-100 text-orange-600"
+                    : "bg-red-100 text-red-600"
+            }`}
+        >
+            {item.status}
+        </span>
+    </div>
+))}
 
                 </div>
 
@@ -501,55 +461,24 @@ export default function LabDashboard() {
                 </h2>
                 <div className="space-y-4">
 
-                  <div className="flex items-center justify-between rounded-2xl bg-slate-50 p-4 transition hover:bg-slate-100">
-                    <span className="font-medium text-slate-700">
-                      🩸 Blood Tests
-                    </span>
+                 {pendingSummary.map((item) => (
 
-                    <span className="rounded-xl bg-orange-100 px-3 py-1 font-bold text-orange-600">
-                      12
-                    </span>
-                  </div>
+    <div
+        key={item.reportType}
+        className="flex items-center justify-between rounded-2xl bg-slate-50 p-4 transition hover:bg-slate-100"
+    >
 
-                  <div className="flex items-center justify-between rounded-2xl bg-slate-50 p-4 transition hover:bg-slate-100">
-                    <span className="font-medium text-slate-700">
-                      📋 CBC Reports
-                    </span>
+        <span className="font-medium text-slate-700">
+            {item.reportType}
+        </span>
 
-                    <span className="rounded-xl bg-blue-100 px-3 py-1 font-bold text-blue-600">
-                      8
-                    </span>
-                  </div>
+        <span className="rounded-xl bg-orange-100 px-3 py-1 font-bold text-orange-600">
+            {item.total}
+        </span>
 
-                  <div className="flex items-center justify-between rounded-2xl bg-slate-50 p-4 transition hover:bg-slate-100">
-                    <span className="font-medium text-slate-700">
-                      🧪 Urine Tests
-                    </span>
+    </div>
 
-                    <span className="rounded-xl bg-green-100 px-3 py-1 font-bold text-green-600">
-                      6
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between rounded-2xl bg-slate-50 p-4 transition hover:bg-slate-100">
-                    <span className="font-medium text-slate-700">
-                      🩻 X-Ray Reports
-                    </span>
-
-                    <span className="rounded-xl bg-purple-100 px-3 py-1 font-bold text-purple-600">
-                      4
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between rounded-2xl bg-slate-50 p-4 transition hover:bg-slate-100">
-                    <span className="font-medium text-slate-700">
-                      🔍 Ultrasound
-                    </span>
-
-                    <span className="rounded-xl bg-red-100 px-3 py-1 font-bold text-red-600">
-                      2
-                    </span>
-                  </div>
+))} 
 
                 </div>
 
