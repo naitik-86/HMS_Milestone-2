@@ -7,15 +7,21 @@ export default function PetHistory() {
   const [visits, setVisits] = useState([]);
 
   const fetchPetHistory = async () => {
-    console.log("API Calling...");
+    try {
+      console.log("API Calling...");
 
-    const response = await getPetHistory();
+      const response = await getPetHistory();
 
-    console.log("API Response:", response);
+      console.log("API Response:", response);
+
+      if (response.success) {
+        setVisits(response.data);
+      }
+    } catch (error) {
+      console.error(error);
+    }
   };
   useEffect(() => {
-    console.log("useEffect fired");
-
     fetchPetHistory();
   }, []);
 
@@ -92,7 +98,7 @@ export default function PetHistory() {
           <div className="md:hidden space-y-4">
             {filteredVisits.map((visit) => (
               <div
-                key={`${visit.date}-${visit.petName}`}
+                key={`${visit.petId}-${visit.tokenNumber}`}
                 className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
               >
                 <div className="flex items-start justify-between gap-3">
@@ -172,7 +178,7 @@ export default function PetHistory() {
               <tbody>
                 {filteredVisits.map((visit) => (
                   <tr
-                    key={`${visit.date}-${visit.petName}`}
+                    key={`${visit.petId}-${visit.tokenNumber}`}
                     className="border-b hover:bg-slate-50"
                   >
                     <td className="p-4">{visit.date}</td>
@@ -207,7 +213,10 @@ export default function PetHistory() {
         </h2>
         <div className="space-y-6">
           {visits.map((visit, index) => (
-            <div key={`${visit.date}-${visit.owner}`} className="flex gap-4">
+            <div
+              key={`${visit.petId}-${visit.tokenNumber}`}
+              className="flex gap-4"
+            >
               <div
                 className={`w-4 h-4 rounded-full mt-2 ${index === 0 ? "bg-orange-500" : index === 1 ? "bg-blue-500" : "bg-green-500"}`}
               />
