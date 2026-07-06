@@ -42,7 +42,7 @@ import {
     CompletedPets,
     HistoryPets,
 } from "../modules/clinicadmin/pages";
-
+import DoctorLabPage from "../modules/clinicadmin/components/common/doctor-staff/DoctorLabPage";
 import {
     DoctorDashboard,
     DoctorPendingPetsPage,
@@ -103,6 +103,7 @@ const ClinicAdminRoutes = (
             <Route index element={<DoctorDashboard />} />
             <Route path="pending" element={<DoctorPendingPetsPage />} />
             <Route path="completed" element={<DoctorCompletedPetsPage />} />
+            <Route path="lab" element={<DoctorLabPage />} />
             <Route path="history" element={<DoctorHistoryPetsPage />} />
         </Route>
 

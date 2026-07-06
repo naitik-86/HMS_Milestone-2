@@ -431,12 +431,29 @@ exports.updatePatient = async (req, res) => {
         patient.suggestion.finalNotes =
     req.body.suggestion?.finalNotes ||
     patient.suggestion.finalNotes;
-        // ===========================================
-        // Status
-        // ===========================================
+// ===========================================
+// Status
+// ===========================================
 
-        patient.status =
-            req.body.status || "COMPLETED";
+if (req.body.status === "COMPLETED") {
+
+    patient.status = "COMPLETED";
+
+    patient.labRequisition.status = "COMPLETED";
+
+}
+else if (req.body.diagnosis?.raiseLab) {
+
+    patient.status = "LAB_PENDING";
+
+    patient.labRequisition.status = "PENDING";
+
+}
+else {
+
+    patient.status = "PENDING";
+
+}
 
 
         // ===========================================
@@ -469,7 +486,30 @@ exports.updatePatient = async (req, res) => {
 
 };
 
+exports.getLabPets = async (req, res) => {
+    try {
 
+        const labPets = await Doctor.find({
+            status: "LAB_PENDING"
+        }).sort({
+            updatedAt: -1
+        });
+
+        return res.status(200).json({
+            success: true,
+            total: labPets.length,
+            data: labPets
+        });
+
+    } catch (error) {
+
+        return res.status(500).json({
+            success: false,
+            message: error.message
+        });
+
+    }
+};
 
 //  Delete after refrence will create
 exports.createPatient = async (req, res) => {

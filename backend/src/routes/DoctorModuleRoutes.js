@@ -7,6 +7,7 @@ const {
     getCompletedPets,
     getHistory,
     getPatient,
+    getLabPets,
     updatePatient,
     createPatient
 } = require("../controllers/DoctorModuleController");
@@ -28,6 +29,8 @@ router.get("/patient/:id", getPatient);
 
 // Save Complete Form
 router.put("/patient/:id", updatePatient);
+
+router.get("/lab-pets", getLabPets);
 
 router.post("/patient", createPatient);
 
