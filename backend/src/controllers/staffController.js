@@ -28,6 +28,8 @@ const createStaff = async (req, res) => {
             ? JSON.parse(req.body.accountInfo)
             : {};
 
+        console.log(req.user.clinicId, " clininc id form staff creation");
+
         const existingEmail = await Staff.findOne({
             clinicId: req.user.clinicId,
             "personalInfo.email": personalInfo.email,
