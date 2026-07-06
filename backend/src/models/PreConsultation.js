@@ -2,6 +2,16 @@ const mongoose = require("mongoose");
 
 const preConsultationSchema = new mongoose.Schema(
   {
+
+        // ======================================================
+    // APPOINTMENT INFORMATION
+    // ======================================================
+
+    appointmentId: {
+  type: String,
+  required: true,
+  trim: true,
+},
     // ======================================================
     // PET INFORMATION
     // ======================================================
@@ -11,7 +21,6 @@ const preConsultationSchema = new mongoose.Schema(
       ref: "PetRegistration",
       required: true,
     },
-
     uniquePetId: {
       type: String,
       required: true,

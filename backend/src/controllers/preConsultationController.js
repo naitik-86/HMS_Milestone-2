@@ -39,6 +39,7 @@ const attachOwnerAndPet = (records) => {
 exports.savePreConsultation = async (req, res) => {
   try {
     const {
+      appointmentId,
       uniquePetId,
       tokenNumber,
     } = req.body;
