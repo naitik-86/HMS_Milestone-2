@@ -47,7 +47,6 @@ const petSchema = new mongoose.Schema({
     petName: {
         type: String,
     },
-
     species: String,
     breed: String,
     gender: String,

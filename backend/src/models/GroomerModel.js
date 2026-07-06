@@ -23,6 +23,11 @@ const certificateSchema = new mongoose.Schema(
 
 const groomerSchema = new mongoose.Schema(
     {
+        clinicId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Clinic",
+            required: true
+        },
         employeeId: {
             type: String,
             required: true,
