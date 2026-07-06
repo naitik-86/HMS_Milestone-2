@@ -135,6 +135,42 @@ const getPendingPets = async () => {
 
 };
 
+const sendToLab = async () => {
+  if (!selectedPet?._id) {
+    alert("Please select a pet");
+    return;
+  }
+
+  try {
+    const response = await axios.put(
+      `http://localhost:5000/api/v1/doctorModule/patient/${selectedPet._id}`,
+     {
+    ...formData,
+    diagnosis: {
+        ...formData.diagnosis,
+        raiseLab: true,
+    },
+    labRequisition: {
+        ...formData.labRequisition,
+        status: "PENDING",
+    }
+}
+    );
+
+    if (response.data.success) {
+      alert("Case Sent To Lab Successfully");
+
+      await getPendingPets();
+
+      setShowModal(false);
+      setSelectedPet(null);
+      setStep(1);
+    }
+  } catch (err) {
+    console.log(err);
+  }
+};
+
 const completeCase = async () => {
 
     if (!selectedPet?._id) {
@@ -1153,6 +1189,30 @@ setShowModal(true);
                   <p className="text-slate-500 mt-2 mb-8">
                     Select required laboratory tests and sample types for the pet.
                   </p>
+                  <div className="mb-8 rounded-2xl border border-orange-200 bg-orange-50 p-5">
+
+  <label className="flex items-center gap-4">
+
+    <input
+      type="checkbox"
+      checked={formData.diagnosis.raiseLab}
+      onChange={(e) =>
+        handleChange(
+          "diagnosis",
+          "raiseLab",
+          e.target.checked
+        )
+      }
+      className="h-5 w-5 accent-orange-500"
+    />
+
+    <span className="text-lg font-semibold text-slate-700">
+      Raise Laboratory Test
+    </span>
+
+  </label>
+
+</div>
 
                   <div className="grid gap-5 lg:grid-cols-2 lg:gap-8">
 
@@ -1698,22 +1758,28 @@ className="w-full border border-slate-300 p-3 rounded-2xl"
                 Previous
               </button>
 
-              {step < 6 ? (
-                <button
-                  onClick={() => setStep(step + 1)}
-                  className="w-full rounded-xl bg-orange-500 px-6 py-3 text-white sm:w-auto"
-                >
-                  Next
-                </button>
-              ) : (
-               <button
+       {step < 6 ? (
+  <button
+    onClick={() => setStep(step + 1)}
+    className="w-full rounded-xl bg-orange-500 px-6 py-3 text-white sm:w-auto"
+  >
+    Next
+  </button>
+) : formData.diagnosis.raiseLab ? (
+  <button
+    onClick={sendToLab}
+    className="w-full rounded-xl bg-blue-600 px-6 py-3 text-white sm:w-auto"
+  >
+    Send To Lab
+  </button>
+) : (
+  <button
     onClick={completeCase}
     className="w-full rounded-xl bg-green-500 px-6 py-3 text-white sm:w-auto"
->
+  >
     Complete Case
-</button>
-              )}
-
+  </button>
+)}
             </div>
 
           </div>

@@ -4,6 +4,7 @@ import {
   CheckCircle2,
   Clock3,
   History,
+  FlaskConical,
   LayoutDashboard,
   Menu,
   Stethoscope,
@@ -17,6 +18,7 @@ export default function DoctorSidebar() {
   const menuItems = [
     { name: "Dashboard", path: "", icon: LayoutDashboard },
     { name: "Pending Pets", path: "pending", icon: Clock3 },
+    { name: "Lab Reports", path: "lab", icon: FlaskConical },
     { name: "Completed Pets", path: "completed", icon: CheckCircle2 },
     { name: "History", path: "history", icon: History },
   ];
