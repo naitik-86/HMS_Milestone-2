@@ -22,8 +22,11 @@ const createRegistration = async (req, res) => {
 
         console.log(req.body);
 
+        const clinicId = req.user.clinicId;
+
 
         let owner = await PetRegistration.findOne({
+            clinicId,
             mobileNumber,
         });
         const uniquePetId = `PET-${Date.now()}`;
@@ -67,6 +70,7 @@ const createRegistration = async (req, res) => {
 
         // New Owner
         owner = await PetRegistration.create({
+            clinicId,
             mobileNumber,
             ownerName,
             visitType,
@@ -102,8 +106,10 @@ const createRegistration = async (req, res) => {
 const searchCustomer = async (req, res) => {
     try {
         const { mobileNumber } = req.params;
+        const clinicId = req.user.clinicId;
 
         const customer = await PetRegistration.findOne({
+            clinicId,
             mobileNumber
         });
 
@@ -128,10 +134,12 @@ const searchCustomer = async (req, res) => {
 // Get Owner Details
 const getOwnerDetails = async (req, res) => {
     try {
-        const owner =
-            await PetRegistration.findById(
-                req.params.ownerId
-            );
+        const clinicId = req.user.clinicId;
+
+        await PetRegistration.findOne({
+            _id: req.params.ownerId,
+            clinicId,
+        });
 
         if (!owner) {
             return res.status(404).json({
@@ -155,10 +163,12 @@ const getOwnerDetails = async (req, res) => {
 // Add New Pet
 const addPet = async (req, res) => {
     try {
-        const owner =
-            await PetRegistration.findById(
-                req.params.ownerId
-            );
+        const clinicId = req.user.clinicId;
+
+        const owner = await PetRegistration.findOne({
+            _id: req.params.ownerId,
+            clinicId,
+        });
 
         if (!owner) {
             return res.status(404).json({
@@ -192,8 +202,12 @@ const addVisit = async (req, res) => {
     try {
         const { ownerId, petId } = req.params;
 
-        const owner =
-            await PetRegistration.findById(ownerId);
+        const clinicId = req.user.clinicId;
+
+        const owner = await PetRegistration.findOne({
+            _id: ownerId,
+            clinicId,
+        });
 
         if (!owner) {
             return res.status(404).json({
@@ -236,8 +250,12 @@ const getPetHistoryByID = async (req, res) => {
         console.log("---------------------------------------------------------")
         const { ownerId, petId } = req.params;
 
-        const owner =
-            await PetRegistration.findById(ownerId);
+        const clinicId = req.user.clinicId;
+
+        await PetRegistration.findOne({
+            _id: ownerId,
+            clinicId,
+        });
 
         if (!owner) {
             return res.status(404).json({
@@ -269,7 +287,11 @@ const getPetHistoryByID = async (req, res) => {
 
 const getPetHistory = async (req, res) => {
     try {
-        const owners = await PetRegistration.find();
+        const clinicId = req.user.clinicId;
+
+        const owners = await PetRegistration.find({
+            clinicId,
+        });
         const history = [];
 
         owners.forEach((owner) => {
@@ -353,7 +375,11 @@ const getExistingCustomers = async (req, res) => {
     try {
         const { search } = req.query;
 
-        const owners = await PetRegistration.find();
+        const clinicId = req.user.clinicId;
+
+        const owners = await PetRegistration.find({
+            clinicId,
+        });
 
         console.log(owners);
 
@@ -423,7 +449,12 @@ const getPetDetails = async (req, res) => {
 
         const { ownerId, petId } = req.params;
 
-        const owner = await PetRegistration.findById(ownerId);
+        const clinicId = req.user.clinicId;
+
+        const owner = await PetRegistration.findOne({
+            _id: ownerId,
+            clinicId,
+        });
 
         if (!owner) {
             return res.status(404).json({
@@ -459,7 +490,11 @@ const getPetDetails = async (req, res) => {
 
 const getDashboardStats = async (req, res) => {
     try {
-        const owners = await PetRegistration.find();
+        const clinicId = req.user.clinicId;
+
+        const owners = await PetRegistration.find({
+            clinicId,
+        });
 
         let totalPets = 0;
         let activeVisits = 0;

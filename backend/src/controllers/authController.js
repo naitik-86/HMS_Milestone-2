@@ -358,6 +358,9 @@ const Staff = require("../models/Staff");
 
 exports.login = async (req, res) => {
   try {
+
+
+
     const { email, password } = req.body;
 
     if (!email || !password) {
@@ -443,12 +446,14 @@ exports.login = async (req, res) => {
       }
 
       // Generate JWT Token (Added clinicId for Multi-tenancy)
+      console.log("clinincid", clinicAdmin);
+
       const token = jwt.sign(
         {
           id: clinicAdmin._id,
           role: "CLINIC_ADMIN",
           email: clinicAdmin.email,
-          clinicId: clinicAdmin.clinicId || clinicAdmin.clinic // Adjust based on your schema
+          clinicId: clinicAdmin?.clinicId
         },
         process.env.JWT_SECRET,
         { expiresIn: "1d" }

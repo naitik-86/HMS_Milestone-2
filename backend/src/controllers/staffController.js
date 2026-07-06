@@ -29,6 +29,7 @@ const createStaff = async (req, res) => {
             : {};
 
         const existingEmail = await Staff.findOne({
+            clinicId: req.user.clinicId,
             "personalInfo.email": personalInfo.email,
         });
 
@@ -53,6 +54,7 @@ const createStaff = async (req, res) => {
         );
 
         const newStaff = await Staff.create({
+            clinicId: req.user.clinicId,
             personalInfo: {
                 ...personalInfo,
                 profilePhoto: req.file?.path || "",
@@ -115,6 +117,7 @@ const getAllStaff = async (req, res) => {
             req.query.department || "";
 
         const query = {
+            clinicId: req.user.clinicId,
             isDeleted: false,
         };
 
@@ -175,13 +178,16 @@ const getStaffById = async (
     res
 ) => {
     try {
-        const staff =
-            await Staff.findById(
-                req.params.id
-            ).populate(
-                "employmentInfo.reportingTo",
-                "personalInfo.fullName"
-            );
+        const staff = await Staff.findOne({
+
+            _id: req.params.id,
+
+            clinicId: req.user.clinicId
+
+        }).populate(
+            "employmentInfo.reportingTo",
+            "personalInfo.fullName"
+        );
 
         if (!staff) {
             return res.status(404).json({
@@ -215,13 +221,37 @@ const updateStaff = async (
         console.log("Form data - >>>>", req.body);
 
         const updatedStaff =
-            await Staff.findByIdAndUpdate(
-                req.params.id,
-                req.body,
+            await Staff.findOneAndUpdate(
+
                 {
+
+                    _id: req.params.id,
+
+                    clinicId: req.user.clinicId
+
+                },
+
+                req.body,
+
+                {
+
                     new: true,
+
                 }
+
             );
+
+        if (!updatedStaff) {
+
+            return res.status(404).json({
+
+                success: false,
+
+                message: "Staff not found"
+
+            });
+
+        }
 
         res.status(200).json({
             success: true,
@@ -245,12 +275,25 @@ const deleteStaff = async (
     res
 ) => {
     try {
-        await Staff.findByIdAndUpdate(
-            req.params.id,
+        const staff = await Staff.findOneAndUpdate(
+
             {
-                isDeleted: true,
+                _id: req.params.id,
+                clinicId: req.user.clinicId
+            },
+            {
+                isDeleted: true
             }
+
         );
+
+        if (!staff) {
+            return res.status(404).json({
+                success: false,
+                message: "Staff not found"
+            });
+
+        }
 
         res.status(200).json({
             success: true,
@@ -278,6 +321,7 @@ const getManagers = async (
         const managers =
             await Staff.find(
                 {
+                    clinicId: req.user.clinicId,
                     isDeleted: false,
                 },
                 {

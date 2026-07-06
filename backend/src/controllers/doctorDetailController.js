@@ -17,6 +17,8 @@ const createDoctor = async (req, res) => {
             emergencyAvailability
         } = req.body;
 
+        const clinicId = req.user.clinicId;
+
         let degrees = [];
         let specializations = [];
         let prescriptionLanguages = [];
@@ -59,6 +61,7 @@ const createDoctor = async (req, res) => {
         }));
 
         const doctor = await Doctor.create({
+            clinicId,
             doctorId,
 
             degrees,
@@ -118,8 +121,11 @@ const getAllDoctors = async (req, res) => {
     try {
         console.log("reached");
 
-        const doctors = await Doctor.find()
-            .sort({ createdAt: -1 });
+        const clinicId = req.user.clinicId;
+
+        const doctors = await Doctor.find({
+            clinicId
+        }).sort({ createdAt: -1 });
 
         return res.status(200).json({
             success: true,
@@ -138,9 +144,12 @@ const getAllDoctors = async (req, res) => {
 const getDoctorById = async (req, res) => {
     try {
 
-        const doctor = await Doctor.findById(
-            req.params.id
-        );
+        const clinicId = req.user.clinicId;
+
+        const doctor = await Doctor.findOne({
+            _id: req.params.id,
+            clinicId,
+        });
 
         if (!doctor) {
             return res.status(404).json({
@@ -168,8 +177,13 @@ const updateDoctor = async (req, res) => {
         console.log(req.body);
 
 
-        const doctor = await Doctor.findByIdAndUpdate(
-            req.params.id,
+        const clinicId = req.user.clinicId;
+
+        const doctor = await Doctor.findOneAndUpdate(
+            {
+                _id: req.params.id,
+                clinicId,
+            },
             req.body,
             {
                 new: true,
@@ -201,9 +215,12 @@ const updateDoctor = async (req, res) => {
 const deleteDoctor = async (req, res) => {
     try {
 
-        const doctor = await Doctor.findByIdAndDelete(
-            req.params.id
-        );
+        const clinicId = req.user.clinicId;
+
+        const doctor = await Doctor.findOneAndDelete({
+            _id: req.params.id,
+            clinicId,
+        });
 
         if (!doctor) {
             return res.status(404).json({

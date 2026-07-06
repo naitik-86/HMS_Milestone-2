@@ -81,6 +81,11 @@ const petSchema = new mongoose.Schema({
 
 const ownerSchema = new mongoose.Schema(
     {
+        clinicId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Clinic",
+            required: true
+        },
         mobileNumber: {
             type: String,
             required: true,

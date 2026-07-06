@@ -6,7 +6,6 @@ const staffController = require('../controllers/staffController');
 
 router.use(authorize('CLINIC_ADMIN'));
 
-router.get("/managers", staffController.getManagers);
 
 
 router.post(
@@ -17,6 +16,7 @@ router.post(
 
 router.get("/", staffController.getAllStaff);
 
+router.get("/managers", staffController.getManagers);
 router.get("/:id", staffController.getStaffById);
 
 router.put("/:id", staffController.updateStaff);

@@ -16,6 +16,8 @@ exports.createGroomer = async (req, res) => {
         console.log("from create groomer ->>>", req.body);
         console.log("from create groomer ->>>", req.files);
 
+        const clinicId = req.user.clinicId;
+
         const {
             experience,
             previousSalon,
@@ -34,7 +36,9 @@ exports.createGroomer = async (req, res) => {
             supervisor,
             notes,
         } = req.body;
-        const lastGroomer = await Groomer.findOne().sort({
+        const lastGroomer = await Groomer.findOne({
+            clinicId,
+        }).sort({
             createdAt: -1,
         });
 
@@ -58,6 +62,7 @@ exports.createGroomer = async (req, res) => {
             req.files?.certificateDocument?.[0]?.path || "";
 
         const groomer = await Groomer.create({
+            clinicId,
             employeeId,
             experience,
             previousSalon,
@@ -106,8 +111,13 @@ exports.createGroomer = async (req, res) => {
  */
 exports.getAllGroomers = async (req, res) => {
     try {
-        const groomers = await Groomer.find()
-            .sort({ createdAt: -1 });
+        const clinicId = req.user.clinicId;
+
+        const groomers = await Groomer.find({
+            clinicId,
+        }).sort({
+            createdAt: -1,
+        });
 
         return res.status(200).json({
             success: true,
@@ -128,8 +138,12 @@ exports.getAllGroomers = async (req, res) => {
 exports.deleteGroomer = async (req, res) => {
     try {
 
-        const groomer = await Groomer.findById(req.params.id);
+        const clinicId = req.user.clinicId;
 
+        const groomer = await Groomer.findOne({
+            _id: req.params.id,
+            clinicId,
+        });
         if (!groomer) {
             return res.status(404).json({
                 success: false,
@@ -154,7 +168,12 @@ exports.deleteGroomer = async (req, res) => {
 
 exports.getGroomerById = async (req, res) => {
     try {
-        const groomer = await Groomer.findById(req.params.id);
+        const clinicId = req.user.clinicId;
+
+        const groomer = await Groomer.findOne({
+            _id: req.params.id,
+            clinicId,
+        });
 
         if (!groomer) {
             return res.status(404).json({
@@ -178,7 +197,12 @@ exports.getGroomerById = async (req, res) => {
 exports.updateGroomer = async (req, res) => {
     try {
 
-        const groomer = await Groomer.findById(req.params.id);
+        const clinicId = req.user.clinicId;
+
+        const groomer = await Groomer.findOne({
+            _id: req.params.id,
+            clinicId,
+        });
 
         if (!groomer) {
             return res.status(404).json({
@@ -217,8 +241,11 @@ exports.updateGroomer = async (req, res) => {
         }
 
         const updatedGroomer =
-            await Groomer.findByIdAndUpdate(
-                req.params.id,
+            await Groomer.findOneAndUpdate(
+                {
+                    _id: req.params.id,
+                    clinicId,
+                },
                 updateData,
                 {
                     new: true,
@@ -243,7 +270,12 @@ exports.updateGroomer = async (req, res) => {
 exports.deleteGroomer = async (req, res) => {
     try {
 
-        const groomer = await Groomer.findById(req.params.id);
+        const clinicId = req.user.clinicId;
+
+        const groomer = await Groomer.findOne({
+            _id: req.params.id,
+            clinicId,
+        });
 
         if (!groomer) {
             return res.status(404).json({
@@ -252,7 +284,10 @@ exports.deleteGroomer = async (req, res) => {
             });
         }
 
-        await Groomer.findByIdAndDelete(req.params.id);
+        await Groomer.findOneAndDelete({
+            _id: req.params.id,
+            clinicId,
+        });
 
         return res.status(200).json({
             success: true,
