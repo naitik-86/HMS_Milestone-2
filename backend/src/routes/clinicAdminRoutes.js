@@ -12,7 +12,7 @@ const KennelRoutes = require("./clinicKennelRoutes")
 const LabRoutes = require("./clinicLabRoutes")
 const PreConsultationRoutes = require("./clinicPreConsultationRoutes")
 const ReceptionRoutes = require("./clinisReceptionRoutes")
-
+const DoctorModuleRoutes = require("./DoctorModuleRoutes")
 
 router.use(protect);
 
@@ -20,6 +20,7 @@ router.use(protect);
 
 router.use("/staff", StaffRoutes);
 router.use("/doctors", DoctorRoutes);
+router.use("/doctor-module", DoctorModuleRoutes);
 router.use("/lab-technicians", LabRoutes);
 router.use("/groomers", GroomerRoutes);
 router.use("/kennel", KennelRoutes);
