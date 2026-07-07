@@ -425,70 +425,109 @@ exports.getSinglePreConsultation = async (
 // ===============================================
 
 exports.updatePreConsultation = async (req, res) => {
+
   try {
+    console.log("***********");
+
+    console.log("Params:", req.params);
+    console.log("Body:", req.body);
     const clinicId = req.user.clinicId;
-    const { id } = req.params;
 
-    // Check if Pre Consultation exists
-    const preConsultation = await PreConsultation.findOne({
-      _id: id,
-      clinicId,
-    });
+    const { id } = req.params; // this is Visit ID
 
-    if (!preConsultation) {
+    // Find visit first
+
+    const visit = await Visit.findOne({ _id: id, clinicId });
+
+    if (!visit) {
+
       return res.status(404).json({
+
         success: false,
-        message: "Pre Consultation Record Not Found",
+
+        message: "Visit Not Found",
+
       });
+
     }
 
-    // Update Pre Consultation
-    const updatedRecord = await PreConsultation.findOneAndUpdate(
-      {
-        _id: id,
-        clinicId,
-      },
-      {
-        ...req.body,
-        status: "COMPLETED",
-      },
-      {
-        new: true,
-        runValidators: true,
-      }
-    );
+    let preConsultation;
 
-    // Update Visit Workflow
-    await Visit.findOneAndUpdate(
-      {
-        preConsultationId: updatedRecord._id,
+    // If pre-consultation does not exist, create it
+
+    if (!visit.preConsultationId) {
+
+      preConsultation = await PreConsultation.create({
+
         clinicId,
-      },
-      {
-        currentStage: "DOCTOR",
-        status: "WAITING",
-        $set: {
-          "workflow.preConsultationCompleted": true,
-        },
-      },
-      {
-        new: true,
-      }
-    );
+
+        visitId: visit._id,
+
+        petId: visit.petId,
+
+        ownerId: visit.ownerId,
+
+        vitals: req.body.vitals || {},
+
+        notes: req.body.notes || "",
+
+        status: "COMPLETED",
+
+      });
+
+      // Attach to visit
+
+      visit.preConsultationId = preConsultation._id;
+
+    } else {
+
+      // Update existing pre-consultation
+
+      preConsultation = await PreConsultation.findOneAndUpdate(
+
+        { _id: visit.preConsultationId, clinicId },
+
+        { ...req.body, status: "COMPLETED" },
+
+        { new: true, runValidators: true }
+
+      );
+
+    }
+
+    // Update visit workflow
+
+    visit.currentStage = "DOCTOR";
+
+    visit.status = "WAITING";
+
+    visit.workflow.preConsultationCompleted = true;
+
+    await visit.save();
 
     return res.status(200).json({
-      success: true,
-      message: "Pre Consultation Completed Successfully",
-      data: updatedRecord,
-    });
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-};
 
+      success: true,
+
+      message: "Pre Consultation Completed Successfully",
+
+      data: preConsultation,
+
+    });
+
+  } catch (error) {
+
+    return res.status(500).json({
+
+      success: false,
+
+      message: error.message,
+
+    });
+
+  }
+
+};
 exports.searchHistoryPets = async (req, res) => {
   try {
     const clinicId = req.user.clinicId;

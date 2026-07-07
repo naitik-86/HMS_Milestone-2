@@ -2,6 +2,11 @@ import API from "../../../shared/api/axios";
 
 const BASE_URL = "/clinic/reception";
 
+export const createVisit = async (data) => {
+    const res = await API.post(`${BASE_URL}/visits/create`, data);
+    return res.data;
+};
+
 // Create Registration
 export const registerOwnerAndPet = async (data) => {
     console.log("RAW FORM DATA:", data);

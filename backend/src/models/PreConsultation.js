@@ -7,11 +7,11 @@ const preConsultationSchema = new mongoose.Schema(
     // APPOINTMENT INFORMATION
     // ======================================================
 
-    appointmentId: {
-      type: String,
-      required: true,
-      trim: true,
-    },
+    // appointmentId: {
+    //   type: String,
+    //   required: true,
+    //   trim: true,
+    // },
 
 
     clinicId: {
@@ -26,17 +26,17 @@ const preConsultationSchema = new mongoose.Schema(
     ownerId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "PetRegistration",
-      required: true,
+
     },
     uniquePetId: {
       type: String,
-      required: true,
+
       trim: true,
     },
 
     tokenNumber: {
       type: String,
-      required: true,
+
       trim: true,
     },
 
@@ -81,12 +81,12 @@ const preConsultationSchema = new mongoose.Schema(
       type: Number,
       min: 1,
       max: 5,
-      required: true,
+
     },
 
     recordedBy: {
       type: String,
-      required: true,
+
       trim: true,
     },
 
@@ -102,20 +102,20 @@ const preConsultationSchema = new mongoose.Schema(
     durationOfIllness: {
       value: {
         type: Number,
-        required: true,
+
       },
 
       unit: {
         type: String,
         enum: ["Days", "Weeks", "Months", "Years"],
-        required: true,
+
       },
     },
 
     onset: {
       type: String,
       enum: ["Sudden", "Gradual"],
-      required: true,
+
     },
 
     progression: {
@@ -153,7 +153,7 @@ const preConsultationSchema = new mongoose.Schema(
 
     primaryComplaint: {
       type: String,
-      required: true,
+
       trim: true,
     },
 
@@ -177,7 +177,7 @@ const preConsultationSchema = new mongoose.Schema(
     severity: {
       type: String,
       enum: ["Mild", "Moderate", "Severe"],
-      required: true,
+
     },
 
     // ======================================================
@@ -192,7 +192,7 @@ const preConsultationSchema = new mongoose.Schema(
         "Anxious",
         "Unconscious",
       ],
-      required: true,
+
     },
 
     gaitAndPosture: {
