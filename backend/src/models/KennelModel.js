@@ -2,6 +2,11 @@ const mongoose = require("mongoose");
 
 const kennelSchema = new mongoose.Schema(
     {
+        clinicId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Clinic",
+            required: true
+        },
         staffId: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "Staff",

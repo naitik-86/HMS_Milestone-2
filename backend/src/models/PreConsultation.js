@@ -3,15 +3,22 @@ const mongoose = require("mongoose");
 const preConsultationSchema = new mongoose.Schema(
   {
 
-        // ======================================================
+    // ======================================================
     // APPOINTMENT INFORMATION
     // ======================================================
 
     appointmentId: {
-  type: String,
-  required: true,
-  trim: true,
-},
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+
+    clinicId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Clinic",
+      required: true
+    },
     // ======================================================
     // PET INFORMATION
     // ======================================================

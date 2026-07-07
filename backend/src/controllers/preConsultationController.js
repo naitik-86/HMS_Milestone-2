@@ -38,6 +38,7 @@ const attachOwnerAndPet = (records) => {
 };
 exports.savePreConsultation = async (req, res) => {
   try {
+    const clinicId = req.user.clinicId;
     const {
       appointmentId,
       uniquePetId,
@@ -47,6 +48,7 @@ exports.savePreConsultation = async (req, res) => {
     // Check if record already exists
     const existingRecord = await PreConsultation.findOne({
       uniquePetId,
+      clinicId
     });
 
     if (existingRecord) {
@@ -68,11 +70,11 @@ exports.savePreConsultation = async (req, res) => {
       });
     }
 
-    const preConsultation =
-      await PreConsultation.create({
-        ...req.body,
-        status: "COMPLETED",
-      });
+    const preConsultation = await PreConsultation.create({
+      ...req.body,
+      clinicId,
+      status: "COMPLETED",
+    });
 
     return res.status(201).json({
       success: true,
@@ -94,25 +96,31 @@ exports.savePreConsultation = async (req, res) => {
 
 exports.getDashboard = async (req, res) => {
   try {
+    const clinicId = req.user.clinicId;
     // ===========================================
     // Dashboard Cards
     // ===========================================
 
     const todayPatients = await PreConsultation.countDocuments({
+      clinicId,
       createdAt: {
         $gte: new Date(new Date().setHours(0, 0, 0, 0)),
       },
     });
 
     const vitalsPending = await PreConsultation.countDocuments({
-      status: "PENDING",
+      clinicId,
+      status: "PENDING"
     });
 
     const observations = await PreConsultation.countDocuments({
-      severity: "Severe",
+      clinicId,
+      severity: "Severe"
     });
 
     const completed = await PreConsultation.countDocuments({
+      clinicId,
+
       status: "COMPLETED",
     });
 
@@ -120,7 +128,9 @@ exports.getDashboard = async (req, res) => {
     // Today's Queue
     // ===========================================
 
-    const todaysQueue = await PreConsultation.find()
+    const todaysQueue = await PreConsultation.find({
+      clinicId
+    })
       .select(
         "uniquePetId tokenNumber status severity createdAt"
       )
@@ -132,6 +142,7 @@ exports.getDashboard = async (req, res) => {
     // ===========================================
 
     const recentCompletedPets = await PreConsultation.find({
+      clinicId,
       status: "COMPLETED",
     })
       .select(
@@ -144,7 +155,7 @@ exports.getDashboard = async (req, res) => {
     // Recent Activity
     // ===========================================
 
-    const recentActivity = await PreConsultation.find()
+    const recentActivity = await PreConsultation.find({ clinicId })
       .select(
         "uniquePetId tokenNumber status severity updatedAt"
       )
@@ -182,7 +193,9 @@ exports.getDashboard = async (req, res) => {
 
 exports.getPendingPets = async (req, res) => {
   try {
+    const clinicId = req.user.clinicId;
     const pendingPets = await PreConsultation.find({
+      clinicId,
       status: "PENDING",
     })
       .populate({
@@ -213,12 +226,14 @@ exports.getPendingPets = async (req, res) => {
 
 exports.getCompletedPets = async (req, res) => {
   try {
+    const clinicId = req.user.clinicId;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
     const completedToday =
       await PreConsultation.countDocuments({
         status: "COMPLETED",
+        clinicId,
         updatedAt: {
           $gte: today,
         },
@@ -233,6 +248,7 @@ exports.getCompletedPets = async (req, res) => {
     const completedThisWeek =
       await PreConsultation.countDocuments({
         status: "COMPLETED",
+        clinicId,
         updatedAt: {
           $gte: startOfWeek,
         },
@@ -245,6 +261,7 @@ exports.getCompletedPets = async (req, res) => {
 
     const completedPets = await PreConsultation.find({
       status: "COMPLETED",
+      clinicId
     })
       .populate({
         path: "ownerId",
@@ -279,8 +296,9 @@ exports.getCompletedPets = async (req, res) => {
 
 exports.getHistoryPets = async (req, res) => {
   try {
+    const clinicId = req.user.clinicId;
     const totalRecords =
-      await PreConsultation.countDocuments();
+      await PreConsultation.countDocuments({ clinicId });
 
     const startOfMonth = new Date();
     startOfMonth.setDate(1);
@@ -288,6 +306,7 @@ exports.getHistoryPets = async (req, res) => {
 
     const thisMonth =
       await PreConsultation.countDocuments({
+        clinicId,
         createdAt: {
           $gte: startOfMonth,
         },
@@ -295,10 +314,11 @@ exports.getHistoryPets = async (req, res) => {
 
     const archivedCases =
       await PreConsultation.countDocuments({
+        clinicId,
         status: "COMPLETED",
       });
 
-    const records = await PreConsultation.find()
+    const records = await PreConsultation.find({ clinicId })
       .populate({
         path: "ownerId",
         select:
@@ -338,10 +358,13 @@ exports.getSinglePreConsultation = async (
   res
 ) => {
   try {
+    const clinicId = req.user.clinicId;
     const { id } = req.params;
 
-    const preConsultation =
-      await PreConsultation.findById(id);
+    const preConsultation = await PreConsultation.findOne({
+      _id: id,
+      clinicId
+    });
 
     if (!preConsultation) {
       return res.status(404).json({
@@ -371,10 +394,14 @@ exports.updatePreConsultation = async (
   res
 ) => {
   try {
+    const clinicId = req.user.clinicId;
     const { id } = req.params;
 
     const preConsultation =
-      await PreConsultation.findById(id);
+      await PreConsultation.findOne({
+        _id: id,
+        clinicId
+      });
 
     if (!preConsultation) {
       return res.status(404).json({
@@ -384,8 +411,11 @@ exports.updatePreConsultation = async (
     }
 
     const updatedRecord =
-      await PreConsultation.findByIdAndUpdate(
-        id,
+      await PreConsultation.findOneAndUpdate(
+        {
+          _id: id,
+          clinicId
+        },
         {
           ...req.body,
         },
@@ -411,9 +441,10 @@ exports.updatePreConsultation = async (
 
 exports.searchHistoryPets = async (req, res) => {
   try {
+    const clinicId = req.user.clinicId;
     const { phoneNumber, uniquePetId, tokenNumber } = req.query;
 
-    const filter = {};
+    const filter = { clinicId };
 
     if (phoneNumber) {
       filter.ownerPhoneNumber = {
@@ -455,10 +486,14 @@ exports.searchHistoryPets = async (req, res) => {
 
 exports.completePreConsultation = async (req, res) => {
   try {
+    const clinicId = req.user.clinicId;
     const { id } = req.params;
 
-    const updatedPreConsultation = await PreConsultation.findByIdAndUpdate(
-      id,
+    const updatedPreConsultation = await PreConsultation.findOneAndUpdate(
+      {
+        _id: id,
+        clinicId
+      },
       {
         ...req.body,
         status: "COMPLETED",

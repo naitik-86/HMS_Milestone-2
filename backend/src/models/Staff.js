@@ -16,6 +16,11 @@ const emergencyContactSchema =
 
 const staffSchema = new mongoose.Schema(
     {
+        clinicId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Clinic",
+            required: true
+        },
         personalInfo: {
             fullName: {
                 type: String,

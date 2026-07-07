@@ -2,30 +2,36 @@ const mongoose = require("mongoose");
 
 const labRecordSchema = new mongoose.Schema(
   {
+    clinicId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Clinic",
+      required: true,
+      index: true
+    },
     labOrderId: {
       type: String,
       required: true,
       unique: true,
     },
     petName: {
-    type: String,
-    required: true,
-},
+      type: String,
+      required: true,
+    },
 
-ownerName: {
-    type: String,
-    required: true,
-},
+    ownerName: {
+      type: String,
+      required: true,
+    },
 
-ownerPhone: {
-    type: String,
-    required: true,
-},
+    ownerPhone: {
+      type: String,
+      required: true,
+    },
 
-reportType: {
-    type: String,
-    required: true,
-},
+    reportType: {
+      type: String,
+      required: true,
+    },
 
     appointmentId: String,
 
@@ -71,7 +77,7 @@ reportType: {
       default: "Pending",
     },
 
-    
+
     doctorTreatmentUnlocked: {
       type: Boolean,
       default: false,

@@ -44,9 +44,11 @@ exports.createLabTechnician = async (
                     "lab-technicians/id-proofs"
                 );
         }
+        const clinicId = req.user.clinicId;
 
         const technician =
             await LabTechnician.create({
+                clinicId,
                 employeeId:
                     req.body.employeeId,
 
@@ -125,11 +127,13 @@ exports.createLabTechnician = async (
 exports.getAllLabTechnicians =
     async (req, res) => {
         try {
-            const technicians =
-                await LabTechnician.find()
-                    .sort({
-                        createdAt: -1,
-                    });
+            const clinicId = req.user.clinicId;
+
+            const technicians = await LabTechnician.find({
+                clinicId,
+            }).sort({
+                createdAt: -1,
+            });
 
             res.status(200).json({
                 success: true,
@@ -149,10 +153,13 @@ exports.getAllLabTechnicians =
 exports.getSingleLabTechnician =
     async (req, res) => {
         try {
+            const clinicId = req.user.clinicId;
+
             const technician =
-                await LabTechnician.findById(
-                    req.params.id
-                );
+                await LabTechnician.findOne({
+                    _id: req.params.id,
+                    clinicId,
+                });
 
             if (!technician) {
                 return res.status(404).json({
@@ -178,9 +185,14 @@ exports.getSingleLabTechnician =
 exports.updateLabTechnician =
     async (req, res) => {
         try {
+            const clinicId = req.user.clinicId;
+
             const technician =
-                await LabTechnician.findByIdAndUpdate(
-                    req.params.id,
+                await LabTechnician.findOneAndUpdate(
+                    {
+                        _id: req.params.id,
+                        clinicId,
+                    },
                     req.body,
                     {
                         new: true,
@@ -203,9 +215,12 @@ exports.updateLabTechnician =
 exports.deleteLabTechnician =
     async (req, res) => {
         try {
-            await LabTechnician.findByIdAndDelete(
-                req.params.id
-            );
+            const clinicId = req.user.clinicId;
+
+            await LabTechnician.findOneAndDelete({
+                _id: req.params.id,
+                clinicId,
+            });
 
             res.status(200).json({
                 success: true,
@@ -261,7 +276,7 @@ exports.uploadLabResults = async (req, res) => {
         const { testsCompleted, reportFiles, sampleCollectedAt, reportDate, externalLabName, criticalValuesFlag, criticalNotes, remarks, uploadedByRole } = req.body;
 
         const up = await LabRecord.findOneAndUpdate(
-            { appointmentId },
+            { appointmentId, clinicId, },
             {
                 results: {
                     testsCompleted: testsCompleted || [],

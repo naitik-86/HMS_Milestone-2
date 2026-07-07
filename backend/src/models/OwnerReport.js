@@ -2,6 +2,12 @@ const mongoose = require("mongoose");
 
 const ownerReportSchema = new mongoose.Schema(
   {
+    clinicId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Clinic",
+      required: true,
+      index: true
+    },
     // Owner
     ownerId: {
       type: String,
