@@ -4,6 +4,7 @@ const Staff = require("../models/Staff.js");
 const generateStaffId = require("../utils/generateStaffId.js");
 const generateUsername = require("../utils/generateUsername.js");
 const generatePassword = require("../utils/generatePassword.js");
+const sendEmail = require("../utils/emailService.js");
 
 const createStaff = async (req, res) => {
 
@@ -74,12 +75,25 @@ const createStaff = async (req, res) => {
                 username,
                 temporaryPassword,
                 password: hashedPassword,
+                // TOTP defaults in schema; keep disabled on creation
             },
         });
 
         const staffResponse = newStaff.toObject();
 
         delete staffResponse.accountInfo.password;
+
+        // Send credentials to staff email
+        try {
+            await sendEmail({
+                email: personalInfo.email,
+                subject: "Your HMS staff login credentials",
+                message: `Hello ${personalInfo.fullName},\n\nYour HMS account has been created by the clinic admin.\n\nStaff ID: ${staffId}\nUsername: ${username}\nTemporary Password: ${temporaryPassword}\n\nFirst login steps:\n1) Change your password\n2) Enable authenticator (TOTP)\n\nPlease keep this information secure.`,
+            });
+        } catch (emailErr) {
+            // Don’t fail staff creation if email fails
+            console.error("STAFF CREDENTIAL EMAIL ERROR:", emailErr.message);
+        }
 
         res.status(201).json({
             success: true,

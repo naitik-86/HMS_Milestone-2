@@ -50,6 +50,8 @@ const { getDashboardRedirect } = require('../controllers/dashboardController');
 // ==========================================
 router.use('/auth', authRoutes);
 router.use('/auth', authOtpRoutes);
+const staffTotpRoutes = require('./staffTotpRoutes');
+router.use('/staff-totp', protect, staffTotpRoutes);
 
 
 // ==========================================

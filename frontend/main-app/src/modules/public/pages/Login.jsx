@@ -51,10 +51,14 @@ export default function Login() {
 
       if (response.role !== "SUPER_ADMIN") {
         localStorage.setItem("token", response.token);
+        localStorage.setItem('totpRequired', response.requiresTotpSetup ? 'true' : 'false');
+        localStorage.setItem('passwordResetRequired', response.requiresPasswordReset ? 'true' : 'false');
+        // staffId is not present in JWT; user will enter it on enable-totp page.
       }
       localStorage.setItem("role", response.user?.role || response.role);
 
       setShowVerificationModal(true);
+
 
       const role = localStorage.getItem("role");
 

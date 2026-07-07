@@ -157,6 +157,29 @@ const staffSchema = new mongoose.Schema(
                 type: Boolean,
                 default: true,
             },
+
+            // TOTP (Authenticator app)
+            twoFactorEnabled: {
+                type: Boolean,
+                default: false,
+            },
+
+            // Keep secret server-side. (Consider encrypting before production.)
+            twoFactorSecret: {
+                type: String,
+                default: '',
+            },
+
+            twoFactorVerifiedAt: {
+                type: Date,
+                default: null,
+            },
+
+            // Optional helper flag during setup
+            forceTotpSetup: {
+                type: Boolean,
+                default: false,
+            },
         },
 
         isDeleted: {
