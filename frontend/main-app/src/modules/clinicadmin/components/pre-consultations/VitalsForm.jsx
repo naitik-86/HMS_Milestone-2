@@ -1,4 +1,23 @@
-export default function VitalsForm() {
+export default function VitalsForm({ formData, setFormData }) {
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+
+    setFormData((prev) => ({
+      ...prev,
+      [name]:
+        name === "bcs" ||
+          name === "bodyTemperature" ||
+          name === "heartRate" ||
+          name === "respiratoryRate" ||
+          name === "spo2" ||
+          name === "bodyWeight"
+          ? value === ""
+            ? ""
+            : Number(value)
+          : value,
+    }));
+  };
+
   return (
     <div>
       <h2 className="text-xl md:text-3xl font-bold text-slate-800 mb-6 md:mb-8">
@@ -15,6 +34,9 @@ export default function VitalsForm() {
 
           <input
             type="number"
+            name="bodyTemperature"
+            value={formData.bodyTemperature}
+            onChange={handleChange}
             placeholder="Enter Temperature"
             className="
               w-full
@@ -38,6 +60,9 @@ export default function VitalsForm() {
 
           <input
             type="number"
+            name="heartRate"
+            value={formData.heartRate}
+            onChange={handleChange}
             placeholder="Enter Heart Rate"
             className="
               w-full
@@ -53,7 +78,7 @@ export default function VitalsForm() {
           />
         </div>
 
-        {/* Respiratory Breath */}
+        {/* Respiratory Rate */}
         <div>
           <label className="block mb-2 font-medium">
             Respiratory Breath
@@ -61,6 +86,9 @@ export default function VitalsForm() {
 
           <input
             type="number"
+            name="respiratoryRate"
+            value={formData.respiratoryRate}
+            onChange={handleChange}
             placeholder="Enter Respiratory Rate"
             className="
               w-full
@@ -83,6 +111,9 @@ export default function VitalsForm() {
           </label>
 
           <select
+            name="bloodPressure"
+            value={formData.bloodPressure}
+            onChange={handleChange}
             className="
               w-full
               border border-slate-200
@@ -95,10 +126,10 @@ export default function VitalsForm() {
               focus:ring-orange-100
             "
           >
-            <option>Select Blood Pressure</option>
-            <option>Low</option>
-            <option>Normal</option>
-            <option>High</option>
+            <option value="">Select Blood Pressure</option>
+            <option value="Low">Low</option>
+            <option value="Normal">Normal</option>
+            <option value="High">High</option>
           </select>
         </div>
 
@@ -110,6 +141,9 @@ export default function VitalsForm() {
 
           <input
             type="number"
+            name="spo2"
+            value={formData.spo2}
+            onChange={handleChange}
             placeholder="Enter SpO2"
             className="
               w-full
@@ -133,6 +167,9 @@ export default function VitalsForm() {
 
           <input
             type="number"
+            name="bodyWeight"
+            value={formData.bodyWeight}
+            onChange={handleChange}
             placeholder="Enter Weight"
             className="
               w-full
@@ -155,6 +192,9 @@ export default function VitalsForm() {
           </label>
 
           <select
+            name="bcs"
+            value={formData.bcs}
+            onChange={handleChange}
             className="
               w-full
               border border-slate-200
@@ -167,12 +207,12 @@ export default function VitalsForm() {
               focus:ring-orange-100
             "
           >
-            <option>Select Score</option>
-            <option>1 - Very Thin</option>
-            <option>2 - Thin</option>
-            <option>3 - Ideal</option>
-            <option>4 - Overweight</option>
-            <option>5 - Obese</option>
+            <option value="">Select Score</option>
+            <option value={1}>1 - Very Thin</option>
+            <option value={2}>2 - Thin</option>
+            <option value={3}>3 - Ideal</option>
+            <option value={4}>4 - Overweight</option>
+            <option value={5}>5 - Obese</option>
           </select>
         </div>
 
@@ -184,6 +224,9 @@ export default function VitalsForm() {
 
           <input
             type="text"
+            name="recordedBy"
+            value={formData.recordedBy}
+            onChange={handleChange}
             placeholder="Staff Name"
             className="
               w-full

@@ -18,8 +18,11 @@ const seedPetRegistrations = async () => {
         // Uncomment if you want fresh data
         // await PetRegistration.deleteMany({});
 
+        const clinicId = new mongoose.Types.ObjectId("6a4d02d322b758362ceda689");
+
         const registrations = [
             {
+                clinicId,
                 ownerName: "Rahul Verma",
                 mobileNumber: "9876543210",
                 isMobileVerified: true,
@@ -85,6 +88,7 @@ const seedPetRegistrations = async () => {
             },
 
             {
+                clinicId,
                 ownerName: "Sneha Kapoor",
                 mobileNumber: "9876543211",
                 isMobileVerified: true,
@@ -137,6 +141,7 @@ const seedPetRegistrations = async () => {
             },
 
             {
+                clinicId,
                 ownerName: "Arjun Nair",
                 mobileNumber: "9876543212",
                 isMobileVerified: true,

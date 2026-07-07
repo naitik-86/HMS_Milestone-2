@@ -3,9 +3,10 @@ const router = express.Router();
 const { authorize } = require('../middlewares/auth');
 const upload = require('../middlewares/uploadMiddleware');
 const petRegistrationController = require("../controllers/petRegistrationController");
+const visitController = require("../controllers/visitController")
 
 router.use(authorize("RECEPTION", "CLINIC_ADMIN"));
-
+router.post("/visits/create", visitController.createVisit);
 router.post("/new-registration", upload.single("petPhoto"), petRegistrationController.createRegistration);
 router.get("/new-registration/mobile/:mobileNumber", petRegistrationController.searchCustomer);
 router.get("/new-registration/owner/:ownerId", petRegistrationController.getOwnerDetails);

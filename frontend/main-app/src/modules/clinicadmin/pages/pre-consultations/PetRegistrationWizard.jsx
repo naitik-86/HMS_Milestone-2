@@ -13,7 +13,11 @@ export default function PetRegistrationWizard({ onClose, petData, onCompleted })
 
   const handleFinish = async () => {
     try {
-      await completePreConsultation(petData);
+      await completePreConsultation({
+        ...petData,
+        ...formData,
+      });
+
       onCompleted();
       onClose();
     } catch (err) {
@@ -26,6 +30,51 @@ export default function PetRegistrationWizard({ onClose, petData, onCompleted })
     "Problem",
     "Observe",
   ];
+
+  const [formData, setFormData] = useState({
+    bodyTemperature: "",
+    heartRate: "",
+    respiratoryRate: "",
+    bloodPressure: "",
+    spo2: "",
+    bodyWeight: "",
+    bcs: "",
+    recordedBy: "",
+
+    durationOfIllness: {
+      value: "",
+      unit: "",
+    },
+
+    onset: "",
+    progression: "",
+
+
+
+    associatedSymptoms: [],
+
+    severity: "",
+
+    generalDemeanour: "",
+
+    gaitAndPosture: "",
+    visibleLesions: "",
+    eyesAbnormality: "",
+    noseAbnormality: "",
+    earAbnormality: "",
+    skinCondition: "",
+    staffNotes: "",
+    durationValue: "",
+    durationUnit: "",
+    onset: "",
+    progression: "",
+    recentTravel: false,
+    animalContact: false,
+    previousEpisodesDescription: "",
+    primaryComplaint: "",
+
+
+  });
 
   return (
     <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm p-0 md:p-6 overflow-hidden">
@@ -103,13 +152,24 @@ export default function PetRegistrationWizard({ onClose, petData, onCompleted })
 
             <div className="bg-white rounded-2xl md:rounded-3xl p-4 md:p-8 min-h-full">
 
-              {step === 1 && <VitalsForm />}
+              {step === 1 && <VitalsForm
+                formData={formData}
+                setFormData={setFormData}
+              />
+              }
 
-              {step === 2 && <BriefHistoryForm />}
+              {step === 2 && <BriefHistoryForm
+                formData={formData}
+                setFormData={setFormData}
+              />}
 
-              {step === 3 && <ProblemDescriptionForm />}
+              {step === 3 && <ProblemDescriptionForm
+                formData={formData}
+                setFormData={setFormData} />}
 
-              {step === 4 && <ObservationForm />}
+              {step === 4 && <ObservationForm
+                formData={formData}
+                setFormData={setFormData} />}
               <div className="mt-8 border-t border-slate-200 pt-6">
 
                 <div className="grid grid-cols-2 gap-3">

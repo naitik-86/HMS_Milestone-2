@@ -19,6 +19,8 @@ export const completePreConsultation = async (petData) => {
     console.log(`${BASE_URL}/${id}`);
 
 
+
+
     const res = await API.put(
         `${BASE_URL}/${id}`,
         petData
