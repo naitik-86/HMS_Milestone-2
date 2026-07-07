@@ -1,5 +1,6 @@
 const PreConsultation = require("../models/PreConsultation");
 const PetRegistration = require("../models/PetRegistration");
+const Visit = require("../models/visitModel")
 
 const attachOwnerAndPet = (records) => {
   return records.map((record) => {
@@ -194,18 +195,24 @@ exports.getDashboard = async (req, res) => {
 exports.getPendingPets = async (req, res) => {
   try {
     const clinicId = req.user.clinicId;
-    const pendingPets = await PreConsultation.find({
+
+    const pendingVisits = await Visit.find({
       clinicId,
-      status: "PENDING",
+      currentStage: "PRE_CONSULTATION",
+      status: "WAITING",
     })
       .populate({
         path: "ownerId",
         select:
           "ownerName mobileNumber email address city district state pincode pets",
       })
+      .populate({
+        path: "doctorId",
+        select: "name doctorId",
+      })
       .sort({ createdAt: -1 });
 
-    const data = attachOwnerAndPet(pendingPets);
+    const data = attachOwnerAndPet(pendingVisits);
 
     return res.status(200).json({
       success: true,
@@ -227,50 +234,63 @@ exports.getPendingPets = async (req, res) => {
 exports.getCompletedPets = async (req, res) => {
   try {
     const clinicId = req.user.clinicId;
+
+    // Start of today
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const completedToday =
-      await PreConsultation.countDocuments({
-        status: "COMPLETED",
-        clinicId,
-        updatedAt: {
-          $gte: today,
-        },
-      });
-
+    // Start of current week
     const startOfWeek = new Date();
     startOfWeek.setDate(
       startOfWeek.getDate() - startOfWeek.getDay()
     );
     startOfWeek.setHours(0, 0, 0, 0);
 
-    const completedThisWeek =
-      await PreConsultation.countDocuments({
-        status: "COMPLETED",
-        clinicId,
-        updatedAt: {
-          $gte: startOfWeek,
-        },
-      });
+    // ==========================
+    // Stats
+    // ==========================
 
-    const totalCompleted =
-      await PreConsultation.countDocuments({
-        status: "COMPLETED",
-      });
+    const completedToday = await Visit.countDocuments({
+      clinicId,
+      "workflow.preConsultationCompleted": true,
+      updatedAt: {
+        $gte: today,
+      },
+    });
 
-    const completedPets = await PreConsultation.find({
-      status: "COMPLETED",
-      clinicId
+    const completedThisWeek = await Visit.countDocuments({
+      clinicId,
+      "workflow.preConsultationCompleted": true,
+      updatedAt: {
+        $gte: startOfWeek,
+      },
+    });
+
+    const totalCompleted = await Visit.countDocuments({
+      clinicId,
+      "workflow.preConsultationCompleted": true,
+    });
+
+    // ==========================
+    // Completed Visits
+    // ==========================
+
+    const completedVisits = await Visit.find({
+      clinicId,
+      "workflow.preConsultationCompleted": true,
     })
       .populate({
         path: "ownerId",
         select:
           "ownerName mobileNumber email address city district state pincode pets",
       })
+      .populate({
+        path: "doctorId",
+        select: "name doctorId",
+      })
       .sort({ updatedAt: -1 });
 
-    const pets = attachOwnerAndPet(completedPets);
+    const pets = attachOwnerAndPet(completedVisits);
 
     return res.status(200).json({
       success: true,
@@ -294,35 +314,50 @@ exports.getCompletedPets = async (req, res) => {
 // Get History Pets
 // ===============================================
 
+
 exports.getHistoryPets = async (req, res) => {
   try {
     const clinicId = req.user.clinicId;
-    const totalRecords =
-      await PreConsultation.countDocuments({ clinicId });
+
+    // ==========================
+    // Statistics
+    // ==========================
+
+    const totalRecords = await Visit.countDocuments({
+      clinicId,
+    });
 
     const startOfMonth = new Date();
     startOfMonth.setDate(1);
     startOfMonth.setHours(0, 0, 0, 0);
 
-    const thisMonth =
-      await PreConsultation.countDocuments({
-        clinicId,
-        createdAt: {
-          $gte: startOfMonth,
-        },
-      });
+    const thisMonth = await Visit.countDocuments({
+      clinicId,
+      createdAt: {
+        $gte: startOfMonth,
+      },
+    });
 
-    const archivedCases =
-      await PreConsultation.countDocuments({
-        clinicId,
-        status: "COMPLETED",
-      });
+    const archivedCases = await Visit.countDocuments({
+      clinicId,
+      "workflow.preConsultationCompleted": true,
+    });
 
-    const records = await PreConsultation.find({ clinicId })
+    // ==========================
+    // Visit History
+    // ==========================
+
+    const records = await Visit.find({
+      clinicId,
+    })
       .populate({
         path: "ownerId",
         select:
           "ownerName mobileNumber email address city district state pincode pets",
+      })
+      .populate({
+        path: "doctorId",
+        select: "name doctorId",
       })
       .sort({
         createdAt: -1,
@@ -389,19 +424,16 @@ exports.getSinglePreConsultation = async (
 // Update Pre Consultation
 // ===============================================
 
-exports.updatePreConsultation = async (
-  req,
-  res
-) => {
+exports.updatePreConsultation = async (req, res) => {
   try {
     const clinicId = req.user.clinicId;
     const { id } = req.params;
 
-    const preConsultation =
-      await PreConsultation.findOne({
-        _id: id,
-        clinicId
-      });
+    // Check if Pre Consultation exists
+    const preConsultation = await PreConsultation.findOne({
+      _id: id,
+      clinicId,
+    });
 
     if (!preConsultation) {
       return res.status(404).json({
@@ -410,25 +442,43 @@ exports.updatePreConsultation = async (
       });
     }
 
-    const updatedRecord =
-      await PreConsultation.findOneAndUpdate(
-        {
-          _id: id,
-          clinicId
+    // Update Pre Consultation
+    const updatedRecord = await PreConsultation.findOneAndUpdate(
+      {
+        _id: id,
+        clinicId,
+      },
+      {
+        ...req.body,
+        status: "COMPLETED",
+      },
+      {
+        new: true,
+        runValidators: true,
+      }
+    );
+
+    // Update Visit Workflow
+    await Visit.findOneAndUpdate(
+      {
+        preConsultationId: updatedRecord._id,
+        clinicId,
+      },
+      {
+        currentStage: "DOCTOR",
+        status: "WAITING",
+        $set: {
+          "workflow.preConsultationCompleted": true,
         },
-        {
-          ...req.body,
-        },
-        {
-          new: true,
-          runValidators: true,
-        }
-      );
+      },
+      {
+        new: true,
+      }
+    );
 
     return res.status(200).json({
       success: true,
-      message:
-        "Pre Consultation Updated Successfully",
+      message: "Pre Consultation Completed Successfully",
       data: updatedRecord,
     });
   } catch (error) {

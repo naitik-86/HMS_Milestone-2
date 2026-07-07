@@ -558,11 +558,11 @@ exports.login = async (req, res) => {
 
     // Try to locate Staff account (TOTP fields are on Staff model).
     // Note: user is from User model; we map using email.
-    const Staff = require('../models/Staff');
-    const staff = await Staff.findOne({ 'personalInfo.email': user.email });
+    // const Staff = require('../models/Staff');
+    // const staff = await Staff.findOne({ 'personalInfo.email': user.email });
 
-    const requiresPasswordReset = staff?.accountInfo?.forcePasswordReset === true;
-    const requiresTotpSetup = staff?.accountInfo?.twoFactorEnabled !== true;
+    // const requiresPasswordReset = staff?.accountInfo?.forcePasswordReset === true;
+    // const requiresTotpSetup = staff?.accountInfo?.twoFactorEnabled !== true;
 
     // If TOTP not enabled, we still return token (for setup UI), but block app access
     // by setting flags.

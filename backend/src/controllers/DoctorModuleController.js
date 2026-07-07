@@ -1,4 +1,5 @@
 const Doctor = require("../models/DoctorModuleModel");
+const Visit = require("../models/visitModel");
 
 // ======================================================
 // Dashboard
@@ -60,35 +61,32 @@ exports.getDashboard = async (req, res) => {
 exports.getPendingPets = async (req, res) => {
 
     try {
+        const clinicId = req.user.clinicId;
 
-        const pendingPets = await Doctor.find({
-            status: "PENDING"
+        const visits = await Visit.find({
+            clinicId,
+            currentStage: "DOCTOR",
+            status: "WAITING"
         })
-        .sort({
-            createdAt: -1
-        });
+            .populate("ownerId")
+            .populate("petId")
+            .populate("preConsultationId")
+            .sort({ createdAt: -1 });
 
         return res.status(200).json({
-
             success: true,
-
-            total: pendingPets.length,
-
-            data: pendingPets
-
+            count: visits.length,
+            data: visits
         });
 
     } catch (error) {
-
         return res.status(500).json({
-
             success: false,
-
             message: error.message
-
         });
-
     }
+
+
 
 };
 
@@ -99,34 +97,26 @@ exports.getPendingPets = async (req, res) => {
 exports.getCompletedPets = async (req, res) => {
 
     try {
+        const clinicId = req.user.clinicId;
 
-        const completedPets = await Doctor.find({
-            status: "COMPLETED"
+        const visits = await Visit.find({
+            clinicId,
+            "workflow.doctorCompleted": true
         })
-        .sort({
-            updatedAt: -1
-        });
+            .populate("ownerId petId doctorId")
+            .sort({ updatedAt: -1 });
 
         return res.status(200).json({
-
             success: true,
-
-            total: completedPets.length,
-
-            data: completedPets
-
+            count: visits.length,
+            data: visits
         });
 
     } catch (error) {
-
         return res.status(500).json({
-
             success: false,
-
             message: error.message
-
         });
-
     }
 
 };
@@ -315,7 +305,7 @@ exports.updatePatient = async (req, res) => {
 
         patient.clinicalObservation.doctorNotes =
             req.body.clinicalObservation?.doctorNotes || patient.clinicalObservation.doctorNotes;
-                   // ===========================================
+        // ===========================================
         // Diagnosis
         // ===========================================
 
@@ -366,8 +356,8 @@ exports.updatePatient = async (req, res) => {
 
         patient.labRequisition.status =
             req.body.labRequisition?.status ||
-            patient.labRequisition.status; 
-                    // ===========================================
+            patient.labRequisition.status;
+        // ===========================================
         // Treatment
         // ===========================================
 
@@ -392,12 +382,12 @@ exports.updatePatient = async (req, res) => {
             patient.treatment.fluids;
 
         patient.treatment.followUp =
-        req.body.treatment?.followUp ||
-        patient.treatment.followUp;
+            req.body.treatment?.followUp ||
+            patient.treatment.followUp;
 
         patient.treatment.treatmentNotes =
-    req.body.treatment?.treatmentNotes ||
-    patient.treatment.treatmentNotes;
+            req.body.treatment?.treatmentNotes ||
+            patient.treatment.treatmentNotes;
         // ===========================================
         // Suggestion & Plans
         // ===========================================
@@ -426,34 +416,34 @@ exports.updatePatient = async (req, res) => {
             req.body.suggestion?.followUpDate ||
             patient.suggestion.followUpDate;
 
-  
+
 
         patient.suggestion.finalNotes =
-    req.body.suggestion?.finalNotes ||
-    patient.suggestion.finalNotes;
-// ===========================================
-// Status
-// ===========================================
+            req.body.suggestion?.finalNotes ||
+            patient.suggestion.finalNotes;
+        // ===========================================
+        // Status
+        // ===========================================
 
-if (req.body.status === "COMPLETED") {
+        if (req.body.status === "COMPLETED") {
 
-    patient.status = "COMPLETED";
+            patient.status = "COMPLETED";
 
-    patient.labRequisition.status = "COMPLETED";
+            patient.labRequisition.status = "COMPLETED";
 
-}
-else if (req.body.diagnosis?.raiseLab) {
+        }
+        else if (req.body.diagnosis?.raiseLab) {
 
-    patient.status = "LAB_PENDING";
+            patient.status = "LAB_PENDING";
 
-    patient.labRequisition.status = "PENDING";
+            patient.labRequisition.status = "PENDING";
 
-}
-else {
+        }
+        else {
 
-    patient.status = "PENDING";
+            patient.status = "PENDING";
 
-}
+        }
 
 
         // ===========================================
@@ -462,14 +452,43 @@ else {
 
         await patient.save();
 
+        // ===========================================
+        // Visit Workflow Update  ✅ ADD HERE
+        // ===========================================
+
+        let nextStage = "COMPLETED";
+        let visitStatus = "COMPLETED";
+
+        // If lab required → move to LAB
+        if (patient.diagnosis?.raiseLab) {
+            nextStage = "LAB";
+            visitStatus = "WAITING";
+        }
+
+        await Visit.findOneAndUpdate(
+            {
+                petId: patient.petId,
+                clinicId: req.user.clinicId
+            },
+            {
+                currentStage: nextStage,
+                status: visitStatus,
+                doctorId: req.user._id,
+                $set: {
+                    "workflow.doctorCompleted": true
+                }
+            },
+            { new: true }
+        );
+
+        // ===========================================
+        // Final Response
+        // ===========================================
+
         return res.status(200).json({
-
             success: true,
-
             message: "Doctor Consultation Saved Successfully",
-
             data: patient
-
         });
 
     } catch (error) {
