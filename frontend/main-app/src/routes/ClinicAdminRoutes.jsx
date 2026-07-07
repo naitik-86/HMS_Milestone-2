@@ -24,7 +24,7 @@ import ReceptionDashboard from "../modules/clinicadmin/pages/clinic-receptionist
 import NewRegistrationPet from "../modules/clinicadmin/pages/clinic-receptionist/NewRegistrationPet";
 import ExistingCustomerPet from "../modules/clinicadmin/pages/clinic-receptionist/ExistingCustomerPet";
 import PetHistory from "../modules/clinicadmin/pages/clinic-receptionist/PetHistory";
-
+import CreateVisit from "../modules/clinicadmin/pages/clinic-receptionist/CreateVisit";
 // Lab Upload Dashboard
 import LabDashboard from "../modules/clinicadmin/pages/lab_reports_upload/LabDashboard";
 import LabReportUpload from "../modules/clinicadmin/pages/lab_reports_upload/LabReportUpload";
@@ -115,6 +115,7 @@ const ClinicAdminRoutes = (
         >
             <Route index element={<ReceptionDashboard />} />
             <Route path="new-registration" element={<NewRegistrationPet />} />
+            <Route path="create-visit" element={<CreateVisit />} />
             <Route path="existing-customer" element={<ExistingCustomerPet />} />
             <Route path="history" element={<PetHistory />} />
         </Route>
