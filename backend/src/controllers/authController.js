@@ -467,6 +467,7 @@ exports.login = async (req, res) => {
     ========================= */
     const user = await User.findOne({ email: email.toLowerCase() }).select("+password");
 
+
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -483,12 +484,28 @@ exports.login = async (req, res) => {
       });
     }
 
-    // Generate JWT Token
+    // For staff login, we currently issue JWT only after password match.
+    // We additionally enforce first-time password reset + TOTP setup.
+
+    // Try to locate Staff account (TOTP fields are on Staff model).
+    // Note: user is from User model; we map using email.
+    const Staff = require('../models/Staff');
+    const staff = await Staff.findOne({ 'personalInfo.email': user.email });
+
+    const requiresPasswordReset = staff?.accountInfo?.forcePasswordReset === true;
+    const requiresTotpSetup = staff?.accountInfo?.twoFactorEnabled !== true;
+
+    // If TOTP not enabled, we still return token (for setup UI), but block app access
+    // by setting flags.
+
     const token = jwt.sign(
       {
         id: user._id,
         role: user.role,
         clinicId: user.clinicId,
+        // flags for frontend (not security)
+        totpRequired: requiresTotpSetup,
+        passwordResetRequired: requiresPasswordReset,
       },
       process.env.JWT_SECRET,
       { expiresIn: "1d" }
@@ -499,6 +516,8 @@ exports.login = async (req, res) => {
       message: "Login successful",
       token,
       role: user.role,
+      requiresPasswordReset: requiresPasswordReset,
+      requiresTotpSetup: requiresTotpSetup,
       user: {
           id: user._id,
           name: user.name,
