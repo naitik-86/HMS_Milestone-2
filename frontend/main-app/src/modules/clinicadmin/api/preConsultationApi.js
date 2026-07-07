@@ -16,11 +16,11 @@ export const completePreConsultation = async (petData) => {
 
     const id = petData._id
 
-    console.log(`${BASE_URL}/${id}/complete`);
+    console.log(`${BASE_URL}/${id}`);
 
 
-    const res = await API.patch(
-        `${BASE_URL}/${id}/complete`,
+    const res = await API.put(
+        `${BASE_URL}/${id}`,
         petData
     );
 
