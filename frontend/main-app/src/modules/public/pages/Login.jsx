@@ -1,9 +1,8 @@
 import { LogIn, Mail, Lock, Phone } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { authApi } from "../../auth/api/authApi";
 import API from "../../../shared/api/axios";
-import { Navigate } from "react-router-dom";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -26,6 +25,29 @@ export default function Login() {
 
   const [phoneVerified, setPhoneVerified] = useState(false);
   const [emailVerified, setEmailVerified] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    const role = localStorage.getItem("role");
+
+    if (!token) return;
+
+    if (localStorage.getItem("passwordResetRequired") === "true") {
+      navigate("/change-password", { replace: true });
+      return;
+    }
+
+    if (localStorage.getItem("totpRequired") === "true") {
+      navigate("/enable-totp", { replace: true });
+      return;
+    }
+
+    if (role === "SUPER_ADMIN") navigate("/superadmin", { replace: true });
+    else if (role === "CLINIC_ADMIN") navigate("/clinic", { replace: true });
+    else if (role === "DOCTOR") navigate("/doctor/dashboard", { replace: true });
+    else if (role === "RECEPTIONIST") navigate("/clinic/reception", { replace: true });
+    else if (role === "PARA_MEDICAL") navigate("/clinic/pre-consultation", { replace: true });
+  }, [navigate]);
 
   const handleChange = (e) => {
     setForm({
@@ -58,22 +80,6 @@ export default function Login() {
       localStorage.setItem("role", response.user?.role || response.role);
 
       setShowVerificationModal(true);
-
-
-      const role = localStorage.getItem("role");
-
-      switch (role) {
-        case "SUPER_ADMIN":
-          return <Navigate to="/superadmin" replace />;
-
-        case "CLINIC_ADMIN":
-          return <Navigate to="/clinic" replace />;
-
-        default:
-          return <Navigate to="/login" replace />;
-      }
-
-
     } catch (error) {
       console.error("Login Error:", error);
       console.log(error.response?.data);
@@ -150,7 +156,7 @@ export default function Login() {
         redirectRes.data?.data?.redirectUrl;
 
       if (redirectUrl) {
-        return navigate(redirectUrl);
+        return navigate(redirectUrl, { replace: true });
       }
       if (!phoneVerified || !emailVerified) {
         alert("Please verify both Phone and Email");
@@ -161,19 +167,19 @@ export default function Login() {
     }
 
     if (role === "SUPER_ADMIN")
-      return navigate("/superadmin");
+      return navigate("/superadmin", { replace: true });
 
     if (role === "CLINIC_ADMIN")
-      return navigate("/clinic");
+      return navigate("/clinic", { replace: true });
 
     if (role === "DOCTOR")
-      return navigate("/doctor/dashboard");
+      return navigate("/doctor/dashboard", { replace: true });
 
     if (role === "RECEPTIONIST")
-      return navigate("/clinic/reception");
+      return navigate("/clinic/reception", { replace: true });
 
     if (role === "PARA_MEDICAL")
-      return navigate("/clinic/pre-consultation");
+      return navigate("/clinic/pre-consultation", { replace: true });
   };
 
   return (
