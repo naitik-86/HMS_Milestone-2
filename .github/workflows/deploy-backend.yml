@@ -1,0 +1,70 @@
+# Copy this file to HMS_frontend/.github/workflows/deploy-backend.yml
+#
+# Required GitHub Actions secrets (Settings -> Secrets and variables -> Actions):
+#   EC2_HOST         - the Elastic IP from `terraform output backend_public_ip`
+#   EC2_USER         - "ec2-user"
+#   EC2_SSH_KEY      - contents of the private key file (~/.ssh/hms-deploy-key)
+#
+# See docs/06-github-actions-cicd.md for how to add these.
+
+name: Deploy Backend
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - ".github/workflows/deploy-backend.yml"
+  workflow_dispatch: {}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: SSH deploy to EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -euo pipefail
+
+            if [ ! -d /opt/app/.git ]; then
+              git clone https://github.com/naitik-86/HMS_frontend.git /opt/app
+            fi
+
+            cd /opt/app
+            git fetch origin main
+            git reset --hard origin/main
+
+            cd /opt/app/backend
+            # /opt/app/backend/.env is created once manually (docs/05) and
+            # is untouched by this script - it is not part of the git repo.
+
+            docker build -t hms-backend:latest .
+
+            docker stop hms-backend 2>/dev/null || true
+            docker rm hms-backend 2>/dev/null || true
+
+            docker run -d \
+              --name hms-backend \
+              --restart unless-stopped \
+              -p 80:5000 \
+              --env-file /opt/app/backend/.env \
+              hms-backend:latest
+
+            # Wait for the container's own HEALTHCHECK to report healthy
+            for i in $(seq 1 10); do
+              status=$(docker inspect --format='{{.State.Health.Status}}' hms-backend 2>/dev/null || echo "starting")
+              if [ "$status" = "healthy" ]; then
+                echo "Backend is healthy"
+                exit 0
+              fi
+              echo "Waiting for health check... ($status)"
+              sleep 3
+            done
+
+            echo "Backend did not become healthy in time"
+            docker logs --tail 50 hms-backend
+            exit 1
