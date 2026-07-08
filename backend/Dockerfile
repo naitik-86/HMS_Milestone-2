@@ -3,7 +3,11 @@
 FROM node:20-slim AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm ci --omit=dev
+# --legacy-peer-deps: multer-storage-cloudinary@4.0.0 peer-depends on
+# cloudinary@^1.21.0, but package.json pins cloudinary@^2.10.0. Until that's
+# reconciled upstream, npm's strict peer resolution (npm 7+) rejects a plain
+# install.
+RUN npm ci --omit=dev --legacy-peer-deps
 
 FROM node:20-slim AS runtime
 WORKDIR /app
