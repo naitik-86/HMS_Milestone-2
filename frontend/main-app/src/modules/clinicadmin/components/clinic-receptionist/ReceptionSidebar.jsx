@@ -8,7 +8,9 @@ export default function ReceptionSidebar() {
   const menus = [
     { name: "Dashboard", path: "", icon: "DB" },
     { name: "New Registration", path: "new-registration", icon: "NR" },
+    { name: "Create Visit", path: "create-visit", icon: "CV" },
     { name: "Existing Customer", path: "existing-customer", icon: "EC" },
+
     { name: "Pet History", path: "history", icon: "PH" },
   ];
 
@@ -79,10 +81,9 @@ export default function ReceptionSidebar() {
                 end={menu.path === ""}
                 onClick={() => setIsOpen(false)}
                 className={({ isActive }) =>
-                  `flex items-center gap-4 p-4 rounded-2xl transition-all duration-300 ${
-                    isActive
-                      ? "bg-orange-500 shadow-lg"
-                      : "hover:bg-slate-800"
+                  `flex items-center gap-4 p-4 rounded-2xl transition-all duration-300 ${isActive
+                    ? "bg-orange-500 shadow-lg"
+                    : "hover:bg-slate-800"
                   }`
                 }
               >

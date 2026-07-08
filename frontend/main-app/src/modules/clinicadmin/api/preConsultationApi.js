@@ -10,18 +10,14 @@ export const getPendingPets = async () => {
     return res.data;
 };
 
-export const completePreConsultation = async (petData) => {
+export const completePreConsultation = async ({
+    visitId,
+    preConsultationData,
+}) => {
 
-    console.log("this is the id from preconsulatation pets  ", petData);
-
-    const id = petData._id
-
-    console.log(`${BASE_URL}/${id}/complete`);
-
-
-    const res = await API.patch(
-        `${BASE_URL}/${id}/complete`,
-        petData
+    const res = await API.put(
+        `${BASE_URL}/${visitId}`,
+        preConsultationData
     );
 
     return res.data;

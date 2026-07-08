@@ -9,38 +9,42 @@ require("dotenv").config({
 const Owner = require("../models/Owner");
 const Preconsultation = require("../models/PreConsultation")
 const PetRegistration = require("../models/PetRegistration")
-
 const getOwners = async () => {
     try {
         await mongoose.connect(process.env.MONGO_URI);
 
         console.log("Connected to MongoDB.\n");
 
-        const owners = await PetRegistration.find().select("_id name mobile email");
+        const owners = await PetRegistration.find()
+            .select("_id ownerName mobileNumber email pets");
 
         if (owners.length === 0) {
             console.log("No owners found.");
             process.exit(0);
         }
 
-        console.log("========== OWNERS ==========\n");
+        console.log("========== OWNERS WITH PETS ==========\n");
 
         owners.forEach((owner, index) => {
             console.log(`Owner ${index + 1}`);
-            console.log(`ID     : ${owner._id}`);
-            console.log(`Name   : ${owner.name}`);
-            console.log(`Mobile : ${owner.mobile}`);
-            console.log(`Email  : ${owner.email || "N/A"}`);
+            console.log(`Owner ID : ${owner._id}`);
+            console.log(`Name     : ${owner.ownerName}`);
+            console.log(`Mobile   : ${owner.mobileNumber}`);
+            console.log(`Email    : ${owner.email || "N/A"}`);
+
+            console.log("Pets:");
+
+            owner.pets.forEach((pet, i) => {
+                console.log(`   Pet ${i + 1}`);
+                console.log(`   Pet ID   : ${pet._id}`);  // 🔥 IMPORTANT
+                console.log(`   Name     : ${pet.petName}`);
+                console.log(`   Species  : ${pet.species}`);
+                console.log(`   Breed    : ${pet.breed}`);
+                console.log("----------------------");
+            });
+
             console.log("----------------------------------");
         });
-
-        const found = await PetRegistration.findOne({
-            _id: "6a46a0b7e079bd5e161fcadc"
-        })
-        console.log("***************");
-
-        console.log(found);
-
 
         process.exit(0);
     } catch (error) {
@@ -48,5 +52,6 @@ const getOwners = async () => {
         process.exit(1);
     }
 };
+
 
 getOwners();

@@ -16,6 +16,11 @@ const emergencyContactSchema =
 
 const staffSchema = new mongoose.Schema(
     {
+        clinicId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Clinic",
+            required: true
+        },
         personalInfo: {
             fullName: {
                 type: String,
@@ -151,6 +156,29 @@ const staffSchema = new mongoose.Schema(
             forcePasswordReset: {
                 type: Boolean,
                 default: true,
+            },
+
+            // TOTP (Authenticator app)
+            twoFactorEnabled: {
+                type: Boolean,
+                default: false,
+            },
+
+            // Keep secret server-side. (Consider encrypting before production.)
+            twoFactorSecret: {
+                type: String,
+                default: '',
+            },
+
+            twoFactorVerifiedAt: {
+                type: Date,
+                default: null,
+            },
+
+            // Optional helper flag during setup
+            forceTotpSetup: {
+                type: Boolean,
+                default: false,
             },
         },
 

@@ -13,12 +13,13 @@ const { protect, authorize } = require('../middlewares/auth');
 const labRoutes = require("./labRoutes");
 // Public routes
 router.use('/auth', authRoutes);
+
 // Protected role-based modules
+
 router.use('/super-admin', protect, superAdminRoutes);
-// router.use('/clinic', protect, authorize("CLINIC_ADMIN"), clinicAdminRoutes);
 
+router.use('/clinic', protect, clinicAdminRoutes);
 
-router.use('/pre',preConsultationRoutes)
 // Owner Pet
 router.use("/pet-owner", petOwnerRoutes);
 

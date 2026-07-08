@@ -2,6 +2,12 @@ const mongoose = require("mongoose")
 
 const degreeSchema = new mongoose.Schema(
     {
+        clinicId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Clinic",
+            required: true,
+            index: true
+        },
         degreeName: {
             type: String,
             required: true,

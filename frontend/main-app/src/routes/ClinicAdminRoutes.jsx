@@ -24,7 +24,7 @@ import ReceptionDashboard from "../modules/clinicadmin/pages/clinic-receptionist
 import NewRegistrationPet from "../modules/clinicadmin/pages/clinic-receptionist/NewRegistrationPet";
 import ExistingCustomerPet from "../modules/clinicadmin/pages/clinic-receptionist/ExistingCustomerPet";
 import PetHistory from "../modules/clinicadmin/pages/clinic-receptionist/PetHistory";
-
+import CreateVisit from "../modules/clinicadmin/pages/clinic-receptionist/CreateVisit";
 // Lab Upload Dashboard
 import LabDashboard from "../modules/clinicadmin/pages/lab_reports_upload/LabDashboard";
 import LabReportUpload from "../modules/clinicadmin/pages/lab_reports_upload/LabReportUpload";
@@ -42,7 +42,7 @@ import {
     CompletedPets,
     HistoryPets,
 } from "../modules/clinicadmin/pages";
-
+import DoctorLabPage from "../modules/clinicadmin/components/common/doctor-staff/DoctorLabPage";
 import {
     DoctorDashboard,
     DoctorPendingPetsPage,
@@ -103,6 +103,7 @@ const ClinicAdminRoutes = (
             <Route index element={<DoctorDashboard />} />
             <Route path="pending" element={<DoctorPendingPetsPage />} />
             <Route path="completed" element={<DoctorCompletedPetsPage />} />
+            <Route path="lab" element={<DoctorLabPage />} />
             <Route path="history" element={<DoctorHistoryPetsPage />} />
         </Route>
 
@@ -114,6 +115,7 @@ const ClinicAdminRoutes = (
         >
             <Route index element={<ReceptionDashboard />} />
             <Route path="new-registration" element={<NewRegistrationPet />} />
+            <Route path="create-visit" element={<CreateVisit />} />
             <Route path="existing-customer" element={<ExistingCustomerPet />} />
             <Route path="history" element={<PetHistory />} />
         </Route>

@@ -1,7 +1,10 @@
 /* eslint-disable react-hooks/immutability */
 import { useState } from "react";
-import axios from "axios";
-import {useEffect } from "react";
+import {
+  getPendingPets,
+  updatePatient,
+} from "../../../api/doctorModuleApi";
+import { useEffect } from "react";
 
 export default function PendingPets() {
 
@@ -9,10 +12,6 @@ export default function PendingPets() {
   const [selectedPet, setSelectedPet] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [step, setStep] = useState(1);
-
-
-
-  // 
 
   const steps = [
     "History",
@@ -22,254 +21,227 @@ export default function PendingPets() {
     "Treatment",
     "Plans",
   ];
-const [formData, setFormData] = useState({
 
-  history: {
-    dietType: "",
-    dietFrequency: "",
-    waterIntake: "",
-    behaviour: "",
-    exercise: "",
-    currentMedication: "",
-    vaccinationStatus: "",
-    allergies: "",
-  },
+  const initialFormData = {
 
-  clinicalObservation: {
-    cardiovascular: "",
-    respiratory: "",
-    digestive: "",
-    musculoskeletal: "",
-    neurological: "",
-    urogenital: "",
-    skin: "",
-    eyes: "",
-    ears: "",
-    nose: "",
-    throat: "",
-    lymphNodes: "",
-    doctorNotes: "",
-  },
+    history: {
+      dietType: "",
+      dietFrequency: "",
+      waterIntake: "",
+      behaviour: "",
+      exercise: "",
+      currentMedication: "",
+      vaccinationStatus: "",
+      allergies: "",
+    },
 
-  diagnosis: {
-    provisionalDiagnosis: "",
-    differentialDiagnosis: "",
-    confirmedDiagnosis: "",
-    raiseLab: false,
-  },
+    clinicalObservation: {
+      cardiovascular: "",
+      respiratory: "",
+      digestive: "",
+      musculoskeletal: "",
+      neurological: "",
+      urogenital: "",
+      skin: "",
+      eyes: "",
+      ears: "",
+      nose: "",
+      throat: "",
+      lymphNodes: "",
+      doctorNotes: "",
+    },
 
-  labRequisition: {
-    tests: [],
-    sampleType: [],
-    instructions: "",
-    labOrderId: "",
-  },
+    diagnosis: {
+      provisionalDiagnosis: "",
+      differentialDiagnosis: "",
+      confirmedDiagnosis: "",
+      raiseLab: false,
+    },
 
-  treatment: {
-    medicines: "",
-    procedures: "",
-    vaccinations: "",
-    deworming: "",
-    fluids: "",
-    followUp: "",
-    treatmentNotes: "",
-  },
+    labRequisition: {
+      tests: [],
+      sampleType: [],
+      instructions: "",
+      labOrderId: "",
+    },
 
-  suggestion: {
-    dietAdvice: "",
-    activityRestriction: "",
-    homeCare: "",
-    preventiveCare: "",
-    prognosis: "",
-    followUpDate: "",
-    finalNotes: "",
-  },
+    treatment: {
+      medicines: "",
+      procedures: "",
+      vaccinations: "",
+      deworming: "",
+      fluids: "",
+      followUp: "",
+      treatmentNotes: "",
+    },
 
-});
+    suggestion: {
+      dietAdvice: "",
+      activityRestriction: "",
+      homeCare: "",
+      preventiveCare: "",
+      prognosis: "",
+      followUpDate: "",
+      finalNotes: "",
+    },
 
 
-const handleChange = (section, field, value) => {
+  }
+  const [formData, setFormData] = useState(initialFormData);
+
+
+  const handleChange = (section, field, value) => {
 
     setFormData((prev) => ({
 
-        ...prev,
+      ...prev,
 
-        [section]: {
+      [section]: {
 
-            ...prev[section],
+        ...prev[section],
 
-            [field]: value
+        [field]: value
 
-        }
+      }
 
     }));
 
-};
-const [pendingPets, setPendingPets] = useState([]);
-const [loading, setLoading] = useState(true);
+  };
+  const [pendingPets, setPendingPets] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-useEffect(() => {
-    getPendingPets();
-}, []);
+  useEffect(() => {
+    fetchPendingPets();
+  }, []);
 
 
-const getPendingPets = async () => {
-
+  const fetchPendingPets = async () => {
     try {
+      const res = await getPendingPets();
+      console.log(res);
 
-        const res = await axios.get(
-            "http://localhost:5000/api/v1/doctorModule/pending-pets"
-        );
-
-        setPendingPets(res.data.data);
+      setPendingPets(res.data);
+      console.log(pendingPets);
 
     } catch (error) {
-
-        console.log(error);
-
+      console.log(error);
     } finally {
+      setLoading(false);
+    }
+  };
 
-        setLoading(false);
-
+  const sendToLab = async () => {
+    if (!selectedPet?._id) {
+      alert("Please select a pet");
+      return;
     }
 
-};
+    try {
+      const response = await updatePatient(
+        selectedPet._id,
+        {
+          ...formData,
+          diagnosis: {
+            ...formData.diagnosis,
+            raiseLab: true,
+          },
+          labRequisition: {
+            ...formData.labRequisition,
+            status: "PENDING",
+          },
+        }
+      );
 
-const completeCase = async () => {
+      if (response.data.success) {
+        alert("Case Sent To Lab Successfully");
+
+        await fetchPendingPets();
+
+        setShowModal(false);
+        setSelectedPet(null);
+        setStep(1);
+        setFormData(initialFormData);
+      }
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+
+
+  const completeCase = async () => {
 
     if (!selectedPet?._id) {
-        alert("Please select a pet first");
-        return;
+      alert("Please select a pet first");
+      return;
     }
 
     try {
 
-        const response = await axios.put(
-
-            `http://localhost:5000/api/v1/doctorModule/patient/${selectedPet._id}`,
-
-            {
-                ...formData,
-                status: "COMPLETED"
-            }
-
-        );
-
-        if (response.data.success) {
-
-            alert("Case Completed Successfully");
-
-            // Refresh Pending List
-            await getPendingPets();
-
-            // Close Modal
-            setShowModal(false);
-
-            // Reset States
-            setSelectedPet(null);
-            setStep(1);
-
-            // Reset Form
-            setFormData({
-
-                history: {
-                    dietType: "",
-                    dietFrequency: "",
-                    waterIntake: "",
-                    behaviour: "",
-                    exercise: "",
-                    currentMedication: "",
-                    vaccinationStatus: "",
-                    allergies: "",
-                },
-
-                clinicalObservation: {
-                    cardiovascular: "",
-                    respiratory: "",
-                    digestive: "",
-                    musculoskeletal: "",
-                    neurological: "",
-                    urogenital: "",
-                    skin: "",
-                    eyes: "",
-                    ears: "",
-                    nose: "",
-                    throat: "",
-                    lymphNodes: "",
-                    doctorNotes: "",
-                },
-
-                diagnosis: {
-                    provisionalDiagnosis: "",
-                    differentialDiagnosis: "",
-                    confirmedDiagnosis: "",
-                    raiseLab: false,
-                },
-
-                labRequisition: {
-                    tests: [],
-                    sampleType: [],
-                    instructions: "",
-                    labOrderId: "",
-                },
-
-                treatment: {
-                    medicines: "",
-                    procedures: "",
-                    vaccinations: "",
-                    deworming: "",
-                    fluids: "",
-                    followUp: "",
-                    treatmentNotes: "",
-                },
-
-                suggestion: {
-                    dietAdvice: "",
-                    activityRestriction: "",
-                    homeCare: "",
-                    preventiveCare: "",
-                    prognosis: "",
-                    followUpDate: "",
-                    finalNotes: "",
-                }
-
-            });
-
+      const response = await updatePatient(
+        selectedPet._id,
+        {
+          ...formData,
+          status: "COMPLETED",
         }
+      );
+
+      if (response.data.success) {
+
+        alert("Case Completed Successfully");
+
+        // Refresh Pending List
+        await fetchPendingPets();
+
+        // Close Modal
+        setShowModal(false);
+
+        // Reset States
+        setSelectedPet(null);
+        setStep(1);
+
+        // Reset Form
+        setFormData(initialFormData);
+
+      }
 
     } catch (error) {
 
-        console.log(error);
+      console.log(error);
 
-        alert(
-            error.response?.data?.message ||
-            "Something went wrong"
-        );
+      alert(
+        error.response?.data?.message ||
+        "Something went wrong"
+      );
 
     }
 
-};
+  };
 
-if (loading) {
+  if (loading) {
 
     return (
-        <div className="flex justify-center items-center h-screen">
-            Loading...
-        </div>
+      <div className="flex justify-center items-center h-screen">
+        Loading...
+      </div>
     );
 
-}
+  }
 
-const filteredPets = pendingPets.filter((pet) =>
-  (pet.petId || "").toLowerCase().includes(search.toLowerCase()) ||
-  (pet.ownerId || "").toLowerCase().includes(search.toLowerCase()) ||
-  (pet.phone || "").includes(search)
-);
-
+  const filteredPets = pendingPets.filter((visit) =>
+    (visit.tokenNumber?.toString() || "").includes(search) ||
+    (visit.owner?.ownerName || "")
+      .toLowerCase()
+      .includes(search.toLowerCase()) ||
+    (visit.owner?.mobileNumber || "").includes(search) ||
+    (visit.pet?.petName || "")
+      .toLowerCase()
+      .includes(search.toLowerCase())
+  );
   return (
 
 
-  <div className="space-y-5 sm:space-y-8 pt-16 md:pt-8">
+    <div className="space-y-5 sm:space-y-8 pt-16 md:pt-8">
 
 
 
@@ -291,106 +263,106 @@ const filteredPets = pendingPets.filter((pet) =>
       {/* Table */}
       <div className="md:hidden space-y-4">
         {/* Mobile Heading */}
-<div className="md:hidden">
-  <h2 className="mb-4 text-xl font-bold text-slate-800">
-    Pending Cases
-  </h2>
-</div>
-
-  {filteredPets.map((pet) => (
-    <div
-      key={pet._id}
-      className="bg-slate-50 border rounded-2xl p-4"
-    >
-      <div className="flex justify-between items-start mb-3">
-        <div>
-          <h3 className="font-bold text-lg">
-            {pet.petName}
-          </h3>
-
-          <p className="text-sm text-slate-500">
-            {pet.petId}
-          </p>
+        <div className="md:hidden">
+          <h2 className="mb-4 text-xl font-bold text-slate-800">
+            Pending Cases
+          </h2>
         </div>
 
-        <span className="bg-orange-100 text-orange-600 px-3 py-1 rounded-full text-xs">
-          {pet.status}
-        </span>
+        {filteredPets.map((pet) => (
+          <div
+            key={pet._id}
+            className="bg-slate-50 border rounded-2xl p-4"
+          >
+            <div className="flex justify-between items-start mb-3">
+              <div>
+                <h3 className="font-bold text-lg">
+                  {pet.pet?.petName}
+                </h3>
+
+                <p className="text-sm text-slate-500">
+                  Token #{pet.tokenNumber}
+                </p>
+              </div>
+
+              <span className="bg-orange-100 text-orange-600 px-3 py-1 rounded-full text-xs">
+                {pet.status}
+              </span>
+            </div>
+
+            <div className="space-y-2 text-sm">
+              <p>
+                <span className="font-semibold">
+                  Owner:
+                </span>{" "}
+                {pet.owner?.ownerName}
+              </p>
+
+              <p>
+                <span className="font-semibold">
+                  Phone:
+                </span>{" "}
+                {pet.owner?.mobileNumber}
+              </p>
+            </div>
+
+            <button
+              onClick={() => {
+                setSelectedPet(pet);
+
+                setFormData((prev) => ({
+                  ...prev,
+                  ...pet,
+                  history: {
+                    ...prev.history,
+                    ...(pet.history || {})
+                  },
+                  clinicalObservation: {
+                    ...prev.clinicalObservation,
+                    ...(pet.clinicalObservation || {})
+                  },
+                  diagnosis: {
+                    ...prev.diagnosis,
+                    ...(pet.diagnosis || {})
+                  },
+                  labRequisition: {
+                    ...prev.labRequisition,
+                    ...(pet.labRequisition || {})
+                  },
+                  treatment: {
+                    ...prev.treatment,
+                    ...(pet.treatment || {})
+                  },
+                  suggestion: {
+                    ...prev.suggestion,
+                    ...(pet.suggestion || {})
+                  }
+                }));
+
+                setShowModal(true);
+              }}
+              className="w-full mt-4 bg-orange-500 text-white py-3 rounded-xl"
+            >
+              Edit
+            </button>
+          </div>
+        ))}
+
       </div>
-
-      <div className="space-y-2 text-sm">
-        <p>
-          <span className="font-semibold">
-            Owner:
-          </span>{" "}
-          {pet.ownerId}
-        </p>
-
-        <p>
-          <span className="font-semibold">
-            Phone:
-          </span>{" "}
-          {pet.phone}
-        </p>
-      </div>
-
-      <button
-        onClick={() => {
-         setSelectedPet(pet);
-
-setFormData((prev) => ({
-    ...prev,
-    ...pet,
-    history: {
-        ...prev.history,
-        ...(pet.history || {})
-    },
-    clinicalObservation: {
-        ...prev.clinicalObservation,
-        ...(pet.clinicalObservation || {})
-    },
-    diagnosis: {
-        ...prev.diagnosis,
-        ...(pet.diagnosis || {})
-    },
-    labRequisition: {
-        ...prev.labRequisition,
-        ...(pet.labRequisition || {})
-    },
-    treatment: {
-        ...prev.treatment,
-        ...(pet.treatment || {})
-    },
-    suggestion: {
-        ...prev.suggestion,
-        ...(pet.suggestion || {})
-    }
-}));
-
-setShowModal(true);
-        }}
-        className="w-full mt-4 bg-orange-500 text-white py-3 rounded-xl"
-      >
-        Edit
-      </button>
-    </div>
-  ))}
-
-</div>
       <div className="bg-white rounded-2xl p-4 shadow-sm sm:p-6 lg:rounded-[30px] lg:p-8">
 
-       <h2 className="hidden md:block mb-5 text-xl font-bold sm:mb-6 sm:text-2xl">
-  Pending Cases
-</h2>
+        <h2 className="hidden md:block mb-5 text-xl font-bold sm:mb-6 sm:text-2xl">
+          Pending Cases
+        </h2>
 
-       <div className="hidden md:block overflow-x-auto">
+        <div className="hidden md:block overflow-x-auto">
 
-  <table className="min-w-[760px] w-full text-sm sm:text-base">
+          <table className="min-w-[760px] w-full text-sm sm:text-base">
 
             <thead>
               <tr className="border-b">
                 <th className="py-4 pr-4 text-left">
-                  Pet ID
+                  Token
                 </th>
 
                 <th className="py-4 pr-4 text-left">
@@ -423,19 +395,19 @@ setShowModal(true);
                   className="border-b hover:bg-slate-50"
                 >
                   <td className="py-4 pr-4">
-                    {pet.petId}
+                    {pet.tokenNumber}
                   </td>
 
                   <td className="pr-4">
-                    {pet.petName}
+                    {pet.pet?.petName}
                   </td>
 
                   <td className="pr-4">
-                   {pet.ownerId}
+                    {pet.owner?.ownerName}
                   </td>
 
                   <td className="pr-4">
-                    {pet.phone}
+                    {pet.owner?.mobileNumber}
                   </td>
 
                   <td className="pr-4">
@@ -447,39 +419,37 @@ setShowModal(true);
                   <td>
                     <button
                       onClick={() => {
-    setSelectedPet(pet);
+                        setSelectedPet(pet);
 
-setFormData((prev) => ({
-    ...prev,
-    ...pet,
-    history: {
-        ...prev.history,
-        ...(pet.history || {})
-    },
-    clinicalObservation: {
-        ...prev.clinicalObservation,
-        ...(pet.clinicalObservation || {})
-    },
-    diagnosis: {
-        ...prev.diagnosis,
-        ...(pet.diagnosis || {})
-    },
-    labRequisition: {
-        ...prev.labRequisition,
-        ...(pet.labRequisition || {})
-    },
-    treatment: {
-        ...prev.treatment,
-        ...(pet.treatment || {})
-    },
-    suggestion: {
-        ...prev.suggestion,
-        ...(pet.suggestion || {})
-    }
-}));
+                        setFormData({
+                          history: {
+                            ...initialFormData.history,
+                            ...(pet.history || {}),
+                          },
+                          clinicalObservation: {
+                            ...initialFormData.clinicalObservation,
+                            ...(pet.clinicalObservation || {}),
+                          },
+                          diagnosis: {
+                            ...initialFormData.diagnosis,
+                            ...(pet.diagnosis || {}),
+                          },
+                          labRequisition: {
+                            ...initialFormData.labRequisition,
+                            ...(pet.labRequisition || {}),
+                          },
+                          treatment: {
+                            ...initialFormData.treatment,
+                            ...(pet.treatment || {}),
+                          },
+                          suggestion: {
+                            ...initialFormData.suggestion,
+                            ...(pet.suggestion || {}),
+                          },
+                        });
 
-setShowModal(true);
-}}
+                        setShowModal(true);
+                      }}
                       className="rounded-xl bg-orange-500 px-4 py-2 text-sm text-white hover:bg-orange-600 sm:px-5 sm:text-base"
                     >
                       Edit
@@ -508,11 +478,11 @@ setShowModal(true);
 
               <div>
                 <h1 className="text-2xl font-bold sm:text-3xl">
-                  {selectedPet?.petName}
+                  {selectedPet?.pet?.petName}
                 </h1>
 
                 <p className="text-slate-500">
-                  {selectedPet?.ownerId}
+                  {selectedPet?.owner?.ownerName}• {selectedPet?.owner?.mobileNumber}
                 </p>
               </div>
 
@@ -527,6 +497,7 @@ setShowModal(true);
                 Close
               </button>
 
+
             </div>
 
             {/* Progress Bar */}
@@ -536,9 +507,9 @@ setShowModal(true);
 
                 {steps.map((item, index) => (
                   <div
-  key={index}
-  className="flex flex-col items-center"
->
+                    key={index}
+                    className="flex flex-col items-center"
+                  >
                     <div
                       className={`flex h-9 w-9 sm:h-12 sm:w-12 items-center justify-center rounded-full font-bold text-sm sm:text-base
 
@@ -578,13 +549,13 @@ setShowModal(true);
                         🍖 Diet Type
                       </label>
 
-                      <select 
+                      <select
 
-                      value={formData.history.dietType}
-  onChange={(e) =>
-    handleChange("history", "dietType", e.target.value)
-  }
-  className="
+                        value={formData.history.dietType}
+                        onChange={(e) =>
+                          handleChange("history", "dietType", e.target.value)
+                        }
+                        className="
     w-full
     h-12 sm:h-14
     rounded-2xl
@@ -598,7 +569,7 @@ setShowModal(true);
     focus:ring-orange-100
     appearance-none
   "
->
+                      >
                         <option>Select Diet Type</option>
                         <option>Commercial Dry</option>
                         <option>Commercial Wet</option>
@@ -613,29 +584,29 @@ setShowModal(true);
                         🍽️ Diet Frequency (Meals Per Day)
                       </label>
 
-                     <input
-  type="number"
-  value={formData.history.dietFrequency}
-  onChange={(e) =>
-    handleChange("history", "dietFrequency", e.target.value)
-  }
-  placeholder="Enter Meals Per Day"
-  className="w-full border border-slate-300 p-3 rounded-2xl"
-/>
+                      <input
+                        type="number"
+                        value={formData.history.dietFrequency}
+                        onChange={(e) =>
+                          handleChange("history", "dietFrequency", e.target.value)
+                        }
+                        placeholder="Enter Meals Per Day"
+                        className="w-full border border-slate-300 p-3 rounded-2xl"
+                      />
                     </div>
 
-          <div>
-  <label className="block font-semibold mb-2">
-    💧 Water Intake
-  </label>
+                    <div>
+                      <label className="block font-semibold mb-2">
+                        💧 Water Intake
+                      </label>
 
-  <div className="relative">
-   <select
-  value={formData.history.waterIntake}
-  onChange={(e) =>
-    handleChange("history", "waterIntake", e.target.value)
-  }
-      className="
+                      <div className="relative">
+                        <select
+                          value={formData.history.waterIntake}
+                          onChange={(e) =>
+                            handleChange("history", "waterIntake", e.target.value)
+                          }
+                          className="
         w-full
         h-12 sm:h-14
         rounded-2xl
@@ -650,18 +621,18 @@ setShowModal(true);
         focus:ring-4
         focus:ring-orange-100
       "
-    >
-      <option>Select Water Intake</option>
-      <option>Normal</option>
-      <option>Reduced</option>
-      <option>Increased</option>
-    </select>
+                        >
+                          <option>Select Water Intake</option>
+                          <option>Normal</option>
+                          <option>Reduced</option>
+                          <option>Increased</option>
+                        </select>
 
-    <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2">
-      ▼
-    </span>
-  </div>
-</div>
+                        <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2">
+                          ▼
+                        </span>
+                      </div>
+                    </div>
 
                     <div>
                       <label className="block font-semibold mb-2">
@@ -671,9 +642,9 @@ setShowModal(true);
                       <textarea
                         rows="3"
                         value={formData.history.behaviour}
-  onChange={(e) =>
-    handleChange("history", "behaviour", e.target.value)
-  }
+                        onChange={(e) =>
+                          handleChange("history", "behaviour", e.target.value)
+                        }
                         placeholder="Behavioral Habits"
                         className="w-full border border-slate-300 p-3 rounded-2xl"
                       />
@@ -684,13 +655,13 @@ setShowModal(true);
                         🏃 Exercise Level
                       </label>
 
-                     <select
-  value={formData.history.exercise}
-  onChange={(e) =>
-    handleChange("history", "exercise", e.target.value)
-  }
-  className="w-full border border-slate-300 p-3 rounded-2xl"
->
+                      <select
+                        value={formData.history.exercise}
+                        onChange={(e) =>
+                          handleChange("history", "exercise", e.target.value)
+                        }
+                        className="w-full border border-slate-300 p-3 rounded-2xl"
+                      >
                         <option>Select Exercise Level</option>
                         <option>Indoor</option>
                         <option>Outdoor</option>
@@ -708,9 +679,9 @@ setShowModal(true);
                       <textarea
                         rows="3"
                         value={formData.history.currentMedication}
-  onChange={(e) =>
-    handleChange("history", "currentMedication", e.target.value)
-  }
+                        onChange={(e) =>
+                          handleChange("history", "currentMedication", e.target.value)
+                        }
                         placeholder="Current Medications"
                         className="w-full border border-slate-300 p-3 rounded-2xl"
                       />
@@ -721,13 +692,13 @@ setShowModal(true);
                         💉 Vaccination Status
                       </label>
 
-                     <select
-  value={formData.history.vaccinationStatus}
-  onChange={(e) =>
-    handleChange("history", "vaccinationStatus", e.target.value)
-  }
-  className="w-full border border-slate-300 p-3 rounded-2xl"
->
+                      <select
+                        value={formData.history.vaccinationStatus}
+                        onChange={(e) =>
+                          handleChange("history", "vaccinationStatus", e.target.value)
+                        }
+                        className="w-full border border-slate-300 p-3 rounded-2xl"
+                      >
                         <option>Verified</option>
                         <option>Pending</option>
                       </select>
@@ -738,15 +709,15 @@ setShowModal(true);
                         ⚠️ Known Allergies
                       </label>
 
-                   <textarea
-  rows="3"
-  value={formData.history.allergies}
-  onChange={(e) =>
-    handleChange("history", "allergies", e.target.value)
-  }
-  placeholder="Known Allergies"
-  className="w-full border border-slate-300 p-3 rounded-2xl"
-/>
+                      <textarea
+                        rows="3"
+                        value={formData.history.allergies}
+                        onChange={(e) =>
+                          handleChange("history", "allergies", e.target.value)
+                        }
+                        placeholder="Known Allergies"
+                        className="w-full border border-slate-300 p-3 rounded-2xl"
+                      />
                     </div>
 
                   </div>
@@ -767,19 +738,19 @@ setShowModal(true);
                         ❤️ Cardiovascular System
                       </label>
 
-                    <textarea
-  rows="4"
-  value={formData.clinicalObservation.cardiovascular || ""}
-  onChange={(e) =>
-    handleChange(
-      "clinicalObservation",
-      "cardiovascular",
-      e.target.value
-    )
-  }
-  placeholder="Enter cardiovascular observations..."
-  className="w-full border border-slate-300 p-3 rounded-2xl"
-/>
+                      <textarea
+                        rows="4"
+                        value={formData.clinicalObservation.cardiovascular || ""}
+                        onChange={(e) =>
+                          handleChange(
+                            "clinicalObservation",
+                            "cardiovascular",
+                            e.target.value
+                          )
+                        }
+                        placeholder="Enter cardiovascular observations..."
+                        className="w-full border border-slate-300 p-3 rounded-2xl"
+                      />
                     </div>
 
                     <div>
@@ -787,19 +758,19 @@ setShowModal(true);
                         🫁 Respiratory System
                       </label>
 
-                     <textarea
-  rows="4"
-  value={formData.clinicalObservation.respiratory}
-  onChange={(e) =>
-    handleChange(
-      "clinicalObservation",
-      "respiratory",
-      e.target.value
-    )
-  }
-  placeholder="Enter respiratory observations..."
-  className="w-full border border-slate-300 p-3 rounded-2xl"
-/>
+                      <textarea
+                        rows="4"
+                        value={formData.clinicalObservation.respiratory}
+                        onChange={(e) =>
+                          handleChange(
+                            "clinicalObservation",
+                            "respiratory",
+                            e.target.value
+                          )
+                        }
+                        placeholder="Enter respiratory observations..."
+                        className="w-full border border-slate-300 p-3 rounded-2xl"
+                      />
                     </div>
 
                     <div>
@@ -807,19 +778,19 @@ setShowModal(true);
                         🍖 Digestive System
                       </label>
 
-                     <textarea
-  rows="4"
-  value={formData.clinicalObservation.digestive}
-  onChange={(e) =>
-    handleChange(
-      "clinicalObservation",
-      "digestive",
-      e.target.value
-    )
-  }
-  placeholder="Enter digestive observations..."
-  className="w-full border border-slate-300 p-3 rounded-2xl"
-/>
+                      <textarea
+                        rows="4"
+                        value={formData.clinicalObservation.digestive}
+                        onChange={(e) =>
+                          handleChange(
+                            "clinicalObservation",
+                            "digestive",
+                            e.target.value
+                          )
+                        }
+                        placeholder="Enter digestive observations..."
+                        className="w-full border border-slate-300 p-3 rounded-2xl"
+                      />
                     </div>
 
                     <div>
@@ -827,19 +798,19 @@ setShowModal(true);
                         🦴 Musculoskeletal System
                       </label>
 
-                   <textarea
-  rows="4"
-  value={formData.clinicalObservation.musculoskeletal}
-  onChange={(e) =>
-    handleChange(
-      "clinicalObservation",
-      "musculoskeletal",
-      e.target.value
-    )
-  }
-  placeholder="Enter musculoskeletal observations..."
-  className="w-full border border-slate-300 p-3 rounded-2xl"
-/>
+                      <textarea
+                        rows="4"
+                        value={formData.clinicalObservation.musculoskeletal}
+                        onChange={(e) =>
+                          handleChange(
+                            "clinicalObservation",
+                            "musculoskeletal",
+                            e.target.value
+                          )
+                        }
+                        placeholder="Enter musculoskeletal observations..."
+                        className="w-full border border-slate-300 p-3 rounded-2xl"
+                      />
                     </div>
 
                     <div>
@@ -848,18 +819,18 @@ setShowModal(true);
                       </label>
 
                       <textarea
-  rows="4"
-  value={formData.clinicalObservation.neurological}
-  onChange={(e) =>
-    handleChange(
-      "clinicalObservation",
-      "neurological",
-      e.target.value
-    )
-  }
-  placeholder="Enter neurological observations..."
-  className="w-full border border-slate-300 p-3 rounded-2xl"
-/>
+                        rows="4"
+                        value={formData.clinicalObservation.neurological}
+                        onChange={(e) =>
+                          handleChange(
+                            "clinicalObservation",
+                            "neurological",
+                            e.target.value
+                          )
+                        }
+                        placeholder="Enter neurological observations..."
+                        className="w-full border border-slate-300 p-3 rounded-2xl"
+                      />
                     </div>
 
                     <div>
@@ -868,18 +839,18 @@ setShowModal(true);
                       </label>
 
                       <textarea
-  rows="4"
-  value={formData.clinicalObservation.urogenital}
-  onChange={(e) =>
-    handleChange(
-      "clinicalObservation",
-      "urogenital",
-      e.target.value
-    )
-  }
-  placeholder="Enter urogenital observations..."
-  className="w-full border border-slate-300 p-3 rounded-2xl"
-/>
+                        rows="4"
+                        value={formData.clinicalObservation.urogenital}
+                        onChange={(e) =>
+                          handleChange(
+                            "clinicalObservation",
+                            "urogenital",
+                            e.target.value
+                          )
+                        }
+                        placeholder="Enter urogenital observations..."
+                        className="w-full border border-slate-300 p-3 rounded-2xl"
+                      />
                     </div>
 
                     <div>
@@ -888,18 +859,18 @@ setShowModal(true);
                       </label>
 
                       <textarea
-  rows="4"
-  value={formData.clinicalObservation.skin}
-  onChange={(e) =>
-    handleChange(
-      "clinicalObservation",
-      "skin",
-      e.target.value
-    )
-  }
-  placeholder="Enter skin observations..."
-  className="w-full border border-slate-300 p-3 rounded-2xl"
-/>
+                        rows="4"
+                        value={formData.clinicalObservation.skin}
+                        onChange={(e) =>
+                          handleChange(
+                            "clinicalObservation",
+                            "skin",
+                            e.target.value
+                          )
+                        }
+                        placeholder="Enter skin observations..."
+                        className="w-full border border-slate-300 p-3 rounded-2xl"
+                      />
                     </div>
 
                     <div>
@@ -907,19 +878,19 @@ setShowModal(true);
                         👀 Eyes
                       </label>
 
-                     <textarea
-  rows="4"
-  value={formData.clinicalObservation.eyes}
-  onChange={(e) =>
-    handleChange(
-      "clinicalObservation",
-      "eyes",
-      e.target.value
-    )
-  }
-  placeholder="Enter eye observations..."
-  className="w-full border border-slate-300 p-3 rounded-2xl"
-/>
+                      <textarea
+                        rows="4"
+                        value={formData.clinicalObservation.eyes}
+                        onChange={(e) =>
+                          handleChange(
+                            "clinicalObservation",
+                            "eyes",
+                            e.target.value
+                          )
+                        }
+                        placeholder="Enter eye observations..."
+                        className="w-full border border-slate-300 p-3 rounded-2xl"
+                      />
                     </div>
 
                     <div>
@@ -927,19 +898,19 @@ setShowModal(true);
                         👂 Ears
                       </label>
 
-                  <textarea
-  rows="4"
-  value={formData.clinicalObservation.ears}
-  onChange={(e) =>
-    handleChange(
-      "clinicalObservation",
-      "ears",
-      e.target.value
-    )
-  }
-  placeholder="Enter ear observations..."
-  className="w-full border border-slate-300 p-3 rounded-2xl"
-/>
+                      <textarea
+                        rows="4"
+                        value={formData.clinicalObservation.ears}
+                        onChange={(e) =>
+                          handleChange(
+                            "clinicalObservation",
+                            "ears",
+                            e.target.value
+                          )
+                        }
+                        placeholder="Enter ear observations..."
+                        className="w-full border border-slate-300 p-3 rounded-2xl"
+                      />
                     </div>
 
                     <div>
@@ -947,19 +918,19 @@ setShowModal(true);
                         👃 Nose
                       </label>
 
-                     <textarea
-  rows="4"
-  value={formData.clinicalObservation.nose}
-  onChange={(e) =>
-    handleChange(
-      "clinicalObservation",
-      "nose",
-      e.target.value
-    )
-  }
-  placeholder="Enter nose observations..."
-  className="w-full border border-slate-300 p-3 rounded-2xl"
-/>
+                      <textarea
+                        rows="4"
+                        value={formData.clinicalObservation.nose}
+                        onChange={(e) =>
+                          handleChange(
+                            "clinicalObservation",
+                            "nose",
+                            e.target.value
+                          )
+                        }
+                        placeholder="Enter nose observations..."
+                        className="w-full border border-slate-300 p-3 rounded-2xl"
+                      />
                     </div>
 
                     <div>
@@ -968,18 +939,18 @@ setShowModal(true);
                       </label>
 
                       <textarea
-  rows="4"
-  value={formData.clinicalObservation.throat}
-  onChange={(e) =>
-    handleChange(
-      "clinicalObservation",
-      "throat",
-      e.target.value
-    )
-  }
-  placeholder="Enter throat observations..."
-  className="w-full border border-slate-300 p-3 rounded-2xl"
-/>
+                        rows="4"
+                        value={formData.clinicalObservation.throat}
+                        onChange={(e) =>
+                          handleChange(
+                            "clinicalObservation",
+                            "throat",
+                            e.target.value
+                          )
+                        }
+                        placeholder="Enter throat observations..."
+                        className="w-full border border-slate-300 p-3 rounded-2xl"
+                      />
                     </div>
 
                     <div>
@@ -988,18 +959,18 @@ setShowModal(true);
                       </label>
 
                       <textarea
-  rows="4"
-  value={formData.clinicalObservation.lymphNodes}
-  onChange={(e) =>
-    handleChange(
-      "clinicalObservation",
-      "lymphNodes",
-      e.target.value
-    )
-  }
-  placeholder="Enter lymph node observations..."
-  className="w-full border border-slate-300 p-3 rounded-2xl"
-/>
+                        rows="4"
+                        value={formData.clinicalObservation.lymphNodes}
+                        onChange={(e) =>
+                          handleChange(
+                            "clinicalObservation",
+                            "lymphNodes",
+                            e.target.value
+                          )
+                        }
+                        placeholder="Enter lymph node observations..."
+                        className="w-full border border-slate-300 p-3 rounded-2xl"
+                      />
                     </div>
 
                   </div>
@@ -1009,19 +980,19 @@ setShowModal(true);
                       📝 Doctor's Detailed Notes
                     </label>
 
-                  <textarea
-  rows="5"
-  value={formData.clinicalObservation.doctorNotes}
-  onChange={(e) =>
-    handleChange(
-      "clinicalObservation",
-      "doctorNotes",
-      e.target.value
-    )
-  }
-  placeholder="Enter doctor's notes..."
-  className="w-full border border-slate-300 p-3 rounded-2xl"
-/>
+                    <textarea
+                      rows="5"
+                      value={formData.clinicalObservation.doctorNotes}
+                      onChange={(e) =>
+                        handleChange(
+                          "clinicalObservation",
+                          "doctorNotes",
+                          e.target.value
+                        )
+                      }
+                      placeholder="Enter doctor's notes..."
+                      className="w-full border border-slate-300 p-3 rounded-2xl"
+                    />
                   </div>
 
                 </div>
@@ -1041,19 +1012,19 @@ setShowModal(true);
                         🔍 Provisional Diagnosis
                       </label>
 
-                    <textarea
-  rows="4"
-  value={formData.diagnosis.provisionalDiagnosis}
-  onChange={(e) =>
-    handleChange(
-      "diagnosis",
-      "provisionalDiagnosis",
-      e.target.value
-    )
-  }
-  placeholder="Enter provisional diagnosis (ICD / VeNom Code if available)..."
-  className="w-full border border-slate-300 p-3 rounded-2xl"
-/>
+                      <textarea
+                        rows="4"
+                        value={formData.diagnosis.provisionalDiagnosis}
+                        onChange={(e) =>
+                          handleChange(
+                            "diagnosis",
+                            "provisionalDiagnosis",
+                            e.target.value
+                          )
+                        }
+                        placeholder="Enter provisional diagnosis (ICD / VeNom Code if available)..."
+                        className="w-full border border-slate-300 p-3 rounded-2xl"
+                      />
                     </div>
 
                     {/* Differential Diagnosis */}
@@ -1062,19 +1033,19 @@ setShowModal(true);
                         📋 Differential Diagnosis
                       </label>
 
-                   <textarea
-  rows="4"
-  value={formData.diagnosis.differentialDiagnosis}
-  onChange={(e) =>
-    handleChange(
-      "diagnosis",
-      "differentialDiagnosis",
-      e.target.value
-    )
-  }
-  placeholder="Enter differential diagnosis..."
-  className="w-full border border-slate-300 p-3 rounded-2xl"
-/>
+                      <textarea
+                        rows="4"
+                        value={formData.diagnosis.differentialDiagnosis}
+                        onChange={(e) =>
+                          handleChange(
+                            "diagnosis",
+                            "differentialDiagnosis",
+                            e.target.value
+                          )
+                        }
+                        placeholder="Enter differential diagnosis..."
+                        className="w-full border border-slate-300 p-3 rounded-2xl"
+                      />
                     </div>
 
                     {/* Confirmed Diagnosis */}
@@ -1083,19 +1054,19 @@ setShowModal(true);
                         ✅ Confirmed Diagnosis
                       </label>
 
-                  <textarea
-  rows="4"
-  value={formData.diagnosis.confirmedDiagnosis}
-  onChange={(e) =>
-    handleChange(
-      "diagnosis",
-      "confirmedDiagnosis",
-      e.target.value
-    )
-  }
-  placeholder="Enter confirmed diagnosis after reports..."
-  className="w-full border border-slate-300 p-3 rounded-2xl"
-/>
+                      <textarea
+                        rows="4"
+                        value={formData.diagnosis.confirmedDiagnosis}
+                        onChange={(e) =>
+                          handleChange(
+                            "diagnosis",
+                            "confirmedDiagnosis",
+                            e.target.value
+                          )
+                        }
+                        placeholder="Enter confirmed diagnosis after reports..."
+                        className="w-full border border-slate-300 p-3 rounded-2xl"
+                      />
                     </div>
 
                     {/* Lab Requisition Toggle */}
@@ -1103,18 +1074,18 @@ setShowModal(true);
 
                       <label className="flex items-center gap-3 font-semibold">
 
-                       <input
-  type="checkbox"
-  checked={formData.diagnosis.raiseLab}
-  onChange={(e) =>
-    handleChange(
-      "diagnosis",
-      "raiseLab",
-      e.target.checked
-    )
-  }
-  className="w-5 h-5"
-/>
+                        <input
+                          type="checkbox"
+                          checked={formData.diagnosis.raiseLab}
+                          onChange={(e) =>
+                            handleChange(
+                              "diagnosis",
+                              "raiseLab",
+                              e.target.checked
+                            )
+                          }
+                          className="w-5 h-5"
+                        />
 
                         🧪 Raise Lab Requisition
 
@@ -1153,6 +1124,30 @@ setShowModal(true);
                   <p className="text-slate-500 mt-2 mb-8">
                     Select required laboratory tests and sample types for the pet.
                   </p>
+                  <div className="mb-8 rounded-2xl border border-orange-200 bg-orange-50 p-5">
+
+                    <label className="flex items-center gap-4">
+
+                      <input
+                        type="checkbox"
+                        checked={formData.diagnosis.raiseLab}
+                        onChange={(e) =>
+                          handleChange(
+                            "diagnosis",
+                            "raiseLab",
+                            e.target.checked
+                          )
+                        }
+                        className="h-5 w-5 accent-orange-500"
+                      />
+
+                      <span className="text-lg font-semibold text-slate-700">
+                        Raise Laboratory Test
+                      </span>
+
+                    </label>
+
+                  </div>
 
                   <div className="grid gap-5 lg:grid-cols-2 lg:gap-8">
 
@@ -1181,34 +1176,34 @@ setShowModal(true);
                             key={test}
                             className="flex cursor-pointer items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3 transition hover:border-orange-500 hover:bg-orange-50 sm:p-4"
                           >
-                           <input
-type="checkbox"
-checked={formData.labRequisition.tests.includes(test)}
-onChange={(e)=>{
+                            <input
+                              type="checkbox"
+                              checked={formData.labRequisition.tests.includes(test)}
+                              onChange={(e) => {
 
-if(e.target.checked){
+                                if (e.target.checked) {
 
-handleChange(
-"labRequisition",
-"tests",
-[...formData.labRequisition.tests,test]
-);
+                                  handleChange(
+                                    "labRequisition",
+                                    "tests",
+                                    [...formData.labRequisition.tests, test]
+                                  );
 
-}else{
+                                } else {
 
-handleChange(
-"labRequisition",
-"tests",
-formData.labRequisition.tests.filter(
-(t)=>t!==test
-)
-);
+                                  handleChange(
+                                    "labRequisition",
+                                    "tests",
+                                    formData.labRequisition.tests.filter(
+                                      (t) => t !== test
+                                    )
+                                  );
 
-}
+                                }
 
-}}
-className="w-4 h-4 accent-orange-500"
-/>
+                              }}
+                              className="w-4 h-4 accent-orange-500"
+                            />
 
                             <span className="font-medium">
                               {test}
@@ -1241,36 +1236,36 @@ className="w-4 h-4 accent-orange-500"
                             className="flex cursor-pointer items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3 transition hover:border-orange-500 hover:bg-orange-50 sm:p-4"
                           >
                             <input
-type="checkbox"
-checked={formData.labRequisition.sampleType.includes(sample)}
-onChange={(e)=>{
+                              type="checkbox"
+                              checked={formData.labRequisition.sampleType.includes(sample)}
+                              onChange={(e) => {
 
-if(e.target.checked){
+                                if (e.target.checked) {
 
-handleChange(
-"labRequisition",
-"sampleType",
-[
-...formData.labRequisition.sampleType,
-sample
-]
-);
+                                  handleChange(
+                                    "labRequisition",
+                                    "sampleType",
+                                    [
+                                      ...formData.labRequisition.sampleType,
+                                      sample
+                                    ]
+                                  );
 
-}else{
+                                } else {
 
-handleChange(
-"labRequisition",
-"sampleType",
-formData.labRequisition.sampleType.filter(
-(s)=>s!==sample
-)
-);
+                                  handleChange(
+                                    "labRequisition",
+                                    "sampleType",
+                                    formData.labRequisition.sampleType.filter(
+                                      (s) => s !== sample
+                                    )
+                                  );
 
-}
+                                }
 
-}}
-className="w-4 h-4 accent-orange-500"
-/>
+                              }}
+                              className="w-4 h-4 accent-orange-500"
+                            />
 
                             <span className="font-medium">
                               {sample}
@@ -1291,18 +1286,18 @@ className="w-4 h-4 accent-orange-500"
                       📝 Special Instructions For Lab
                     </label>
 
-              <textarea
-rows="5"
-value={formData.labRequisition.instructions}
-onChange={(e)=>
-handleChange(
-"labRequisition",
-"instructions",
-e.target.value
-)}
-placeholder="Enter any special instructions for laboratory..."
-className="w-full border border-slate-300 rounded-3xl p-4 focus:outline-none focus:border-orange-500"
-/>
+                    <textarea
+                      rows="5"
+                      value={formData.labRequisition.instructions}
+                      onChange={(e) =>
+                        handleChange(
+                          "labRequisition",
+                          "instructions",
+                          e.target.value
+                        )}
+                      placeholder="Enter any special instructions for laboratory..."
+                      className="w-full border border-slate-300 rounded-3xl p-4 focus:outline-none focus:border-orange-500"
+                    />
 
                   </div>
 
@@ -1314,7 +1309,7 @@ className="w-full border border-slate-300 rounded-3xl p-4 focus:outline-none foc
                     </label>
 
                     <div className="bg-slate-100 border border-slate-200 rounded-3xl p-4 text-orange-600 font-bold text-lg">
-                     {formData.labRequisition.labOrderId || "LAB-2026-001"}
+                      {formData.labRequisition.labOrderId || "LAB-2026-001"}
                     </div>
 
                     <p className="text-sm text-slate-500 mt-2">
@@ -1355,18 +1350,18 @@ className="w-full border border-slate-300 rounded-3xl p-4 focus:outline-none foc
                         💊 Medications Prescribed
                       </label>
 
-                     <textarea
-rows="5"
-value={formData.treatment.medicines}
-onChange={(e)=>
-handleChange(
-"treatment",
-"medicines",
-e.target.value
-)}
-placeholder="Enter medications with dosage..."
-className="w-full border border-slate-300 p-3 rounded-2xl"
-/>
+                      <textarea
+                        rows="5"
+                        value={formData.treatment.medicines}
+                        onChange={(e) =>
+                          handleChange(
+                            "treatment",
+                            "medicines",
+                            e.target.value
+                          )}
+                        placeholder="Enter medications with dosage..."
+                        className="w-full border border-slate-300 p-3 rounded-2xl"
+                      />
                     </div>
 
                     {/* Procedures */}
@@ -1375,18 +1370,18 @@ className="w-full border border-slate-300 p-3 rounded-2xl"
                         🩺 Procedures Performed
                       </label>
 
-                     <textarea
-rows="5"
-value={formData.treatment.procedures}
-onChange={(e)=>
-handleChange(
-"treatment",
-"procedures",
-e.target.value
-)}
-placeholder="Enter procedures performed..."
-className="w-full border border-slate-300 p-3 rounded-2xl"
-/>
+                      <textarea
+                        rows="5"
+                        value={formData.treatment.procedures}
+                        onChange={(e) =>
+                          handleChange(
+                            "treatment",
+                            "procedures",
+                            e.target.value
+                          )}
+                        placeholder="Enter procedures performed..."
+                        className="w-full border border-slate-300 p-3 rounded-2xl"
+                      />
                     </div>
 
                     {/* Vaccination */}
@@ -1395,18 +1390,18 @@ className="w-full border border-slate-300 p-3 rounded-2xl"
                         💉 Vaccination Administered
                       </label>
 
-                   <input
-type="text"
-value={formData.treatment.vaccinations}
-onChange={(e)=>
-handleChange(
-"treatment",
-"vaccinations",
-e.target.value
-)}
-placeholder="Vaccination Name"
-className="w-full border border-slate-300 p-3 rounded-2xl"
-/>
+                      <input
+                        type="text"
+                        value={formData.treatment.vaccinations}
+                        onChange={(e) =>
+                          handleChange(
+                            "treatment",
+                            "vaccinations",
+                            e.target.value
+                          )}
+                        placeholder="Vaccination Name"
+                        className="w-full border border-slate-300 p-3 rounded-2xl"
+                      />
                     </div>
 
                     {/* Deworming */}
@@ -1415,20 +1410,20 @@ className="w-full border border-slate-300 p-3 rounded-2xl"
                         🪱 Deworming Administered
                       </label>
 
-                  <input
-type="text"
-value={formData.treatment.deworming}
+                      <input
+                        type="text"
+                        value={formData.treatment.deworming}
 
-onChange={(e)=>
+                        onChange={(e) =>
 
-handleChange(
-"treatment",
-"deworming",
-e.target.value
-)}
-placeholder="Vaccination Name"
-className="w-full border border-slate-300 p-3 rounded-2xl"
-/>
+                          handleChange(
+                            "treatment",
+                            "deworming",
+                            e.target.value
+                          )}
+                        placeholder="Vaccination Name"
+                        className="w-full border border-slate-300 p-3 rounded-2xl"
+                      />
                     </div>
 
                     {/* IV Fluids */}
@@ -1437,20 +1432,20 @@ className="w-full border border-slate-300 p-3 rounded-2xl"
                         💧 IV Fluids Given
                       </label>
 
-                     <input
-type="text"
-value={formData.treatment.fluids}
+                      <input
+                        type="text"
+                        value={formData.treatment.fluids}
 
-onChange={(e)=>
+                        onChange={(e) =>
 
-handleChange(
-"treatment",
-"fluids",
-e.target.value
-)}
-placeholder="Deworming Details"
-className="w-full border border-slate-300 p-3 rounded-2xl"
-/>
+                          handleChange(
+                            "treatment",
+                            "fluids",
+                            e.target.value
+                          )}
+                        placeholder="Deworming Details"
+                        className="w-full border border-slate-300 p-3 rounded-2xl"
+                      />
                     </div>
 
                     {/* Follow-up */}
@@ -1459,20 +1454,20 @@ className="w-full border border-slate-300 p-3 rounded-2xl"
                         📅 Follow-Up Required
                       </label>
 
-                     <select
-value={formData.treatment.followUp}
-onChange={(e)=>
-handleChange(
-"treatment",
-"followUp",
-e.target.value
-)}
-className="w-full border border-slate-300 p-3 rounded-2xl"
->
-<option value="">Select</option>
-<option value="Yes">Yes</option>
-<option value="No">No</option>
-</select>
+                      <select
+                        value={formData.treatment.followUp}
+                        onChange={(e) =>
+                          handleChange(
+                            "treatment",
+                            "followUp",
+                            e.target.value
+                          )}
+                        className="w-full border border-slate-300 p-3 rounded-2xl"
+                      >
+                        <option value="">Select</option>
+                        <option value="Yes">Yes</option>
+                        <option value="No">No</option>
+                      </select>
                     </div>
 
                   </div>
@@ -1483,27 +1478,27 @@ className="w-full border border-slate-300 p-3 rounded-2xl"
                       📝 Treatment Notes
                     </label>
 
-                   <textarea
+                    <textarea
 
-rows="6"
+                      rows="6"
 
-value={formData.treatment.treatmentNotes}
+                      value={formData.treatment.treatmentNotes}
 
-onChange={(e)=>
+                      onChange={(e) =>
 
-handleChange(
-"treatment",
-"treatmentNotes",
-e.target.value
-)
+                        handleChange(
+                          "treatment",
+                          "treatmentNotes",
+                          e.target.value
+                        )
 
-}
+                      }
 
-placeholder="Additional treatment notes..."
+                      placeholder="Additional treatment notes..."
 
-className="w-full border border-slate-300 p-3 rounded-2xl"
+                      className="w-full border border-slate-300 p-3 rounded-2xl"
 
-/>
+                    />
 
                   </div>
 
@@ -1524,19 +1519,19 @@ className="w-full border border-slate-300 p-3 rounded-2xl"
                         🍖 Dietary Advice
                       </label>
 
-                     <textarea
-  rows="4"
-  value={formData.suggestion.dietAdvice}
-  onChange={(e) =>
-    handleChange(
-      "suggestion",
-      "dietAdvice",
-      e.target.value
-    )
-  }
-  placeholder="Enter dietary recommendations..."
-  className="w-full border border-slate-300 p-3 rounded-2xl"
-/>
+                      <textarea
+                        rows="4"
+                        value={formData.suggestion.dietAdvice}
+                        onChange={(e) =>
+                          handleChange(
+                            "suggestion",
+                            "dietAdvice",
+                            e.target.value
+                          )
+                        }
+                        placeholder="Enter dietary recommendations..."
+                        className="w-full border border-slate-300 p-3 rounded-2xl"
+                      />
                     </div>
 
                     {/* Activity Restriction */}
@@ -1545,19 +1540,19 @@ className="w-full border border-slate-300 p-3 rounded-2xl"
                         🏃 Activity Restriction
                       </label>
 
-                    <textarea
-  rows="4"
-  value={formData.suggestion.activityRestriction}
-  onChange={(e) =>
-    handleChange(
-      "suggestion",
-      "activityRestriction",
-      e.target.value
-    )
-  }
-  placeholder="Activity restrictions..."
-  className="w-full border border-slate-300 p-3 rounded-2xl"
-/>
+                      <textarea
+                        rows="4"
+                        value={formData.suggestion.activityRestriction}
+                        onChange={(e) =>
+                          handleChange(
+                            "suggestion",
+                            "activityRestriction",
+                            e.target.value
+                          )
+                        }
+                        placeholder="Activity restrictions..."
+                        className="w-full border border-slate-300 p-3 rounded-2xl"
+                      />
                     </div>
 
                     {/* Home Care */}
@@ -1566,19 +1561,19 @@ className="w-full border border-slate-300 p-3 rounded-2xl"
                         🏠 Home Care Instructions
                       </label>
 
-                   <textarea
-  rows="4"
-  value={formData.suggestion.homeCare}
-  onChange={(e) =>
-    handleChange(
-      "suggestion",
-      "homeCare",
-      e.target.value
-    )
-  }
-  placeholder="Enter home care instructions..."
-  className="w-full border border-slate-300 p-3 rounded-2xl"
-/>
+                      <textarea
+                        rows="4"
+                        value={formData.suggestion.homeCare}
+                        onChange={(e) =>
+                          handleChange(
+                            "suggestion",
+                            "homeCare",
+                            e.target.value
+                          )
+                        }
+                        placeholder="Enter home care instructions..."
+                        className="w-full border border-slate-300 p-3 rounded-2xl"
+                      />
                     </div>
 
                     {/* Preventive Care */}
@@ -1587,19 +1582,19 @@ className="w-full border border-slate-300 p-3 rounded-2xl"
                         🛡️ Preventive Care Recommendations
                       </label>
 
-                  <textarea
-  rows="4"
-  value={formData.suggestion.preventiveCare}
-  onChange={(e) =>
-    handleChange(
-      "suggestion",
-      "preventiveCare",
-      e.target.value
-    )
-  }
-  placeholder="Preventive care recommendations..."
-  className="w-full border border-slate-300 p-3 rounded-2xl"
-/>
+                      <textarea
+                        rows="4"
+                        value={formData.suggestion.preventiveCare}
+                        onChange={(e) =>
+                          handleChange(
+                            "suggestion",
+                            "preventiveCare",
+                            e.target.value
+                          )
+                        }
+                        placeholder="Preventive care recommendations..."
+                        className="w-full border border-slate-300 p-3 rounded-2xl"
+                      />
                     </div>
 
                     {/* Prognosis */}
@@ -1607,23 +1602,23 @@ className="w-full border border-slate-300 p-3 rounded-2xl"
                       <label className="block font-semibold mb-2">
                         📈 Prognosis
                       </label>
-<select
-  value={formData.suggestion.prognosis}
-  onChange={(e) =>
-    handleChange(
-      "suggestion",
-      "prognosis",
-      e.target.value
-    )
-  }
-  className="w-full border border-slate-300 p-3 rounded-2xl"
->
-  <option value="">Select Prognosis</option>
-  <option value="Good">Good</option>
-  <option value="Fair">Fair</option>
-  <option value="Guarded">Guarded</option>
-  <option value="Poor">Poor</option>
-</select>
+                      <select
+                        value={formData.suggestion.prognosis}
+                        onChange={(e) =>
+                          handleChange(
+                            "suggestion",
+                            "prognosis",
+                            e.target.value
+                          )
+                        }
+                        className="w-full border border-slate-300 p-3 rounded-2xl"
+                      >
+                        <option value="">Select Prognosis</option>
+                        <option value="Good">Good</option>
+                        <option value="Fair">Fair</option>
+                        <option value="Guarded">Guarded</option>
+                        <option value="Poor">Poor</option>
+                      </select>
                     </div>
 
                     {/* Follow-up Date */}
@@ -1632,18 +1627,18 @@ className="w-full border border-slate-300 p-3 rounded-2xl"
                         📅 Follow-Up Date
                       </label>
 
-                     <input
-  type="date"
-  value={formData.suggestion.followUpDate}
-  onChange={(e) =>
-    handleChange(
-      "suggestion",
-      "followUpDate",
-      e.target.value
-    )
-  }
-  className="w-full border border-slate-300 p-3 rounded-2xl"
-/>
+                      <input
+                        type="date"
+                        value={formData.suggestion.followUpDate}
+                        onChange={(e) =>
+                          handleChange(
+                            "suggestion",
+                            "followUpDate",
+                            e.target.value
+                          )
+                        }
+                        className="w-full border border-slate-300 p-3 rounded-2xl"
+                      />
                     </div>
 
                   </div>
@@ -1654,19 +1649,19 @@ className="w-full border border-slate-300 p-3 rounded-2xl"
                       📌 Final Doctor Notes
                     </label>
 
-             <textarea
-  rows="6"
-  value={formData.suggestion.finalNotes}
-  onChange={(e) =>
-    handleChange(
-      "suggestion",
-      "finalNotes",
-      e.target.value
-    )
-  }
-  placeholder="Final recommendations and notes..."
-  className="w-full border border-slate-300 p-3 rounded-2xl"
-/>
+                    <textarea
+                      rows="6"
+                      value={formData.suggestion.finalNotes}
+                      onChange={(e) =>
+                        handleChange(
+                          "suggestion",
+                          "finalNotes",
+                          e.target.value
+                        )
+                      }
+                      placeholder="Final recommendations and notes..."
+                      className="w-full border border-slate-300 p-3 rounded-2xl"
+                    />
 
                   </div>
 
@@ -1705,15 +1700,21 @@ className="w-full border border-slate-300 p-3 rounded-2xl"
                 >
                   Next
                 </button>
+              ) : formData.diagnosis.raiseLab ? (
+                <button
+                  onClick={sendToLab}
+                  className="w-full rounded-xl bg-blue-600 px-6 py-3 text-white sm:w-auto"
+                >
+                  Send To Lab
+                </button>
               ) : (
-               <button
-    onClick={completeCase}
-    className="w-full rounded-xl bg-green-500 px-6 py-3 text-white sm:w-auto"
->
-    Complete Case
-</button>
+                <button
+                  onClick={completeCase}
+                  className="w-full rounded-xl bg-green-500 px-6 py-3 text-white sm:w-auto"
+                >
+                  Complete Case
+                </button>
               )}
-
             </div>
 
           </div>

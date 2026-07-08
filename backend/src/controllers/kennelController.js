@@ -19,6 +19,8 @@ exports.createKennel = async (req, res) => {
                 JSON.parse(speciesComfortableWith);
         }
 
+        const clinicId = req.user.clinicId;
+
         const existingKennel = await Kennel.findOne({ staffId });
 
         if (existingKennel) {
@@ -46,6 +48,7 @@ exports.createKennel = async (req, res) => {
         }
 
         const kennel = await Kennel.create({
+            clinicId,
             staffId,
             experience,
             shift,
@@ -70,7 +73,11 @@ exports.createKennel = async (req, res) => {
 
 exports.getAllKennels = async (req, res) => {
     try {
-        const kennels = await Kennel.find()
+        const clinicId = req.user.clinicId;
+
+        const kennels = await Kennel.find({
+            clinicId,
+        })
             .populate("staffId")
             .sort({ createdAt: -1 });
 
@@ -89,8 +96,12 @@ exports.getAllKennels = async (req, res) => {
 
 exports.getKennelById = async (req, res) => {
     try {
-        const kennel = await Kennel.findById(req.params.id).populate("staffId");
+        const clinicId = req.user.clinicId;
 
+        const kennel = await Kennel.findOne({
+            _id: req.params.id,
+            clinicId,
+        }).populate("staffId");
         if (!kennel) {
             return res.status(404).json({
                 success: false,
@@ -142,8 +153,13 @@ exports.updateKennel = async (req, res) => {
             };
         }
 
-        const kennel = await Kennel.findByIdAndUpdate(
-            req.params.id,
+        const clinicId = req.user.clinicId;
+
+        const kennel = await Kennel.findOneAndUpdate(
+            {
+                _id: req.params.id,
+                clinicId,
+            },
             updateData,
             {
                 new: true,
@@ -173,8 +189,12 @@ exports.updateKennel = async (req, res) => {
 
 exports.deleteKennel = async (req, res) => {
     try {
-        const kennel = await Kennel.findByIdAndDelete(req.params.id);
+        const clinicId = req.user.clinicId;
 
+        const kennel = await Kennel.findOneAndDelete({
+            _id: req.params.id,
+            clinicId,
+        });
         if (!kennel) {
             return res.status(404).json({
                 success: false,
@@ -196,8 +216,12 @@ exports.deleteKennel = async (req, res) => {
 
 exports.toggleKennelStatus = async (req, res) => {
     try {
-        const kennel = await Kennel.findById(req.params.id);
+        const clinicId = req.user.clinicId;
 
+        const kennel = await Kennel.findOne({
+            _id: req.params.id,
+            clinicId,
+        });
         if (!kennel) {
             return res.status(404).json({
                 success: false,

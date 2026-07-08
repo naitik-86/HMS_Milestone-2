@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const Clinic = require('../models/Clinic');
+const ClinicAdmin = require("../models/ClinicAdmin")
 const Groomer = require('../models/GroomerModel')
 const Kennel = require('../models/KennelModel')
 const LabTechnician = require('../models/LabTechnician')

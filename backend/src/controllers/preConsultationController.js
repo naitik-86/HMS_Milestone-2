@@ -1,5 +1,6 @@
 const PreConsultation = require("../models/PreConsultation");
 const PetRegistration = require("../models/PetRegistration");
+const Visit = require("../models/visitModel")
 
 const attachOwnerAndPet = (records) => {
   return records.map((record) => {
@@ -38,6 +39,7 @@ const attachOwnerAndPet = (records) => {
 };
 exports.savePreConsultation = async (req, res) => {
   try {
+    const clinicId = req.user.clinicId;
     const {
       appointmentId,
       uniquePetId,
@@ -47,6 +49,7 @@ exports.savePreConsultation = async (req, res) => {
     // Check if record already exists
     const existingRecord = await PreConsultation.findOne({
       uniquePetId,
+      clinicId
     });
 
     if (existingRecord) {
@@ -68,11 +71,11 @@ exports.savePreConsultation = async (req, res) => {
       });
     }
 
-    const preConsultation =
-      await PreConsultation.create({
-        ...req.body,
-        status: "COMPLETED",
-      });
+    const preConsultation = await PreConsultation.create({
+      ...req.body,
+      clinicId,
+      status: "COMPLETED",
+    });
 
     return res.status(201).json({
       success: true,
@@ -94,25 +97,31 @@ exports.savePreConsultation = async (req, res) => {
 
 exports.getDashboard = async (req, res) => {
   try {
+    const clinicId = req.user.clinicId;
     // ===========================================
     // Dashboard Cards
     // ===========================================
 
     const todayPatients = await PreConsultation.countDocuments({
+      clinicId,
       createdAt: {
         $gte: new Date(new Date().setHours(0, 0, 0, 0)),
       },
     });
 
     const vitalsPending = await PreConsultation.countDocuments({
-      status: "PENDING",
+      clinicId,
+      status: "PENDING"
     });
 
     const observations = await PreConsultation.countDocuments({
-      severity: "Severe",
+      clinicId,
+      severity: "Severe"
     });
 
     const completed = await PreConsultation.countDocuments({
+      clinicId,
+
       status: "COMPLETED",
     });
 
@@ -120,7 +129,9 @@ exports.getDashboard = async (req, res) => {
     // Today's Queue
     // ===========================================
 
-    const todaysQueue = await PreConsultation.find()
+    const todaysQueue = await PreConsultation.find({
+      clinicId
+    })
       .select(
         "uniquePetId tokenNumber status severity createdAt"
       )
@@ -132,6 +143,7 @@ exports.getDashboard = async (req, res) => {
     // ===========================================
 
     const recentCompletedPets = await PreConsultation.find({
+      clinicId,
       status: "COMPLETED",
     })
       .select(
@@ -144,7 +156,7 @@ exports.getDashboard = async (req, res) => {
     // Recent Activity
     // ===========================================
 
-    const recentActivity = await PreConsultation.find()
+    const recentActivity = await PreConsultation.find({ clinicId })
       .select(
         "uniquePetId tokenNumber status severity updatedAt"
       )
@@ -182,21 +194,45 @@ exports.getDashboard = async (req, res) => {
 
 exports.getPendingPets = async (req, res) => {
   try {
-    const pendingPets = await PreConsultation.find({
-      status: "PENDING",
-    })
-      .populate({
-        path: "ownerId",
-        select:
-          "ownerName mobileNumber email address city district state pincode pets",
-      })
-      .sort({ createdAt: -1 });
+    const clinicId = req.user.clinicId;
+    console.log("req.user.clinicId:", req.user.clinicId);
+    console.log("type:", typeof req.user.clinicId);
 
-    const data = attachOwnerAndPet(pendingPets);
+    const pendingVisits = await Visit.find({
+      clinicId,
+      currentStage: "PRE_CONSULTATION",
+      status: "WAITING"
+    });
 
-    return res.status(200).json({
+    const owners = await PetRegistration.find({
+      "pets._id": {
+        $in: pendingVisits.map(v => v.petId)
+      }
+    });
+
+    const ownerPetMap = {};
+
+    owners.forEach(owner => {
+      owner.pets.forEach(pet => {
+        ownerPetMap[pet._id.toString()] = {
+          owner,
+          pet
+        };
+      });
+    });
+
+    const data = pendingVisits.map(visit => {
+      const details = ownerPetMap[visit.petId.toString()];
+
+      return {
+        ...visit.toObject(),
+        owner: details?.owner || null,
+        pet: details?.pet || null,
+      };
+    });
+
+    res.json({
       success: true,
-      count: data.length,
       data,
     });
   } catch (error) {
@@ -213,47 +249,64 @@ exports.getPendingPets = async (req, res) => {
 
 exports.getCompletedPets = async (req, res) => {
   try {
+    const clinicId = req.user.clinicId;
+
+    // Start of today
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const completedToday =
-      await PreConsultation.countDocuments({
-        status: "COMPLETED",
-        updatedAt: {
-          $gte: today,
-        },
-      });
-
+    // Start of current week
     const startOfWeek = new Date();
     startOfWeek.setDate(
       startOfWeek.getDate() - startOfWeek.getDay()
     );
     startOfWeek.setHours(0, 0, 0, 0);
 
-    const completedThisWeek =
-      await PreConsultation.countDocuments({
-        status: "COMPLETED",
-        updatedAt: {
-          $gte: startOfWeek,
-        },
-      });
+    // ==========================
+    // Stats
+    // ==========================
 
-    const totalCompleted =
-      await PreConsultation.countDocuments({
-        status: "COMPLETED",
-      });
+    const completedToday = await Visit.countDocuments({
+      clinicId,
+      "workflow.preConsultationCompleted": true,
+      updatedAt: {
+        $gte: today,
+      },
+    });
 
-    const completedPets = await PreConsultation.find({
-      status: "COMPLETED",
+    const completedThisWeek = await Visit.countDocuments({
+      clinicId,
+      "workflow.preConsultationCompleted": true,
+      updatedAt: {
+        $gte: startOfWeek,
+      },
+    });
+
+    const totalCompleted = await Visit.countDocuments({
+      clinicId,
+      "workflow.preConsultationCompleted": true,
+    });
+
+    // ==========================
+    // Completed Visits
+    // ==========================
+
+    const completedVisits = await Visit.find({
+      clinicId,
+      "workflow.preConsultationCompleted": true,
     })
       .populate({
         path: "ownerId",
         select:
           "ownerName mobileNumber email address city district state pincode pets",
       })
+      .populate({
+        path: "doctorId",
+        select: "name doctorId",
+      })
       .sort({ updatedAt: -1 });
 
-    const pets = attachOwnerAndPet(completedPets);
+    const pets = attachOwnerAndPet(completedVisits);
 
     return res.status(200).json({
       success: true,
@@ -277,32 +330,50 @@ exports.getCompletedPets = async (req, res) => {
 // Get History Pets
 // ===============================================
 
+
 exports.getHistoryPets = async (req, res) => {
   try {
-    const totalRecords =
-      await PreConsultation.countDocuments();
+    const clinicId = req.user.clinicId;
+
+    // ==========================
+    // Statistics
+    // ==========================
+
+    const totalRecords = await Visit.countDocuments({
+      clinicId,
+    });
 
     const startOfMonth = new Date();
     startOfMonth.setDate(1);
     startOfMonth.setHours(0, 0, 0, 0);
 
-    const thisMonth =
-      await PreConsultation.countDocuments({
-        createdAt: {
-          $gte: startOfMonth,
-        },
-      });
+    const thisMonth = await Visit.countDocuments({
+      clinicId,
+      createdAt: {
+        $gte: startOfMonth,
+      },
+    });
 
-    const archivedCases =
-      await PreConsultation.countDocuments({
-        status: "COMPLETED",
-      });
+    const archivedCases = await Visit.countDocuments({
+      clinicId,
+      "workflow.preConsultationCompleted": true,
+    });
 
-    const records = await PreConsultation.find()
+    // ==========================
+    // Visit History
+    // ==========================
+
+    const records = await Visit.find({
+      clinicId,
+    })
       .populate({
         path: "ownerId",
         select:
           "ownerName mobileNumber email address city district state pincode pets",
+      })
+      .populate({
+        path: "doctorId",
+        select: "name doctorId",
       })
       .sort({
         createdAt: -1,
@@ -338,10 +409,13 @@ exports.getSinglePreConsultation = async (
   res
 ) => {
   try {
+    const clinicId = req.user.clinicId;
     const { id } = req.params;
 
-    const preConsultation =
-      await PreConsultation.findById(id);
+    const preConsultation = await PreConsultation.findOne({
+      _id: id,
+      clinicId
+    });
 
     if (!preConsultation) {
       return res.status(404).json({
@@ -366,54 +440,109 @@ exports.getSinglePreConsultation = async (
 // Update Pre Consultation
 // ===============================================
 
-exports.updatePreConsultation = async (
-  req,
-  res
-) => {
+exports.updatePreConsultation = async (req, res) => {
+
   try {
-    const { id } = req.params;
+    console.log("***********");
 
-    const preConsultation =
-      await PreConsultation.findById(id);
+    console.log("Params:", req.params);
+    console.log("Body:", req.body);
+    const clinicId = req.user.clinicId;
 
-    if (!preConsultation) {
+    const { id } = req.params; // this is Visit ID
+
+    // Find visit first
+
+    const visit = await Visit.findOne({ _id: id, clinicId });
+
+    if (!visit) {
+
       return res.status(404).json({
+
         success: false,
-        message: "Pre Consultation Record Not Found",
+
+        message: "Visit Not Found",
+
       });
+
     }
 
-    const updatedRecord =
-      await PreConsultation.findByIdAndUpdate(
-        id,
+    let preConsultation;
+
+    // If pre-consultation does not exist, create it
+
+    if (!visit.preConsultationId) {
+
+      preConsultation = await PreConsultation.create({
+        clinicId,
+        visitId: visit._id,
+        petId: visit.petId,
+        ownerId: visit.ownerId,
+        ...req.body,
+        status: "COMPLETED",
+      });
+
+      // Attach to visit
+
+      visit.preConsultationId = preConsultation._id;
+
+    } else {
+
+      preConsultation = await PreConsultation.findOneAndUpdate(
+        {
+          _id: visit.preConsultationId,
+          clinicId,
+        },
         {
           ...req.body,
+          status: "COMPLETED",
         },
         {
           new: true,
           runValidators: true,
         }
       );
+    }
+
+    // Update visit workflow
+
+    visit.currentStage = "DOCTOR";
+
+    visit.status = "WAITING";
+
+    visit.workflow.preConsultationCompleted = true;
+
+    await visit.save();
 
     return res.status(200).json({
-      success: true,
-      message:
-        "Pre Consultation Updated Successfully",
-      data: updatedRecord,
-    });
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-};
 
+      success: true,
+
+      message: "Pre Consultation Completed Successfully",
+
+      data: preConsultation,
+
+    });
+
+  } catch (error) {
+
+    return res.status(500).json({
+
+      success: false,
+
+      message: error.message,
+
+    });
+
+  }
+
+};
 exports.searchHistoryPets = async (req, res) => {
   try {
+    const clinicId = req.user.clinicId;
     const { phoneNumber, uniquePetId, tokenNumber } = req.query;
 
-    const filter = {};
+    const filter = { clinicId };
 
     if (phoneNumber) {
       filter.ownerPhoneNumber = {
@@ -455,10 +584,14 @@ exports.searchHistoryPets = async (req, res) => {
 
 exports.completePreConsultation = async (req, res) => {
   try {
+    const clinicId = req.user.clinicId;
     const { id } = req.params;
 
-    const updatedPreConsultation = await PreConsultation.findByIdAndUpdate(
-      id,
+    const updatedPreConsultation = await PreConsultation.findOneAndUpdate(
+      {
+        _id: id,
+        clinicId
+      },
       {
         ...req.body,
         status: "COMPLETED",

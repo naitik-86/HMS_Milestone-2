@@ -1,4 +1,6 @@
-//  ANKIT SIR CODE ++++++++++++
+// {
+
+//  ANKIT's  CODE ++++++++++++
 
 // const User = require('../models/User');
 // const jwt = require('jsonwebtoken');
@@ -335,6 +337,8 @@
 //   }
 // };
 
+//}
+
 const User = require("../models/User");
 const SuperAdmin = require("../models/SuperAdmin");
 const ClinicAdmin = require("../models/ClinicAdmin");
@@ -346,12 +350,17 @@ const { generateOTP } = require('../utils/otpService');
 const { sendOtpMultiChannel } = require('../utils/sendOtpMultiChannel');
 const sendEmail = require('../utils/emailService');
 
+const Staff = require("../models/Staff");
+
 /* ==========================================
    UNIVERSAL LOGIN (EMAIL + PASSWORD)
 ========================================== */
 
 exports.login = async (req, res) => {
   try {
+
+
+
     const { email, password } = req.body;
 
     if (!email || !password) {
@@ -413,10 +422,10 @@ exports.login = async (req, res) => {
         success: true,
         message: "OTP sent to registered email and mobile. Verify to login.",
         role: "SUPER_ADMIN",
-        user: { 
-            id: admin._id, 
-            email: admin.email, 
-            role: 'SUPER_ADMIN' 
+        user: {
+          id: admin._id,
+          email: admin.email,
+          role: 'SUPER_ADMIN'
         },
       });
     }
@@ -437,12 +446,14 @@ exports.login = async (req, res) => {
       }
 
       // Generate JWT Token (Added clinicId for Multi-tenancy)
+      console.log("clinincid", clinicAdmin);
+
       const token = jwt.sign(
         {
           id: clinicAdmin._id,
           role: "CLINIC_ADMIN",
           email: clinicAdmin.email,
-          clinicId: clinicAdmin.clinicId || clinicAdmin.clinic // Adjust based on your schema
+          clinicId: clinicAdmin?.clinicId
         },
         process.env.JWT_SECRET,
         { expiresIn: "1d" }
@@ -454,18 +465,77 @@ exports.login = async (req, res) => {
         token,
         role: "CLINIC_ADMIN",
         user: {
-            id: clinicAdmin._id,
-            email: clinicAdmin.email,
-            role: "CLINIC_ADMIN",
-            clinicId: clinicAdmin.clinicId || clinicAdmin.clinic
+          id: clinicAdmin._id,
+          email: clinicAdmin.email,
+          role: "CLINIC_ADMIN",
+          clinicId: clinicAdmin.clinicId || clinicAdmin.clinic
         },
       });
     }
 
+
+    // Check for the staff login 
+
+
+    const staff = await Staff.findOne({
+      "personalInfo.email": email.toLowerCase(),
+      isDeleted: false,
+    });
+
+    if (staff) {
+
+      if (!staff.accountInfo.accountActive) {
+        return res.status(403).json({
+          success: false,
+          message: "Account is inactive",
+        });
+      }
+
+      const isMatch = await bcrypt.compare(
+        password,
+        staff.accountInfo.password
+      );
+
+      if (!isMatch) {
+        return res.status(401).json({
+          success: false,
+          message: "Invalid credentials",
+        });
+      }
+
+      const token = jwt.sign(
+        {
+          id: staff._id,
+          clinicId: staff.clinicId,
+          role: staff.employmentInfo.role,
+        },
+        process.env.JWT_SECRET,
+        {
+          expiresIn: "1d",
+        }
+      );
+
+      return res.status(200).json({
+        success: true,
+        message: "Login successful",
+        token,
+        role: staff.employmentInfo.role,
+        user: {
+          id: staff._id,
+          name: staff.personalInfo.fullName,
+          email: staff.personalInfo.email,
+          role: staff.employmentInfo.role,
+          clinicId: staff.clinicId,
+        },
+      });
+
+    }
+
     /* =========================
-       3. CHECK NORMAL USERS (Staff/Doctors/Reception)
+       3. CHECK NORMAL USERS 
     ========================= */
     const user = await User.findOne({ email: email.toLowerCase() }).select("+password");
+
 
     if (!user) {
       return res.status(404).json({
@@ -483,12 +553,28 @@ exports.login = async (req, res) => {
       });
     }
 
-    // Generate JWT Token
+    // For staff login, we currently issue JWT only after password match.
+    // We additionally enforce first-time password reset + TOTP setup.
+
+    // Try to locate Staff account (TOTP fields are on Staff model).
+    // Note: user is from User model; we map using email.
+    // const Staff = require('../models/Staff');
+    // const staff = await Staff.findOne({ 'personalInfo.email': user.email });
+
+    // const requiresPasswordReset = staff?.accountInfo?.forcePasswordReset === true;
+    // const requiresTotpSetup = staff?.accountInfo?.twoFactorEnabled !== true;
+
+    // If TOTP not enabled, we still return token (for setup UI), but block app access
+    // by setting flags.
+
     const token = jwt.sign(
       {
         id: user._id,
         role: user.role,
         clinicId: user.clinicId,
+        // flags for frontend (not security)
+        totpRequired: requiresTotpSetup,
+        passwordResetRequired: requiresPasswordReset,
       },
       process.env.JWT_SECRET,
       { expiresIn: "1d" }
@@ -499,12 +585,14 @@ exports.login = async (req, res) => {
       message: "Login successful",
       token,
       role: user.role,
+      requiresPasswordReset: requiresPasswordReset,
+      requiresTotpSetup: requiresTotpSetup,
       user: {
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-          clinicId: user.clinicId
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        clinicId: user.clinicId
       },
     });
 

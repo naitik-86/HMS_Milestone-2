@@ -1,15 +1,22 @@
 const express = require("express");
 const router = express.Router();
-
+const { authorize } = require('../middlewares/auth');
 const {
     getDashboard,
     getPendingPets,
     getCompletedPets,
     getHistory,
     getPatient,
+    getLabPets,
     updatePatient,
     createPatient
 } = require("../controllers/DoctorModuleController");
+
+console.log("checking");
+
+
+
+router.use(authorize("DOCTOR", "CLINIC_ADMIN"));
 
 // Dashboard
 router.get("/dashboard", getDashboard);
@@ -28,6 +35,8 @@ router.get("/patient/:id", getPatient);
 
 // Save Complete Form
 router.put("/patient/:id", updatePatient);
+
+router.get("/lab-pets", getLabPets);
 
 router.post("/patient", createPatient);
 

@@ -22,7 +22,7 @@ export const getStaffById = async (id) => {
 
 export const getManagers = async () => {
     const res = await API.get(
-        "/clinic-admin/managers"
+        `${BASE_URL}/managers`
     );
 
     return res.data;

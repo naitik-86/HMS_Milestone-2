@@ -82,31 +82,33 @@ const doctorSchema = new mongoose.Schema(
     // ===========================
     // Lab Requisition
     // ===========================
-    labRequisition: {
+  labRequisition: {
 
-        labOrderId: String,
+    labOrderId: String,
 
-        tests: [String],
+    tests: [String],
 
-        sampleType: [String],
+    sampleType: [String],
 
-        instructions: String,
+    instructions: String,
 
-        status: {
+    reportUrl: String,
 
-            type: String,
+    reportRemarks: String,
 
-            enum: [
-                "PENDING",
-                "IN_PROGRESS",
-                "COMPLETED"
-            ],
+    reportUploadedAt: Date,
 
-            default: "PENDING"
+    status: {
+        type: String,
+        enum: [
+            "PENDING",
+            "REPORT_READY",
+            "COMPLETED"
+        ],
+        default: "PENDING"
+    }
 
-        }
-
-    },
+},
 
     // ===========================
     // Treatment
@@ -166,19 +168,17 @@ const doctorSchema = new mongoose.Schema(
     // ===========================
     // Status
     // ===========================
-    status: {
-
-        type: String,
-
-        enum: [
-            "PENDING",
-            "IN_PROGRESS",
-            "COMPLETED"
-        ],
-
-        default: "PENDING"
-
-    }
+   status: {
+    type: String,
+    enum: [
+        "PENDING",
+        "LAB_PENDING",
+        "REPORT_READY",
+        "IN_PROGRESS",
+        "COMPLETED"
+    ],
+    default: "PENDING"
+}
 
 },
 

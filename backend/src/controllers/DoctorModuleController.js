@@ -1,4 +1,6 @@
-const Doctor = require("../models/DoctorModuleModel");
+const DoctorConsultation = require("../models/DoctorConsultationModdel");
+const Visit = require("../models/visitModel");
+const PetRegistration = require("../models/PetRegistration")
 
 // ======================================================
 // Dashboard
@@ -58,38 +60,58 @@ exports.getDashboard = async (req, res) => {
 // Pending Pets
 // ======================================================
 exports.getPendingPets = async (req, res) => {
-
     try {
+        const clinicId = req.user.clinicId;
 
-        const pendingPets = await Doctor.find({
-            status: "PENDING"
+        const visits = await Visit.find({
+            clinicId,
+            currentStage: "DOCTOR",
+            status: "WAITING",
         })
-        .sort({
-            createdAt: -1
+            .populate("preConsultationId")
+            .sort({ createdAt: -1 });
+
+        // Fetch all owners containing these pets
+        const owners = await PetRegistration.find({
+            "pets._id": {
+                $in: visits.map((visit) => visit.petId),
+            },
+        });
+
+        // Create a lookup map: petId -> { owner, pet }
+        const ownerPetMap = {};
+
+        owners.forEach((owner) => {
+            owner.pets.forEach((pet) => {
+                ownerPetMap[pet._id.toString()] = {
+                    owner,
+                    pet,
+                };
+            });
+        });
+
+        // Attach owner & pet to each visit
+        const data = visits.map((visit) => {
+            const details = ownerPetMap[visit.petId.toString()];
+
+            return {
+                ...visit.toObject(),
+                owner: details?.owner || null,
+                pet: details?.pet || null,
+            };
         });
 
         return res.status(200).json({
-
             success: true,
-
-            total: pendingPets.length,
-
-            data: pendingPets
-
+            count: data.length,
+            data,
         });
-
     } catch (error) {
-
         return res.status(500).json({
-
             success: false,
-
-            message: error.message
-
+            message: error.message,
         });
-
     }
-
 };
 
 
@@ -99,34 +121,26 @@ exports.getPendingPets = async (req, res) => {
 exports.getCompletedPets = async (req, res) => {
 
     try {
+        const clinicId = req.user.clinicId;
 
-        const completedPets = await Doctor.find({
-            status: "COMPLETED"
+        const visits = await Visit.find({
+            clinicId,
+            "workflow.doctorCompleted": true
         })
-        .sort({
-            updatedAt: -1
-        });
+            .populate("ownerId petId doctorId")
+            .sort({ updatedAt: -1 });
 
         return res.status(200).json({
-
             success: true,
-
-            total: completedPets.length,
-
-            data: completedPets
-
+            count: visits.length,
+            data: visits
         });
 
     } catch (error) {
-
         return res.status(500).json({
-
             success: false,
-
             message: error.message
-
         });
-
     }
 
 };
@@ -230,246 +244,137 @@ exports.getPatient = async (req, res) => {
 // Update Patient (Part-1)
 // ======================================================
 exports.updatePatient = async (req, res) => {
-
     try {
 
-        const patient = await Doctor.findById(req.params.id);
+        const clinicId = req.user.clinicId;
+        const { id } = req.params; // Visit ID
 
-        if (!patient) {
+        // ==========================================
+        // Find Visit
+        // ==========================================
 
+        const visit = await Visit.findOne({
+            _id: id,
+            clinicId
+        });
+
+        if (!visit) {
             return res.status(404).json({
                 success: false,
-                message: "Patient not found"
+                message: "Visit Not Found"
             });
+        }
+
+        // ==========================================
+        // Find/Create Doctor Consultation
+        // ==========================================
+
+        let consultation;
+
+        if (!visit.doctorId) {
+
+            consultation = await DoctorConsultation.create({
+                clinicId,
+                visitId: visit._id,
+                petId: visit.petId,
+                ownerId: visit.ownerId,
+
+                ...req.body,
+
+                status: req.body.diagnosis?.raiseLab
+                    ? "LAB_PENDING"
+                    : "COMPLETED"
+            });
+
+            visit.doctorId = consultation._id;
+
+        } else {
+
+            consultation = await DoctorConsultation.findOneAndUpdate(
+                {
+                    _id: visit.doctorId,
+                    clinicId
+                },
+                {
+                    ...req.body,
+                    status: req.body.diagnosis?.raiseLab
+                        ? "LAB_PENDING"
+                        : "COMPLETED"
+                },
+                {
+                    new: true,
+                    runValidators: true
+                }
+            );
 
         }
 
-        // ===========================================
-        // History
-        // ===========================================
+        // ==========================================
+        // Workflow
+        // ==========================================
 
-        patient.history.dietType =
-            req.body.history?.dietType || patient.history.dietType;
+        visit.workflow.doctorCompleted = true;
 
-        patient.history.dietFrequency =
-            req.body.history?.dietFrequency || patient.history.dietFrequency;
+        if (req.body.diagnosis?.raiseLab) {
 
-        patient.history.waterIntake =
-            req.body.history?.waterIntake || patient.history.waterIntake;
+            visit.currentStage = "LAB";
+            visit.status = "WAITING";
 
-        patient.history.behaviour =
-            req.body.history?.behaviour || patient.history.behaviour;
+            consultation.labRequisition.status = "PENDING";
+            await consultation.save();
 
-        patient.history.exercise =
-            req.body.history?.exercise || patient.history.exercise;
+        } else {
 
-        patient.history.currentMedication =
-            req.body.history?.currentMedication || patient.history.currentMedication;
+            visit.currentStage = "COMPLETED";
+            visit.status = "COMPLETED";
 
-        patient.history.vaccinationStatus =
-            req.body.history?.vaccinationStatus || patient.history.vaccinationStatus;
+            consultation.labRequisition.status = "COMPLETED";
+            await consultation.save();
 
-        patient.history.allergies =
-            req.body.history?.allergies || patient.history.allergies;
+        }
 
-
-        // ===========================================
-        // Clinical Observation
-        // ===========================================
-
-        patient.clinicalObservation.cardiovascular =
-            req.body.clinicalObservation?.cardiovascular || patient.clinicalObservation.cardiovascular;
-
-        patient.clinicalObservation.respiratory =
-            req.body.clinicalObservation?.respiratory || patient.clinicalObservation.respiratory;
-
-        patient.clinicalObservation.digestive =
-            req.body.clinicalObservation?.digestive || patient.clinicalObservation.digestive;
-
-        patient.clinicalObservation.musculoskeletal =
-            req.body.clinicalObservation?.musculoskeletal || patient.clinicalObservation.musculoskeletal;
-
-        patient.clinicalObservation.neurological =
-            req.body.clinicalObservation?.neurological || patient.clinicalObservation.neurological;
-
-        patient.clinicalObservation.urogenital =
-            req.body.clinicalObservation?.urogenital || patient.clinicalObservation.urogenital;
-
-        patient.clinicalObservation.skin =
-            req.body.clinicalObservation?.skin || patient.clinicalObservation.skin;
-
-        patient.clinicalObservation.eyes =
-            req.body.clinicalObservation?.eyes || patient.clinicalObservation.eyes;
-
-        patient.clinicalObservation.ears =
-            req.body.clinicalObservation?.ears || patient.clinicalObservation.ears;
-
-        patient.clinicalObservation.nose =
-            req.body.clinicalObservation?.nose || patient.clinicalObservation.nose;
-
-        patient.clinicalObservation.throat =
-            req.body.clinicalObservation?.throat || patient.clinicalObservation.throat;
-
-        patient.clinicalObservation.lymphNodes =
-            req.body.clinicalObservation?.lymphNodes || patient.clinicalObservation.lymphNodes;
-
-        patient.clinicalObservation.doctorNotes =
-            req.body.clinicalObservation?.doctorNotes || patient.clinicalObservation.doctorNotes;
-                   // ===========================================
-        // Diagnosis
-        // ===========================================
-
-        patient.diagnosis.provisionalDiagnosis =
-            req.body.diagnosis?.provisionalDiagnosis ||
-            patient.diagnosis.provisionalDiagnosis;
-
-        patient.diagnosis.differentialDiagnosis =
-            req.body.diagnosis?.differentialDiagnosis ||
-            patient.diagnosis.differentialDiagnosis;
-
-        patient.diagnosis.confirmedDiagnosis =
-            req.body.diagnosis?.confirmedDiagnosis ||
-            patient.diagnosis.confirmedDiagnosis;
-
-        patient.diagnosis.icdCode =
-            req.body.diagnosis?.icdCode ||
-            patient.diagnosis.icdCode;
-
-        patient.diagnosis.venomCode =
-            req.body.diagnosis?.venomCode ||
-            patient.diagnosis.venomCode;
-
-        patient.diagnosis.raiseLab =
-            req.body.diagnosis?.raiseLab ??
-            patient.diagnosis.raiseLab;
-
-
-        // ===========================================
-        // Lab Requisition
-        // ===========================================
-
-        patient.labRequisition.labOrderId =
-            req.body.labRequisition?.labOrderId ||
-            patient.labRequisition.labOrderId;
-
-        patient.labRequisition.tests =
-            req.body.labRequisition?.tests ||
-            patient.labRequisition.tests;
-
-        patient.labRequisition.sampleType =
-            req.body.labRequisition?.sampleType ||
-            patient.labRequisition.sampleType;
-
-        patient.labRequisition.instructions =
-            req.body.labRequisition?.instructions ||
-            patient.labRequisition.instructions;
-
-        patient.labRequisition.status =
-            req.body.labRequisition?.status ||
-            patient.labRequisition.status; 
-                    // ===========================================
-        // Treatment
-        // ===========================================
-
-        patient.treatment.medicines =
-            req.body.treatment?.medicines ||
-            patient.treatment.medicines;
-
-        patient.treatment.procedures =
-            req.body.treatment?.procedures ||
-            patient.treatment.procedures;
-
-        patient.treatment.vaccinations =
-            req.body.treatment?.vaccinations ||
-            patient.treatment.vaccinations;
-
-        patient.treatment.deworming =
-            req.body.treatment?.deworming ||
-            patient.treatment.deworming;
-
-        patient.treatment.fluids =
-            req.body.treatment?.fluids ||
-            patient.treatment.fluids;
-
-        patient.treatment.followUp =
-        req.body.treatment?.followUp ||
-        patient.treatment.followUp;
-
-        patient.treatment.treatmentNotes =
-    req.body.treatment?.treatmentNotes ||
-    patient.treatment.treatmentNotes;
-        // ===========================================
-        // Suggestion & Plans
-        // ===========================================
-
-        patient.suggestion.dietAdvice =
-            req.body.suggestion?.dietAdvice ||
-            patient.suggestion.dietAdvice;
-
-        patient.suggestion.activityRestriction =
-            req.body.suggestion?.activityRestriction ||
-            patient.suggestion.activityRestriction;
-
-        patient.suggestion.homeCare =
-            req.body.suggestion?.homeCare ||
-            patient.suggestion.homeCare;
-
-        patient.suggestion.preventiveCare =
-            req.body.suggestion?.preventiveCare ||
-            patient.suggestion.preventiveCare;
-
-        patient.suggestion.prognosis =
-            req.body.suggestion?.prognosis ||
-            patient.suggestion.prognosis;
-
-        patient.suggestion.followUpDate =
-            req.body.suggestion?.followUpDate ||
-            patient.suggestion.followUpDate;
-
-  
-
-        patient.suggestion.finalNotes =
-    req.body.suggestion?.finalNotes ||
-    patient.suggestion.finalNotes;
-        // ===========================================
-        // Status
-        // ===========================================
-
-        patient.status =
-            req.body.status || "COMPLETED";
-
-
-        // ===========================================
-        // Save
-        // ===========================================
-
-        await patient.save();
+        await visit.save();
 
         return res.status(200).json({
-
             success: true,
-
             message: "Doctor Consultation Saved Successfully",
-
-            data: patient
-
+            data: consultation
         });
 
     } catch (error) {
 
         return res.status(500).json({
-
             success: false,
-
             message: error.message
-
         });
 
     }
-
 };
 
+exports.getLabPets = async (req, res) => {
+    try {
 
+        const labPets = await Doctor.find({
+            status: "LAB_PENDING"
+        }).sort({
+            updatedAt: -1
+        });
+
+        return res.status(200).json({
+            success: true,
+            total: labPets.length,
+            data: labPets
+        });
+
+    } catch (error) {
+
+        return res.status(500).json({
+            success: false,
+            message: error.message
+        });
+
+    }
+};
 
 //  Delete after refrence will create
 exports.createPatient = async (req, res) => {

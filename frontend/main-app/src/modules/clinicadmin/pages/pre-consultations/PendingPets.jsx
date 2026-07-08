@@ -21,18 +21,21 @@ export default function PendingPets() {
       console.log(res.data);
 
       setPets(res.data);
+      console.log(pets);
+
     } catch (err) {
       console.error(err);
     }
   };
   // const filteredPets = pets
-  const filteredPets = pets.filter(
-    (pet) =>
-      pet.tokenNumber?.toLowerCase().includes(search.toLowerCase()) ||
-      pet.ownerName?.toLowerCase().includes(search.toLowerCase()) ||
-      pet.petName?.toLowerCase().includes(search.toLowerCase()) ||
-      pet.phoneNumber?.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredPets = pets
+  // .filter(
+  //   (pet) =>
+  //     pet.tokenNumber?.toLowerCase().includes(search.toLowerCase()) ||
+  //     pet.ownerName?.toLowerCase().includes(search.toLowerCase()) ||
+  //     pet.petName?.toLowerCase().includes(search.toLowerCase()) ||
+  //     pet.phoneNumber?.toLowerCase().includes(search.toLowerCase())
+  // );
 
 
   return (
@@ -203,7 +206,7 @@ export default function PendingPets() {
                           <div>
 
                             <p className="font-semibold text-slate-800">
-                              {pet.uniquePetId}
+                              {pet?.pet?.petName}
                             </p>
 
                             <p className="text-sm text-slate-500">
