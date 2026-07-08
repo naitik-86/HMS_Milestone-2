@@ -43,6 +43,7 @@ const upload = require('../middlewares/uploadMiddleware');
 const settingsController = require('../controllers/clinicSettingsController');
 const reportsController = require('../controllers/adminReportsController');
 const labController = require('../controllers/labTechnicianController');
+const petRegistrationController = require('../controllers/petRegistrationController');
 // const labReportController = require("../controllers/labDashboardController");
 
 
