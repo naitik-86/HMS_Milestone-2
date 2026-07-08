@@ -83,6 +83,24 @@ router.get("/reports/appointment-trend", reportsController.getAppointmentTrend);
 router.get("/reports/top-doctors", reportsController.getTopDoctors);
 
 
+//reception routes
+console.log("Reception routes loaded");
+
+router.post("/reception/new-registration", upload.single("petPhoto"), petRegistrationController.createRegistration);
+router.get("/reception/new-registration/mobile/:mobileNumber", petRegistrationController.searchCustomer);
+router.get("/reception/new-registration/owner/:ownerId", petRegistrationController.getOwnerDetails);
+router.post("/reception/new-registration/owner/:ownerId/pets", petRegistrationController.addPet);
+router.post("/reception/new-registration/owner/:ownerId/pets/:petId/visit", petRegistrationController.addVisit);
+router.get("/reception/petHistory", petRegistrationController.getPetHistory);
+
+
+//clinic reception routes for checking history
+router.get("/reception/existing-customers/stats", petRegistrationController.getDashboardStats);
+router.get("/reception/existing-customers", petRegistrationController.getExistingCustomers);
+router.get("/reception/existing-customers/:ownerId/pets/:petId", petRegistrationController.getPetDetails);
+
+router.use("/pre-consultation", preConsultationRoutes);
+
 /* LAB WORKFLOW (Reception -> Pre -> Doctor -> Lab -> Doctor -> Closed) */
 // Lab technician queue: appointments waiting for lab results
 router.get('/lab/queue-pending', labController.getLabPendingQueue);
