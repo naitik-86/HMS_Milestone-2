@@ -1,4 +1,4 @@
-const Doctor = require("../models/DoctorModuleModel");
+const DoctorConsultation = require("../models/DoctorConsultationModdel");
 const Visit = require("../models/visitModel");
 
 // ======================================================
@@ -61,6 +61,8 @@ exports.getDashboard = async (req, res) => {
 exports.getPendingPets = async (req, res) => {
 
     try {
+        console.log("reached");
+
         const clinicId = req.user.clinicId;
 
         const visits = await Visit.find({
@@ -220,289 +222,111 @@ exports.getPatient = async (req, res) => {
 // Update Patient (Part-1)
 // ======================================================
 exports.updatePatient = async (req, res) => {
-
     try {
 
-        const patient = await Doctor.findById(req.params.id);
+        const clinicId = req.user.clinicId;
+        const { id } = req.params; // Visit ID
 
-        if (!patient) {
+        // ==========================================
+        // Find Visit
+        // ==========================================
 
+        const visit = await Visit.findOne({
+            _id: id,
+            clinicId
+        });
+
+        if (!visit) {
             return res.status(404).json({
                 success: false,
-                message: "Patient not found"
+                message: "Visit Not Found"
+            });
+        }
+
+        // ==========================================
+        // Find/Create Doctor Consultation
+        // ==========================================
+
+        let consultation;
+
+        if (!visit.doctorId) {
+
+            consultation = await DoctorConsultation.create({
+                clinicId,
+                visitId: visit._id,
+                petId: visit.petId,
+                ownerId: visit.ownerId,
+
+                ...req.body,
+
+                status: req.body.diagnosis?.raiseLab
+                    ? "LAB_PENDING"
+                    : "COMPLETED"
             });
 
-        }
-
-        // ===========================================
-        // History
-        // ===========================================
-
-        patient.history.dietType =
-            req.body.history?.dietType || patient.history.dietType;
-
-        patient.history.dietFrequency =
-            req.body.history?.dietFrequency || patient.history.dietFrequency;
-
-        patient.history.waterIntake =
-            req.body.history?.waterIntake || patient.history.waterIntake;
-
-        patient.history.behaviour =
-            req.body.history?.behaviour || patient.history.behaviour;
-
-        patient.history.exercise =
-            req.body.history?.exercise || patient.history.exercise;
-
-        patient.history.currentMedication =
-            req.body.history?.currentMedication || patient.history.currentMedication;
-
-        patient.history.vaccinationStatus =
-            req.body.history?.vaccinationStatus || patient.history.vaccinationStatus;
-
-        patient.history.allergies =
-            req.body.history?.allergies || patient.history.allergies;
-
-
-        // ===========================================
-        // Clinical Observation
-        // ===========================================
-
-        patient.clinicalObservation.cardiovascular =
-            req.body.clinicalObservation?.cardiovascular || patient.clinicalObservation.cardiovascular;
-
-        patient.clinicalObservation.respiratory =
-            req.body.clinicalObservation?.respiratory || patient.clinicalObservation.respiratory;
-
-        patient.clinicalObservation.digestive =
-            req.body.clinicalObservation?.digestive || patient.clinicalObservation.digestive;
-
-        patient.clinicalObservation.musculoskeletal =
-            req.body.clinicalObservation?.musculoskeletal || patient.clinicalObservation.musculoskeletal;
-
-        patient.clinicalObservation.neurological =
-            req.body.clinicalObservation?.neurological || patient.clinicalObservation.neurological;
-
-        patient.clinicalObservation.urogenital =
-            req.body.clinicalObservation?.urogenital || patient.clinicalObservation.urogenital;
-
-        patient.clinicalObservation.skin =
-            req.body.clinicalObservation?.skin || patient.clinicalObservation.skin;
-
-        patient.clinicalObservation.eyes =
-            req.body.clinicalObservation?.eyes || patient.clinicalObservation.eyes;
-
-        patient.clinicalObservation.ears =
-            req.body.clinicalObservation?.ears || patient.clinicalObservation.ears;
-
-        patient.clinicalObservation.nose =
-            req.body.clinicalObservation?.nose || patient.clinicalObservation.nose;
-
-        patient.clinicalObservation.throat =
-            req.body.clinicalObservation?.throat || patient.clinicalObservation.throat;
-
-        patient.clinicalObservation.lymphNodes =
-            req.body.clinicalObservation?.lymphNodes || patient.clinicalObservation.lymphNodes;
-
-        patient.clinicalObservation.doctorNotes =
-            req.body.clinicalObservation?.doctorNotes || patient.clinicalObservation.doctorNotes;
-        // ===========================================
-        // Diagnosis
-        // ===========================================
-
-        patient.diagnosis.provisionalDiagnosis =
-            req.body.diagnosis?.provisionalDiagnosis ||
-            patient.diagnosis.provisionalDiagnosis;
-
-        patient.diagnosis.differentialDiagnosis =
-            req.body.diagnosis?.differentialDiagnosis ||
-            patient.diagnosis.differentialDiagnosis;
-
-        patient.diagnosis.confirmedDiagnosis =
-            req.body.diagnosis?.confirmedDiagnosis ||
-            patient.diagnosis.confirmedDiagnosis;
-
-        patient.diagnosis.icdCode =
-            req.body.diagnosis?.icdCode ||
-            patient.diagnosis.icdCode;
-
-        patient.diagnosis.venomCode =
-            req.body.diagnosis?.venomCode ||
-            patient.diagnosis.venomCode;
-
-        patient.diagnosis.raiseLab =
-            req.body.diagnosis?.raiseLab ??
-            patient.diagnosis.raiseLab;
-
-
-        // ===========================================
-        // Lab Requisition
-        // ===========================================
-
-        patient.labRequisition.labOrderId =
-            req.body.labRequisition?.labOrderId ||
-            patient.labRequisition.labOrderId;
-
-        patient.labRequisition.tests =
-            req.body.labRequisition?.tests ||
-            patient.labRequisition.tests;
-
-        patient.labRequisition.sampleType =
-            req.body.labRequisition?.sampleType ||
-            patient.labRequisition.sampleType;
-
-        patient.labRequisition.instructions =
-            req.body.labRequisition?.instructions ||
-            patient.labRequisition.instructions;
-
-        patient.labRequisition.status =
-            req.body.labRequisition?.status ||
-            patient.labRequisition.status;
-        // ===========================================
-        // Treatment
-        // ===========================================
-
-        patient.treatment.medicines =
-            req.body.treatment?.medicines ||
-            patient.treatment.medicines;
-
-        patient.treatment.procedures =
-            req.body.treatment?.procedures ||
-            patient.treatment.procedures;
-
-        patient.treatment.vaccinations =
-            req.body.treatment?.vaccinations ||
-            patient.treatment.vaccinations;
-
-        patient.treatment.deworming =
-            req.body.treatment?.deworming ||
-            patient.treatment.deworming;
-
-        patient.treatment.fluids =
-            req.body.treatment?.fluids ||
-            patient.treatment.fluids;
-
-        patient.treatment.followUp =
-            req.body.treatment?.followUp ||
-            patient.treatment.followUp;
-
-        patient.treatment.treatmentNotes =
-            req.body.treatment?.treatmentNotes ||
-            patient.treatment.treatmentNotes;
-        // ===========================================
-        // Suggestion & Plans
-        // ===========================================
-
-        patient.suggestion.dietAdvice =
-            req.body.suggestion?.dietAdvice ||
-            patient.suggestion.dietAdvice;
-
-        patient.suggestion.activityRestriction =
-            req.body.suggestion?.activityRestriction ||
-            patient.suggestion.activityRestriction;
-
-        patient.suggestion.homeCare =
-            req.body.suggestion?.homeCare ||
-            patient.suggestion.homeCare;
-
-        patient.suggestion.preventiveCare =
-            req.body.suggestion?.preventiveCare ||
-            patient.suggestion.preventiveCare;
-
-        patient.suggestion.prognosis =
-            req.body.suggestion?.prognosis ||
-            patient.suggestion.prognosis;
-
-        patient.suggestion.followUpDate =
-            req.body.suggestion?.followUpDate ||
-            patient.suggestion.followUpDate;
-
-
-
-        patient.suggestion.finalNotes =
-            req.body.suggestion?.finalNotes ||
-            patient.suggestion.finalNotes;
-        // ===========================================
-        // Status
-        // ===========================================
-
-        if (req.body.status === "COMPLETED") {
-
-            patient.status = "COMPLETED";
-
-            patient.labRequisition.status = "COMPLETED";
-
-        }
-        else if (req.body.diagnosis?.raiseLab) {
-
-            patient.status = "LAB_PENDING";
-
-            patient.labRequisition.status = "PENDING";
-
-        }
-        else {
-
-            patient.status = "PENDING";
-
-        }
-
-
-        // ===========================================
-        // Save
-        // ===========================================
-
-        await patient.save();
-
-        // ===========================================
-        // Visit Workflow Update  ✅ ADD HERE
-        // ===========================================
-
-        let nextStage = "COMPLETED";
-        let visitStatus = "COMPLETED";
-
-        // If lab required → move to LAB
-        if (patient.diagnosis?.raiseLab) {
-            nextStage = "LAB";
-            visitStatus = "WAITING";
-        }
-
-        await Visit.findOneAndUpdate(
-            {
-                petId: patient.petId,
-                clinicId: req.user.clinicId
-            },
-            {
-                currentStage: nextStage,
-                status: visitStatus,
-                doctorId: req.user._id,
-                $set: {
-                    "workflow.doctorCompleted": true
+            visit.doctorId = consultation._id;
+
+        } else {
+
+            consultation = await DoctorConsultation.findOneAndUpdate(
+                {
+                    _id: visit.doctorId,
+                    clinicId
+                },
+                {
+                    ...req.body,
+                    status: req.body.diagnosis?.raiseLab
+                        ? "LAB_PENDING"
+                        : "COMPLETED"
+                },
+                {
+                    new: true,
+                    runValidators: true
                 }
-            },
-            { new: true }
-        );
+            );
 
-        // ===========================================
-        // Final Response
-        // ===========================================
+        }
+
+        // ==========================================
+        // Workflow
+        // ==========================================
+
+        visit.workflow.doctorCompleted = true;
+
+        if (req.body.diagnosis?.raiseLab) {
+
+            visit.currentStage = "LAB";
+            visit.status = "WAITING";
+
+            consultation.labRequisition.status = "PENDING";
+            await consultation.save();
+
+        } else {
+
+            visit.currentStage = "COMPLETED";
+            visit.status = "COMPLETED";
+
+            consultation.labRequisition.status = "COMPLETED";
+            await consultation.save();
+
+        }
+
+        await visit.save();
 
         return res.status(200).json({
             success: true,
             message: "Doctor Consultation Saved Successfully",
-            data: patient
+            data: consultation
         });
 
     } catch (error) {
 
         return res.status(500).json({
-
             success: false,
-
             message: error.message
-
         });
 
     }
-
 };
 
 exports.getLabPets = async (req, res) => {

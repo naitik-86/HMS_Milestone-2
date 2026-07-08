@@ -1,6 +1,9 @@
 /* eslint-disable react-hooks/immutability */
 import { useState } from "react";
-import axios from "axios";
+import {
+  getPendingPets,
+  updatePatient,
+} from "../../../api/doctorModuleApi";
 import { useEffect } from "react";
 
 export default function PendingPets() {
@@ -18,7 +21,8 @@ export default function PendingPets() {
     "Treatment",
     "Plans",
   ];
-  const [formData, setFormData] = useState({
+
+  const initialFormData = {
 
     history: {
       dietType: "",
@@ -81,7 +85,9 @@ export default function PendingPets() {
       finalNotes: "",
     },
 
-  });
+
+  }
+  const [formData, setFormData] = useState(initialFormData);
 
 
   const handleChange = (section, field, value) => {
@@ -105,30 +111,19 @@ export default function PendingPets() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getPendingPets();
+    fetchPendingPets();
   }, []);
 
 
-  const getPendingPets = async () => {
-
+  const fetchPendingPets = async () => {
     try {
-
-      const res = await axios.get(
-        "http://localhost:5000/api/v1/clinic/doctor-module/pending-pets"
-      );
-
-      setPendingPets(res.data.data);
-
+      const res = await getPendingPets();
+      setPendingPets(res.data);
     } catch (error) {
-
       console.log(error);
-
     } finally {
-
       setLoading(false);
-
     }
-
   };
 
   const sendToLab = async () => {
@@ -138,8 +133,8 @@ export default function PendingPets() {
     }
 
     try {
-      const response = await axios.put(
-        `http://localhost:5000/api/v1/clinic/doctor-module/patient/${selectedPet._id}`,
+      const response = await updatePatient(
+        selectedPet._id,
         {
           ...formData,
           diagnosis: {
@@ -149,18 +144,19 @@ export default function PendingPets() {
           labRequisition: {
             ...formData.labRequisition,
             status: "PENDING",
-          }
+          },
         }
       );
 
       if (response.data.success) {
         alert("Case Sent To Lab Successfully");
 
-        await getPendingPets();
+        await fetchPendingPets();
 
         setShowModal(false);
         setSelectedPet(null);
         setStep(1);
+        setFormData(initialFormData);
       }
     } catch (err) {
       console.log(err);
@@ -176,15 +172,12 @@ export default function PendingPets() {
 
     try {
 
-      const response = await axios.put(
-
-        `http://localhost:5000/api/v1/clinic/doctor-module/patient/${selectedPet._id}`,
-
+      const response = await updatePatient(
+        selectedPet._id,
         {
           ...formData,
-          status: "COMPLETED"
+          status: "COMPLETED",
         }
-
       );
 
       if (response.data.success) {
@@ -192,7 +185,7 @@ export default function PendingPets() {
         alert("Case Completed Successfully");
 
         // Refresh Pending List
-        await getPendingPets();
+        await fetchPendingPets();
 
         // Close Modal
         setShowModal(false);
@@ -202,70 +195,7 @@ export default function PendingPets() {
         setStep(1);
 
         // Reset Form
-        setFormData({
-
-          history: {
-            dietType: "",
-            dietFrequency: "",
-            waterIntake: "",
-            behaviour: "",
-            exercise: "",
-            currentMedication: "",
-            vaccinationStatus: "",
-            allergies: "",
-          },
-
-          clinicalObservation: {
-            cardiovascular: "",
-            respiratory: "",
-            digestive: "",
-            musculoskeletal: "",
-            neurological: "",
-            urogenital: "",
-            skin: "",
-            eyes: "",
-            ears: "",
-            nose: "",
-            throat: "",
-            lymphNodes: "",
-            doctorNotes: "",
-          },
-
-          diagnosis: {
-            provisionalDiagnosis: "",
-            differentialDiagnosis: "",
-            confirmedDiagnosis: "",
-            raiseLab: false,
-          },
-
-          labRequisition: {
-            tests: [],
-            sampleType: [],
-            instructions: "",
-            labOrderId: "",
-          },
-
-          treatment: {
-            medicines: "",
-            procedures: "",
-            vaccinations: "",
-            deworming: "",
-            fluids: "",
-            followUp: "",
-            treatmentNotes: "",
-          },
-
-          suggestion: {
-            dietAdvice: "",
-            activityRestriction: "",
-            homeCare: "",
-            preventiveCare: "",
-            prognosis: "",
-            followUpDate: "",
-            finalNotes: "",
-          }
-
-        });
+        setFormData(initialFormData);
 
       }
 
@@ -481,34 +411,32 @@ export default function PendingPets() {
                       onClick={() => {
                         setSelectedPet(pet);
 
-                        setFormData((prev) => ({
-                          ...prev,
-                          ...pet,
+                        setFormData({
                           history: {
-                            ...prev.history,
-                            ...(pet.history || {})
+                            ...initialFormData.history,
+                            ...(pet.history || {}),
                           },
                           clinicalObservation: {
-                            ...prev.clinicalObservation,
-                            ...(pet.clinicalObservation || {})
+                            ...initialFormData.clinicalObservation,
+                            ...(pet.clinicalObservation || {}),
                           },
                           diagnosis: {
-                            ...prev.diagnosis,
-                            ...(pet.diagnosis || {})
+                            ...initialFormData.diagnosis,
+                            ...(pet.diagnosis || {}),
                           },
                           labRequisition: {
-                            ...prev.labRequisition,
-                            ...(pet.labRequisition || {})
+                            ...initialFormData.labRequisition,
+                            ...(pet.labRequisition || {}),
                           },
                           treatment: {
-                            ...prev.treatment,
-                            ...(pet.treatment || {})
+                            ...initialFormData.treatment,
+                            ...(pet.treatment || {}),
                           },
                           suggestion: {
-                            ...prev.suggestion,
-                            ...(pet.suggestion || {})
-                          }
-                        }));
+                            ...initialFormData.suggestion,
+                            ...(pet.suggestion || {}),
+                          },
+                        });
 
                         setShowModal(true);
                       }}
