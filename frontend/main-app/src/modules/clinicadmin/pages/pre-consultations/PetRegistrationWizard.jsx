@@ -13,9 +13,13 @@ export default function PetRegistrationWizard({ onClose, petData, onCompleted })
 
   const handleFinish = async () => {
     try {
+
+      console.log(petData);
+      console.log(formData);
+
       await completePreConsultation({
-        ...petData,
-        ...formData,
+        visitId: petData._id,
+        preConsultationData: formData,
       });
 
       onCompleted();
@@ -32,6 +36,9 @@ export default function PetRegistrationWizard({ onClose, petData, onCompleted })
   ];
 
   const [formData, setFormData] = useState({
+    // ==========================
+    // Vitals
+    // ==========================
     bodyTemperature: "",
     heartRate: "",
     respiratoryRate: "",
@@ -41,6 +48,9 @@ export default function PetRegistrationWizard({ onClose, petData, onCompleted })
     bcs: "",
     recordedBy: "",
 
+    // ==========================
+    // History
+    // ==========================
     durationOfIllness: {
       value: "",
       unit: "",
@@ -49,14 +59,27 @@ export default function PetRegistrationWizard({ onClose, petData, onCompleted })
     onset: "",
     progression: "",
 
+    previousEpisodes: {
+      hasPreviousEpisodes: false,
+      description: "",
+    },
 
+    recentTravel: false,
+    animalContact: false,
+
+    // ==========================
+    // Problem
+    // ==========================
+    primaryComplaint: "",
 
     associatedSymptoms: [],
 
     severity: "",
 
+    // ==========================
+    // Observation
+    // ==========================
     generalDemeanour: "",
-
     gaitAndPosture: "",
     visibleLesions: "",
     eyesAbnormality: "",
@@ -64,16 +87,6 @@ export default function PetRegistrationWizard({ onClose, petData, onCompleted })
     earAbnormality: "",
     skinCondition: "",
     staffNotes: "",
-    durationValue: "",
-    durationUnit: "",
-    onset: "",
-    progression: "",
-    recentTravel: false,
-    animalContact: false,
-    previousEpisodesDescription: "",
-    primaryComplaint: "",
-
-
   });
 
   return (

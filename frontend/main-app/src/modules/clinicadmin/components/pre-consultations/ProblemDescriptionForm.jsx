@@ -51,8 +51,15 @@ export default function ProblemDescriptionForm({ formData, setFormData }) {
 
           <select
             name="associatedSymptoms"
-            value={formData.associatedSymptoms}
-            onChange={handleChange}
+            value={formData.associatedSymptoms[0] || ""}
+            onChange={(e) =>
+              setFormData((prev) => ({
+                ...prev,
+                associatedSymptoms: e.target.value
+                  ? [e.target.value]
+                  : [],
+              }))
+            }
             className="
               w-full
               border border-slate-200

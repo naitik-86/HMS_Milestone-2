@@ -13,6 +13,18 @@ const preConsultationSchema = new mongoose.Schema(
     //   trim: true,
     // },
 
+    visitId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Visit",
+      required: true,
+    },
+
+    petId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "PetRegistration",
+      required: true,
+    },
+
 
     clinicId: {
       type: mongoose.Schema.Types.ObjectId,

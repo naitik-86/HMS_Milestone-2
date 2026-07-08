@@ -24,9 +24,16 @@ export default function BriefHistoryForm({ formData, setFormData }) {
 
           <input
             type="number"
-            name="durationValue"
-            value={formData.durationValue}
-            onChange={handleChange}
+            value={formData.durationOfIllness.value}
+            onChange={(e) =>
+              setFormData((prev) => ({
+                ...prev,
+                durationOfIllness: {
+                  ...prev.durationOfIllness,
+                  value: e.target.value === "" ? "" : Number(e.target.value),
+                },
+              }))
+            }
             placeholder="Enter Duration"
             className="
               w-full
@@ -49,9 +56,16 @@ export default function BriefHistoryForm({ formData, setFormData }) {
           </label>
 
           <select
-            name="durationUnit"
-            value={formData.durationUnit}
-            onChange={handleChange}
+            value={formData.durationOfIllness.unit}
+            onChange={(e) =>
+              setFormData((prev) => ({
+                ...prev,
+                durationOfIllness: {
+                  ...prev.durationOfIllness,
+                  unit: e.target.value,
+                },
+              }))
+            }
             className="
               w-full
               border border-slate-200
@@ -201,9 +215,16 @@ export default function BriefHistoryForm({ formData, setFormData }) {
 
           <textarea
             rows="4"
-            name="previousEpisodesDescription"
-            value={formData.previousEpisodesDescription}
-            onChange={handleChange}
+            value={formData.previousEpisodes.description}
+            onChange={(e) =>
+              setFormData((prev) => ({
+                ...prev,
+                previousEpisodes: {
+                  hasPreviousEpisodes: e.target.value.trim() !== "",
+                  description: e.target.value,
+                },
+              }))
+            }
             placeholder="Describe previous similar episodes..."
             className="
               w-full

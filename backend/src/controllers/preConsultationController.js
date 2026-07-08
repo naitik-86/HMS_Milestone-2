@@ -195,6 +195,8 @@ exports.getDashboard = async (req, res) => {
 exports.getPendingPets = async (req, res) => {
   try {
     const clinicId = req.user.clinicId;
+    console.log("req.user.clinicId:", req.user.clinicId);
+    console.log("type:", typeof req.user.clinicId);
 
     const pendingVisits = await Visit.find({
       clinicId,
@@ -211,6 +213,9 @@ exports.getPendingPets = async (req, res) => {
         select: "name doctorId",
       })
       .sort({ createdAt: -1 });
+
+    console.log(pendingVisits);
+
 
     const data = attachOwnerAndPet(pendingVisits);
 
@@ -458,21 +463,12 @@ exports.updatePreConsultation = async (req, res) => {
     if (!visit.preConsultationId) {
 
       preConsultation = await PreConsultation.create({
-
         clinicId,
-
         visitId: visit._id,
-
         petId: visit.petId,
-
         ownerId: visit.ownerId,
-
-        vitals: req.body.vitals || {},
-
-        notes: req.body.notes || "",
-
+        ...req.body,
         status: "COMPLETED",
-
       });
 
       // Attach to visit
@@ -481,18 +477,20 @@ exports.updatePreConsultation = async (req, res) => {
 
     } else {
 
-      // Update existing pre-consultation
-
       preConsultation = await PreConsultation.findOneAndUpdate(
-
-        { _id: visit.preConsultationId, clinicId },
-
-        { ...req.body, status: "COMPLETED" },
-
-        { new: true, runValidators: true }
-
+        {
+          _id: visit.preConsultationId,
+          clinicId,
+        },
+        {
+          ...req.body,
+          status: "COMPLETED",
+        },
+        {
+          new: true,
+          runValidators: true,
+        }
       );
-
     }
 
     // Update visit workflow
