@@ -6,6 +6,11 @@
 #   EC2_SSH_KEY      - contents of the private key file (~/.ssh/hms-deploy-key)
 #
 # See docs/06-github-actions-cicd.md for how to add these.
+#
+# Note: the runner checks out the repo itself (it already has access via
+# GitHub's built-in token) and copies just backend/ to the EC2 instance over
+# SCP. The EC2 instance never needs any GitHub credentials - it doesn't
+# clone anything, since HMS_frontend is a private repo.
 
 name: Deploy Backend
 
@@ -21,7 +26,20 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: SSH deploy to EC2
+      - uses: actions/checkout@v4
+
+      - name: Copy backend source to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "backend/*,backend/.dockerignore"
+          target: "/opt/app/backend_new"
+          strip_components: 1
+          overwrite: true
+
+      - name: Build image and restart container
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_HOST }}
@@ -30,18 +48,16 @@ jobs:
           script: |
             set -euo pipefail
 
-            if [ ! -d /opt/app/.git ]; then
-              git clone https://github.com/naitik-86/HMS_frontend.git /opt/app
+            # /opt/app/backend/.env is created once manually (docs/05) and
+            # lives outside of what CI copies - preserve it across deploys.
+            mkdir -p /opt/app/backend
+            if [ -f /opt/app/backend/.env ]; then
+              cp /opt/app/backend/.env /opt/app/backend_new/.env
             fi
-
-            cd /opt/app
-            git fetch origin main
-            git reset --hard origin/main
+            rm -rf /opt/app/backend
+            mv /opt/app/backend_new /opt/app/backend
 
             cd /opt/app/backend
-            # /opt/app/backend/.env is created once manually (docs/05) and
-            # is untouched by this script - it is not part of the git repo.
-
             docker build -t hms-backend:latest .
 
             docker stop hms-backend 2>/dev/null || true
