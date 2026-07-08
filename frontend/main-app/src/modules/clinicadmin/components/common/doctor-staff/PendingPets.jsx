@@ -167,6 +167,8 @@ export default function PendingPets() {
     }
   };
 
+
+
   const completeCase = async () => {
 
     if (!selectedPet?._id) {
@@ -494,6 +496,7 @@ export default function PendingPets() {
               >
                 Close
               </button>
+
 
             </div>
 

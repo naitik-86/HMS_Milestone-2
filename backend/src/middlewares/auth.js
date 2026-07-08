@@ -5,7 +5,7 @@ const protect = async (req, res, next) => {
   const authHeader =
     req.headers.authorization ||
     req.headers.Authorization;
-  console.log("Authorization Header:", authHeader);
+  // console.log("Authorization Header:", authHeader);
 
   const match =
     typeof authHeader === "string"
@@ -13,7 +13,7 @@ const protect = async (req, res, next) => {
       : null;
 
   const token = match?.[1];
-  console.log("Token:", token);
+  // console.log("Token:", token);
 
   if (!token) {
 
@@ -30,7 +30,7 @@ const protect = async (req, res, next) => {
       token,
       process.env.JWT_SECRET
     );
-    console.log("Decoded:", decoded)
+    // console.log("Decoded:", decoded)
 
     req.user = decoded;
 
@@ -51,11 +51,7 @@ const authorize = (...roles) => {
 
 
   return (req, res, next) => {
-    console.log("Authorize middleware");
 
-    console.log("Headers:", req.headers.authorization);
-    console.log("User:", req.user);
-    console.log("Allowed Roles:", roles);
 
     if (!roles.includes(req.user.role)) {
 
