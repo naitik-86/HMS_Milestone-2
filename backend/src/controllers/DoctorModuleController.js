@@ -247,7 +247,7 @@ exports.updatePatient = async (req, res) => {
     try {
 
         const clinicId = req.user.clinicId;
-        const { id } = req.params; // Visit ID
+        const { id } = req.params;
 
         // ==========================================
         // Find Visit
@@ -261,30 +261,34 @@ exports.updatePatient = async (req, res) => {
         if (!visit) {
             return res.status(404).json({
                 success: false,
-                message: "Visit Not Found"
+                message: "Visit not found"
             });
         }
 
+        const raiseLab = req.body.diagnosis?.raiseLab === true;
+
         // ==========================================
-        // Find/Create Doctor Consultation
+        // Create / Update Doctor Consultation
         // ==========================================
 
         let consultation;
 
+        const consultationData = {
+            ...req.body,
+
+            clinicId,
+            visitId: visit._id,
+            petId: visit.petId,
+            ownerId: visit.ownerId,
+
+            status: raiseLab
+                ? "LAB_PENDING"
+                : "COMPLETED"
+        };
+
         if (!visit.doctorId) {
 
-            consultation = await DoctorConsultation.create({
-                clinicId,
-                visitId: visit._id,
-                petId: visit.petId,
-                ownerId: visit.ownerId,
-
-                ...req.body,
-
-                status: req.body.diagnosis?.raiseLab
-                    ? "LAB_PENDING"
-                    : "COMPLETED"
-            });
+            consultation = await DoctorConsultation.create(consultationData);
 
             visit.doctorId = consultation._id;
 
@@ -295,12 +299,7 @@ exports.updatePatient = async (req, res) => {
                     _id: visit.doctorId,
                     clinicId
                 },
-                {
-                    ...req.body,
-                    status: req.body.diagnosis?.raiseLab
-                        ? "LAB_PENDING"
-                        : "COMPLETED"
-                },
+                consultationData,
                 {
                     new: true,
                     runValidators: true
@@ -310,26 +309,36 @@ exports.updatePatient = async (req, res) => {
         }
 
         // ==========================================
-        // Workflow
+        // Update Lab Status
+        // ==========================================
+
+        if (raiseLab) {
+
+            consultation.labRequisition.status = "PENDING";
+
+        } else {
+
+            consultation.labRequisition.status = "COMPLETED";
+
+        }
+
+        await consultation.save();
+
+        // ==========================================
+        // Update Visit Workflow
         // ==========================================
 
         visit.workflow.doctorCompleted = true;
 
-        if (req.body.diagnosis?.raiseLab) {
+        if (raiseLab) {
 
             visit.currentStage = "LAB";
             visit.status = "WAITING";
-
-            consultation.labRequisition.status = "PENDING";
-            await consultation.save();
 
         } else {
 
             visit.currentStage = "COMPLETED";
             visit.status = "COMPLETED";
-
-            consultation.labRequisition.status = "COMPLETED";
-            await consultation.save();
 
         }
 
@@ -337,7 +346,9 @@ exports.updatePatient = async (req, res) => {
 
         return res.status(200).json({
             success: true,
-            message: "Doctor Consultation Saved Successfully",
+            message: raiseLab
+                ? "Patient referred to Lab successfully."
+                : "Doctor consultation completed successfully.",
             data: consultation
         });
 

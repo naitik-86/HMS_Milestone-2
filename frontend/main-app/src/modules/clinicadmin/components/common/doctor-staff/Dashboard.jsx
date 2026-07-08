@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 
 
+
 export default function Dashboard() {
   const [dashboard, setDashboard] = useState({
     totalPets: 0,
@@ -24,17 +25,36 @@ export default function Dashboard() {
   }, []);
 
   const fetchDashboard = async () => {
-    try {
-      const res = await axios.get(
-        "http://localhost:5000/api/v1/doctorModule/dashboard"
-      );
+    setDashboard({
+      totalPets: 156,
+      pendingPets: 18,
+      completedPets: 138,
+      todaysVisits: 12,
+      recentActivity: [
+        {
+          _id: "1",
+          petId: "Buddy",
+          status: "Consultation Completed",
+        },
+        {
+          _id: "2",
+          petId: "Charlie",
+          status: "Waiting for Doctor",
+        },
+        {
+          _id: "3",
+          petId: "Luna",
+          status: "Lab Test Recommended",
+        },
+        {
+          _id: "4",
+          petId: "Max",
+          status: "Prescription Generated",
+        },
+      ],
+    });
 
-      setDashboard(res.data.dashboard);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
+    setLoading(false);
   };
 
   const stats = [
