@@ -70,15 +70,17 @@ jobs:
               --env-file /opt/app/backend/.env \
               hms-backend:latest
 
-            # Wait for the container's own HEALTHCHECK to report healthy
-            for i in $(seq 1 10); do
+            # Wait for the container's own HEALTHCHECK to report healthy.
+            # MongoDB Atlas (M0 tier) connection setup can take ~30s on its
+            # own, so this needs real margin beyond that.
+            for i in $(seq 1 24); do
               status=$(docker inspect --format='{{.State.Health.Status}}' hms-backend 2>/dev/null || echo "starting")
               if [ "$status" = "healthy" ]; then
                 echo "Backend is healthy"
                 exit 0
               fi
               echo "Waiting for health check... ($status)"
-              sleep 3
+              sleep 5
             done
 
             echo "Backend did not become healthy in time"
