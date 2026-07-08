@@ -178,10 +178,42 @@ exports.getAppointmentTrend = async (req, res) => {
 /**
  * Top Doctors
  */
+exports.getSuperAdminBasicReports = async (req, res) => {
+    try {
+        const totalClinics = await require("../models/Clinic").countDocuments();
+
+        const paymentAgg = await Appointment.aggregate([
+            { $match: { status: "completed" } },
+            {
+                $group: {
+                    _id: null,
+                    totalPaymentCollected: { $sum: "$consultationFee" }
+                }
+            }
+        ]);
+
+        const totalPaymentCollected = paymentAgg[0]?.totalPaymentCollected || 0;
+
+        return res.status(200).json({
+            success: true,
+            data: {
+                totalClinics,
+                totalPaymentCollected
+            }
+        });
+    } catch (error) {
+        return res.status(500).json({ message: error.message });
+    }
+};
+
+/**
+ * Top Doctors
+ */
 exports.getTopDoctors = async (req, res) => {
     try {
 
         const doctors = await Appointment.aggregate([
+
             {
                 $match: {
                     status: "completed"

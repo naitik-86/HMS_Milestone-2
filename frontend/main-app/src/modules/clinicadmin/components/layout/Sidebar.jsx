@@ -12,11 +12,18 @@ const Sidebar = ({ isOpen = false, onClose }) => {
     { id: "groomer", label: "Groomer", icon: "✂️" },
     { id: "kennel", label: "Kennel", icon: "🐾" },
     { id: "reports", label: "Reports", icon: "📊" },
+    { id: "reports-basic", label: "Basic Reports", icon: "✅" },
     { id: "settings", label: "Settings", icon: "⚙️" },
   ];
 
   const handleNavigate = (item) => {
-    navigate(item.id === "dashboard" ? "/clinic" : `/clinic/${item.id}`);
+    if (item.id === "reports-basic") {
+      navigate("/clinic/reports/basic");
+      onClose?.();
+      return;
+    } else {
+      navigate(item.id === "dashboard" ? "/clinic" : `/clinic/${item.id}`);
+    }
     onClose?.();
   };
 
@@ -82,7 +89,9 @@ const Sidebar = ({ isOpen = false, onClose }) => {
           const isActive =
             item.id === "dashboard"
               ? location.pathname === "/clinic"
-              : location.pathname.startsWith(`/clinic/${item.id}`);
+              : item.id === "reports-basic"
+                ? location.pathname === "/clinic/reports/basic"
+                : location.pathname.startsWith(`/clinic/${item.id}`);
 
           return (
             <button

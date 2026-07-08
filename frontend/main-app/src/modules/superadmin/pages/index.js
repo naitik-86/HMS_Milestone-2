@@ -5,6 +5,7 @@ import Settings from "./Settings";
 import Verification from "./Verification";
 import Dashboard from "./Dashboard";
 import Reports from "./Reports";
+import BasicReports from "./BasicReports";
 
 export {
     Clinics,
@@ -14,4 +15,5 @@ export {
     Verification,
     Dashboard,
     Reports,
+    BasicReports,
 }
