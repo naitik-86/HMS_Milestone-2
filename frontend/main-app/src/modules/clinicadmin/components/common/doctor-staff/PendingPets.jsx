@@ -118,7 +118,11 @@ export default function PendingPets() {
   const fetchPendingPets = async () => {
     try {
       const res = await getPendingPets();
+      console.log(res);
+
       setPendingPets(res.data);
+      console.log(pendingPets);
+
     } catch (error) {
       console.log(error);
     } finally {
@@ -222,12 +226,16 @@ export default function PendingPets() {
 
   }
 
-  const filteredPets = pendingPets.filter((pet) =>
-    (pet.petId || "").toLowerCase().includes(search.toLowerCase()) ||
-    (pet.ownerId || "").toLowerCase().includes(search.toLowerCase()) ||
-    (pet.phone || "").includes(search)
+  const filteredPets = pendingPets.filter((visit) =>
+    (visit.tokenNumber?.toString() || "").includes(search) ||
+    (visit.owner?.ownerName || "")
+      .toLowerCase()
+      .includes(search.toLowerCase()) ||
+    (visit.owner?.mobileNumber || "").includes(search) ||
+    (visit.pet?.petName || "")
+      .toLowerCase()
+      .includes(search.toLowerCase())
   );
-
   return (
 
 
@@ -267,11 +275,11 @@ export default function PendingPets() {
             <div className="flex justify-between items-start mb-3">
               <div>
                 <h3 className="font-bold text-lg">
-                  {pet.petName}
+                  {pet.pet?.petName}
                 </h3>
 
                 <p className="text-sm text-slate-500">
-                  {pet.petId}
+                  Token #{pet.tokenNumber}
                 </p>
               </div>
 
@@ -285,14 +293,14 @@ export default function PendingPets() {
                 <span className="font-semibold">
                   Owner:
                 </span>{" "}
-                {pet.ownerId}
+                {pet.owner?.ownerName}
               </p>
 
               <p>
                 <span className="font-semibold">
                   Phone:
                 </span>{" "}
-                {pet.phone}
+                {pet.owner?.mobileNumber}
               </p>
             </div>
 
@@ -352,7 +360,7 @@ export default function PendingPets() {
             <thead>
               <tr className="border-b">
                 <th className="py-4 pr-4 text-left">
-                  Pet ID
+                  Token
                 </th>
 
                 <th className="py-4 pr-4 text-left">
@@ -385,19 +393,19 @@ export default function PendingPets() {
                   className="border-b hover:bg-slate-50"
                 >
                   <td className="py-4 pr-4">
-                    {pet.petId}
+                    {pet.tokenNumber}
                   </td>
 
                   <td className="pr-4">
-                    {pet.petName}
+                    {pet.pet?.petName}
                   </td>
 
                   <td className="pr-4">
-                    {pet.ownerId}
+                    {pet.owner?.ownerName}
                   </td>
 
                   <td className="pr-4">
-                    {pet.phone}
+                    {pet.owner?.mobileNumber}
                   </td>
 
                   <td className="pr-4">
@@ -468,11 +476,11 @@ export default function PendingPets() {
 
               <div>
                 <h1 className="text-2xl font-bold sm:text-3xl">
-                  {selectedPet?.petName}
+                  {selectedPet?.pet?.petName}
                 </h1>
 
                 <p className="text-slate-500">
-                  {selectedPet?.ownerId}
+                  {selectedPet?.owner?.ownerName}• {selectedPet?.owner?.mobileNumber}
                 </p>
               </div>
 

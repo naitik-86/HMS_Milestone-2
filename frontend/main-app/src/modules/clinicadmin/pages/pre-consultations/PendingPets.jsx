@@ -21,6 +21,8 @@ export default function PendingPets() {
       console.log(res.data);
 
       setPets(res.data);
+      console.log(pets);
+
     } catch (err) {
       console.error(err);
     }
@@ -204,7 +206,7 @@ export default function PendingPets() {
                           <div>
 
                             <p className="font-semibold text-slate-800">
-                              {pet.uniquePetId}
+                              {pet?.pet?.petName}
                             </p>
 
                             <p className="text-sm text-slate-500">

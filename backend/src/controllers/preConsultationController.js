@@ -201,27 +201,38 @@ exports.getPendingPets = async (req, res) => {
     const pendingVisits = await Visit.find({
       clinicId,
       currentStage: "PRE_CONSULTATION",
-      status: "WAITING",
-    })
-      .populate({
-        path: "ownerId",
-        select:
-          "ownerName mobileNumber email address city district state pincode pets",
-      })
-      .populate({
-        path: "doctorId",
-        select: "name doctorId",
-      })
-      .sort({ createdAt: -1 });
+      status: "WAITING"
+    });
 
-    console.log(pendingVisits);
+    const owners = await PetRegistration.find({
+      "pets._id": {
+        $in: pendingVisits.map(v => v.petId)
+      }
+    });
 
+    const ownerPetMap = {};
 
-    const data = attachOwnerAndPet(pendingVisits);
+    owners.forEach(owner => {
+      owner.pets.forEach(pet => {
+        ownerPetMap[pet._id.toString()] = {
+          owner,
+          pet
+        };
+      });
+    });
 
-    return res.status(200).json({
+    const data = pendingVisits.map(visit => {
+      const details = ownerPetMap[visit.petId.toString()];
+
+      return {
+        ...visit.toObject(),
+        owner: details?.owner || null,
+        pet: details?.pet || null,
+      };
+    });
+
+    res.json({
       success: true,
-      count: data.length,
       data,
     });
   } catch (error) {

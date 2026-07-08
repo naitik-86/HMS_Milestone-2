@@ -1,5 +1,6 @@
 const DoctorConsultation = require("../models/DoctorConsultationModdel");
 const Visit = require("../models/visitModel");
+const PetRegistration = require("../models/PetRegistration")
 
 // ======================================================
 // Dashboard
@@ -59,37 +60,58 @@ exports.getDashboard = async (req, res) => {
 // Pending Pets
 // ======================================================
 exports.getPendingPets = async (req, res) => {
-
     try {
-        console.log("reached");
-
         const clinicId = req.user.clinicId;
 
         const visits = await Visit.find({
             clinicId,
             currentStage: "DOCTOR",
-            status: "WAITING"
+            status: "WAITING",
         })
-            .populate("ownerId")
-            .populate("petId")
             .populate("preConsultationId")
             .sort({ createdAt: -1 });
 
-        return res.status(200).json({
-            success: true,
-            count: visits.length,
-            data: visits
+        // Fetch all owners containing these pets
+        const owners = await PetRegistration.find({
+            "pets._id": {
+                $in: visits.map((visit) => visit.petId),
+            },
         });
 
+        // Create a lookup map: petId -> { owner, pet }
+        const ownerPetMap = {};
+
+        owners.forEach((owner) => {
+            owner.pets.forEach((pet) => {
+                ownerPetMap[pet._id.toString()] = {
+                    owner,
+                    pet,
+                };
+            });
+        });
+
+        // Attach owner & pet to each visit
+        const data = visits.map((visit) => {
+            const details = ownerPetMap[visit.petId.toString()];
+
+            return {
+                ...visit.toObject(),
+                owner: details?.owner || null,
+                pet: details?.pet || null,
+            };
+        });
+
+        return res.status(200).json({
+            success: true,
+            count: data.length,
+            data,
+        });
     } catch (error) {
         return res.status(500).json({
             success: false,
-            message: error.message
+            message: error.message,
         });
     }
-
-
-
 };
 
 
