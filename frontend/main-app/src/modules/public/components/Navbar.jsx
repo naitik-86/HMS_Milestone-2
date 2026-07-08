@@ -50,31 +50,9 @@ export default function Navbar() {
             Log In
           </NavLink>
 
-          {/* Super Admin */}
-          <NavLink
-            to="/doctor"
-            className={({ isActive }) =>
-              `px-5 py-2 rounded-full text-sm font-medium transition ${isActive
-                ? "bg-green-200 text-green-700"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-              }`
-            }
-          >
-            Doctor
-          </NavLink>
 
-          {/* Clinic Admin */}
-          <NavLink
-            to="/clinic"
-            className={({ isActive }) =>
-              `px-5 py-2 rounded-full text-sm font-medium transition ${isActive
-                ? "bg-green-200 text-green-700"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-              }`
-            }
-          >
-            Clinic Admin
-          </NavLink>
+
+
 
           {/* Signup */}
           <NavLink

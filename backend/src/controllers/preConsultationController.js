@@ -195,28 +195,44 @@ exports.getDashboard = async (req, res) => {
 exports.getPendingPets = async (req, res) => {
   try {
     const clinicId = req.user.clinicId;
+    console.log("req.user.clinicId:", req.user.clinicId);
+    console.log("type:", typeof req.user.clinicId);
 
     const pendingVisits = await Visit.find({
       clinicId,
       currentStage: "PRE_CONSULTATION",
-      status: "WAITING",
-    })
-      .populate({
-        path: "ownerId",
-        select:
-          "ownerName mobileNumber email address city district state pincode pets",
-      })
-      .populate({
-        path: "doctorId",
-        select: "name doctorId",
-      })
-      .sort({ createdAt: -1 });
+      status: "WAITING"
+    });
 
-    const data = attachOwnerAndPet(pendingVisits);
+    const owners = await PetRegistration.find({
+      "pets._id": {
+        $in: pendingVisits.map(v => v.petId)
+      }
+    });
 
-    return res.status(200).json({
+    const ownerPetMap = {};
+
+    owners.forEach(owner => {
+      owner.pets.forEach(pet => {
+        ownerPetMap[pet._id.toString()] = {
+          owner,
+          pet
+        };
+      });
+    });
+
+    const data = pendingVisits.map(visit => {
+      const details = ownerPetMap[visit.petId.toString()];
+
+      return {
+        ...visit.toObject(),
+        owner: details?.owner || null,
+        pet: details?.pet || null,
+      };
+    });
+
+    res.json({
       success: true,
-      count: data.length,
       data,
     });
   } catch (error) {
@@ -458,21 +474,12 @@ exports.updatePreConsultation = async (req, res) => {
     if (!visit.preConsultationId) {
 
       preConsultation = await PreConsultation.create({
-
         clinicId,
-
         visitId: visit._id,
-
         petId: visit.petId,
-
         ownerId: visit.ownerId,
-
-        vitals: req.body.vitals || {},
-
-        notes: req.body.notes || "",
-
+        ...req.body,
         status: "COMPLETED",
-
       });
 
       // Attach to visit
@@ -481,18 +488,20 @@ exports.updatePreConsultation = async (req, res) => {
 
     } else {
 
-      // Update existing pre-consultation
-
       preConsultation = await PreConsultation.findOneAndUpdate(
-
-        { _id: visit.preConsultationId, clinicId },
-
-        { ...req.body, status: "COMPLETED" },
-
-        { new: true, runValidators: true }
-
+        {
+          _id: visit.preConsultationId,
+          clinicId,
+        },
+        {
+          ...req.body,
+          status: "COMPLETED",
+        },
+        {
+          new: true,
+          runValidators: true,
+        }
       );
-
     }
 
     // Update visit workflow

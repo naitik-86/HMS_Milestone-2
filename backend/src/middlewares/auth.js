@@ -5,6 +5,7 @@ const protect = async (req, res, next) => {
   const authHeader =
     req.headers.authorization ||
     req.headers.Authorization;
+  // console.log("Authorization Header:", authHeader);
 
   const match =
     typeof authHeader === "string"
@@ -12,6 +13,7 @@ const protect = async (req, res, next) => {
       : null;
 
   const token = match?.[1];
+  // console.log("Token:", token);
 
   if (!token) {
 
@@ -28,13 +30,14 @@ const protect = async (req, res, next) => {
       token,
       process.env.JWT_SECRET
     );
+    // console.log("Decoded:", decoded)
 
     req.user = decoded;
 
     next();
 
   } catch (err) {
-
+    console.log("JWT Error:", err.message);
     return res.status(401).json({
       success: false,
       message: "Invalid token"
@@ -46,7 +49,9 @@ const protect = async (req, res, next) => {
 
 const authorize = (...roles) => {
 
+
   return (req, res, next) => {
+
 
     if (!roles.includes(req.user.role)) {
 

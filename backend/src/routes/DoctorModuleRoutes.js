@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-
+const { authorize } = require('../middlewares/auth');
 const {
     getDashboard,
     getPendingPets,
@@ -11,6 +11,12 @@ const {
     updatePatient,
     createPatient
 } = require("../controllers/DoctorModuleController");
+
+console.log("checking");
+
+
+
+router.use(authorize("DOCTOR", "CLINIC_ADMIN"));
 
 // Dashboard
 router.get("/dashboard", getDashboard);
