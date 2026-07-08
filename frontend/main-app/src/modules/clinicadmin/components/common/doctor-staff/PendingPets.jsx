@@ -1160,8 +1160,7 @@ export default function PendingPets() {
                           "USG",
                           "Cytology",
                           "ELISA",
-                          "PCR",
-                          "Other",
+                          "PCR"
                         ].map((test) => (
                           <label
                             key={test}

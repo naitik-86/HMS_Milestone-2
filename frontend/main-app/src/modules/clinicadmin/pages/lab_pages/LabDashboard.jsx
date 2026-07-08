@@ -6,114 +6,114 @@ const BASE_URL = "http://localhost:5000/api/v1/lab";
 
 export default function LabDashboard() {
 
-    const [stats, setStats] = useState([]);
-    const [recentActivities, setRecentActivities] = useState([]);
-    const [pendingSummary, setPendingSummary] = useState([]);
+  const [stats, setStats] = useState([]);
+  const [recentActivities, setRecentActivities] = useState([]);
+  const [pendingSummary, setPendingSummary] = useState([]);
 
-    // ================= Dashboard =================
+  // ================= Dashboard =================
 
-    const getDashboardStats = async () => {
-        try {
+  const getDashboardStats = async () => {
+    try {
 
-            const res = await axios.get(`${BASE_URL}/dashboard`);
+      const res = await axios.get(`${BASE_URL}/dashboard`);
 
-            console.log("Dashboard :", res.data);
+      console.log("Dashboard :", res.data);
 
-            setStats([
-                {
-                    title: "Total Reports",
-                    value: res.data.data.totalReports,
-                    icon: "🧪",
-                    color: "blue",
-                },
-                {
-                    title: "Pending Uploads",
-                    value: res.data.data.pendingUploads,
-                    icon: "⏳",
-                    color: "orange",
-                },
-                {
-                    title: "Critical Cases",
-                    value: res.data.data.criticalCases,
-                    icon: "🚨",
-                    color: "red",
-                },
-                {
-                    title: "Today's Reports",
-                    value: res.data.data.todayReports,
-                    icon: "📄",
-                    color: "blue",
-                },
-            ]);
+      setStats([
+        {
+          title: "Total Reports",
+          value: res.data.data.totalReports,
+          icon: "🧪",
+          color: "blue",
+        },
+        {
+          title: "Pending Uploads",
+          value: res.data.data.pendingUploads,
+          icon: "⏳",
+          color: "orange",
+        },
+        {
+          title: "Critical Cases",
+          value: res.data.data.criticalCases,
+          icon: "🚨",
+          color: "red",
+        },
+        {
+          title: "Today's Reports",
+          value: res.data.data.todayReports,
+          icon: "📄",
+          color: "blue",
+        },
+      ]);
 
-        } catch (error) {
+    } catch (error) {
 
-            console.error("Dashboard Error :", error);
+      console.error("Dashboard Error :", error);
 
-        }
-    };
-
-
-
-    // ================= Recent Activity =================
-
-    const getRecentActivities = async () => {
-
-        try {
-
-            const res = await axios.get(`${BASE_URL}/recent`);
-
-            console.log("Recent Activity :", res.data);
-
-            setRecentActivities(res.data.data || []);
-
-        } catch (error) {
-
-            console.error("Recent Activity Error :", error);
-
-        }
-
-    };
+    }
+  };
 
 
 
-    // ================= Pending Summary =================
+  // ================= Recent Activity =================
 
-    const getPendingSummary = async () => {
+  const getRecentActivities = async () => {
 
-        try {
+    try {
 
-            const res = await axios.get(`${BASE_URL}/pending-summary`);
+      const res = await axios.get(`${BASE_URL}/recent`);
 
-            console.log("Pending Summary :", res.data);
+      console.log("Recent Activity :", res.data);
 
-            setPendingSummary(res.data.data || []);
+      setRecentActivities(res.data.data || []);
 
-        } catch (error) {
+    } catch (error) {
 
-            console.error("Pending Summary Error :", error);
+      console.error("Recent Activity Error :", error);
 
-        }
+    }
 
-    };
-
-
-
-    // ================= Initial Load =================
-
-    useEffect(() => {
-
-        getDashboardStats();
-        getRecentActivities();
-        getPendingSummary();
-
-    }, []);
+  };
 
 
-    // ================= Debug =================
 
-    console.log("Recent Activities State :", recentActivities);
-    console.log("Pending Summary State :", pendingSummary);
+  // ================= Pending Summary =================
+
+  const getPendingSummary = async () => {
+
+    try {
+
+      const res = await axios.get(`${BASE_URL}/pending-summary`);
+
+      console.log("Pending Summary :", res.data);
+
+      setPendingSummary(res.data.data || []);
+
+    } catch (error) {
+
+      console.error("Pending Summary Error :", error);
+
+    }
+
+  };
+
+
+
+  // ================= Initial Load =================
+
+  useEffect(() => {
+
+    getDashboardStats();
+    getRecentActivities();
+    getPendingSummary();
+
+  }, []);
+
+
+  // ================= Debug =================
+
+  console.log("Recent Activities State :", recentActivities);
+  console.log("Pending Summary State :", pendingSummary);
 
 
   return (
@@ -323,7 +323,7 @@ export default function LabDashboard() {
                   </p>
 
                   <h2 className="text-2xl md:text-4xl lg:text-5xl font-bold">
-                  {stats[3]?.value} Reports Uploaded Today
+                    {stats[3]?.value} Reports Uploaded Today
                   </h2>
 
                   <p className="mt-4 max-w-xl text-white/70">
@@ -402,46 +402,45 @@ export default function LabDashboard() {
                 <div className="space-y-4">
 
                   {/* Activity 1 */}
-{recentActivities.map((item) => (
-    <div
-        key={item._id}
-        className="flex items-center justify-between rounded-3xl bg-slate-50 p-5 transition-all hover:bg-slate-100"
-    >
-        <div className="flex items-center gap-4">
+                  {recentActivities.map((item) => (
+                    <div
+                      key={item._id}
+                      className="flex items-center justify-between rounded-3xl bg-slate-50 p-5 transition-all hover:bg-slate-100"
+                    >
+                      <div className="flex items-center gap-4">
 
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-green-100 text-2xl">
-                {item.status === "Completed"
-                    ? "✅"
-                    : item.status === "Pending"
-                    ? "⏳"
-                    : "🚨"}
-            </div>
+                        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-green-100 text-2xl">
+                          {item.status === "Completed"
+                            ? "✅"
+                            : item.status === "Pending"
+                              ? "⏳"
+                              : "🚨"}
+                        </div>
 
-            <div>
-                <h3 className="font-semibold text-slate-800">
-                    {item.labOrderId}
-                </h3>
+                        <div>
+                          <h3 className="font-semibold text-slate-800">
+                            {item.labOrderId}
+                          </h3>
 
-                <p className="text-sm text-slate-500">
-                    {item.petName} • {item.reportType}
-                </p>
-            </div>
+                          <p className="text-sm text-slate-500">
+                            {item.petName} • {item.reportType}
+                          </p>
+                        </div>
 
-        </div>
+                      </div>
 
-        <span
-            className={`rounded-xl px-3 py-1 text-sm font-bold ${
-                item.status === "Completed"
-                    ? "bg-green-100 text-green-600"
-                    : item.status === "Pending"
-                    ? "bg-orange-100 text-orange-600"
-                    : "bg-red-100 text-red-600"
-            }`}
-        >
-            {item.status}
-        </span>
-    </div>
-))}
+                      <span
+                        className={`rounded-xl px-3 py-1 text-sm font-bold ${item.status === "Completed"
+                            ? "bg-green-100 text-green-600"
+                            : item.status === "Pending"
+                              ? "bg-orange-100 text-orange-600"
+                              : "bg-red-100 text-red-600"
+                          }`}
+                      >
+                        {item.status}
+                      </span>
+                    </div>
+                  ))}
 
                 </div>
 
@@ -461,24 +460,24 @@ export default function LabDashboard() {
                 </h2>
                 <div className="space-y-4">
 
-                 {pendingSummary.map((item) => (
+                  {pendingSummary.map((item) => (
 
-    <div
-        key={item.reportType}
-        className="flex items-center justify-between rounded-2xl bg-slate-50 p-4 transition hover:bg-slate-100"
-    >
+                    <div
+                      key={item.reportType}
+                      className="flex items-center justify-between rounded-2xl bg-slate-50 p-4 transition hover:bg-slate-100"
+                    >
 
-        <span className="font-medium text-slate-700">
-            {item.reportType}
-        </span>
+                      <span className="font-medium text-slate-700">
+                        {item.reportType}
+                      </span>
 
-        <span className="rounded-xl bg-orange-100 px-3 py-1 font-bold text-orange-600">
-            {item.total}
-        </span>
+                      <span className="rounded-xl bg-orange-100 px-3 py-1 font-bold text-orange-600">
+                        {item.total}
+                      </span>
 
-    </div>
+                    </div>
 
-))} 
+                  ))}
 
                 </div>
 

@@ -178,6 +178,13 @@ const doctorSchema = new mongoose.Schema(
 
         },
 
+        labReports: [
+            {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: "LabReport",
+            }
+        ],
+
         // ===========================
         // Prescription
         // ===========================

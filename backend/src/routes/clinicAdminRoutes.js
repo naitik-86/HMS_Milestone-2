@@ -20,7 +20,7 @@ router.use(protect);
 router.use("/staff", StaffRoutes);
 router.use("/doctors", DoctorRoutes);
 router.use("/doctor-module", DoctorModuleRoutes);
-router.use("/lab-technicians", LabRoutes);
+router.use("/lab-module", LabRoutes);
 router.use("/groomers", GroomerRoutes);
 router.use("/kennel", KennelRoutes);
 router.use("/reception", ReceptionRoutes);
