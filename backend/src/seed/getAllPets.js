@@ -8,7 +8,7 @@ require("dotenv").config({
 // ======================
 // Import Model
 // ======================
-const Pet = require("../models/PetRegistration");
+const Pet = require("../models/Pet");
 
 async function getAllPets() {
     try {

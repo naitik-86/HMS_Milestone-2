@@ -26,7 +26,7 @@ export default function LabReportModal({
                                 </h2>
 
                                 <p className="text-sm opacity-90 mt-1">
-                                    {report?.pet?.petName} • {report?.owner?.ownerName}
+                                    {report?.petId?.name} • {report?.petId?.ownerId?.ownerName}
                                 </p>
                             </div>
 
@@ -50,17 +50,17 @@ export default function LabReportModal({
 
                                     <div>
                                         <p className="text-xs text-gray-500">Token</p>
-                                        <p className="font-semibold">{report?.tokenNumber}</p>
+                                        <p className="font-semibold">{report?.visitId?.tokenNumber}</p>
                                     </div>
 
                                     <div>
                                         <p className="text-xs text-gray-500">Owner</p>
-                                        <p className="font-semibold">{report?.owner?.ownerName}</p>
+                                        <p className="font-semibold"> {report?.petId?.ownerId?.ownerName}</p>
                                     </div>
 
                                     <div>
                                         <p className="text-xs text-gray-500">Pet</p>
-                                        <p className="font-semibold">{report?.pet?.petName}</p>
+                                        <p className="font-semibold">      {report?.petId?.name}</p>
                                     </div>
 
                                     <div>
@@ -105,12 +105,11 @@ export default function LabReportModal({
                                                 </p>
 
                                             </div>
-
                                             <a
                                                 href={report.fileUrl}
                                                 target="_blank"
                                                 rel="noreferrer"
-                                                className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600"
+                                                className="flex items-center justify-center bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition"
                                             >
                                                 View PDF
                                             </a>

@@ -1,19 +1,19 @@
 const mongoose = require('mongoose');
 
 const petSchema = new mongoose.Schema({
-  ownerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Owner', required: true },
+  ownerId: { type: mongoose.Schema.Types.ObjectId, ref: 'PetRegistration', required: true },
   name: { type: String, required: true },
   species: { type: String, enum: ['DOG', 'CAT', 'BIRD', 'OTHER', 'RABBIT'], required: true },
   breed: { type: String },
   dob: { type: Date },
   gender: { type: String },
   color: { type: String },
-  identificationMarks: { type: String }, 
-  photoUrl: { type: String }, 
-  isSterilised: { type: Boolean, default: false }, 
-  weightTracker: [{ 
-    weight: Number, 
-    date: { type: Date, default: Date.now } 
+  identificationMarks: { type: String },
+  photoUrl: { type: String },
+  isSterilised: { type: Boolean, default: false },
+  weightTracker: [{
+    weight: Number,
+    date: { type: Date, default: Date.now }
   }],
   allergies: [{ type: String }],
   rfidTag: { type: String }

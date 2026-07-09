@@ -23,7 +23,7 @@ export default function PreConsultationReportModal({
                         </h2>
 
                         <p className="text-sm opacity-90 mt-1">
-                            Token : {data?.tokenNumber || "--"}
+                            Token : {data?.visitId?.tokenNumber || "--"}
                         </p>
                     </div>
 
@@ -42,55 +42,66 @@ export default function PreConsultationReportModal({
 
                     {/* ================= Patient Information ================= */}
 
-                    <div>
+                    <div className="bg-orange-50 border border-orange-200 rounded-xl p-6">
 
-                        <h3 className="text-lg font-semibold text-orange-600 mb-4">
-                            Patient Information
-                        </h3>
+                        <div className="grid grid-cols-5 gap-6">
 
-                        <div className="bg-orange-50 border border-orange-200 rounded-xl p-5 grid grid-cols-2 md:grid-cols-4 gap-5">
+                            {/* Token */}
 
                             <div>
-                                <p className="text-xs text-gray-500">
+                                <p className="text-xs text-gray-500 uppercase tracking-wide">
                                     Token
                                 </p>
 
-                                <p className="font-semibold">
-                                    {data?.tokenNumber || "-"}
+                                <p className="font-semibold mt-1">
+                                    {data?.visitId?.tokenNumber || "-"}
                                 </p>
                             </div>
 
+                            {/* Pet */}
+
                             <div>
-                                <p className="text-xs text-gray-500">
-                                    Pet ID
+                                <p className="text-xs text-gray-500 uppercase tracking-wide">
+                                    Pet Name
                                 </p>
 
-                                <p className="font-semibold">
-                                    {data?.uniquePetId || "-"}
+                                <p className="font-semibold mt-1">
+                                    {data?.petId?.name || "-"}
                                 </p>
                             </div>
 
-                            <div>
-                                <p className="text-xs text-gray-500">Owner</p>
-                                <p className="font-semibold">{data?.owner?.ownerName}</p>
-                            </div>
+                            {/* Owner */}
 
                             <div>
-                                <p className="text-xs text-gray-500">
+                                <p className="text-xs text-gray-500 uppercase tracking-wide">
+                                    Owner Name
+                                </p>
+
+                                <p className="font-semibold mt-1">
+                                    {data?.ownerId?.ownerName || "-"}
+                                </p>
+                            </div>
+
+                            {/* Recorded By */}
+
+                            <div>
+                                <p className="text-xs text-gray-500 uppercase tracking-wide">
                                     Recorded By
                                 </p>
 
-                                <p className="font-semibold">
+                                <p className="font-semibold mt-1">
                                     {data?.recordedBy || "-"}
                                 </p>
                             </div>
 
+                            {/* Status */}
+
                             <div>
-                                <p className="text-xs text-gray-500">
+                                <p className="text-xs text-gray-500 uppercase tracking-wide">
                                     Status
                                 </p>
 
-                                <span className="bg-green-100 text-green-700 text-xs px-3 py-1 rounded-full">
+                                <span className="inline-block mt-1 bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-medium">
                                     {data?.status}
                                 </span>
                             </div>

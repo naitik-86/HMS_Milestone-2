@@ -499,20 +499,26 @@ export default function PendingPets() {
                   </td>
                   <td>
 
-
-                    <button
-                      onClick={() => handleViewLabReports(pet._id)}
-                      className="flex items-center gap-2 px-4 py-2 rounded-xl
-                   bg-white
-                   border border-orange-400
-                   text-orange-600
-                   hover:bg-orange-500
-                   hover:text-white
-                   transition-all duration-300"
-                    >
-                      🧪
-                      <span>View Lab Reports</span>
-                    </button>
+                    {pet?.workflow?.labCompleted ? (
+                      <button
+                        onClick={() => handleViewLabReports(pet._id)}
+                        className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl
+      bg-white border border-orange-400 text-orange-600
+      hover:bg-orange-500 hover:text-white
+      transition-all duration-300"
+                      >
+                        🧪
+                        <span>View Lab Reports</span>
+                      </button>
+                    ) : (
+                      <div
+                        className="flex items-center justify-center px-4 py-2 min-w-[10px] max-w-[200px]
+      rounded-xl border border-gray-200 bg-gray-50
+      text-gray-400 text-sm font-medium"
+                      >
+                        —
+                      </div>
+                    )}
 
                   </td>
 

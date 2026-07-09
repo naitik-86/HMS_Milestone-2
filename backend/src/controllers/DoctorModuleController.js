@@ -396,6 +396,7 @@ exports.getLabReportByVisit = async (req, res) => {
             success: true,
             message: "Lab report fetched successfully.",
             data: labReport,
+            hasLabReport: true
         });
 
     } catch (error) {
@@ -403,6 +404,7 @@ exports.getLabReportByVisit = async (req, res) => {
         return res.status(500).json({
             success: false,
             message: error.message,
+            hasLabReport: false
         });
 
     }
