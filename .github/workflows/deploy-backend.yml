@@ -22,6 +22,15 @@ on:
       - ".github/workflows/deploy-backend.yml"
   workflow_dispatch: {}
 
+# Only one deploy at a time - concurrent runs race on `docker stop/rm/run
+# hms-backend` on the same EC2 box (hit in practice when two PRs merged
+# ~30s apart: "Conflict. The container name /hms-backend is already in
+# use"). Queue instead of canceling, since canceling mid-script (e.g. during
+# `rm -rf /opt/app/backend`) could leave the server in a broken state.
+concurrency:
+  group: deploy-backend
+  cancel-in-progress: false
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -60,8 +69,7 @@ jobs:
             cd /opt/app/backend
             docker build -t hms-backend:latest .
 
-            docker stop hms-backend 2>/dev/null || true
-            docker rm hms-backend 2>/dev/null || true
+            docker rm -f hms-backend 2>/dev/null || true
 
             docker run -d \
               --name hms-backend \

@@ -4,7 +4,8 @@
 #   AWS_ACCESS_KEY_ID       - from `hms-github-actions-deployer` IAM user (docs/02)
 #   AWS_SECRET_ACCESS_KEY   - from the same IAM user
 #   S3_FRONTEND_BUCKET      - `terraform output frontend_bucket_name`
-#   VITE_BACKEND_URL        - e.g. http://<EC2_HOST>  (or your domain, later)
+#   VITE_BACKEND_URL        - e.g. http://<EC2_HOST>/api/v1 - MUST include /api/v1,
+#                             see docs/10-application-notes.md
 #
 # See docs/06-github-actions-cicd.md for how to add these.
 
@@ -17,6 +18,12 @@ on:
       - "frontend/main-app/**"
       - ".github/workflows/deploy-frontend.yml"
   workflow_dispatch: {}
+
+# Only one deploy at a time - avoids two concurrent `aws s3 sync --delete`
+# runs against the same bucket interleaving.
+concurrency:
+  group: deploy-frontend
+  cancel-in-progress: false
 
 jobs:
   deploy:

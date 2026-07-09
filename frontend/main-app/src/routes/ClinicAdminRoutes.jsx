@@ -26,8 +26,8 @@ import ExistingCustomerPet from "../modules/clinicadmin/pages/clinic-receptionis
 import PetHistory from "../modules/clinicadmin/pages/clinic-receptionist/PetHistory";
 import CreateVisit from "../modules/clinicadmin/pages/clinic-receptionist/CreateVisit";
 // Lab Upload Dashboard
-import LabDashboard from "../modules/clinicadmin/pages/lab_Pages/LabDashboard";
-import LabReportUpload from "../modules/clinicadmin/pages/lab_Pages/LabReportUpload";
+import LabDashboard from "../modules/clinicadmin/pages/lab_pages/LabDashboard";
+import LabReportUpload from "../modules/clinicadmin/pages/lab_pages/LabReportUpload";
 import LabPendingCases from "../modules/clinicadmin/pages/lab_pages/PendingPetsLab";
 
 // pet owner module

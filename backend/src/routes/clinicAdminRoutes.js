@@ -1,7 +1,6 @@
 
 const express = require('express');
 const router = express.Router();
-const petRegistrationController = require("../controllers/petRegistrationController")
 const { protect, authorize } = require("../middlewares/auth");
 
 
@@ -14,7 +13,6 @@ const preConsultationRoutes = require("./clinicPreConsultationRoutes")
 const ReceptionRoutes = require("./clinisReceptionRoutes")
 
 const DoctorModuleRoutes = require("./DoctorModuleRoutes")
-const petRegistrationController = require("../controllers/petRegistrationController")
 
 router.use(protect);
 
