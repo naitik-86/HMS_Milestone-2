@@ -18,6 +18,7 @@ import Groomer from "../modules/clinicadmin/features/groomer/Groomer";
 import KennelStaff from "../modules/clinicadmin/features/kennel/KennelStaff";
 import ClinicSettings from "../modules/clinicadmin/features/settings/ClinicSettings";
 import Reports from "../modules/clinicadmin/features/reports/Reports";
+import BasicReports from "../modules/clinicadmin/features/reports/BasicReports";
 
 //reception pages
 import ReceptionDashboard from "../modules/clinicadmin/pages/clinic-receptionist/ReceptionDashboard";
@@ -70,6 +71,8 @@ const ClinicAdminRoutes = (
             <Route path="groomer" element={<Groomer />} />
             <Route path="kennel" element={<KennelStaff />} />
             <Route path="reports" element={<Reports />} />
+            <Route path="reports/basic" element={<Reports />}/>
+            <Route path="reports/basic" element={<BasicReports />} />
             <Route path="settings" element={<ClinicSettings />} />
         </Route>
 
