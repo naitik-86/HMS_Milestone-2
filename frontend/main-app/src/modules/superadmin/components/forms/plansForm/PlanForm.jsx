@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 
 const modulesList = [
@@ -30,14 +30,19 @@ export default function PlanForm({ onClose }) {
 
         modules: [],
     });
+console.log("PlanForm Rendered");
 
     const handleChange = (e) => {
+        console.log("PlanForm Rendered  2");
+        console.log(e.target.name, e.target.value);
         setForm({
             ...form,
             [e.target.name]: e.target.value,
         });
     };
-
+useEffect(() => {
+    console.log(form);
+}, [form]);
     const toggleModule = (module) => {
         setForm((prev) => ({
             ...prev,
