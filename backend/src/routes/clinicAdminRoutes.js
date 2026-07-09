@@ -14,6 +14,7 @@ const preConsultationRoutes = require("./clinicPreConsultationRoutes")
 const ReceptionRoutes = require("./clinisReceptionRoutes")
 
 const DoctorModuleRoutes = require("./DoctorModuleRoutes")
+const petRegistrationController = require("../controllers/petRegistrationController")
 
 router.use(protect);
 
@@ -105,6 +106,8 @@ router.get("/reception/petHistory", petRegistrationController.getPetHistory);
 router.get("/reception/existing-customers/stats", petRegistrationController.getDashboardStats);
 router.get("/reception/existing-customers", petRegistrationController.getExistingCustomers);
 router.get("/reception/existing-customers/:ownerId/pets/:petId", petRegistrationController.getPetDetails);
+
+// router.use("/pre-consultation", preConsultationRoutes);
 
 /* LAB WORKFLOW (Reception -> Pre -> Doctor -> Lab -> Doctor -> Closed) */
 // Lab technician queue: appointments waiting for lab results

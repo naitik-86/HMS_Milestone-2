@@ -27,15 +27,23 @@ export default function Sidebar({ isOpen = false, onClose }) {
     ];
 
     const handleLogout = () => {
-        console.log("Logout clicked");
-        showToast({
-            type: "success",
-            title: "Logout Successful",
-            description: "You have been logged out",
-        });
-        navigate("/");
-        onClose?.();
-    };
+    console.log("Logout clicked");
+
+    localStorage.removeItem("token");
+    localStorage.removeItem("role");
+    localStorage.removeItem("totpRequired");
+    localStorage.removeItem("passwordResetRequired");
+    localStorage.removeItem("staffIdForTotpSetup");
+
+    showToast({
+        type: "success",
+        title: "Logout Successful",
+        description: "You have been logged out",
+    });
+
+    navigate("/login", { replace: true });
+    onClose?.();
+};
 
     return (
         <>
