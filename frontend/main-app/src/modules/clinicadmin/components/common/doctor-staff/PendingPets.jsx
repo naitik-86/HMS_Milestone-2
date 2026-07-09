@@ -1,8 +1,12 @@
 /* eslint-disable react-hooks/immutability */
 import { useState } from "react";
+import LabReportModal from "./LabReportModal";
+import PreConsultationReportModal from "./PreConsultReportModal";
 import {
   getPendingPets,
   updatePatient,
+  getPreConsultationByVisit,
+  getLabReportByVisit,
 } from "../../../api/doctorModuleApi";
 import { useEffect } from "react";
 
@@ -88,8 +92,65 @@ export default function PendingPets() {
 
   }
   const [formData, setFormData] = useState(initialFormData);
+  const [showLabReportModal, setShowLabReportModal] = useState(false);
+  const [showPreConsultationModal, setShowPreConsultationModal] = useState(false);
+
+  const [selectedLabReport, setSelectedLabReport] = useState(null);
+  const [selectedPreConsultation, setSelectedPreConsultation] = useState(null);
+
+  const [pendingPets, setPendingPets] = useState([]);
+  const [loading, setLoading] = useState(true);
 
 
+  const handleViewLabReports = async (visitId) => {
+    try {
+
+      setLoading(true);
+
+      const response = await getLabReportByVisit(visitId);
+
+      console.log(response);
+
+      setSelectedLabReport(response.data);
+
+      setShowLabReportModal(true);
+
+    } catch (err) {
+
+      console.error(err);
+
+    } finally {
+
+      setLoading(false);
+
+    }
+  };
+
+
+  const handleViewPreConsultation = async (visitId) => {
+
+    try {
+
+      setLoading(true);
+
+      const response = await getPreConsultationByVisit(visitId);
+
+      console.log(response);
+
+      setSelectedPreConsultation(response.data);
+
+      setShowPreConsultationModal(true);
+
+    } catch (err) {
+
+      console.error(err);
+
+    } finally {
+
+      setLoading(false);
+
+    }
+  };
   const handleChange = (section, field, value) => {
 
     setFormData((prev) => ({
@@ -107,8 +168,7 @@ export default function PendingPets() {
     }));
 
   };
-  const [pendingPets, setPendingPets] = useState([]);
-  const [loading, setLoading] = useState(true);
+
 
   useEffect(() => {
     fetchPendingPets();
@@ -229,6 +289,10 @@ export default function PendingPets() {
       .toLowerCase()
       .includes(search.toLowerCase())
   );
+
+
+
+
   return (
 
 
@@ -372,6 +436,14 @@ export default function PendingPets() {
                   Status
                 </th>
 
+                <th className="py-4 pr-4 text-left">
+                  PC Report
+                </th>
+
+                <th className="py-4 pr-4 text-left">
+                  Lab Report
+                </th>
+
                 <th className="py-4 text-left">
                   Action
                 </th>
@@ -381,6 +453,7 @@ export default function PendingPets() {
             <tbody>
 
               {filteredPets.map((pet) => (
+
                 <tr
                   key={pet._id}
                   className="border-b hover:bg-slate-50"
@@ -405,6 +478,42 @@ export default function PendingPets() {
                     <span className="bg-orange-100 text-orange-600 px-4 py-2 rounded-full text-sm">
                       {pet.status}
                     </span>
+                  </td>
+
+
+
+                  <td>
+
+                    <button
+                      onClick={() => handleViewPreConsultation(pet._id)}
+                      className="flex items-center gap-2 px-4 py-2 rounded-xl
+                   bg-orange-50 text-orange-600
+                   border border-orange-200
+                   hover:bg-orange-500
+                   hover:text-white
+                   transition-all duration-300"
+                    >
+                      📋
+                      <span>View Pre-Consultation</span>
+                    </button>
+                  </td>
+                  <td>
+
+
+                    <button
+                      onClick={() => handleViewLabReports(pet._id)}
+                      className="flex items-center gap-2 px-4 py-2 rounded-xl
+                   bg-white
+                   border border-orange-400
+                   text-orange-600
+                   hover:bg-orange-500
+                   hover:text-white
+                   transition-all duration-300"
+                    >
+                      🧪
+                      <span>View Lab Reports</span>
+                    </button>
+
                   </td>
 
                   <td>
@@ -1697,6 +1806,21 @@ export default function PendingPets() {
 
         </div>
       )}
+
+
+      <LabReportModal
+        open={showLabReportModal}
+        onClose={() => setShowLabReportModal(false)}
+        report={selectedLabReport}
+      />
+
+      <PreConsultationReportModal
+        open={showPreConsultationModal}
+        onClose={() => setShowPreConsultationModal(false)}
+        data={selectedPreConsultation}
+      />
+
+
     </div>
 
   );

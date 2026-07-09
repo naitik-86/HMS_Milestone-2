@@ -9,7 +9,9 @@ const {
     getPatient,
     getLabPets,
     updatePatient,
-    createPatient
+    createPatient,
+    getLabReportByVisit,
+    getPreConsultationByVisit,
 } = require("../controllers/DoctorModuleController");
 
 console.log("checking");
@@ -35,6 +37,8 @@ router.get("/patient/:id", getPatient);
 
 // Save Complete Form
 router.put("/patient/:id", updatePatient);
+router.get("/report/lab/:id", getLabReportByVisit);
+router.get("/report/pre-consultation/:id", getPreConsultationByVisit);
 
 router.get("/lab-pets", getLabPets);
 

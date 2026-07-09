@@ -18,7 +18,7 @@ export default function DoctorSidebar() {
   const menuItems = [
     { name: "Dashboard", path: "", icon: LayoutDashboard },
     { name: "Pending Pets", path: "pending", icon: Clock3 },
-    { name: "Lab Reports", path: "lab", icon: FlaskConical },
+
     { name: "Completed Pets", path: "completed", icon: CheckCircle2 },
     { name: "History", path: "history", icon: History },
   ];
@@ -98,10 +98,9 @@ export default function DoctorSidebar() {
               end={item.path === ""}
               onClick={() => setIsOpen(false)}
               className={({ isActive }) =>
-                `flex w-full items-center gap-4 rounded-2xl px-5 py-4 transition-all duration-300 ${
-                  isActive
-                    ? "bg-orange-500 text-white shadow-lg"
-                    : "text-slate-300 hover:bg-slate-800 hover:text-white"
+                `flex w-full items-center gap-4 rounded-2xl px-5 py-4 transition-all duration-300 ${isActive
+                  ? "bg-orange-500 text-white shadow-lg"
+                  : "text-slate-300 hover:bg-slate-800 hover:text-white"
                 }`
               }
             >

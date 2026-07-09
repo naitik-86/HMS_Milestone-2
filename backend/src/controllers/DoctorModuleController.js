@@ -1,5 +1,7 @@
 const DoctorConsultation = require("../models/DoctorConsultationModdel");
 const Visit = require("../models/visitModel");
+const LabReport = require("../models/LabReport")
+const PreConsultation = require("../models/PreConsultation")
 const PetRegistration = require("../models/PetRegistration")
 
 // ======================================================
@@ -357,6 +359,95 @@ exports.updatePatient = async (req, res) => {
         return res.status(500).json({
             success: false,
             message: error.message
+        });
+
+    }
+};
+
+exports.getLabReportByVisit = async (req, res) => {
+    try {
+
+        const { id } = req.params;
+        const clinicId = req.user.clinicId;
+
+        const labReport = await LabReport.findOne({
+            visitId: id,
+            clinicId,
+        }).populate({
+            path: "petId",
+            select: "name species breed ownerId",
+            populate: {
+                path: "ownerId",
+                select: "ownerName"
+            }
+        })
+            .populate({
+                path: "visitId",
+                select: "tokenNumber"
+            });
+        if (!labReport) {
+            return res.status(404).json({
+                success: false,
+                message: "Lab report not found.",
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "Lab report fetched successfully.",
+            data: labReport,
+        });
+
+    } catch (error) {
+
+        return res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+
+    }
+};
+
+exports.getPreConsultationByVisit = async (req, res) => {
+    try {
+
+        const { id } = req.params;
+        const clinicId = req.user.clinicId;
+
+        const preConsultation = await PreConsultation.findOne({
+            visitId: id,
+            clinicId,
+        }).populate({
+            path: "petId",
+            select: "name species breed"
+        })
+            .populate({
+                path: "visitId",
+                select: "tokenNumber"
+            })
+            .populate({
+                path: "ownerId",
+                select: "ownerName"
+            });
+
+        if (!preConsultation) {
+            return res.status(404).json({
+                success: false,
+                message: "Pre-consultation report not found.",
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "Pre-consultation report fetched successfully.",
+            data: preConsultation,
+        });
+
+    } catch (error) {
+
+        return res.status(500).json({
+            success: false,
+            message: error.message,
         });
 
     }
