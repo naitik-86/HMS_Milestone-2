@@ -1,7 +1,8 @@
 const jwt = require("jsonwebtoken");
 
 const protect = async (req, res, next) => {
-
+  console.log("===== PROTECT =====");
+  console.log(req.method, req.originalUrl);
   const authHeader =
     req.headers.authorization ||
     req.headers.Authorization;
@@ -30,7 +31,7 @@ const protect = async (req, res, next) => {
       token,
       process.env.JWT_SECRET
     );
-    // console.log("Decoded:", decoded)
+    console.log("Decoded:", decoded)
 
     req.user = decoded;
 
@@ -51,7 +52,8 @@ const authorize = (...roles) => {
 
 
   return (req, res, next) => {
-
+    console.log("AUTHORIZE CALLED");
+    console.log("req.user:", req.user);
 
     if (!roles.includes(req.user.role)) {
 

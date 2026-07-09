@@ -8,35 +8,50 @@ const labReportSchema = new mongoose.Schema(
             required: true,
             index: true
         },
-        reportId: {
-            type: String,
+
+        petId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Pet",
             required: true,
-            unique: true,
         },
 
-        petName: {
-            type: String,
+        visitId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Visit",
             required: true,
-            trim: true,
         },
 
-        ownerName: {
-            type: String,
-            required: true,
-            trim: true,
+        consultationId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Consultation",
         },
 
-        reportType: {
-            type: String,
-            enum: [
-                "Blood Test",
-                "CBC Report",
-                "Urine Test",
-                "X-Ray",
-                "Ultrasound",
-            ],
-            required: true,
-        },
+        reports: [
+            {
+                testName: {
+                    type: String,
+                    enum: [
+                        "CBC",
+                        "Biochemistry",
+                        "Urinalysis",
+                        "Culture & Sensitivity",
+                        "X-Ray",
+                        "USG",
+                        "Cytology",
+                        "ELISA",
+                        "PCR",
+                        "Blood",
+                        "Urine",
+                        "Stool",
+                        "Swab",
+                        "Biopsy"
+                    ],
+                },
+
+                fileUrl: String,
+                fileName: String,
+            }
+        ],
 
         status: {
             type: String,
@@ -44,24 +59,10 @@ const labReportSchema = new mongoose.Schema(
             default: "Pending",
         },
 
-        remarks: {
-            type: String,
-            default: "",
-        },
+        remarks: String,
 
-        reportFile: {
-            type: String,
-            default: "",
-        },
-
-        uploadedBy: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "User",
-        },
     },
-    {
-        timestamps: true,
-    }
+    { timestamps: true }
 );
 
 module.exports = mongoose.model("LabReport", labReportSchema);

@@ -1,7 +1,7 @@
 
 const express = require('express');
 const router = express.Router();
-
+const petRegistrationController = require("../controllers/petRegistrationController")
 const { protect, authorize } = require("../middlewares/auth");
 
 
@@ -18,21 +18,15 @@ const petRegistrationController = require("../controllers/petRegistrationControl
 
 router.use(protect);
 
-// router.use(authorize("CLINIC_ADMIN"));
 
 router.use("/staff", StaffRoutes);
 router.use("/doctors", DoctorRoutes);
 router.use("/doctor-module", DoctorModuleRoutes);
-router.use("/lab-technicians", LabRoutes);
+router.use("/lab-module", LabRoutes);
 router.use("/groomers", GroomerRoutes);
 router.use("/kennel", KennelRoutes);
 router.use("/reception", ReceptionRoutes);
 router.use("/pre-consultation", preConsultationRoutes);
-
-
-
-
-
 
 
 

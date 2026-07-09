@@ -14,12 +14,17 @@ export default function LabSidebar() {
     {
       id: "/clinic/lab",
       label: "Dashboard",
-      icon: "📊",
+
     },
     {
       id: "/clinic/lab/upload",
       label: "Lab Reports",
-      icon: "🧪",
+
+    },
+    {
+      id: "/clinic/lab/pending-pets",
+      label: "Pending Pets",
+
     },
   ];
 
