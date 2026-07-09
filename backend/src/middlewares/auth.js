@@ -1,4 +1,5 @@
 const jwt = require("jsonwebtoken");
+// console.log("AUTH FILE LOADED");
 
 const protect = async (req, res, next) => {
   console.log("===== PROTECT =====");
@@ -50,7 +51,7 @@ const protect = async (req, res, next) => {
 
 const authorize = (...roles) => {
 
-
+  console.log("************ AUTHORIZE V2 ************");
   return (req, res, next) => {
     console.log("AUTHORIZE CALLED");
     console.log("req.user:", req.user);

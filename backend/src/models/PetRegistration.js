@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { petSchema } = require("./Pet");
 
 const vaccinationSchema = new mongoose.Schema({
     vaccineName: String,
@@ -43,41 +44,6 @@ const visitSchema = new mongoose.Schema({
 });
 
 
-const petSchema = new mongoose.Schema({
-    petName: {
-        type: String,
-    },
-    species: String,
-    breed: String,
-    gender: String,
-    dob: Date,
-    age: Number,
-    color: String,
-    rfid: String,
-    identificationArea: String,
-    petPhoto: String,
-
-    sterilized: {
-        type: Boolean,
-        default: false
-    },
-
-    uniquePetId: {
-        type: String,
-        required: true
-    },
-
-    history: {
-        vaccinations: [vaccinationSchema],
-        dewormings: [dewormingSchema],
-        surgeries: [surgerySchema],
-        treatments: [treatmentSchema],
-        allergies: String,
-        currentMedications: String
-    },
-
-    visits: [visitSchema]
-});
 
 const ownerSchema = new mongoose.Schema(
     {

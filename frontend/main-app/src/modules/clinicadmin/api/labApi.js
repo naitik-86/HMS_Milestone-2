@@ -68,3 +68,17 @@ export const updateLabPatient = async (id, labData) => {
 
     return res.data;
 };
+
+
+export const getAllPatientReports = async () => {
+    const res = await API.get(`${BASE_URL}/reports`);
+    return res.data;
+};
+
+/**
+ * Get reports of a particular patient
+ */
+export const getPatientReports = async (petId) => {
+    const res = await API.get(`${BASE_URL}/reports/${petId}`);
+    return res.data;
+};
