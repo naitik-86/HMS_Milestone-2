@@ -22,6 +22,7 @@ export default function Sidebar({ isOpen = false, onClose }) {
         { name: "Plans", path: "/superadmin/plans", icon: ClipboardList },
         { name: "Verification", path: "/superadmin/verification", icon: ShieldCheck },
         { name: "Reports", path: "/superadmin/reports", icon: BarChart3 },
+        { name: "Basic Reports", path: "/superadmin/reports/basic", icon: BarChart3 },
         { name: "Settings", path: "/superadmin/settings", icon: Settings },
     ];
 

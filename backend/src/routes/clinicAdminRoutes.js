@@ -10,8 +10,9 @@ const DoctorRoutes = require("./clinicDoctorRoutes")
 const GroomerRoutes = require("./clinicGroomerRoutes")
 const KennelRoutes = require("./clinicKennelRoutes")
 const LabRoutes = require("./clinicLabRoutes")
-const PreConsultationRoutes = require("./clinicPreConsultationRoutes")
+const preConsultationRoutes = require("./clinicPreConsultationRoutes")
 const ReceptionRoutes = require("./clinisReceptionRoutes")
+
 const DoctorModuleRoutes = require("./DoctorModuleRoutes")
 const petRegistrationController = require("../controllers/petRegistrationController")
 
@@ -26,7 +27,8 @@ router.use("/lab-technicians", LabRoutes);
 router.use("/groomers", GroomerRoutes);
 router.use("/kennel", KennelRoutes);
 router.use("/reception", ReceptionRoutes);
-router.use("/pre-consultation", PreConsultationRoutes);
+router.use("/pre-consultation", preConsultationRoutes);
+
 
 
 
@@ -44,7 +46,12 @@ const upload = require('../middlewares/uploadMiddleware');
 const settingsController = require('../controllers/clinicSettingsController');
 const reportsController = require('../controllers/adminReportsController');
 const labController = require('../controllers/labTechnicianController');
+const petRegistrationController = require('../controllers/petRegistrationController');
 // const labReportController = require("../controllers/labDashboardController");
+
+
+
+
 
 
 router.use(authorize('CLINIC_ADMIN'));

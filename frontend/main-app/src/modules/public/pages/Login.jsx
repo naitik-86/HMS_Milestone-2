@@ -150,7 +150,7 @@ export default function Login() {
     }
 
     try {
-      const redirectRes = await API.get("/");
+      const redirectRes = await API.get("/dashboard");
 
       const redirectUrl =
         redirectRes.data?.data?.redirectUrl;
