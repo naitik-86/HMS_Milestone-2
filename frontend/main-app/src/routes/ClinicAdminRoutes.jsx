@@ -1,7 +1,6 @@
 
 
 import { Route } from "react-router-dom";
-// eslint-disable-next-line no-unused-vars
 import ProtectedRoute from "./ProtectedRoute";
 import DoctorLayout from "../layouts/DoctorStaffLayout";
 import ReceptionLayout from "../layouts/ReceptionLayout";
@@ -18,6 +17,7 @@ import Groomer from "../modules/clinicadmin/features/groomer/Groomer";
 import KennelStaff from "../modules/clinicadmin/features/kennel/KennelStaff";
 import ClinicSettings from "../modules/clinicadmin/features/settings/ClinicSettings";
 import Reports from "../modules/clinicadmin/features/reports/Reports";
+import BasicReports from "../modules/clinicadmin/features/reports/BasicReports";
 
 //reception pages
 import ReceptionDashboard from "../modules/clinicadmin/pages/clinic-receptionist/ReceptionDashboard";
@@ -58,9 +58,9 @@ const ClinicAdminRoutes = (
         <Route
             path="/clinic"
             element={
-                // <ProtectedRoute allowedRoles={["CLINIC_ADMIN"]}>
-                <ClinicAdminLayout />
-                // </ProtectedRoute>
+                <ProtectedRoute allowedRoles={["CLINIC_ADMIN"]}>
+                    <ClinicAdminLayout />
+                </ProtectedRoute>
             }
         >
             <Route index element={<Dashboard />} />
@@ -70,6 +70,8 @@ const ClinicAdminRoutes = (
             <Route path="groomer" element={<Groomer />} />
             <Route path="kennel" element={<KennelStaff />} />
             <Route path="reports" element={<Reports />} />
+            <Route path="reports/basic" element={<Reports />}/>
+            <Route path="reports/basic" element={<BasicReports />} />
             <Route path="settings" element={<ClinicSettings />} />
         </Route>
 

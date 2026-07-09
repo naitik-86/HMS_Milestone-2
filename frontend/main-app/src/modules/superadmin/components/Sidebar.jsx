@@ -22,19 +22,28 @@ export default function Sidebar({ isOpen = false, onClose }) {
         { name: "Plans", path: "/superadmin/plans", icon: ClipboardList },
         { name: "Verification", path: "/superadmin/verification", icon: ShieldCheck },
         { name: "Reports", path: "/superadmin/reports", icon: BarChart3 },
+        { name: "Basic Reports", path: "/superadmin/reports/basic", icon: BarChart3 },
         { name: "Settings", path: "/superadmin/settings", icon: Settings },
     ];
 
     const handleLogout = () => {
-        console.log("Logout clicked");
-        showToast({
-            type: "success",
-            title: "Logout Successful",
-            description: "You have been logged out",
-        });
-        navigate("/");
-        onClose?.();
-    };
+    console.log("Logout clicked");
+
+    localStorage.removeItem("token");
+    localStorage.removeItem("role");
+    localStorage.removeItem("totpRequired");
+    localStorage.removeItem("passwordResetRequired");
+    localStorage.removeItem("staffIdForTotpSetup");
+
+    showToast({
+        type: "success",
+        title: "Logout Successful",
+        description: "You have been logged out",
+    });
+
+    navigate("/login", { replace: true });
+    onClose?.();
+};
 
     return (
         <>

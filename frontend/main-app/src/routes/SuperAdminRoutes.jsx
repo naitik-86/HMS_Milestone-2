@@ -10,6 +10,8 @@ import {
     Reports,
     Verification,
     Settings,
+    // sub-pages
+    BasicReports,
 } from "../modules/superadmin/pages";
 
 const SuperAdminRoutes = (
@@ -26,6 +28,7 @@ const SuperAdminRoutes = (
         <Route path="veterinarian" element={<Doctors />} />
         <Route path="plans" element={<Plans />} />
         <Route path="reports" element={<Reports />} />
+        <Route path="reports/basic" element={<BasicReports />} />
         <Route path="verification" element={<Verification />} />
         <Route path="settings" element={<Settings />} />
     </Route>

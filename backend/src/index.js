@@ -19,6 +19,13 @@ connectDB();
 
 startCronJobs();
 
+// Additional allowed origins for deployed frontends, e.g.
+// ALLOWED_ORIGINS=http://my-bucket.s3-website.ap-south-1.amazonaws.com,https://my-domain.com
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || '')
+  .split(',')
+  .map((o) => o.trim())
+  .filter(Boolean);
+
 // Global Middlewares
 app.use(cors({
   origin: function (origin, callback) {
@@ -28,7 +35,9 @@ app.use(cors({
     if (/^http:\/\/localhost:\d+$/.test(origin) || /^http:\/\/127\.0\.0\.1:\d+$/.test(origin)) {
       return callback(null, true);
     }
-    // In production, add your domain here, e.g., if (origin === 'https://mydomain.com') return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
     return callback(new Error('Not allowed by CORS'));
   },
   credentials: true
