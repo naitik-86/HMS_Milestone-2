@@ -11,14 +11,17 @@ const receptionRoutes = require('./receptionRoutes');
 const preConsultationRoutes = require("./preConsultationRoutes");
 const petOwnerRoutes = require("./petOwnerRoutes");
 const doctorModule = require('./DoctorModuleRoutes')
-const { protect, authorize } = require('../middlewares/auth');
 const labRoutes = require("./labRoutes");
+
+// Import middlewares and controllers for root-level routes
+const { protect, authorize } = require('../middlewares/auth');
+const { getDashboardRedirect } = require('../controllers/dashboardController');
+
 // Public routes
 router.use('/auth', authRoutes);
 router.use('/auth', authOtpRoutes);
 
 // Protected role-based modules
-
 router.use('/super-admin', protect, superAdminRoutes);
 
 router.use('/super-admin-reports', protect, superAdminReportsRoutes);
@@ -33,5 +36,10 @@ router.use("/doctorModule", doctorModule)
 
 // lab module 
 router.use("/lab", labRoutes);
+
+// ==========================================
+// CENTRALIZED DASHBOARD REDIRECT
+// ==========================================
+router.get('/dashboard', protect, getDashboardRedirect);
 
 module.exports = router;

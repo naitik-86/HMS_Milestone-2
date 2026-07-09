@@ -1,14 +1,15 @@
 // Central mapping for dashboard access.
 // Frontend should call GET /api/v1/dashboard with JWT and then navigate using redirectUrl.
 const DASHBOARD = {
-  SUPER_ADMIN: '/super-admin/dashboard',
-  CLINIC_ADMIN: '/clinic-admin/dashboard',
-  RECEPTIONIST: '/receptionist/dashboard',
-  PRE_CONSULTATION: '/pre-consultation/dashboard',
-  DOCTOR: '/doctor/dashboard',
-  LAB_TECHNICIAN: '/lab-technician/dashboard',
-  OWNER: '/owner/dashboard'
+  SUPER_ADMIN: '/superadmin',                  // Matches your frontend fallback
+  CLINIC_ADMIN: '/clinic',                     // Matches <Route path="/clinic">
+  RECEPTIONIST: '/clinic/reception',           // Matches <Route path="/clinic/reception">
+  PRE_CONSULTATION: '/clinic/preconsultation', // Matches <Route path="/clinic/preconsultation">
+  DOCTOR: '/clinic/doctor',                    // Matches <Route path="/clinic/doctor">
+  LAB_TECHNICIAN: '/clinic/lab',               // Matches <Route path="/clinic/lab">
+  OWNER: '/clinic/owner'                       // Matches <Route path="/clinic/owner">
 };
+
 
 // roleId mapping concept: each role gets a unique stable id.
 // These IDs are returned as part of the API response for frontend usage/logging.

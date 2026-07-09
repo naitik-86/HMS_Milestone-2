@@ -50,13 +50,18 @@ const protect = async (req, res, next) => {
 
 const authorize = (...roles) => {
 
-
   return (req, res, next) => {
     console.log("AUTHORIZE CALLED");
     console.log("req.user:", req.user);
 
-    if (!roles.includes(req.user.role)) {
+    // Normalize the role string to match constants (e.g., "Clinic Admin" -> "CLINIC_ADMIN")
+    const rawRole = req.user?.role || "";
+    const normalizedRole = rawRole.toUpperCase().replace(/\s+/g, '_');
 
+    // Check against the normalized role
+    if (!roles.includes(normalizedRole)) {
+      console.log(`Access Denied: Expected one of [${roles}], but got '${normalizedRole}'`);
+      
       return res.status(403).json({
         success: false,
         message: "Forbidden"

@@ -10,26 +10,27 @@ exports.getDashboardRedirect = async (req, res) => {
   // - For super admin login via JWT: req.user.id is SuperAdmin _id
   const loginId = authUser.id || null;
 
-  // Backend roles currently used in JWT: SUPER_ADMIN, CLINIC_ADMIN, DOCTOR, PARA_MEDICAL, RECEPTIONIST
-  // Your requested UI roles map as follows:
-  // - PARA_MEDICAL => PRE_CONSULTATION (default)
-  // - PARA_MEDICAL => LAB_TECHNICIAN when client passes ?as=lab-technician
+  // 🔹 FIX: Normalize the role string from the JWT to match our constants
+  // Converts "Clinic Admin" to "CLINIC_ADMIN", "super admin" to "SUPER_ADMIN", etc.
+  const rawRole = authUser.role ? authUser.role.toUpperCase().replace(/\s+/g, '_') : '';
+
   let normalizedRoleKey = null;
 
-  if (authUser.role === 'SUPER_ADMIN') normalizedRoleKey = 'SUPER_ADMIN';
-  else if (authUser.role === 'CLINIC_ADMIN') normalizedRoleKey = 'CLINIC_ADMIN';
-  else if (authUser.role === 'RECEPTIONIST') normalizedRoleKey = 'RECEPTIONIST';
-  else if (authUser.role === 'DOCTOR') normalizedRoleKey = 'DOCTOR';
-  else if (authUser.role === 'PARA_MEDICAL') {
+  if (rawRole === 'SUPER_ADMIN') normalizedRoleKey = 'SUPER_ADMIN';
+  else if (rawRole === 'CLINIC_ADMIN') normalizedRoleKey = 'CLINIC_ADMIN';
+  else if (rawRole === 'RECEPTIONIST') normalizedRoleKey = 'RECEPTIONIST';
+  else if (rawRole === 'DOCTOR') normalizedRoleKey = 'DOCTOR';
+  else if (rawRole === 'PARA_MEDICAL') {
     const as = (req.query?.as || '').toLowerCase();
     if (as.includes('lab')) normalizedRoleKey = 'LAB_TECHNICIAN';
     else normalizedRoleKey = 'PRE_CONSULTATION';
   }
+  
   if (!normalizedRoleKey) {
     return res.status(403).json({
       success: false,
       message: 'Role not supported for dashboard',
-      role: authUser.role
+      role: authUser.role // Keeping the original string here helps with debugging if something fails
     });
   }
 
@@ -46,4 +47,3 @@ exports.getDashboardRedirect = async (req, res) => {
     }
   });
 };
-
