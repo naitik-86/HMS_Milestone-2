@@ -11,7 +11,7 @@ import {
 import { useEffect } from "react";
 
 export default function PendingPets() {
-
+  const [refreshKey, setRefreshKey] = useState(0);
   const [search, setSearch] = useState("");
   const [selectedPet, setSelectedPet] = useState(null);
   const [showModal, setShowModal] = useState(false);
@@ -151,6 +151,7 @@ export default function PendingPets() {
 
     }
   };
+
   const handleChange = (section, field, value) => {
 
     setFormData((prev) => ({
@@ -169,17 +170,20 @@ export default function PendingPets() {
 
   };
 
+  const refreshPendingPets = () => {
+    setRefreshKey((prev) => prev + 1);
+  };
+
 
   useEffect(() => {
     fetchPendingPets();
   }, []);
 
-
   const fetchPendingPets = async () => {
     try {
       const res = await getPendingPets();
       console.log(res);
-
+      console.log("Fetching pending pets...");
       setPendingPets(res.data);
       console.log(pendingPets);
 
@@ -213,7 +217,9 @@ export default function PendingPets() {
         }
       );
 
-      if (response.data.success) {
+      console.log(response);
+
+      if (response.success) {
         alert("Case Sent To Lab Successfully");
 
         await fetchPendingPets();
@@ -247,13 +253,17 @@ export default function PendingPets() {
         }
       );
 
-      if (response.data.success) {
+
+
+
+      if (response.success) {
 
 
         await fetchPendingPets();
         // Reset States
         setSelectedPet(null);
         setStep(1);
+        refreshPendingPets();
         // Reset Form
         setFormData(initialFormData);
       }
