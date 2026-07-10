@@ -92,6 +92,7 @@ export default function Upload({
 
                 <input
                     type="file"
+                    accept=".pdf,application/pdf"
                     className="hidden"
                     onChange={onChange}
                 />

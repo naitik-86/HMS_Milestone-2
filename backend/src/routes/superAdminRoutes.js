@@ -10,6 +10,12 @@ const {
     updateClinicVerification,
     uploadClinicDocuments
 } = require('../controllers/adminController');
+const {
+    createPlan,
+    getPlans,
+    updatePlan,
+    deletePlan
+} = require('../controllers/subscriptionPlanController');
 
 const upload = require('../middlewares/upload');
 
@@ -19,6 +25,10 @@ router.post('/clinics', createClinic);
 router.get('/clinics', getAllClinics);
 router.put('/clinics/:id/subscription', updateSubscription);
 router.get('/dashboard', getAdminDashboard);
+router.post('/plans', createPlan);
+router.get('/plans', getPlans);
+router.put('/plans/:id', updatePlan);
+router.delete('/plans/:id', deletePlan);
 
 router.put('/clinics/:id/verification', updateClinicVerification);
 

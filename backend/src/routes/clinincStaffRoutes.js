@@ -1,12 +1,24 @@
 const express = require('express');
 const router = express.Router();
-const { authorize } = require('../middlewares/auth');
+const {
+    protect,
+    authorize
+} = require("../middlewares/auth");
 const upload = require('../middlewares/uploadMiddleware');
 const staffController = require('../controllers/staffController');
 
-router.use(authorize('CLINIC_ADMIN'));
+router.get(
+    "/",
+    protect,
+    authorize("CLINIC_ADMIN"),
+    staffController.getAllStaff
+);
 
-
+router.get(
+    "/doctor-list",
+    authorize("CLINIC_ADMIN"),
+    staffController.getDoctorStaff
+);
 
 router.post(
     "/",

@@ -28,7 +28,16 @@ exports.getMe = async (req, res) => {
 // POST /api/clinics -> Super Admin onboarding a new clinic
 exports.createClinic = async (req, res) => {
   try {
-    const { name, address, subscriptionType, maxDoctors, maxStaff } = req.body;
+    const {
+      name,
+      address,
+      subscriptionType,
+      maxDoctors,
+      maxStaff,
+      addressDetails,
+      latitude,
+      longitude
+    } = req.body;
 
     let expiryDate = new Date();
     if (subscriptionType === '6_MONTHS') expiryDate.setMonth(expiryDate.getMonth() + 6);
@@ -40,7 +49,14 @@ exports.createClinic = async (req, res) => {
       address,
       subscriptionType,
       expiryDate,
-      licenseLimits: { maxDoctors, maxStaff }
+      licenseLimits: { maxDoctors, maxStaff },
+      addressDetails,
+      location: latitude && longitude
+        ? {
+            type: 'Point',
+            coordinates: [Number(longitude), Number(latitude)]
+          }
+        : undefined
     });
 
     res.status(201).json({ success: true, data: clinic });

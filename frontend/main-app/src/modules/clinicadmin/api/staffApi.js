@@ -6,7 +6,7 @@ export const getStaff = async () => {
     const res = await API.get(BASE_URL);
 
     console.log("Fetched staff:");
-    console.log(res);
+    console.log(res.data);
 
     return res.data;
 };
@@ -166,4 +166,9 @@ const buildStaffFormData = (staff) => {
     }
 
     return formData;
+};
+/* GET ONLY DOCTOR STAFF */
+export const getDoctorStaff = async () => {
+    const res = await API.get("/clinic/staff/doctor-list");
+    return res.data?.data || [];
 };

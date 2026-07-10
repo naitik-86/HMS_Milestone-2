@@ -24,6 +24,12 @@ const degreeSchema = new mongoose.Schema(
 
 const doctorSchema = new mongoose.Schema(
     {
+        clinicId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Clinic",
+            required: true,
+            index: true
+        },
         doctorId: {
             type: String,
             unique: true,
@@ -116,6 +122,16 @@ const doctorSchema = new mongoose.Schema(
             enum: ["Active", "Inactive"],
             default: "Active",
         },
+        staff: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Staff",
+    required: true,
+},
+
+staffCode: {
+    type: String,
+    required: true,
+},
     },
     {
         timestamps: true,

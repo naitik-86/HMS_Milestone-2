@@ -17,22 +17,95 @@ export default function DoctorForm({ activeTab, form, setForm, qualifications, s
       ).values(),
     ]
   : [];
-    const handleFileUpload = (field) => (e) => {
-        const file = e.target.files[0];
 
-        if (!file) return;
+  const validatePincode = async (pincode) => {
+    if (pincode.length !== 6) return;
 
-        setForm((prev) => ({
-            ...prev,
-            [field]: file,
-        }));
+    try {
+        const response = await fetch(
+            `https://api.postalpincode.in/pincode/${pincode}`
+        );
 
-        console.log("File selected:", file);
-        console.log(form);
-        console.log(qualifications);
+        const data = await response.json();
 
+        if (
+            !data ||
+            data[0].Status !== "Success" ||
+            !data[0].PostOffice
+        ) {
+            showToast({
+                type: "error",
+                title: "Invalid PIN Code",
+                description: "PIN Code not found.",
+            });
 
-    };
+            setForm((prev) => ({
+                ...prev,
+                pincode: "",
+            }));
+
+            return;
+        }
+
+        const office = data[0].PostOffice[0];
+
+        const stateMatched =
+            office.State.trim().toLowerCase() ===
+            form.state.trim().toLowerCase();
+
+        const cityMatched =
+            office.District.trim().toLowerCase() ===
+                form.city.trim().toLowerCase() ||
+            office.Block?.trim().toLowerCase() ===
+                form.city.trim().toLowerCase();
+
+        if (!stateMatched || !cityMatched) {
+            showToast({
+                type: "error",
+                title: "Location Mismatch",
+                description:
+                    "Selected State / City doesn't match this PIN Code.",
+            });
+
+            setForm((prev) => ({
+                ...prev,
+                pincode: "",
+            }));
+
+            return;
+        }
+
+        showToast({
+            type: "success",
+            title: "Verified",
+            description: "PIN Code verified successfully.",
+        });
+
+    } catch (err) {
+        console.error(err);
+    }
+};
+  const handleFileUpload = (field) => (e) => {
+    const file = e.target.files?.[0];
+
+    if (!file) return;
+
+    if (file.type !== "application/pdf") {
+        showToast({
+            type: "error",
+            title: "Invalid File",
+            description: "Only PDF files are allowed.",
+        });
+
+        e.target.value = "";
+        return;
+    }
+
+    setForm((prev) => ({
+        ...prev,
+        [field]: file,
+    }));
+};
 
     const handleQualificationChange = (index, field, value) => {
         setQualifications((prev) =>
@@ -170,7 +243,20 @@ export default function DoctorForm({ activeTab, form, setForm, qualifications, s
     options={cities.map((city) => city.name)}
     onChange={handleChange}
 />
-                                <Input value={form.pincode} requiredField={true} name="pincode" label="PIN Code" onChange={handleChange} />
+                               <Input
+    value={form.pincode}
+    requiredField
+    name="pincode"
+    label="PIN Code"
+    maxLength={6}
+    onChange={(e) => {
+        handleChange(e);
+
+        if (e.target.value.length === 6) {
+            validatePincode(e.target.value);
+        }
+    }}
+/>
 
                                 <Select value={form.govtIdType || ""} requiredField={true} name="govtIdType" label="Government ID Type" options={["Aadhaar", "PAN", "Passport"]} onChange={handleChange} />
                                 <Input value={form.govtIdNumber} requiredField={true} name="govtIdNumber" label="Government ID Number" onChange={handleChange} />

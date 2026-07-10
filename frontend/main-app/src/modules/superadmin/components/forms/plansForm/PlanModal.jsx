@@ -3,7 +3,7 @@ import PlansHeaderButton from "./PlansHeaderButton";
 
 import { useState } from "react";
 
-export default function PlanModal() {
+export default function PlanModal({ onCreated }) {
     const [open, setOpen] = useState(false);
 
     return (
@@ -11,7 +11,7 @@ export default function PlanModal() {
             <PlansHeaderButton onAdd={() => setOpen(true)} />
 
             {open && (
-                <PlanForm onClose={() => setOpen(false)} />
+                <PlanForm onClose={() => setOpen(false)} onCreated={onCreated} />
             )}
         </div>
     );
