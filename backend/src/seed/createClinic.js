@@ -6,6 +6,7 @@ require("dotenv").config({
     path: path.resolve(__dirname, "../../.env"),
 });
 
+
 const Clinic = require("../models/Clinic");
 const ClinicAdmin = require("../models/ClinicAdmin");
 

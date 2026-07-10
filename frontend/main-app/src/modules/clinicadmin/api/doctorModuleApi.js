@@ -2,6 +2,25 @@ import API from "../../../shared/api/axios";
 
 const BASE_URL = "/clinic/doctor-module";
 
+export const getLabReportByVisit = async (visitId) => {
+
+    console.log(visitId);
+
+    const res = await API.get(
+        `${BASE_URL}/report/lab/${visitId}`
+    );
+
+    return res.data;
+};
+
+export const getPreConsultationByVisit = async (visitId) => {
+    const res = await API.get(
+        `${BASE_URL}/report/pre-consultation/${visitId}`
+    );
+
+    return res.data;
+};
+
 /* GET PENDING PETS */
 export const getPendingPets = async () => {
     const res = await API.get(`${BASE_URL}/pending-pets`);

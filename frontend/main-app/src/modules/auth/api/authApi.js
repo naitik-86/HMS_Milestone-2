@@ -19,4 +19,4 @@ export const authApi = async (loginData) => {
 
         throw error.response?.data || { message: "Login failed" };
     }
-};
+}; 

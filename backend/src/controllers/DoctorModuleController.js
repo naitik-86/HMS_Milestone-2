@@ -1,5 +1,7 @@
 const DoctorConsultation = require("../models/DoctorConsultationModdel");
 const Visit = require("../models/visitModel");
+const LabReport = require("../models/LabReport")
+const PreConsultation = require("../models/PreConsultation")
 const PetRegistration = require("../models/PetRegistration")
 
 // ======================================================
@@ -116,70 +118,166 @@ exports.getPendingPets = async (req, res) => {
 
 
 // ======================================================
-// Completed Pets
+// Get Completed Pets
 // ======================================================
-exports.getCompletedPets = async (req, res) => {
 
+exports.getCompletedPets = async (req, res) => {
     try {
+        console.log("reached");
+
         const clinicId = req.user.clinicId;
+
+        // ==========================
+        // Stats
+        // ==========================
+
+        const completedToday = await Visit.countDocuments({
+            clinicId,
+            "workflow.doctorCompleted": true,
+            updatedAt: {
+                $gte: new Date(new Date().setHours(0, 0, 0, 0))
+            }
+        });
+
+        const startOfWeek = new Date();
+        startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
+        startOfWeek.setHours(0, 0, 0, 0);
+
+        const completedThisWeek = await Visit.countDocuments({
+            clinicId,
+            "workflow.doctorCompleted": true,
+            updatedAt: {
+                $gte: startOfWeek
+            }
+        });
+
+        const totalCompleted = await Visit.countDocuments({
+            clinicId,
+            "workflow.doctorCompleted": true
+        });
+
+        // ==========================
+        // Completed Visits
+        // ==========================
 
         const visits = await Visit.find({
             clinicId,
             "workflow.doctorCompleted": true
         })
-            .populate("ownerId petId doctorId")
-            .sort({ updatedAt: -1 });
+            .populate({
+                path: "petId",
+                select:
+                    "name species breed gender dob age color uniquePetId photoUrl rfidTag identificationMarks isSterilised"
+            })
+            .populate({
+                path: "ownerId",
+                select:
+                    "ownerName mobileNumber email address city district state pincode"
+            })
+            .populate({
+                path: "doctorId",
+                select: "name doctorId"
+            })
+            .sort({
+                updatedAt: -1
+            });
 
         return res.status(200).json({
             success: true,
-            count: visits.length,
-            data: visits
+            data: {
+                stats: {
+                    completedToday,
+                    completedThisWeek,
+                    totalCompleted
+                },
+                pets: visits
+            }
         });
 
     } catch (error) {
+
         return res.status(500).json({
             success: false,
             message: error.message
         });
-    }
 
+    }
 };
 
+// ======================================================
+// Doctor History
+// ======================================================
 
-// ======================================================
-// History
-// ======================================================
 exports.getHistory = async (req, res) => {
 
     try {
 
-        const history = await Doctor.find().sort({
-            updatedAt: -1
+        const clinicId = req.user.clinicId;
+
+        // ==========================
+        // Statistics
+        // ==========================
+
+        const totalRecords = await Visit.countDocuments({
+            clinicId
         });
 
-        const vaccinations = history.filter(
-            item =>
-                item.treatment?.vaccinations &&
-                item.treatment.vaccinations.trim() !== ""
-        ).length;
+        const startOfMonth = new Date();
+        startOfMonth.setDate(1);
+        startOfMonth.setHours(0, 0, 0, 0);
 
-        const treatments = history.filter(
-            item =>
-                item.treatment?.medicines &&
-                item.treatment.medicines.trim() !== ""
-        ).length;
+        const thisMonth = await Visit.countDocuments({
+            clinicId,
+            createdAt: {
+                $gte: startOfMonth
+            }
+        });
+
+        const doctorCompleted = await Visit.countDocuments({
+            clinicId,
+            "workflow.doctorCompleted": true
+        });
+
+        // ==========================
+        // History
+        // ==========================
+
+        const history = await Visit.find({
+            clinicId
+        })
+            .populate({
+                path: "petId",
+                select:
+                    "name species breed gender dob age color uniquePetId photoUrl rfidTag identificationMarks isSterilised"
+            })
+            .populate({
+                path: "ownerId",
+                select:
+                    "ownerName mobileNumber email address city district state pincode"
+            })
+            .populate({
+                path: "doctorId",
+                select: "name doctorId"
+            })
+            .sort({
+                createdAt: -1
+            });
 
         return res.status(200).json({
 
             success: true,
 
-            total: history.length,
+            data: {
 
-            vaccinations,
+                stats: {
+                    totalRecords,
+                    thisMonth,
+                    doctorCompleted
+                },
 
-            treatments,
+                records: history
 
-            data: history
+            }
 
         });
 
@@ -188,7 +286,6 @@ exports.getHistory = async (req, res) => {
         return res.status(500).json({
 
             success: false,
-
             message: error.message
 
         });
@@ -196,7 +293,6 @@ exports.getHistory = async (req, res) => {
     }
 
 };
-
 // ======================================================
 // Get Single Patient
 // ======================================================
@@ -357,6 +453,97 @@ exports.updatePatient = async (req, res) => {
         return res.status(500).json({
             success: false,
             message: error.message
+        });
+
+    }
+};
+
+exports.getLabReportByVisit = async (req, res) => {
+    try {
+
+        const { id } = req.params;
+        const clinicId = req.user.clinicId;
+
+        const labReport = await LabReport.findOne({
+            visitId: id,
+            clinicId,
+        }).populate({
+            path: "petId",
+            select: "name species breed ownerId",
+            populate: {
+                path: "ownerId",
+                select: "ownerName"
+            }
+        })
+            .populate({
+                path: "visitId",
+                select: "tokenNumber"
+            });
+        if (!labReport) {
+            return res.status(404).json({
+                success: false,
+                message: "Lab report not found.",
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "Lab report fetched successfully.",
+            data: labReport,
+            hasLabReport: true
+        });
+
+    } catch (error) {
+
+        return res.status(500).json({
+            success: false,
+            message: error.message,
+            hasLabReport: false
+        });
+
+    }
+};
+
+exports.getPreConsultationByVisit = async (req, res) => {
+    try {
+
+        const { id } = req.params;
+        const clinicId = req.user.clinicId;
+
+        const preConsultation = await PreConsultation.findOne({
+            visitId: id,
+            clinicId,
+        }).populate({
+            path: "petId",
+            select: "name species breed"
+        })
+            .populate({
+                path: "visitId",
+                select: "tokenNumber"
+            })
+            .populate({
+                path: "ownerId",
+                select: "ownerName"
+            });
+
+        if (!preConsultation) {
+            return res.status(404).json({
+                success: false,
+                message: "Pre-consultation report not found.",
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "Pre-consultation report fetched successfully.",
+            data: preConsultation,
+        });
+
+    } catch (error) {
+
+        return res.status(500).json({
+            success: false,
+            message: error.message,
         });
 
     }

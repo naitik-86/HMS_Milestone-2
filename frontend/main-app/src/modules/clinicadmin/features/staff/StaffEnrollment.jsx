@@ -42,7 +42,12 @@ function EnrollForm({ onClose, onSave, editData, mode, staff }) {
     accessLevel: '',
 
     modules: [],
-
+    bankName: "",
+    accountHolderName: "",
+    accountNumber: "",
+    ifscCode: "",
+    branchName: "",
+    upiId: "",
     username: '',
 
     accountExpiryDate: '',
@@ -77,6 +82,18 @@ function EnrollForm({ onClose, onSave, editData, mode, staff }) {
     }
 
     if (step === 3) {
+      if (
+        !form.bankName.trim() ||
+        !form.accountHolderName.trim() ||
+        !form.accountNumber.trim() ||
+        !form.ifscCode.trim()
+      ) {
+        alert("Please fill all required Bank Account Details");
+        return false;
+      }
+    }
+
+    if (step === 4) {
       if (!form.accountExpiryDate) {
         alert("Please select account expiry date");
         return false;
@@ -152,7 +169,23 @@ function EnrollForm({ onClose, onSave, editData, mode, staff }) {
         )
           .filter(([_, value]) => value)
           .map(([key]) => key),
+        bankName:
+          editData.bankDetails?.bankName || "",
 
+        accountHolderName:
+          editData.bankDetails?.accountHolderName || "",
+
+        accountNumber:
+          editData.bankDetails?.accountNumber || "",
+
+        ifscCode:
+          editData.bankDetails?.ifscCode || "",
+
+        branchName:
+          editData.bankDetails?.branchName || "",
+
+        upiId:
+          editData.bankDetails?.upiId || "",
         username:
           editData.accountInfo?.username || "",
 
@@ -196,6 +229,7 @@ function EnrollForm({ onClose, onSave, editData, mode, staff }) {
   const steps = [
     { label: 'Personal Information', short: 'Personal Info' },
     { label: 'Work & Access Assignment', short: 'Work & Access' },
+    { label: "Bank Account Details", short: "Bank Details" },
     { label: 'Security & Credentials', short: 'Security' },
   ];
 
@@ -576,9 +610,108 @@ function EnrollForm({ onClose, onSave, editData, mode, staff }) {
               </div>
             </div>
           )}
-
-          {/* ─── STEP 3: Security & Credentials ─── */}
+          {/* ─── STEP 3: Bank Account Details ─── */}
           {step === 3 && (
+            <div className="bg-white border border-[#F3F4F6] rounded-2xl p-5 sm:p-8 shadow-sm">
+              <h3 className="text-base font-bold text-[#1A1D2E] mb-6">
+                Bank Account Details
+              </h3>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                <div>
+                  <label className={labelClass}>
+                    Bank Name <span className="text-[#E8630A]">*</span>
+                  </label>
+                  <input
+                    className={isView ? inputDisabled : inputBase}
+                    disabled={isView}
+                    value={form.bankName}
+                    onChange={(e) => update("bankName", e.target.value)}
+                    placeholder="Enter Bank Name"
+                  />
+                </div>
+
+                <div>
+                  <label className={labelClass}>
+                    Account Holder Name <span className="text-[#E8630A]">*</span>
+                  </label>
+                  <input
+                    className={isView ? inputDisabled : inputBase}
+                    disabled={isView}
+                    value={form.accountHolderName}
+                    onChange={(e) =>
+                      update("accountHolderName", e.target.value)
+                    }
+                    placeholder="Enter Account Holder Name"
+                  />
+                </div>
+
+                <div>
+                  <label className={labelClass}>
+                    Account Number <span className="text-[#E8630A]">*</span>
+                  </label>
+                  <input
+                    className={isView ? inputDisabled : inputBase}
+                    disabled={isView}
+                    value={form.accountNumber}
+                    onChange={(e) =>
+                      update("accountNumber", e.target.value)
+                    }
+                    placeholder="Enter Account Number"
+                  />
+                </div>
+
+                <div>
+                  <label className={labelClass}>
+                    IFSC Code <span className="text-[#E8630A]">*</span>
+                  </label>
+                  <input
+                    className={isView ? inputDisabled : inputBase}
+                    disabled={isView}
+                    value={form.ifscCode}
+                    onChange={(e) =>
+                      update("ifscCode", e.target.value.toUpperCase())
+                    }
+                    placeholder="Enter IFSC Code"
+                  />
+                </div>
+
+                <div>
+                  <label className={labelClass}>
+                    Branch Name
+                  </label>
+                  <input
+                    className={isView ? inputDisabled : inputBase}
+                    disabled={isView}
+                    value={form.branchName}
+                    onChange={(e) =>
+                      update("branchName", e.target.value)
+                    }
+                    placeholder="Enter Branch Name"
+                  />
+                </div>
+
+                <div>
+                  <label className={labelClass}>
+                    UPI ID
+                  </label>
+                  <input
+                    className={isView ? inputDisabled : inputBase}
+                    disabled={isView}
+                    value={form.upiId}
+                    onChange={(e) =>
+                      update("upiId", e.target.value)
+                    }
+                    placeholder="example@upi"
+                  />
+                </div>
+
+              </div>
+            </div>
+          )}
+          {/* ─── STEP 4: Security & Credentials ─── */}
+          {step === 4 && (
             <div className="bg-white border border-[#F3F4F6] rounded-2xl p-5 sm:p-8 shadow-sm">
               <h3 className="text-base font-bold text-[#1A1D2E] mb-6">System Credentials</h3>
 
@@ -697,7 +830,7 @@ function EnrollForm({ onClose, onSave, editData, mode, staff }) {
                 return;
               }
 
-              if (step < 3) {
+              if (step < 4) {
                 const isValid = validateStep();
                 if (isValid) {
                   setStep(step + 1);
@@ -716,7 +849,7 @@ function EnrollForm({ onClose, onSave, editData, mode, staff }) {
           >
             {isView
               ? 'Close'
-              : step < 3
+              : step < 4
                 ? 'Next →'
                 : isEdit
                   ? '✓ Update Staff'

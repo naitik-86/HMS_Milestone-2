@@ -6,6 +6,7 @@ import { createClinic } from "../../../api/clinicApi";
 import { Upload, Card, Select, Grid, Full, Input } from "../../../components"
 import { useNavigate } from "react-router-dom";
 
+import { State, City } from "country-state-city";
 /* ---------------- MAIN FORM ---------------- */
 
 export default function ClinicForm({
@@ -22,6 +23,15 @@ export default function ClinicForm({
 
     const [submitting, setSubmitting] = useState(false);
     const navigate = useNavigate();
+
+    const states = State.getStatesOfCountry("IN");
+
+const cities = form.state
+  ? City.getCitiesOfState(
+      "IN",
+      states.find((s) => s.name === form.state)?.isoCode
+    )
+  : [];
 
     const handleFileUpload = (field) => (e) => {
         const file = e.target.files?.[0];
@@ -120,7 +130,7 @@ export default function ClinicForm({
                                     onChange={handleChange}
                                 />
 
-                                <Input requiredField={true} name="year" label="Year of Establishment" value={form.year} onChange={handleChange} />
+                                <Input requiredField={false} name="year" label="Year of Establishment" value={form.year} onChange={handleChange} />
                                 <Input requiredField={true} name="email" label="Official Email" value={form.email} onChange={handleChange} />
                                 <Input requiredField={true} name="phone" label="Primary Contact" value={form.phone} onChange={handleChange} />
                                 <Input name="altPhone" label="Alternate Contact" value={form.altPhone} onChange={handleChange} />
@@ -144,9 +154,24 @@ export default function ClinicForm({
 
                                 <Input requiredField={true} name="address1" label="Address Line 1" value={form.address1} onChange={handleChange} />
                                 <Input name="address2" label="Address Line 2" value={form.address2} onChange={handleChange} />
-                                <Input requiredField={true} name="city" label="City" value={form.city} onChange={handleChange} />
-                                <Input requiredField={true} name="district" label="District" value={form.district} onChange={handleChange} />
-                                <Input requiredField={true} name="state" label="State" value={form.state} onChange={handleChange} />
+                               
+  
+                                <Select
+                                    requiredField
+                                    name="state"
+                                    label="State"
+                                    value={form.state}
+                                    options={states.map((state) => state.name)}
+                                    onChange={handleChange}
+                                />
+                                    <Select
+                                requiredField
+                                name="city"
+                                label="City"
+                                value={form.city}
+                                options={cities.map((city) => city.name)}
+                                onChange={handleChange}
+                            />
                                 <Input requiredField={true} name="pincode" label="PIN Code" value={form.pincode} onChange={handleChange} />
 
                                 <Full>
@@ -162,18 +187,18 @@ export default function ClinicForm({
                         <Card title="Registrations & Licenses">
                             <Grid>
 
-                                <Input requiredField={true} name="vetReg" label="Vet Council Reg No." value={form.vetReg} onChange={handleChange} />
+                                <Input requiredField={true} name="vetReg" label="Registration Number" value={form.vetReg} onChange={handleChange} />
 
                                 <Select
                                     requiredField={true}
                                     name="stateCouncil"
                                     label="State Vet Council"
                                     value={form.stateCouncil}
-                                    options={["Bihar", "UP", "Delhi"]}
+                                    options={states.map((state) => state.name)}
                                     onChange={handleChange}
                                 />
 
-                                <Input requiredField={true} type="date" name="expiry" label="Expiry Date" value={form.expiry} onChange={handleChange} />
+                                <Input requiredField={false} type="date" name="expiry" label="Expiry Date" value={form.expiry} onChange={handleChange} />
                                 <Input requiredField={true} name="tradeLicense" label="Trade License No." value={form.tradeLicense} onChange={handleChange} />
                                 <Input requiredField={true} name="drugLicense" label="Drug License No." value={form.drugLicense} onChange={handleChange} />
 

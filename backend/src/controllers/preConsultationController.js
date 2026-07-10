@@ -251,15 +251,19 @@ exports.getCompletedPets = async (req, res) => {
   try {
     const clinicId = req.user.clinicId;
 
-    // Start of today
+    // ==========================
+    // Start of Today
+    // ==========================
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // Start of current week
+    // ==========================
+    // Start of Current Week
+    // ==========================
+
     const startOfWeek = new Date();
-    startOfWeek.setDate(
-      startOfWeek.getDate() - startOfWeek.getDay()
-    );
+    startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
     startOfWeek.setHours(0, 0, 0, 0);
 
     // ==========================
@@ -269,17 +273,13 @@ exports.getCompletedPets = async (req, res) => {
     const completedToday = await Visit.countDocuments({
       clinicId,
       "workflow.preConsultationCompleted": true,
-      updatedAt: {
-        $gte: today,
-      },
+      updatedAt: { $gte: today },
     });
 
     const completedThisWeek = await Visit.countDocuments({
       clinicId,
       "workflow.preConsultationCompleted": true,
-      updatedAt: {
-        $gte: startOfWeek,
-      },
+      updatedAt: { $gte: startOfWeek },
     });
 
     const totalCompleted = await Visit.countDocuments({
@@ -296,17 +296,20 @@ exports.getCompletedPets = async (req, res) => {
       "workflow.preConsultationCompleted": true,
     })
       .populate({
+        path: "petId",
+        select:
+          "name species breed gender age color uniquePetId petPhoto",
+      })
+      .populate({
         path: "ownerId",
         select:
-          "ownerName mobileNumber email address city district state pincode pets",
+          "ownerName mobileNumber email address city district state pincode",
       })
       .populate({
         path: "doctorId",
         select: "name doctorId",
       })
       .sort({ updatedAt: -1 });
-
-    const pets = attachOwnerAndPet(completedVisits);
 
     return res.status(200).json({
       success: true,
@@ -316,7 +319,7 @@ exports.getCompletedPets = async (req, res) => {
           completedThisWeek,
           totalCompleted,
         },
-        pets,
+        pets: completedVisits,
       },
     });
   } catch (error) {
@@ -367,9 +370,14 @@ exports.getHistoryPets = async (req, res) => {
       clinicId,
     })
       .populate({
+        path: "petId",
+        select:
+          "name species breed gender dob age color photoUrl rfidTag identificationMarks isSterilised",
+      })
+      .populate({
         path: "ownerId",
         select:
-          "ownerName mobileNumber email address city district state pincode pets",
+          "ownerName mobileNumber email address city district state pincode",
       })
       .populate({
         path: "doctorId",
@@ -379,8 +387,6 @@ exports.getHistoryPets = async (req, res) => {
         createdAt: -1,
       });
 
-    const history = attachOwnerAndPet(records);
-
     return res.status(200).json({
       success: true,
       data: {
@@ -389,9 +395,10 @@ exports.getHistoryPets = async (req, res) => {
           thisMonth,
           archivedCases,
         },
-        records: history,
+        records,
       },
     });
+
   } catch (error) {
     return res.status(500).json({
       success: false,

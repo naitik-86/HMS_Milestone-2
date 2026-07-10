@@ -116,19 +116,24 @@ export default function NewRegistrationPet() {
             </div>
 
             {/* Progress Bar */}
-            <div className="px-4 sm:px-6 lg:px-12 py-4 sm:py-6 lg:py-8 bg-white border-b overflow-x-auto">
-              <div className="flex items-center min-w-170">
+            <div className="bg-white border-b py-6">
+              <div className="w-full flex items-center px-4 sm:px-6">              <div className="flex items-center w-full">
+
                 {[
                   "Owner Verification",
                   "Pet Registration",
                   "Pet History",
-                  "Reason For Visit",
                 ].map((item, index) => (
+
                   <div key={index} className="flex items-center flex-1">
-                    <div className="flex flex-col items-center">
+
+                    {/* Step */}
+                    <div className="flex flex-col items-center shrink-0">
+
                       <div
                         className={`
-              w-10 h-10 sm:w-14 sm:h-14 rounded-full
+              w-10 h-10 sm:w-14 sm:h-14
+              rounded-full
               flex items-center justify-center
               font-bold text-lg text-white
               transition-all duration-300
@@ -142,23 +147,31 @@ export default function NewRegistrationPet() {
                       </div>
 
                       <span
-                        className={`mt-3 text-xs sm:text-sm font-semibold ${step >= index + 1
-                            ? "text-orange-500"
-                            : "text-slate-400"
+                        className={`mt-3 text-xs sm:text-sm font-semibold text-center ${step >= index + 1
+                          ? "text-orange-500"
+                          : "text-slate-400"
                           }`}
                       >
                         {item}
                       </span>
+
                     </div>
 
-                    {index !== 3 && (
+                    {/* Connector */}
+                    {index !== 2 && (
                       <div
-                        className={`h-1 flex-1 mx-4 rounded-full ${step > index + 1 ? "bg-orange-500" : "bg-slate-200"
+                        className={`flex-1 h-1 mx-6 rounded-full transition-all duration-300 ${step > index + 1
+                          ? "bg-orange-500"
+                          : "bg-slate-200"
                           }`}
                       />
                     )}
+
                   </div>
+
                 ))}
+
+              </div>
               </div>
             </div>
 
@@ -802,120 +815,7 @@ export default function NewRegistrationPet() {
                 </div>
               )}
 
-              {step === 4 && (
-                <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 shadow-sm">
-                  <h2 className="text-xl sm:text-2xl font-bold mb-6">
-                    Reason For Visit
-                  </h2>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
-                    {/* Primary Reason */}
-
-                    <div>
-                      <label className="block mb-2 font-medium">
-                        Primary Reason *
-                      </label>
-
-                      <select
-                        name="primaryReason"
-                        value={formData.primaryReason}
-                        onChange={handleChange}
-                        className="w-full border rounded-xl p-3"
-                      >
-                        <option>Treatment</option>
-                        <option>Vaccination</option>
-                        <option>Checkup</option>
-                        <option>Certificate</option>
-                      </select>
-                    </div>
-
-                    {/* Assigned Doctor */}
-
-                    <div>
-                      <label className="block mb-2 font-medium">
-                        Assigned Doctor *
-                      </label>
-
-                      <select
-                        name="assignedDoctor"
-                        value={formData.assignedDoctor}
-                        onChange={handleChange}
-                        className="w-full border rounded-xl p-3"
-                      >
-                        <option>Dr. Sharma</option>
-                        <option>Dr. Verma</option>
-                        <option>Dr. Singh</option>
-                      </select>
-                    </div>
-
-                    {/* Complaint */}
-
-                    <div className="md:col-span-2">
-                      <label className="block mb-2 font-medium">
-                        Specific Complaint
-                      </label>
-
-                      <textarea
-                        name="complaint"
-                        value={formData.complaint}
-                        onChange={handleChange}
-                        rows="4"
-                        placeholder="Describe Problem"
-                        className="w-full border rounded-xl p-3"
-                      />
-                    </div>
-
-                    {/* Token */}
-
-                    <div>
-                      <label className="block mb-2 font-medium">
-                        Token Number
-                      </label>
-
-                      <input
-                        name="tokenNumber"
-                        value={formData.tokenNumber}
-                        onChange={handleChange}
-                        value="TK-001"
-                        readOnly
-                        className="w-full border rounded-xl p-3 bg-slate-100"
-                      />
-                    </div>
-
-                    {/* Appointment Date */}
-
-                    <div>
-                      <label className="block mb-2 font-medium">
-                        Appointment Date
-                      </label>
-
-                      <input
-                        name="appointmentDate"
-                        value={formData.appointmentDate}
-                        onChange={handleChange}
-                        type="date"
-                        className="w-full border rounded-xl p-3"
-                      />
-                    </div>
-
-                    {/* Appointment Time */}
-
-                    <div>
-                      <label className="block mb-2 font-medium">
-                        Appointment Time
-                      </label>
-
-                      <input
-                        name="appointmentTime"
-                        value={formData.appointmentTime}
-                        onChange={handleChange}
-                        type="time"
-                        className="w-full border rounded-xl p-3"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
 
             {/* Footer */}
@@ -928,7 +828,7 @@ export default function NewRegistrationPet() {
                 Back
               </button>
 
-              {step < 4 ? (
+              {step < 3 ? (
                 <button
                   onClick={() => setStep(step + 1)}
                   className="
