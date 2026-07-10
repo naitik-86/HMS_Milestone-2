@@ -21,7 +21,7 @@ const preConsultationSchema = new mongoose.Schema(
 
     petId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "PetRegistration",
+      ref: "Pet",
       required: true,
     },
 

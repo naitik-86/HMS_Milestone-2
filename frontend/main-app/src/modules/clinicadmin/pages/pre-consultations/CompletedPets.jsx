@@ -168,16 +168,13 @@ export default function CompletedPets() {
                     Completed Date
                   </th>
 
-                  <th className="px-6 py-4 text-left text-xs font-bold uppercase text-slate-500">
-                    Completed By
-                  </th>
 
                   <th className="px-6 py-4 text-left text-xs font-bold uppercase text-slate-500">
-                    Status
+                    currentStage
                   </th>
 
                   <th className="px-6 py-4 text-center text-xs font-bold uppercase text-slate-500">
-                    View
+                    Status
                   </th>
 
                 </tr>
@@ -202,16 +199,16 @@ export default function CompletedPets() {
                         <div className="flex items-center gap-4">
 
                           <div className="w-11 h-11 rounded-2xl bg-green-100 flex items-center justify-center font-bold text-green-600">
-                            {pet?.owner?.ownerName.charAt(0)}
+                            {pet?.ownerId?.ownerName.charAt(0)}
                           </div>
 
                           <div>
                             <p className="font-semibold text-slate-800">
-                              {pet?.owner?.ownerName}
+                              {pet?.ownerId?.ownerName}
                             </p>
 
                             <p className="text-sm text-slate-500">
-                              {pet?.owner?.mobileNumber}
+                              {pet?.ownerId?.mobileNumber}
                             </p>
                           </div>
 
@@ -229,7 +226,7 @@ export default function CompletedPets() {
 
                           <div>
                             <p className="font-semibold text-slate-800">
-                              {pet.uniquePetId}
+                              {pet?.petId?.name}
                             </p>
 
                             <p className="text-sm text-slate-500">
@@ -242,11 +239,11 @@ export default function CompletedPets() {
                       </td>
 
                       <td className="px-6 py-5 text-slate-700">
-                        {formatDate(pet.vitalsRecordedAt)}
+                        {formatDate(pet.updatedAt)}
                       </td>
 
                       <td className="px-6 py-5 text-slate-700">
-                        {pet.recordedBy}
+                        {pet?.currentStage}
                       </td>
 
                       <td className="px-6 py-5">
@@ -255,23 +252,13 @@ export default function CompletedPets() {
 
                           <span className="w-2 h-2 rounded-full bg-green-500"></span>
 
-                          {pet.status}
+                          {pet?.workflow?.preConsultationCompleted ? "Completed" : "Pending"}
 
                         </span>
 
                       </td>
 
-                      <td className="px-6 py-5">
 
-                        <div className="flex justify-center">
-
-                          <button className="bg-blue-500 hover:bg-blue-600 text-white px-5 py-2.5 rounded-xl font-medium transition-all">
-                            👁 View
-                          </button>
-
-                        </div>
-
-                      </td>
 
                     </tr>
                   ))

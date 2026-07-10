@@ -70,7 +70,7 @@ const ClinicAdminRoutes = (
             <Route path="groomer" element={<Groomer />} />
             <Route path="kennel" element={<KennelStaff />} />
             <Route path="reports" element={<Reports />} />
-            <Route path="reports/basic" element={<Reports />}/>
+            <Route path="reports/basic" element={<Reports />} />
             <Route path="reports/basic" element={<BasicReports />} />
             <Route path="settings" element={<ClinicSettings />} />
         </Route>
@@ -105,7 +105,6 @@ const ClinicAdminRoutes = (
             <Route index element={<DoctorDashboard />} />
             <Route path="pending" element={<DoctorPendingPetsPage />} />
             <Route path="completed" element={<DoctorCompletedPetsPage />} />
-            <Route path="lab" element={<DoctorLabPage />} />
             <Route path="history" element={<DoctorHistoryPetsPage />} />
         </Route>
 

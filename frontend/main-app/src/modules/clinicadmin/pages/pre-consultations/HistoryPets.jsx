@@ -48,21 +48,22 @@ export default function HistoryPets() {
   console.log(historyData);
 
 
-  const filteredRecords = historyData.filter(
-    (item) =>
-      item.tokenNumber
-        ?.toLowerCase()
-        .includes(search.toLowerCase()) ||
-      item.ownerId?.ownerName
-        ?.toLowerCase()
-        .includes(search.toLowerCase()) ||
-      item.ownerId?.petName
-        ?.toLowerCase()
-        .includes(search.toLowerCase()) ||
-      item.ownerId?.phoneNumber
-        ?.toLowerCase()
-        .includes(search.toLowerCase())
-  );
+  const filteredRecords = historyData
+  // historyData.filter(
+  //   (item) =>
+  //     item.tokenNumber
+  //       ?.toLowerCase()
+  //       .includes(search.toLowerCase()) ||
+  //     item.ownerId?.ownerName
+  //       ?.toLowerCase()
+  //       .includes(search.toLowerCase()) ||
+  //     item.ownerId?.petName
+  //       ?.toLowerCase()
+  //       .includes(search.toLowerCase()) ||
+  //     item.ownerId?.phoneNumber
+  //       ?.toLowerCase()
+  //       .includes(search.toLowerCase())
+  // );
 
   return (
     <div className="flex min-h-screen bg-slate-100">
@@ -203,15 +204,15 @@ export default function HistoryPets() {
                   </th>
 
                   <th className="px-6 py-4 text-left text-xs font-bold uppercase text-slate-500">
-                    Severity
+                    Status
                   </th>
 
                   <th className="px-6 py-4 text-left text-xs font-bold uppercase text-slate-500">
-                    Doctor
+                    CurrentStage
                   </th>
 
                   <th className="px-6 py-4 text-center text-xs font-bold uppercase text-slate-500">
-                    Action
+                    Priority
                   </th>
 
                 </tr>
@@ -236,17 +237,17 @@ export default function HistoryPets() {
                         <div className="flex items-center gap-4">
 
                           <div className="w-11 h-11 rounded-2xl bg-blue-100 flex items-center justify-center font-bold text-blue-600">
-                            {item.owner?.ownerName?.charAt(0)}
+                            {item.ownerId?.ownerName?.charAt(0)}
                           </div>
 
                           <div>
 
                             <p className="font-semibold text-slate-800">
-                              {item?.owner?.ownerName}
+                              {item?.ownerId?.ownerName}
                             </p>
 
                             <p className="text-sm text-slate-500">
-                              {item.owner?.mobileNumber}
+                              {item.ownerId?.mobileNumber}
                             </p>
 
                           </div>
@@ -266,11 +267,15 @@ export default function HistoryPets() {
                           <div>
 
                             <p className="font-semibold text-slate-800">
-                              {item.uniquePetId}
+                              {item.petId?.name}
+                            </p>
+                            <p className="font-semibold text-slate-800">
+                              {item.petId?.breed}
                             </p>
 
                             <p className="text-sm text-slate-500">
-                              Medical Record
+                              {item.petId?.species
+                              }
                             </p>
 
                           </div>
@@ -280,32 +285,26 @@ export default function HistoryPets() {
                       </td>
 
                       <td className="px-6 py-5 text-slate-700">
-                        {formatDate(item.createdAt)}
+                        {formatDate(item.updatedAt)}
                       </td>
 
                       <td className="px-6 py-5">
 
                         <span className="bg-blue-100 text-blue-700 px-4 py-2 rounded-full text-sm font-semibold">
-                          {item?.severity}
+                          {item?.status}
                         </span>
 
                       </td>
 
                       <td className="px-6 py-5 text-slate-700">
-                        {item.recordedBy}
+                        {item.currentStage}
                       </td>
 
-                      <td className="px-6 py-5">
-
-                        <div className="flex justify-center">
-
-                          <button className="whitespace-nowrap bg-slate-800 hover:bg-slate-900 text-white px-5 py-2.5 rounded-xl font-medium">
-                            📄 View Record
-                          </button>
-
-                        </div>
-
+                      <td className="px-6 py-5 text-slate-700">
+                        {item.priority}
                       </td>
+
+
 
                     </tr>
                   ))
@@ -356,11 +355,10 @@ export default function HistoryPets() {
                 </div>
 
                 <div className="mt-4 space-y-2 text-sm">
-                  <p><strong>Owner:</strong> {item.ownerName}</p>
-                  <p><strong>Phone:</strong> {item.phoneNumber}</p>
-                  <p><strong>Pet:</strong> {item.petName}</p>
-                  <p><strong>Date:</strong> {item.visitDate}</p>
-                  <p><strong>Doctor:</strong> {item.doctor}</p>
+                  <p><strong>Owner:</strong> {item?.ownerId?.ownerName}</p>
+                  <p><strong>Phone:</strong> {item?.ownerId?.mobileNumber}</p>
+                  <p><strong>Pet:</strong> {item?.petId?.name || "Bruno"}</p>
+
                 </div>
 
                 <button className="mt-4 w-full rounded-xl bg-slate-800 py-3 text-white">

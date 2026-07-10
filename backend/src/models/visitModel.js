@@ -11,13 +11,13 @@ const visitSchema = new mongoose.Schema(
 
         petId: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: "PetRegistration",
+            ref: "Pet",
             required: true
         },
 
         ownerId: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: "Owner",
+            ref: "PetRegistration",
             required: true
         },
 
