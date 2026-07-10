@@ -1,12 +1,22 @@
 import React, { useState } from "react";
 import { showToast } from "../../../../../shared/components/toast";
-
+import { State,City } from "country-state-city";
 import { Card, Input, Select, Grid, Full, Upload } from "../../../components"
 // import { createDoctor } from "../../../api/doctorApi";
 
 export default function DoctorForm({ activeTab, form, setForm, qualifications, setQualifications }) {
 
-
+    const states = State.getStatesOfCountry("IN");
+    const cities = form.state
+  ? [
+      ...new Map(
+        City.getCitiesOfState(
+          "IN",
+          states.find((s) => s.name === form.state)?.isoCode
+        ).map((city) => [city.name, city])
+      ).values(),
+    ]
+  : [];
     const handleFileUpload = (field) => (e) => {
         const file = e.target.files[0];
 
@@ -36,9 +46,17 @@ export default function DoctorForm({ activeTab, form, setForm, qualifications, s
 
 
     const handleChange = (e) => {
-        const { name, value, type, checked } = e.target;
-        setForm({ ...form, [name]: type === "checkbox" ? checked : value });
-    };
+    const { name, value, type, checked } = e.target;
+
+    setForm((prev) => ({
+        ...prev,
+        [name]: type === "checkbox" ? checked : value,
+
+        ...(name === "state" && {
+            city: "",
+        }),
+    }));
+};
 
     const toggleArray = (field, value) => {
         const arr = form[field];
@@ -108,7 +126,7 @@ export default function DoctorForm({ activeTab, form, setForm, qualifications, s
 
                                 <Full>
                                     <label>Languages Spoken <span className="text-red-500"> *</span></label>
-                                   <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 flex-wrap mt-2">
+                                    <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 flex-wrap mt-2">
                                         {["English", "Hindi", "Bengali"].map((l) => (
                                             <label key={l}>
                                                 <input
@@ -135,8 +153,23 @@ export default function DoctorForm({ activeTab, form, setForm, qualifications, s
                                     />
                                 </Full>
 
-                                <Input value={form.city} requiredField={true} name="city" label="City / District" onChange={handleChange} />
-                                <Input value={form.state} requiredField={true} name="state" label="State" onChange={handleChange} />
+                                
+                                <Select
+                                    value={form.state || ""}
+                                    requiredField={true}
+                                    name="state"
+                                    label="State"
+                                    options={states.map((state) => state.name)}
+                                    onChange={handleChange}
+                                />
+                                <Select
+    value={form.city || ""}
+    requiredField={true}
+    name="city"
+    label="City"
+    options={cities.map((city) => city.name)}
+    onChange={handleChange}
+/>
                                 <Input value={form.pincode} requiredField={true} name="pincode" label="PIN Code" onChange={handleChange} />
 
                                 <Select value={form.govtIdType || ""} requiredField={true} name="govtIdType" label="Government ID Type" options={["Aadhaar", "PAN", "Passport"]} onChange={handleChange} />
@@ -244,7 +277,14 @@ transition
                         <Card title="Vet Council Registration">
                             <Grid>
                                 <Input requiredField={true} value={form.vetCouncilRegistrationNumber} name="vetCouncilRegistrationNumber" label="Complete Vet Council Registration Number" onChange={handleChange} />
-                                <Select value={form.stateVetCouncil || ""} requiredField={true} name="stateVetCouncil" label="State Vet Council" options={["Bihar", "UP", "Delhi"]} onChange={handleChange} />
+                                <Select
+                                    value={form.stateVetCouncil || ""}
+                                    requiredField={true}
+                                    name="stateVetCouncil"
+                                    label="State Veterinary Council"
+                                    options={states.map((state) => state.name)}
+                                    onChange={handleChange}
+                                />
                                 <Full>
                                     <Full>
                                         <Upload
@@ -259,9 +299,7 @@ transition
                                     </Full>
                                 </Full>
                                 <Input requiredField={true} type="date" value={form.certificateValidityDate} name="certificateValidityDate" label="Certificate Validity Date" onChange={handleChange} />
-                                <label className="flex items-center gap-2">
-                                    <input type="checkbox" name="isRenewable" onChange={handleChange} /> Is Registration Renewable?
-                                </label>
+                          
                             </Grid>
                         </Card>
                     )}
@@ -282,7 +320,7 @@ transition
                                 <label>
                                     <input type="checkbox" name="emergencyAvailable" onChange={handleChange} /> Available for Emergency Calls?
                                 </label>
-                                <Input requiredField={true}  name="serviceAreas" value={form.serviceAreas} label="Service Areas / Pincodes" onChange={handleChange} />
+                                <Input requiredField={true} name="serviceAreas" value={form.serviceAreas} label="Service Areas / Pincodes" onChange={handleChange} />
                                 <Input requiredField={true} name="gstPan" value={form.gstPan} label="GST / PAN" onChange={handleChange} />
                             </Grid>
                         </Card>
@@ -304,11 +342,11 @@ transition
 
                     {/* SAVE */}
                     <div className="flex justify-end mt-6">
-    <div className="w-full sm:w-auto">
-                        <button
-                            type="button"
-                            onClick={handleSubmit}
-                           className="
+                        <div className="w-full sm:w-auto">
+                            <button
+                                type="button"
+                                onClick={handleSubmit}
+                                className="
 w-full sm:w-auto
 bg-orange-500
 hover:bg-orange-600
@@ -319,9 +357,9 @@ rounded-xl
 font-medium
 transition
 "
-                        >
-                            Save Doctor
-                        </button>
+                            >
+                                Save Doctor
+                            </button>
                         </div>
                     </div>
                 </div>

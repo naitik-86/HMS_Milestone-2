@@ -33,6 +33,8 @@ export default function ClinicModal({ onClose }) {
         district: "",
         state: "",
         pincode: "",
+        latitude: "",
+longitude: "",
         gst: "",
         pan: "",
         bankName: "",
@@ -119,7 +121,6 @@ export default function ClinicModal({ onClose }) {
                 return (
                     form.clinicName &&
                     form.facilityType &&
-                    form.year &&
                     form.email &&
                     form.phone &&
                     form.logo
@@ -136,16 +137,15 @@ export default function ClinicModal({ onClose }) {
                 );
 
             case "licenses":
-                return (
-                    form.vetReg &&
-                    form.stateCouncil &&
-                    form.expiry &&
-                    form.tradeLicense &&
-                    form.drugLicense &&
-                    form.vetCert &&
-                    form.tradeDoc &&
-                    form.drugDoc
-                );
+             return (
+        form.vetReg &&
+        form.stateCouncil &&
+        (
+            form.vetCert ||
+            form.tradeDoc ||
+            form.drugDoc
+        )
+    )
 
             case "tax":
                 return (
@@ -211,7 +211,6 @@ export default function ClinicModal({ onClose }) {
                     if (
                         !form.clinicName ||
                         !form.facilityType ||
-                        !form.year ||
                         !form.email ||
                         !form.phone ||
                         !form.logo
@@ -233,20 +232,19 @@ export default function ClinicModal({ onClose }) {
                     }
                     break;
 
-                case "licenses":
-                    if (
-                        !form.vetReg ||
-                        !form.stateCouncil ||
-                        !form.expiry ||
-                        !form.tradeLicense ||
-                        !form.drugLicense ||
-                        !form.vetCert ||
-                        !form.tradeDoc ||
-                        !form.drugDoc
-                    ) {
-                        return false;
-                    }
-                    break;
+            case "licenses":
+    if (
+        !form.vetReg ||
+        !form.stateCouncil ||
+        (
+            !form.vetCert &&
+            !form.tradeDoc &&
+            !form.drugDoc
+        )
+    ) {
+        return false;
+    }
+    break;
 
                 case "tax":
                     if (

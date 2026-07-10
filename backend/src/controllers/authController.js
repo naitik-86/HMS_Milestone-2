@@ -553,16 +553,8 @@ exports.login = async (req, res) => {
       });
     }
 
-    // For staff login, we currently issue JWT only after password match.
-    // We additionally enforce first-time password reset + TOTP setup.
-
-    // Try to locate Staff account (TOTP fields are on Staff model).
-    // Note: user is from User model; we map using email.
-    // const Staff = require('../models/Staff');
-    // const staff = await Staff.findOne({ 'personalInfo.email': user.email });
-
-    // const requiresPasswordReset = staff?.accountInfo?.forcePasswordReset === true;
-    // const requiresTotpSetup = staff?.accountInfo?.twoFactorEnabled !== true;
+    const requiresPasswordReset = false;
+    const requiresTotpSetup = false;
 
     // If TOTP not enabled, we still return token (for setup UI), but block app access
     // by setting flags.
