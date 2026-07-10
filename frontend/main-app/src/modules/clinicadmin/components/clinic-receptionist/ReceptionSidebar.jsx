@@ -11,7 +11,6 @@ export default function ReceptionSidebar() {
     { name: "Create Visit", path: "create-visit", icon: "CV" },
     { name: "Existing Customer", path: "existing-customer", icon: "EC" },
 
-    { name: "Pet History", path: "history", icon: "PH" },
   ];
 
   return (
