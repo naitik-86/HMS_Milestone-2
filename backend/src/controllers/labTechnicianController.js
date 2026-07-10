@@ -293,6 +293,9 @@ exports.updateLabResults = async (req, res) => {
 
 exports.getRequiredLabTests = async (req, res) => {
     try {
+
+        console.log("lab reached");
+
         const { petId, visitId } = req.query;
 
         // 🔴 validation
@@ -308,6 +311,8 @@ exports.getRequiredLabTests = async (req, res) => {
             petId,
             visitId,
         });
+
+        console.log("Consultation:", JSON.stringify(consultation, null, 2));
 
         if (!consultation) {
             return res.status(404).json({
@@ -327,6 +332,8 @@ exports.getRequiredLabTests = async (req, res) => {
 
         // 🧪 extract tests
         const tests = consultation.labRequisition?.tests || [];
+
+        console.log(tests);
 
         return res.status(200).json({
             success: true,

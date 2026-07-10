@@ -41,7 +41,8 @@ export default function LabPendingCases() {
                 item._id
             );
 
-
+            console.log(res);
+            console.log(res.data);
 
             setSelectedCase({
                 ...item,
@@ -62,6 +63,8 @@ export default function LabPendingCases() {
                 item.pet._id,
                 item._id
             );
+            console.log(res);
+            console.log(res.data);
 
             return res?.data || [];
 
@@ -214,7 +217,7 @@ export default function LabPendingCases() {
                                         <button
                                             onClick={async () => {
                                                 const tests = await handleFetchTests(item);
-
+                                                console.log("Fetched tests:", tests);
                                                 setSelectedCase({
                                                     ...item,
                                                     tests

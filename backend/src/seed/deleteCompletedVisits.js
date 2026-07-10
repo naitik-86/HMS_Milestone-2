@@ -10,7 +10,7 @@ require("dotenv").config({
 // ======================
 // Import Models
 // ======================
-const Visit = require("../models/Visit");
+const Visit = require("../models/visitModel");
 
 async function deleteCompletedVisits() {
     try {
