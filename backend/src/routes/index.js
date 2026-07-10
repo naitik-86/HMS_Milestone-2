@@ -12,6 +12,7 @@ const preConsultationRoutes = require("./preConsultationRoutes");
 const petOwnerRoutes = require("./petOwnerRoutes");
 const doctorModule = require('./DoctorModuleRoutes')
 const labRoutes = require("./labRoutes");
+const contactRoute = require("./contactRoutes")
 
 // Import middlewares and controllers for root-level routes
 const { protect, authorize } = require('../middlewares/auth');
@@ -36,6 +37,7 @@ router.use("/doctorModule", doctorModule)
 
 // lab module 
 router.use("/lab", labRoutes);
+router.use("/contact", contactRoute)
 
 // ==========================================
 // CENTRALIZED DASHBOARD REDIRECT
