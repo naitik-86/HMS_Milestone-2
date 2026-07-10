@@ -30,8 +30,8 @@ export const createClinic = async (clinicData) => {
         maxStaff: clinicData.maxStaff || 10
     };
 
-    // 1. Create the clinic
-    const createRes = await API.post("/clinics", jsonPayload);
+    // 1. Create the clinic (Updated endpoint)
+    const createRes = await API.post("/super-admin/clinics", jsonPayload);
     const clinic = createRes.data?.data;
     const clinicId = clinic?._id;
 
@@ -50,7 +50,8 @@ export const createClinic = async (clinicData) => {
         };
         const formData = buildFormData(fileData);
 
-        await API.post(`/clinics/${clinicId}/documents`, formData, {
+        // Updated endpoint for document upload
+        await API.post(`/super-admin/clinics/${clinicId}/documents`, formData, {
             headers: {
                 "Content-Type": "multipart/form-data",
             },
@@ -61,6 +62,7 @@ export const createClinic = async (clinicData) => {
 };
 
 export const getClinics = async () => {
-    const res = await API.get("/clinics");
+    // 3. Fetch clinics (Updated endpoint)
+    const res = await API.get("/super-admin/clinics");
     return res.data;
 };

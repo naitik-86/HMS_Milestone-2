@@ -133,6 +133,14 @@ export default function Login() {
   const handleContinue = async () => {
     const role = localStorage.getItem("role");
 
+    // Fix: Ensure OTPs are verified BEFORE redirecting for non-Super Admins
+    if (role !== "SUPER_ADMIN") {
+      if (!phoneVerified || !emailVerified) {
+        alert("Please verify both Phone and Email");
+        return;
+      }
+    }
+
     if (role === "SUPER_ADMIN") {
       try {
         const verifyRes = await API.post("/auth/superadmin/verify-otp", {
@@ -151,21 +159,16 @@ export default function Login() {
 
     try {
       const redirectRes = await API.get("/dashboard");
-
-      const redirectUrl =
-        redirectRes.data?.data?.redirectUrl;
+      const redirectUrl = redirectRes.data?.data?.redirectUrl;
 
       if (redirectUrl) {
         return navigate(redirectUrl, { replace: true });
-      }
-      if (!phoneVerified || !emailVerified) {
-        alert("Please verify both Phone and Email");
-        return;
       }
     } catch (e) {
       console.warn("Dashboard redirect failed", e);
     }
 
+    // Updated Fallbacks to match actual routes
     if (role === "SUPER_ADMIN")
       return navigate("/superadmin", { replace: true });
 
@@ -173,13 +176,13 @@ export default function Login() {
       return navigate("/clinic", { replace: true });
 
     if (role === "DOCTOR")
-      return navigate("/doctor/dashboard", { replace: true });
+      return navigate("/clinic/doctor", { replace: true });
 
     if (role === "RECEPTIONIST")
       return navigate("/clinic/reception", { replace: true });
 
     if (role === "PARA_MEDICAL")
-      return navigate("/clinic/pre-consultation", { replace: true });
+      return navigate("/clinic/preconsultation", { replace: true });
   };
 
   return (
