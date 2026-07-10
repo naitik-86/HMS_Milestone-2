@@ -2,14 +2,16 @@ import React, { useState } from "react";
 import { createVisit } from "../../api/receptionApi"
 
 const CreateVisitForm = () => {
-  const [formData, setFormData] = useState({
+
+  const initalData = {
     petId: "",
     ownerId: "",
     visitType: "CONSULTATION",
     priority: "NORMAL",
     chiefComplaint: "",
     notes: ""
-  });
+  }
+  const [formData, setFormData] = useState(initalData);
 
   const handleChange = (e) => {
     setFormData({
@@ -23,6 +25,7 @@ const CreateVisitForm = () => {
 
     try {
       const res = await createVisit(formData);
+      setFormData(initalData)
       alert("Visit Created Successfully ✅");
       console.log(res.data);
     } catch (err) {
