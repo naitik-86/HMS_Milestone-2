@@ -15,6 +15,7 @@ router.post('/create', upload.fields([
 router.get('/', labController.getAllLabTechnicians);
 router.get('/pending-pets', labController.getLabPendingPets);
 router.get('/required-tests', labController.getRequiredLabTests);
+router.get('/reports', labController.getAllPatientReports);
 
 router.post(
     "/upload-lab-reports",

@@ -20,6 +20,95 @@ const uploadToCloudinary = async (file, folder) => {
 };
 
 
+exports.getAllPatientReports = async (req, res) => {
+    try {
+        const clinicId = req.user.clinicId;
+
+        // Get all reports
+        const labReports = await LabReport.find({ clinicId })
+            .sort({ createdAt: -1 });
+
+        if (!labReports.length) {
+            return res.status(200).json({
+                success: true,
+                totalReports: 0,
+                todayReports: 0,
+                completedReports: 0,
+                criticalReports: 0,
+                data: [],
+            });
+        }
+
+        // Find owners containing these pets
+        const owners = await PetRegistration.find({
+            clinicId,
+            "pets._id": {
+                $in: labReports.map(report => report.petId),
+            },
+        });
+
+        // petId -> owner + pet
+        const petMap = {};
+
+        owners.forEach(owner => {
+            owner.pets.forEach(pet => {
+                petMap[pet._id.toString()] = {
+                    owner,
+                    pet,
+                };
+            });
+        });
+
+        // Attach owner and pet
+        const data = labReports.map(report => {
+            const details = petMap[report.petId.toString()] || {};
+
+            return {
+                _id: report._id,
+                clinicId: report.clinicId,
+                petId: report.petId,
+                visitId: report.visitId,
+                consultationId: report.consultationId,
+                reports: report.reports,
+                status: report.status,
+                remarks: report.remarks,
+                createdAt: report.createdAt,
+                updatedAt: report.updatedAt,
+
+                owner: details.owner || null,
+                pet: details.pet || null,
+            };
+        });
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        res.status(200).json({
+            success: true,
+            totalReports: data.length,
+            todayReports: data.filter(
+                r => new Date(r.createdAt) >= today
+            ).length,
+            completedReports: data.filter(
+                r => r.status === "Completed"
+            ).length,
+            criticalReports: data.filter(
+                r => r.status === "Critical"
+            ).length,
+            data,
+        });
+
+    } catch (error) {
+        console.error(error);
+
+        res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
+
+
 exports.uploadLabReports = async (req, res) => {
     try {
         const { petId, visitId } = req.body;
