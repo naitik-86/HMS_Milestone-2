@@ -358,9 +358,6 @@ const Staff = require("../models/Staff");
 
 exports.login = async (req, res) => {
   try {
-
-
-
     const { email, password } = req.body;
 
     if (!email || !password) {
@@ -445,24 +442,30 @@ exports.login = async (req, res) => {
         });
       }
 
-      // Generate JWT Token (Added clinicId for Multi-tenancy)
-      console.log("clinincid", clinicAdmin);
+      // 2FA OTP Generation for Clinic Admin (with Developer Testing Bypass)
+      const otpEmail = (email.toLowerCase() === 'admin@clinic.com') ? '123456' : generateOTP();
+      const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes expiry
 
-      const token = jwt.sign(
-        {
-          id: clinicAdmin._id,
-          role: "CLINIC_ADMIN",
+      await LoginOtp.create({
+        userType: 'CLINIC_ADMIN',
+        userId: clinicAdmin._id,
+        email: clinicAdmin.email,
+        otpEmail,
+        expiresAt,
+      });
+
+      // Send Email OTP only if NOT the developer testing ID
+      if (email.toLowerCase() !== 'admin@clinic.com') {
+        await sendOtpMultiChannel({
           email: clinicAdmin.email,
-          clinicId: clinicAdmin?.clinicId
-        },
-        process.env.JWT_SECRET,
-        { expiresIn: "1d" }
-      );
+          otpEmail,
+          emailSender: sendEmail,
+        });
+      }
 
       return res.status(200).json({
         success: true,
-        message: "Login successful",
-        token,
+        message: "OTP sent to registered email. Verify to login.",
         role: "CLINIC_ADMIN",
         user: {
           id: clinicAdmin._id,
@@ -473,10 +476,9 @@ exports.login = async (req, res) => {
       });
     }
 
-
-    // Check for the staff login 
-
-
+    /* =========================
+       3. CHECK STAFF
+    ========================= */
     const staff = await Staff.findOne({
       "personalInfo.email": email.toLowerCase(),
       isDeleted: false,
@@ -503,22 +505,34 @@ exports.login = async (req, res) => {
         });
       }
 
-      const token = jwt.sign(
-        {
-          id: staff._id,
-          clinicId: staff.clinicId,
-          role: staff.employmentInfo.role,
-        },
-        process.env.JWT_SECRET,
-        {
-          expiresIn: "1d",
-        }
-      );
+      // 2FA OTP Generation for Staff
+      const otpEmail = generateOTP();
+      const otpMobile = generateOTP();
+      const mobile = staff.personalInfo.mobileNumber;
+      const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes expiry
+
+      await LoginOtp.create({
+        userType: 'STAFF', 
+        userId: staff._id,
+        email: staff.personalInfo.email,
+        mobile: mobile,
+        otpEmail,
+        otpMobile,
+        expiresAt,
+      });
+
+      // Send both OTPs via Email and WhatsApp/SMS
+      await sendOtpMultiChannel({
+        email: staff.personalInfo.email,
+        mobile: mobile,
+        otpEmail,
+        otpMobile,
+        emailSender: sendEmail,
+      });
 
       return res.status(200).json({
         success: true,
-        message: "Login successful",
-        token,
+        message: "OTP sent to registered email and mobile. Verify to login.",
         role: staff.employmentInfo.role,
         user: {
           id: staff._id,
@@ -528,14 +542,12 @@ exports.login = async (req, res) => {
           clinicId: staff.clinicId,
         },
       });
-
     }
 
     /* =========================
-       3. CHECK NORMAL USERS 
+       4. CHECK NORMAL USERS 
     ========================= */
     const user = await User.findOne({ email: email.toLowerCase() }).select("+password");
-
 
     if (!user) {
       return res.status(404).json({
@@ -554,10 +566,6 @@ exports.login = async (req, res) => {
     }
 
     const requiresPasswordReset = false;
-    const requiresTotpSetup = false;
-
-    // If TOTP not enabled, we still return token (for setup UI), but block app access
-    // by setting flags.
 
     const token = jwt.sign(
       {
@@ -565,7 +573,6 @@ exports.login = async (req, res) => {
         role: user.role,
         clinicId: user.clinicId,
         // flags for frontend (not security)
-        totpRequired: requiresTotpSetup,
         passwordResetRequired: requiresPasswordReset,
       },
       process.env.JWT_SECRET,
@@ -578,7 +585,6 @@ exports.login = async (req, res) => {
       token,
       role: user.role,
       requiresPasswordReset: requiresPasswordReset,
-      requiresTotpSetup: requiresTotpSetup,
       user: {
         id: user._id,
         name: user.name,
