@@ -4,6 +4,7 @@ export default function Upload({
     value,
     onChange,
     onRemove,
+    accept = ".pdf,application/pdf",
 }) {
     const isImage = value && value.type?.startsWith("image/");
 
@@ -92,7 +93,7 @@ export default function Upload({
 
                 <input
                     type="file"
-                    accept=".pdf,application/pdf"
+                    accept={accept}
                     className="hidden"
                     onChange={onChange}
                 />

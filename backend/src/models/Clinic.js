@@ -37,9 +37,11 @@ const clinicSchema = new mongoose.Schema({
   // NEW: ONBOARDING VERIFICATION & DOCUMENTS
   // ==========================================
   legalDocuments: {
+    clinicLogoUrl: String,
     vetCouncilCertificateUrl: String,
     tradeLicenseUrl: String,
     cancelledChequeUrl: String,
+    adminProfileUrl: String,
   },
   verificationStatus: {
     type: String,

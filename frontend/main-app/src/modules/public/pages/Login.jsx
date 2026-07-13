@@ -27,34 +27,33 @@ export default function Login() {
   const [emailVerified, setEmailVerified] = useState(false);
 
   useEffect(() => {
-    // Destroy and clear all sessions immediately upon visiting the login page
-    localStorage.removeItem("token");
+    const token = localStorage.getItem("token");
+    const role = localStorage.getItem("role");
+
+    if (token) {
+      if (localStorage.getItem("passwordResetRequired") === "true") {
+        navigate("/change-password", { replace: true });
+        return;
+      }
+
+      if (localStorage.getItem("totpRequired") === "true") {
+        navigate("/enable-totp", { replace: true });
+        return;
+      }
+
+      if (role === "SUPER_ADMIN") navigate("/superadmin", { replace: true });
+      else if (role === "CLINIC_ADMIN") navigate("/clinic", { replace: true });
+      else if (role === "DOCTOR") navigate("/doctor/dashboard", { replace: true });
+      else if (role === "RECEPTIONIST") navigate("/clinic/reception", { replace: true });
+      else if (role === "PARA_MEDICAL") navigate("/clinic/pre-consultation", { replace: true });
+      return;
+    }
+
     localStorage.removeItem("user");
     localStorage.removeItem("role");
     localStorage.removeItem("passwordResetRequired");
     localStorage.removeItem("totpRequired");
     sessionStorage.clear();
-
-    const token = localStorage.getItem("token");
-    const role = localStorage.getItem("role");
-
-    if (!token) return;
-
-    if (localStorage.getItem("passwordResetRequired") === "true") {
-      navigate("/change-password", { replace: true });
-      return;
-    }
-
-    if (localStorage.getItem("totpRequired") === "true") {
-      navigate("/enable-totp", { replace: true });
-      return;
-    }
-
-    if (role === "SUPER_ADMIN") navigate("/superadmin", { replace: true });
-    else if (role === "CLINIC_ADMIN") navigate("/clinic", { replace: true });
-    else if (role === "DOCTOR") navigate("/doctor/dashboard", { replace: true });
-    else if (role === "RECEPTIONIST") navigate("/clinic/reception", { replace: true });
-    else if (role === "PARA_MEDICAL") navigate("/clinic/pre-consultation", { replace: true });
   }, [navigate]);
 
   const handleChange = (e) => {

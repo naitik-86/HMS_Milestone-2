@@ -296,11 +296,13 @@ exports.uploadClinicDocuments = async (req, res) => {
       return Array.isArray(v) ? v : [v];
     };
 
+    const logo = normalize(req.files?.clinicLogo);
     const vet = normalize(req.files?.vetCouncilCertificate);
     const trade = normalize(req.files?.tradeLicense);
     const cheque = normalize(req.files?.cancelledCheque);
+    const adminProfile = normalize(req.files?.adminProfile);
 
-    const hasAny = vet.length > 0 || trade.length > 0 || cheque.length > 0;
+    const hasAny = logo.length > 0 || vet.length > 0 || trade.length > 0 || cheque.length > 0 || adminProfile.length > 0;
 
 
     if (!hasAny) {

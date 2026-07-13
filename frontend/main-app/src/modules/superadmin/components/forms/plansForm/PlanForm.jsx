@@ -127,19 +127,9 @@ export default function PlanForm({ onClose, onCreated }) {
                             <Field label="Storage Limit (GB)" name="storageLimitGb" type="number" min="0" value={form.storageLimitGb} onChange={handleChange} required />
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                            <Toggle label="Unlimited Pet Records" name="maxPetRecordsUnlimited" checked={form.maxPetRecordsUnlimited} onChange={handleChange} />
-                            <Toggle label="Lab Module Enabled" name="labModuleEnabled" checked={form.labModuleEnabled} onChange={handleChange} />
-                            <Toggle label="Grooming Module Enabled" name="groomingModuleEnabled" checked={form.groomingModuleEnabled} onChange={handleChange} />
-                            <Toggle label="Kennel Module Enabled" name="kennelModuleEnabled" checked={form.kennelModuleEnabled} onChange={handleChange} />
-                            <Toggle label="Online Pharmacy Module Enabled" name="onlinePharmacyModuleEnabled" checked={form.onlinePharmacyModuleEnabled} onChange={handleChange} />
-                            <Toggle label="API Access Enabled" name="apiAccessEnabled" checked={form.apiAccessEnabled} onChange={handleChange} />
-                            <Toggle label="White-label / Custom Branding" name="whiteLabelCustomBranding" checked={form.whiteLabelCustomBranding} onChange={handleChange} />
-
-                            <div className="rounded-xl border bg-slate-50 px-4 py-3">
-                                <div className="text-sm font-medium text-slate-700">Subscription Invoice</div>
-                                <div className="mt-1 text-sm text-slate-500">Auto-generated PDF</div>
-                            </div>
+                        <div className="rounded-xl border bg-slate-50 px-4 py-3">
+                            <div className="text-sm font-medium text-slate-700">Subscription Invoice</div>
+                            <div className="mt-1 text-sm text-slate-500">Auto-generated PDF</div>
                         </div>
                     </div>
 
@@ -190,14 +180,5 @@ function SelectField({ label, name, value, onChange, options, required = false }
                 ))}
             </select>
         </div>
-    );
-}
-
-function Toggle({ label, name, checked, onChange }) {
-    return (
-        <label className="flex items-center justify-between gap-4 rounded-xl border px-4 py-3">
-            <span className="text-sm font-medium text-slate-700">{label}</span>
-            <input type="checkbox" name={name} checked={checked} onChange={onChange} className="h-5 w-5 accent-orange-500" />
-        </label>
     );
 }
