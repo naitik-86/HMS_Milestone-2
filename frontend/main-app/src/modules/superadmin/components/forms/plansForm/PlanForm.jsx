@@ -1,253 +1,154 @@
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import { X } from "lucide-react";
+import { createPlan } from "../../../api/planApi";
 
-const modulesList = [
-    "Lab Module",
-    "Grooming",
-    "Kennel",
-    "Pharmacy",
-    "Inventory",
-    "Telemedicine",
-    "API Access",
-    "White Labeling",
-];
+const today = new Date().toISOString().slice(0, 10);
 
-export default function PlanForm({ onClose }) {
-    const [form, setForm] = useState({
-        planName: "",
-        tier: "basic",
+const initialForm = {
+    subscriptionPlan: "Basic",
+    billingCycle: "Monthly",
+    planStartDate: today,
+    trialPeriodDays: 0,
+    discountPromoCode: "",
+    customPlanNotes: "",
+    maxStaffAccounts: 5,
+    maxDoctors: 2,
+    maxPetRecords: 100,
+    maxPetRecordsUnlimited: false,
+    storageLimitGb: 5,
+    labModuleEnabled: false,
+    groomingModuleEnabled: false,
+    kennelModuleEnabled: false,
+    onlinePharmacyModuleEnabled: false,
+    apiAccessEnabled: false,
+    whiteLabelCustomBranding: false,
+};
 
-        monthlyPrice: 0,
-        quarterlyPrice: 0,
-        annualPrice: 0,
+const getRenewalDate = (startDate, billingCycle) => {
+    const date = new Date(startDate);
+    if (Number.isNaN(date.getTime())) return "";
 
-        trialDays: 14,
+    const months = { Monthly: 1, Quarterly: 3, Annual: 12 }[billingCycle] || 1;
+    date.setMonth(date.getMonth() + months);
+    return date.toISOString().slice(0, 10);
+};
 
-        maxStaff: 5,
-        maxDoctors: 2,
-        maxPetRecords: 100,
-        storage: 5,
+export default function PlanForm({ onClose, onCreated }) {
+    const [form, setForm] = useState(initialForm);
+    const [saving, setSaving] = useState(false);
+    const [error, setError] = useState("");
 
-        modules: [],
-    });
-console.log("PlanForm Rendered");
+    const planEndRenewalDate = useMemo(
+        () => getRenewalDate(form.planStartDate, form.billingCycle),
+        [form.planStartDate, form.billingCycle]
+    );
 
     const handleChange = (e) => {
-        console.log("PlanForm Rendered  2");
-        console.log(e.target.name, e.target.value);
-        setForm({
-            ...form,
-            [e.target.name]: e.target.value,
-        });
-    };
-useEffect(() => {
-    console.log(form);
-}, [form]);
-    const toggleModule = (module) => {
+        const { name, value, type, checked } = e.target;
         setForm((prev) => ({
             ...prev,
-            modules: prev.modules.includes(module)
-                ? prev.modules.filter((m) => m !== module)
-                : [...prev.modules, module],
+            [name]: type === "checkbox" ? checked : value,
         }));
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
+        setSaving(true);
+        setError("");
 
-        console.log(form);
-
-        onClose();
+        try {
+            await createPlan({ ...form, planEndRenewalDate });
+            onCreated?.();
+            onClose();
+        } catch (err) {
+            setError(err.response?.data?.message || "Unable to create plan");
+        } finally {
+            setSaving(false);
+        }
     };
 
     return (
-        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center">
-            <div className="bg-white w-full max-w-5xl rounded-3xl shadow-2xl overflow-hidden">
-
-                {/* Header */}
-
-                <div className="flex items-center justify-between px-8 py-5 border-b">
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+            <div className="bg-white w-full max-w-6xl rounded-2xl shadow-2xl overflow-hidden">
+                <div className="flex items-start justify-between gap-4 px-6 py-5 border-b">
                     <div>
-                        <h2 className="text-3xl font-bold bg-gradient-to-r from-orange-500 to-orange-700 bg-clip-text text-transparent">
-                            Create Plan
+                        <h2 className="text-2xl font-bold text-slate-900">
+                            Subscription Plan Assignment
                         </h2>
-
                         <p className="text-sm text-slate-500 mt-1">
-                            Configure pricing, limits and modules.
+                            Configure plan selection, limits, modules and invoice generation.
                         </p>
                     </div>
 
                     <button
+                        type="button"
                         onClick={onClose}
                         className="w-10 h-10 rounded-full hover:bg-orange-50 flex items-center justify-center"
+                        aria-label="Close"
                     >
                         <X size={20} />
                     </button>
                 </div>
 
                 <form onSubmit={handleSubmit}>
-                    <div className="p-8 max-h-[75vh] overflow-y-auto">
-
-                        {/* Pricing */}
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-
-                            <Field
-                                label="Plan Name"
-                                name="planName"
-                                value={form.planName}
-                                onChange={handleChange}
-                            />
-
-                            <div>
-                                <label className="text-sm font-medium text-slate-700">
-                                    Tier
-                                </label>
-
-                                <select
-                                    name="tier"
-                                    value={form.tier}
-                                    onChange={handleChange}
-                                    className="w-full mt-2 border rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-orange-500"
-                                >
-                                    <option value="basic">
-                                        Basic
-                                    </option>
-
-                                    <option value="standard">
-                                        Standard
-                                    </option>
-
-                                    <option value="premium">
-                                        Premium
-                                    </option>
-                                </select>
+                    <div className="p-6 max-h-[75vh] overflow-y-auto space-y-8">
+                        {error && (
+                            <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                                {error}
                             </div>
+                        )}
 
-                            <Field
-                                label="Monthly Price (₹)"
-                                name="monthlyPrice"
-                                type="number"
-                                value={form.monthlyPrice}
-                                onChange={handleChange}
-                            />
+                        <Section title="Plan Selection" />
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+                            <SelectField label="Subscription Plan" name="subscriptionPlan" value={form.subscriptionPlan} onChange={handleChange} options={["Basic", "Standard", "Professional", "Enterprise", "Custom"]} required />
+                            <SelectField label="Billing Cycle" name="billingCycle" value={form.billingCycle} onChange={handleChange} options={["Monthly", "Quarterly", "Annual"]} required />
+                            <Field label="Plan Start Date" name="planStartDate" type="date" value={form.planStartDate} onChange={handleChange} required />
+                            <Field label="Plan End / Renewal Date" name="planEndRenewalDate" type="date" value={planEndRenewalDate} readOnly />
+                            <Field label="Trial Period (Days)" name="trialPeriodDays" type="number" min="0" value={form.trialPeriodDays} onChange={handleChange} />
+                            <Field label="Discount / Promo Code" name="discountPromoCode" value={form.discountPromoCode} onChange={handleChange} />
+                        </div>
 
-                            <Field
-                                label="Quarterly Price (₹)"
-                                name="quarterlyPrice"
-                                type="number"
-                                value={form.quarterlyPrice}
+                        <div>
+                            <label className="text-sm font-medium text-slate-700">Custom Plan Notes</label>
+                            <textarea
+                                name="customPlanNotes"
+                                value={form.customPlanNotes}
                                 onChange={handleChange}
-                            />
-
-                            <Field
-                                label="Annual Price (₹)"
-                                name="annualPrice"
-                                type="number"
-                                value={form.annualPrice}
-                                onChange={handleChange}
-                            />
-
-                            <Field
-                                label="Trial Days"
-                                name="trialDays"
-                                type="number"
-                                value={form.trialDays}
-                                onChange={handleChange}
-                            />
-
-                            <Field
-                                label="Max Staff"
-                                name="maxStaff"
-                                type="number"
-                                value={form.maxStaff}
-                                onChange={handleChange}
-                            />
-
-                            <Field
-                                label="Max Doctors"
-                                name="maxDoctors"
-                                type="number"
-                                value={form.maxDoctors}
-                                onChange={handleChange}
-                            />
-
-                            <Field
-                                label="Max Pet Records"
-                                name="maxPetRecords"
-                                type="number"
-                                value={form.maxPetRecords}
-                                onChange={handleChange}
-                            />
-
-                            <Field
-                                label="Storage (GB)"
-                                name="storage"
-                                type="number"
-                                value={form.storage}
-                                onChange={handleChange}
+                                rows={3}
+                                className="w-full mt-2 border rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-orange-500"
                             />
                         </div>
 
-                        {/* Modules */}
+                        <Section title="Feature Limits Per Plan" />
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
+                            <Field label="Max Staff Accounts" name="maxStaffAccounts" type="number" min="0" value={form.maxStaffAccounts} onChange={handleChange} required />
+                            <Field label="Max Doctors" name="maxDoctors" type="number" min="0" value={form.maxDoctors} onChange={handleChange} required />
+                            <Field label="Max Pet Records" name="maxPetRecords" type="number" min="0" value={form.maxPetRecords} onChange={handleChange} disabled={form.maxPetRecordsUnlimited} />
+                            <Field label="Storage Limit (GB)" name="storageLimitGb" type="number" min="0" value={form.storageLimitGb} onChange={handleChange} required />
+                        </div>
 
-                        <div className="mt-8 border-t pt-6">
-                            <h3 className="font-semibold text-lg mb-6">
-                                Modules
-                            </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                            <Toggle label="Unlimited Pet Records" name="maxPetRecordsUnlimited" checked={form.maxPetRecordsUnlimited} onChange={handleChange} />
+                            <Toggle label="Lab Module Enabled" name="labModuleEnabled" checked={form.labModuleEnabled} onChange={handleChange} />
+                            <Toggle label="Grooming Module Enabled" name="groomingModuleEnabled" checked={form.groomingModuleEnabled} onChange={handleChange} />
+                            <Toggle label="Kennel Module Enabled" name="kennelModuleEnabled" checked={form.kennelModuleEnabled} onChange={handleChange} />
+                            <Toggle label="Online Pharmacy Module Enabled" name="onlinePharmacyModuleEnabled" checked={form.onlinePharmacyModuleEnabled} onChange={handleChange} />
+                            <Toggle label="API Access Enabled" name="apiAccessEnabled" checked={form.apiAccessEnabled} onChange={handleChange} />
+                            <Toggle label="White-label / Custom Branding" name="whiteLabelCustomBranding" checked={form.whiteLabelCustomBranding} onChange={handleChange} />
 
-                            <div className="grid md:grid-cols-2 gap-y-5 gap-x-10">
-
-                                {modulesList.map((module) => (
-                                    <div
-                                        key={module}
-                                        className="flex justify-between items-center"
-                                    >
-                                        <span className="text-slate-700">
-                                            {module}
-                                        </span>
-
-                                        <button
-                                            type="button"
-                                            onClick={() =>
-                                                toggleModule(module)
-                                            }
-                                            className={`w-12 h-7 rounded-full relative transition
-                                            ${form.modules.includes(module)
-                                                    ? "bg-orange-500"
-                                                    : "bg-slate-300"
-                                                }`}
-                                        >
-                                            <span
-                                                className={`absolute top-1 w-5 h-5 bg-white rounded-full transition
-                                                ${form.modules.includes(module)
-                                                        ? "right-1"
-                                                        : "left-1"
-                                                    }`}
-                                            />
-                                        </button>
-                                    </div>
-                                ))}
+                            <div className="rounded-xl border bg-slate-50 px-4 py-3">
+                                <div className="text-sm font-medium text-slate-700">Subscription Invoice</div>
+                                <div className="mt-1 text-sm text-slate-500">Auto-generated PDF</div>
                             </div>
                         </div>
                     </div>
 
-                    {/* Footer */}
-
-                    <div className="border-t px-8 py-5 flex justify-end gap-3">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="px-5 py-2.5 border rounded-xl"
-                        >
+                    <div className="border-t px-6 py-5 flex justify-end gap-3">
+                        <button type="button" onClick={onClose} className="px-5 py-2.5 border rounded-xl">
                             Cancel
                         </button>
-
-                        <button
-                            type="submit"
-                            className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2.5 rounded-xl font-medium"
-                        >
-                            Create Plan
+                        <button type="submit" disabled={saving} className="bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white px-6 py-2.5 rounded-xl font-medium">
+                            {saving ? "Creating..." : "Create Plan"}
                         </button>
                     </div>
                 </form>
@@ -256,26 +157,47 @@ useEffect(() => {
     );
 }
 
-function Field({
-    label,
-    name,
-    value,
-    onChange,
-    type = "text",
-}) {
+function Section({ title }) {
+    return <h3 className="text-sm font-bold uppercase tracking-wide text-slate-800">{title}</h3>;
+}
+
+function Field({ label, name, value, onChange, type = "text", readOnly = false, disabled = false, required = false, min }) {
     return (
         <div>
-            <label className="text-sm font-medium text-slate-700">
-                {label}
-            </label>
-
+            <label className="text-sm font-medium text-slate-700">{label}</label>
             <input
                 type={type}
                 name={name}
                 value={value}
                 onChange={onChange}
-                className="w-full mt-2 border rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-orange-500"
+                readOnly={readOnly}
+                disabled={disabled}
+                required={required}
+                min={min}
+                className="w-full mt-2 border rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-orange-500 disabled:bg-slate-100 read-only:bg-slate-100"
             />
         </div>
+    );
+}
+
+function SelectField({ label, name, value, onChange, options, required = false }) {
+    return (
+        <div>
+            <label className="text-sm font-medium text-slate-700">{label}</label>
+            <select name={name} value={value} onChange={onChange} required={required} className="w-full mt-2 border rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-orange-500">
+                {options.map((option) => (
+                    <option key={option} value={option}>{option}</option>
+                ))}
+            </select>
+        </div>
+    );
+}
+
+function Toggle({ label, name, checked, onChange }) {
+    return (
+        <label className="flex items-center justify-between gap-4 rounded-xl border px-4 py-3">
+            <span className="text-sm font-medium text-slate-700">{label}</span>
+            <input type="checkbox" name={name} checked={checked} onChange={onChange} className="h-5 w-5 accent-orange-500" />
+        </label>
     );
 }

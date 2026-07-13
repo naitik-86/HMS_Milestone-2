@@ -1,13 +1,24 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { showToast } from '../../../../shared/components/toast';
-import { useEffect } from 'react';
+// import { useEffect } from 'react';
 import { createDoctor, getDoctors, updateDoctor } from '../../api/doctorApi';
-
+import { useEffect, useState } from "react";
+import { getDoctorStaff } from "../../api/staffApi";
 // ── Mock Data ────────────────────────────────────────────────────────────────
 const degreeTypes = ['BVSc', 'BVSc & AH', 'MVSc', 'PhD (Vet)', 'BAMS', 'Other'];
 const specializations = ['Small Animal', 'Large Animal', 'Exotic & Wildlife', 'Poultry', 'Aquatic', 'Surgery', 'Dermatology', 'Dentistry', 'Oncology', 'Cardiology'];
 const languages = ['English', 'Hindi', 'Marathi', 'Tamil', 'Telugu', 'Kannada', 'Bengali', 'Gujarati'];
 const states = ['Maharashtra', 'Karnataka', 'Tamil Nadu', 'Delhi', 'Gujarat', 'Rajasthan', 'Kerala', 'West Bengal', 'Uttar Pradesh', 'Madhya Pradesh'];
+const digitsOnly = (value, max = 10) => value.replace(/\D/g, "").slice(0, max);
+const isPdfFile = (file) => file?.type === "application/pdf";
+const isImageFile = (file) => file?.type?.startsWith("image/");
+const isPastDate = (value) => {
+  if (!value) return false;
+  const selected = new Date(value);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return selected < today;
+};
 
 
 function getInitials(name = " ") {
@@ -37,6 +48,7 @@ function UploadBox({ id, accept, label }) {
 
 // ── DoctorForm ───────────────────────────────────────────────────────────────
 function DoctorForm({ onClose, onSave, existingData, isEdit }) {
+  const [doctorStaff, setDoctorStaff] = useState([]);
   const [activeStep, setActiveStep] = useState(0);
   const [degrees, setDegrees] =
     useState(
@@ -59,20 +71,55 @@ function DoctorForm({ onClose, onSave, existingData, isEdit }) {
   const [selectedLangs, setSelectedLangs] = useState(existingData?.selectedLangs || []);
   const [errors, setErrors] = useState({});
   const [formData, setFormData] = useState({
-    name: existingData?.name || '',
-    regNumber: existingData?.regNumber || '',
-    state: existingData?.state || '',
-    certValidity: existingData?.certValidity || '',
+    staff: existingData?.staff?._id || existingData?.staff || existingData?.staffId || "",
+    staffId: existingData?.staff?._id || existingData?.staff || existingData?.staffId || "",
+    staffCode: existingData?.staffCode || "",
+
+    name: existingData?.name || "",
+    mobile: existingData?.mobile || "",
+    email: existingData?.email || "",
+
+    regNumber: existingData?.regNumber || "",
+    state: existingData?.state || "",
+    certValidity: existingData?.certValidity || "",
     reminderDays: existingData?.reminderDays || 30,
-    fees: existingData?.fees || '',
+    fees: existingData?.fees || "",
     avgDuration: existingData?.avgDuration || 15,
     emergency: existingData?.emergency ?? false,
-    experience: existingData?.experience || '',
-  });
+    experience: existingData?.experience || "",
+});
 
   const u = (k, v) => {
     setFormData(p => ({ ...p, [k]: v }));
     if (errors[k]) setErrors(p => ({ ...p, [k]: '' }));
+  };
+
+  const requirePdf = (file, onValid) => {
+    if (!file) return;
+    if (!isPdfFile(file)) {
+      showToast({
+        type: "error",
+        title: "Invalid File",
+        description: "Please upload PDF file only.",
+      });
+      return false;
+    }
+    onValid(file);
+    return true;
+  };
+
+  const requireImage = (file, onValid) => {
+    if (!file) return;
+    if (!isImageFile(file)) {
+      showToast({
+        type: "error",
+        title: "Invalid File",
+        description: "Please upload image file only.",
+      });
+      return false;
+    }
+    onValid(file);
+    return true;
   };
 
   const steps = [
@@ -84,11 +131,17 @@ function DoctorForm({ onClose, onSave, existingData, isEdit }) {
   const validate = () => {
     const e = {};
     if (!formData.name.trim()) e.name = 'Doctor name is required';
-    if (!formData.experience || Number(formData.experience) <= 0) e.experience = 'Enter valid years of experience';
+    if (!formData.staff) e.name = 'Please select a doctor';
+    if (!formData.experience || Number(formData.experience) <= 0 || Number(formData.experience) > 70) e.experience = 'Experience must be between 1 and 70 years';
+    if (!degrees.some(d => d.degree || d.degreeName)) e.degrees = 'Select at least one degree type';
     if (!selectedSpecs.length) e.selectedSpecs = 'Select at least one specialization';
     if (!formData.regNumber.trim()) e.regNumber = 'Registration number is required';
+    else if (!/^[A-Za-z0-9/-]{5,30}$/.test(formData.regNumber.trim())) e.regNumber = 'Use 5-30 letters, numbers, / or - only';
     if (!formData.state) e.state = 'Please select a state';
-    if (!formData.fees || Number(formData.fees) <= 0) e.fees = 'Enter valid consultation fees';
+    if (formData.certValidity && isPastDate(formData.certValidity)) e.certValidity = 'Certificate validity date cannot be in the past';
+    if (formData.reminderDays === "" || Number(formData.reminderDays) < 0 || Number(formData.reminderDays) > 365) e.reminderDays = 'Reminder days must be between 0 and 365';
+    if (!formData.fees || Number(formData.fees) <= 0 || Number(formData.fees) > 100000) e.fees = 'Consultation fees must be between 1 and 100000';
+    if (!formData.avgDuration || Number(formData.avgDuration) < 5 || Number(formData.avgDuration) > 240) e.avgDuration = 'Duration must be between 5 and 240 minutes';
     setErrors(e);
     return !Object.keys(e).length;
   };
@@ -117,15 +170,26 @@ function DoctorForm({ onClose, onSave, existingData, isEdit }) {
   const toggleLang = (l) => setSelectedLangs(p => p.includes(l) ? p.filter(x => x !== l) : [...p, l]);
 
   const stepErrors = [
-    [errors.name, errors.experience, errors.selectedSpecs].filter(Boolean).length,
-    [errors.regNumber, errors.state].filter(Boolean).length,
-    [errors.fees].filter(Boolean).length,
+    [errors.name, errors.experience, errors.degrees, errors.selectedSpecs].filter(Boolean).length,
+    [errors.regNumber, errors.state, errors.certValidity, errors.reminderDays].filter(Boolean).length,
+    [errors.fees, errors.avgDuration].filter(Boolean).length,
   ];
 
   const chipCls = (active) =>
     `flex items-center gap-2 px-4 py-2.5 rounded-xl border cursor-pointer transition-all text-xs font-semibold ${active ? 'border-[#E8630A] bg-[#FEF3EB] text-[#E8630A]' : 'border-[#E5E7EB] bg-white text-[#6B7280] hover:border-gray-300'
     }`;
+useEffect(() => {
+    fetchDoctorStaff();
+}, []);
 
+const fetchDoctorStaff = async () => {
+    try {
+        const data = await getDoctorStaff();
+        setDoctorStaff(data);
+    } catch (err) {
+        console.log(err);
+    }
+};
   return (
     <div
       className="fixed inset-0 z-1000 flex items-center justify-center p-3 sm:p-5"
@@ -231,12 +295,58 @@ function DoctorForm({ onClose, onSave, existingData, isEdit }) {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className={labelCls}>Doctor Full Name <span className="text-[#E8630A]">*</span></label>
-                    <input className={errors.name ? inputErrCls : inputCls} placeholder="e.g. Dr. Priya Sharma" value={formData.name} onChange={e => u('name', e.target.value)} />
+                    <select
+    className={errors.name ? inputErrCls : inputCls}
+    value={formData.staffId || ""}
+    onChange={(e) => {
+
+        const doctor = doctorStaff.find(
+            d => d._id === e.target.value
+        );
+
+        if (!doctor) return;
+
+        setFormData(prev => ({
+            ...prev,
+
+            staffId: doctor._id,
+            staff: doctor._id,
+            staffCode:
+                doctor.employmentInfo?.staffId || "",
+
+            name:
+                doctor.personalInfo.fullName,
+
+            mobile:
+                doctor.personalInfo.mobileNumber,
+
+            email:
+                doctor.personalInfo.email,
+        }));
+    }}
+>
+    <option value="">
+        Select Doctor
+    </option>
+
+    {doctorStaff.map(doc => (
+        <option
+            key={doc._id}
+            value={doc._id}
+        >
+            {doc.employmentInfo.staffId}
+            {" | "}
+            {doc.personalInfo.fullName}
+            {" | "}
+            {doc.personalInfo.mobileNumber}
+        </option>
+    ))}
+</select>
                     {errors.name && <p className="text-red-500 text-xs mt-1.5">{errors.name}</p>}
                   </div>
                   <div>
                     <label className={labelCls}>Years of Experience <span className="text-[#E8630A]">*</span></label>
-                    <input type="number" min="0" placeholder="e.g. 8" value={formData.experience} onChange={e => u('experience', e.target.value)} className={errors.experience ? inputErrCls : inputCls} />
+                    <input type="number" min="0" placeholder="e.g. 8" value={formData.experience} onChange={e => u('experience', digitsOnly(e.target.value, 2))} className={errors.experience ? inputErrCls : inputCls} />
                     {errors.experience && <p className="text-red-500 text-xs mt-1.5">{errors.experience}</p>}
                   </div>
                 </div>
@@ -258,32 +368,36 @@ function DoctorForm({ onClose, onSave, existingData, isEdit }) {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div>
                           <label className={labelCls}>Degree Type</label>
-                          <select className={inputCls} value={d.degree} onChange={e => setDegrees(degrees.map((deg, j) => j === i ? { ...deg, degree: e.target.value } : deg))}>
+                          <select className={inputCls} value={d.degree || d.degreeName || ""} onChange={e => setDegrees(degrees.map((deg, j) => j === i ? { ...deg, degree: e.target.value, degreeName: e.target.value } : deg))}>
                             <option value="">Select</option>
                             {degreeTypes.map(t => <option key={t}>{t}</option>)}
                           </select>
                         </div>
                         <div>
                           <label className={labelCls}>
-                            Certificate (img / pdf)
+                            Certificate (PDF)
                           </label>
 
                           <input
                             type="file"
-                            accept=".pdf,image/*"
-                            onChange={(e) =>
-                              setDegrees(
-                                degrees.map((deg, j) =>
-                                  j === i
-                                    ? {
-                                      ...deg,
-                                      certificate:
-                                        e.target.files[0]
-                                    }
-                                    : deg
+                            accept="application/pdf,.pdf"
+                            onChange={(e) => {
+                              const file = e.target.files[0];
+                              const valid = requirePdf(file, (pdf) =>
+                                setDegrees(
+                                  degrees.map((deg, j) =>
+                                    j === i
+                                      ? {
+                                        ...deg,
+                                        certificate:
+                                          pdf
+                                      }
+                                      : deg
+                                  )
                                 )
-                              )
-                            }
+                              );
+                              if (valid === false) e.target.value = "";
+                            }}
                             className={inputCls}
                           />
                         </div>
@@ -296,6 +410,7 @@ function DoctorForm({ onClose, onSave, existingData, isEdit }) {
                   >
                     + Add Degree
                   </button>
+                  {errors.degrees && <p className="text-red-500 text-xs mt-1.5">{errors.degrees}</p>}
                 </div>
               </div>
 
@@ -322,7 +437,7 @@ function DoctorForm({ onClose, onSave, existingData, isEdit }) {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className={labelCls}>Registration Number <span className="text-[#E8630A]">*</span></label>
-                  <input placeholder="e.g. VCI/MH/2020/1234" value={formData.regNumber} onChange={e => u('regNumber', e.target.value)} className={errors.regNumber ? inputErrCls : inputCls} />
+                  <input placeholder="e.g. VCI/MH/2020/1234" value={formData.regNumber} onChange={e => u('regNumber', e.target.value.toUpperCase().replace(/[^A-Z0-9/-]/g, ""))} className={errors.regNumber ? inputErrCls : inputCls} />
                   {errors.regNumber && <p className="text-red-500 text-xs mt-1.5">{errors.regNumber}</p>}
                 </div>
                 <div>
@@ -335,11 +450,13 @@ function DoctorForm({ onClose, onSave, existingData, isEdit }) {
                 </div>
                 <div>
                   <label className={labelCls}>Certificate Validity Date</label>
-                  <input type="date" value={formData.certValidity} onChange={e => u('certValidity', e.target.value)} className={inputCls} />
+                  <input type="date" value={formData.certValidity} onChange={e => u('certValidity', e.target.value)} className={errors.certValidity ? inputErrCls : inputCls} />
+                  {errors.certValidity && <p className="text-red-500 text-xs mt-1.5">{errors.certValidity}</p>}
                 </div>
                 <div>
                   <label className={labelCls}>Renewal Reminder <span className="text-gray-400 font-normal">(days before expiry)</span></label>
-                  <input type="number" value={formData.reminderDays} onChange={e => u('reminderDays', e.target.value)} className={inputCls} />
+                  <input type="number" min="0" max="365" value={formData.reminderDays} onChange={e => u('reminderDays', digitsOnly(e.target.value, 3))} className={errors.reminderDays ? inputErrCls : inputCls} />
+                  {errors.reminderDays && <p className="text-red-500 text-xs mt-1.5">{errors.reminderDays}</p>}
                 </div>
                 <div className="col-span-2">
                   <div>
@@ -349,13 +466,15 @@ function DoctorForm({ onClose, onSave, existingData, isEdit }) {
 
                     <input
                       type="file"
-                      accept=".pdf"
+                      accept="application/pdf,.pdf"
                       className={inputCls}
-                      onChange={(e) =>
-                        setRegistrationCertificate(
-                          e.target.files[0]
-                        )
-                      }
+                      onChange={(e) => {
+                        const valid = requirePdf(
+                          e.target.files[0],
+                          setRegistrationCertificate
+                        );
+                        if (valid === false) e.target.value = "";
+                      }}
                     />
                   </div>                </div>
               </div>
@@ -370,12 +489,13 @@ function DoctorForm({ onClose, onSave, existingData, isEdit }) {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className={labelCls}>Consultation Fees (₹) <span className="text-[#E8630A]">*</span></label>
-                    <input type="number" min="0" placeholder="e.g. 500" value={formData.fees} onChange={e => u('fees', e.target.value)} className={errors.fees ? inputErrCls : inputCls} />
+                    <input type="number" min="0" placeholder="e.g. 500" value={formData.fees} onChange={e => u('fees', digitsOnly(e.target.value, 6))} className={errors.fees ? inputErrCls : inputCls} />
                     {errors.fees && <p className="text-red-500 text-xs mt-1.5">{errors.fees}</p>}
                   </div>
                   <div>
                     <label className={labelCls}>Avg Consultation Duration (min)</label>
-                    <input type="number" value={formData.avgDuration} onChange={e => u('avgDuration', e.target.value)} className={inputCls} />
+                    <input type="number" min="5" max="240" value={formData.avgDuration} onChange={e => u('avgDuration', digitsOnly(e.target.value, 3))} className={errors.avgDuration ? inputErrCls : inputCls} />
+                    {errors.avgDuration && <p className="text-red-500 text-xs mt-1.5">{errors.avgDuration}</p>}
                   </div>
                 </div>
                 <div className="flex items-center justify-between mt-6 p-5 bg-[#FAFAFA] border border-[#F3F4F6] rounded-2xl">
@@ -405,27 +525,31 @@ function DoctorForm({ onClose, onSave, existingData, isEdit }) {
                       type="file"
                       accept="image/*"
                       className={inputCls}
-                      onChange={(e) =>
-                        setDigitalSignature(
-                          e.target.files[0]
-                        )
-                      }
+                      onChange={(e) => {
+                        const valid = requireImage(
+                          e.target.files[0],
+                          setDigitalSignature
+                        );
+                        if (valid === false) e.target.value = "";
+                      }}
                     />
                   </div>
                   <div>
                     <label className={labelCls}>
-                      Doctor Letterhead / Stamp
+                      Doctor Letterhead / Stamp PDF
                     </label>
 
                     <input
                       type="file"
-                      accept="image/*,.pdf"
+                      accept="application/pdf,.pdf"
                       className={inputCls}
-                      onChange={(e) =>
-                        setDoctorLetterhead(
-                          e.target.files[0]
-                        )
-                      }
+                      onChange={(e) => {
+                        const valid = requirePdf(
+                          e.target.files[0],
+                          setDoctorLetterhead
+                        );
+                        if (valid === false) e.target.value = "";
+                      }}
                     />
                   </div>
                 </div>
@@ -635,6 +759,9 @@ export default function DoctorDetails() {
 
           status:
             doc.status || "Active",
+
+          staffId:
+            doc.staff?._id || doc.staff || "",
         }));
 
 

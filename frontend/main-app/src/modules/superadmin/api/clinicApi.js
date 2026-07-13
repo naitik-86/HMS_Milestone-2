@@ -27,7 +27,18 @@ export const createClinic = async (clinicData) => {
         address: addressString,
         subscriptionType,
         maxDoctors: clinicData.maxDoctors || 5,
-        maxStaff: clinicData.maxStaff || 10
+        maxStaff: clinicData.maxStaff || 10,
+        latitude: clinicData.latitude,
+        longitude: clinicData.longitude,
+        addressDetails: {
+            addressLine1: clinicData.address1,
+            addressLine2: clinicData.address2,
+            city: clinicData.city,
+            district: clinicData.district,
+            state: clinicData.state,
+            pincode: clinicData.pincode,
+            serviceArea: clinicData.serviceArea
+        }
     };
 
     // 1. Create the clinic (Updated endpoint)

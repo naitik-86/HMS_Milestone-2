@@ -6,6 +6,9 @@ const generateUsername = require("../utils/generateUsername.js");
 const generatePassword = require("../utils/generatePassword.js");
 const sendEmail = require("../utils/emailService.js");
 
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const phoneRegex = /^\d{10}$/;
+
 const createStaff = async (req, res) => {
 
     console.log("****** -> createstaff");
@@ -28,6 +31,38 @@ const createStaff = async (req, res) => {
         const accountInfo = req.body.accountInfo
             ? JSON.parse(req.body.accountInfo)
             : {};
+
+        const emergencyNumber =
+            personalInfo.emergencyContacts?.[0]
+                ?.contactNumber || "";
+
+        if (!personalInfo.fullName || personalInfo.fullName.trim().length < 3) {
+            return res.status(400).json({
+                success: false,
+                message: "Full name must be at least 3 characters",
+            });
+        }
+
+        if (!emailRegex.test(personalInfo.email || "")) {
+            return res.status(400).json({
+                success: false,
+                message: "Please enter a valid email address",
+            });
+        }
+
+        if (!phoneRegex.test(personalInfo.mobileNumber || "")) {
+            return res.status(400).json({
+                success: false,
+                message: "Mobile number must be exactly 10 digits",
+            });
+        }
+
+        if (emergencyNumber && !phoneRegex.test(emergencyNumber)) {
+            return res.status(400).json({
+                success: false,
+                message: "Emergency contact number must be exactly 10 digits",
+            });
+        }
 
         console.log(req.user.clinicId, " clininc id form staff creation");
 
@@ -342,6 +377,8 @@ const getManagers = async (
                 },
                 {
                     "personalInfo.fullName": 1,
+                    "employmentInfo.staffId": 1,
+                    "employmentInfo.role": 1,
                 }
             );
 
@@ -361,7 +398,29 @@ const getManagers = async (
         });
     }
 };
+exports.getDoctorStaff = async (req, res) => {
+    try {
+        const clinicId = req.user.clinicId;
 
+        const doctors = await Staff.find({
+            "employmentInfo.role": "Doctor",
+            clinicId,
+        }).select(
+            "personalInfo.fullName personalInfo.mobileNumber personalInfo.email employmentInfo.staffId"
+        );
+
+        return res.status(200).json({
+            success: true,
+            data: doctors,
+        });
+
+    } catch (err) {
+        return res.status(500).json({
+            success: false,
+            message: err.message,
+        });
+    }
+};
 exports.createStaff = createStaff;
 exports.getAllStaff = getAllStaff;
 exports.getStaffById = getStaffById;

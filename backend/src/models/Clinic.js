@@ -22,6 +22,15 @@ const clinicSchema = new mongoose.Schema({
     type: { type: String, enum: ['Point'] },
     coordinates: { type: [Number] }
   },
+  addressDetails: {
+    addressLine1: String,
+    addressLine2: String,
+    city: String,
+    district: String,
+    state: String,
+    pincode: String,
+    serviceArea: String
+  },
   servicesOffered: [{ type: String }],
   
   // ==========================================
