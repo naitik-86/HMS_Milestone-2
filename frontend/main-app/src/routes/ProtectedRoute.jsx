@@ -1,6 +1,7 @@
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
+    const location = useLocation();
     const token = localStorage.getItem("token");
     const rawRole = localStorage.getItem("role");
 
@@ -10,7 +11,8 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
         : null;
 
     if (!token) {
-        return <Navigate to="/login" replace />;
+        // location state bhej kar history ko strongly replace kar rahe hain
+        return <Navigate to="/login" state={{ from: location }} replace />;
     }
 
     if (!allowedRoles.includes(normalizedRole)) {

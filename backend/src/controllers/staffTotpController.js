@@ -1,10 +1,11 @@
 const bcrypt = require('bcryptjs');
 const Staff = require('../models/Staff');
-const { authenticator } = require('otplib');
+
+// Naye v13 ke functions ko direct import karein
+const { generateSecret, generateURI, verify } = require('otplib');
 
 // POST /staff/totp/setup
-// Body: { email }
-// Auth: protect + authorize('...') should already restrict to logged-in staff if you add middleware.
+// Body: { staffId }
 exports.setupTotp = async (req, res) => {
   try {
     const { staffId } = req.body;
@@ -18,22 +19,27 @@ exports.setupTotp = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Staff not found' });
     }
 
-    // secret length default is fine
-    const secret = authenticator.generateSecret();
-    const otpauth_url = authenticator.keyuri(staff.personalInfo.email, staff.personalInfo.fullName, secret);
+    // otplib v13: secret generate karne ka naya tarika
+    const secret = generateSecret();
+    
+    // otplib v13: QR Code URL generate karne ka naya tarika (keyuri ki jagah generateURI)
+    const otpauth_url = generateURI({
+      issuer: 'HMS App',
+      label: staff.personalInfo.email,
+      secret: secret
+    });
 
     staff.accountInfo = staff.accountInfo || {};
     staff.accountInfo.twoFactorSecret = secret;
     staff.accountInfo.twoFactorEnabled = false;
     staff.accountInfo.twoFactorVerifiedAt = null;
-    staff.accountInfo.forceTotpSetup = false; // we already are in setup
+    staff.accountInfo.forceTotpSetup = false; 
 
     await staff.save();
 
     return res.status(200).json({
       success: true,
       otpauth_url,
-      // do NOT return secret in real apps; leaving it helps debug but we omit.
     });
   } catch (error) {
     console.error('setupTotp error', error);
@@ -61,8 +67,10 @@ exports.verifyTotp = async (req, res) => {
       return res.status(400).json({ success: false, message: 'TOTP not setup for this staff' });
     }
 
-    const isValid = authenticator.check(token, secret);
-    if (!isValid) {
+    // otplib v13: Verify ab ek async function ban gaya hai jo object return karta hai
+    const result = await verify({ token, secret });
+    
+    if (!result.valid) {
       return res.status(401).json({ success: false, message: 'Invalid TOTP code' });
     }
 
@@ -78,4 +86,3 @@ exports.verifyTotp = async (req, res) => {
     return res.status(500).json({ success: false, message: error.message });
   }
 };
-

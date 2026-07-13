@@ -8,6 +8,7 @@ const upload = require('../middlewares/upload'); // AWS S3 Multer Middleware
 // Route & Controller Imports
 const authRoutes = require('./authRoutes');
 const authOtpRoutes = require('./authOtpRoutes');
+const staffTotpRoutes = require('./staffTotpRoutes'); // IMPORT MOVED HERE FOR CLEAN CODE
 
 const {
   getMe,
@@ -50,8 +51,9 @@ const { getDashboardRedirect } = require('../controllers/dashboardController');
 // ==========================================
 router.use('/auth', authRoutes);
 router.use('/auth', authOtpRoutes);
-const staffTotpRoutes = require('./staffTotpRoutes');
-router.use('/staff-totp', protect, staffTotpRoutes);
+
+// STAFF TOTP ROUTES (Protection is handled inside the staffTotpRoutes file)
+router.use('/staff-totp', staffTotpRoutes);
 
 
 // ==========================================

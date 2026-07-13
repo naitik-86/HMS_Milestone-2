@@ -60,6 +60,9 @@ const authorize = (...roles) => {
     const rawRole = req.user?.role || "";
     const normalizedRole = rawRole.toUpperCase().replace(/\s+/g, '_');
 
+    // DEBUG role matching
+    console.log("AUTHZ ROLE CHECK:", { expectedRoles: roles, rawRole, normalizedRole, tokenRole: req.user?.role });
+
     // Check against the normalized role
     if (!roles.includes(normalizedRole)) {
       console.log(`Access Denied: Expected one of [${roles}], but got '${normalizedRole}'`);

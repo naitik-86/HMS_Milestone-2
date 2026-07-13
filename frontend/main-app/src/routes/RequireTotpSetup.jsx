@@ -8,22 +8,14 @@ export default function RequireTotpSetup({ children }) {
   const navigate = useNavigate();
 
   const passwordResetRequired = localStorage.getItem('passwordResetRequired') === 'true';
-  const totpRequired = localStorage.getItem('totpRequired') === 'true';
 
   useEffect(() => {
     if (passwordResetRequired) {
       navigate('/change-password', { replace: true });
-      return;
     }
-    if (totpRequired) {
-      navigate('/enable-totp', { replace: true });
-      return;
-    }
-  }, [navigate, passwordResetRequired, totpRequired]);
+  }, [navigate, passwordResetRequired]);
 
-  // If we need setup, the effect will redirect.
-  // If not, show children.
-  if (passwordResetRequired || totpRequired) return null;
+  // Keep force password reset gating, but do NOT block for TOTP anymore.
+  if (passwordResetRequired) return null;
   return children;
 }
-

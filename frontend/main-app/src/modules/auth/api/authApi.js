@@ -9,10 +9,8 @@ export const authApi = async (loginData) => {
 
         // console.log("LOGIN RESPONSE:", res.data);
 
-        if (res.data?.token) {
-            localStorage.setItem("token", res.data.token);
-        }
-
+        // /auth/login in this project is OTP/TOTP-gated for most roles.
+        // Avoid storing token here because token is issued only after OTP verify.
         return res.data;
     } catch (error) {
         console.log("this is from Login page frontend " + error.response.data);
