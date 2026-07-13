@@ -41,6 +41,8 @@ export default function LabReports() {
   const loadReports = async () => {
     try {
       const res = await getAllPatientReports();
+      console.log(res);
+
 
       setReports(res.data);
       setFilteredReports(res.data);
@@ -62,9 +64,10 @@ export default function LabReports() {
     setFilteredReports(
       reports.filter(
         (item) =>
-          item.petId?.name?.toLowerCase().includes(value) ||
-          item.ownerId?.ownerName?.toLowerCase().includes(value) ||
-          item.tokenNumber?.toString().includes(value)
+          item.pet?.petName?.toLowerCase().includes(value) ||
+          item.pet?.uniquePetId?.toLowerCase().includes(value) ||
+          item.owner?.ownerName?.toLowerCase().includes(value) ||
+          item.owner?.mobileNumber?.includes(search)
       )
     );
   }, [search, reports]);
@@ -154,110 +157,90 @@ export default function LabReports() {
       <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
 
         <table className="w-full">
-
           <thead className="bg-white border-b border-slate-200">
-
             <tr>
-
-              <th className="px-6 py-4 text-left text-slate-700 font-semibold tracking-wide">
-                Token
-              </th>
-
-              <th className="px-6 py-4 text-left text-slate-700 font-semibold tracking-wide">
-                Pet
-              </th>
-
-              <th className="px-6 py-4 text-left text-slate-700 font-semibold tracking-wide">
-                Owner
-              </th>
-
-              <th className="px-6 py-4 text-left text-slate-700 font-semibold tracking-wide">
-                Tests
-              </th>
-
-              <th className="px-6 py-4 text-left text-slate-700 font-semibold tracking-wide">
-                Status
-              </th>
-
-              <th className="px-6 py-4 text-left text-slate-700 font-semibold tracking-wide">
-                Date
-              </th>
-
-              <th className="px-6 py-4 text-center text-slate-700 font-semibold tracking-wide">
-                Action
-              </th>
-
+              <th className="px-6 py-4 text-left font-semibold">Pet ID</th>
+              <th className="px-6 py-4 text-left font-semibold">Pet Name</th>
+              <th className="px-6 py-4 text-left font-semibold">Owner</th>
+              <th className="px-6 py-4 text-left font-semibold">Mobile</th>
+              <th className="px-6 py-4 text-left font-semibold">Tests</th>
+              <th className="px-6 py-4 text-left font-semibold">Status</th>
+              <th className="px-6 py-4 text-left font-semibold">Date</th>
+              <th className="px-6 py-4 text-center font-semibold">Action</th>
             </tr>
-
           </thead>
 
           <tbody>
-
-            {filteredReports.map((item) => (
-
-              <tr
-                key={item._id}
-                className="border-b hover:bg-orange-50"
-              >
-
-                <td className="p-4">{item.visitId?.tokenNumber}</td>
-
-                <td className="p-4">
-                  {item.petId?.name}
+            {filteredReports.length === 0 ? (
+              <tr>
+                <td
+                  colSpan={8}
+                  className="text-center py-10 text-slate-500"
+                >
+                  No Reports Found
                 </td>
+              </tr>
+            ) : (
+              filteredReports.map((item) => (
+                <tr
+                  key={item._id}
+                  className="border-b hover:bg-orange-50"
+                >
+                  <td className="p-4 font-medium">
+                    {item.pet?.uniquePetId}
+                  </td>
 
-                <td className="p-4">
-                  {item.ownerId?.ownerName}
-                </td>
+                  <td className="p-4">
+                    {item.pet?.petName}
+                  </td>
 
-                <td className="p-4">
-                  {item.reports.length}
-                </td>
+                  <td className="p-4">
+                    {item.owner?.ownerName}
+                  </td>
 
-                <td className="p-4">
+                  <td className="p-4">
+                    {item.owner?.mobileNumber}
+                  </td>
 
-                  <span
-                    className={`px-3 py-1 rounded-full text-xs font-semibold
-                    ${item.status === "Completed"
+                  <td className="p-4">
+                    {item.reports?.length}
+                  </td>
+
+                  <td className="p-4">
+                    <span
+                      className={`px-3 py-1 rounded-full text-xs font-semibold ${item.status === "Completed"
                         ? "bg-green-100 text-green-700"
                         : item.status === "Critical"
                           ? "bg-red-100 text-red-700"
                           : "bg-orange-100 text-orange-700"
-                      }`}
-                  >
-                    {item.status}
-                  </span>
+                        }`}
+                    >
+                      {item.status}
+                    </span>
+                  </td>
 
-                </td>
+                  <td className="p-4">
+                    {new Date(item.createdAt).toLocaleDateString()}
+                  </td>
 
-                <td className="p-4">
-                  {new Date(item.createdAt).toLocaleDateString()}
-                </td>
-
-                <td className="p-4 text-center">
-
-                  <button
-                    onClick={() => openReport(item)}
-                    className="border border-orange-400 text-orange-600 rounded-lg px-4 py-2 hover:bg-orange-500 hover:text-white transition"
-                  >
-                    <Eye size={18} />
-                  </button>
-
-                </td>
-
-              </tr>
-
-            ))}
-
+                  <td className="p-4 text-center">
+                    <button
+                      onClick={() => openReport(item)}
+                      className="border border-orange-400 text-orange-600 rounded-lg px-4 py-2 hover:bg-orange-500 hover:text-white transition"
+                    >
+                      <Eye size={18} />
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
-
         </table>
-
       </div>
 
       <LabReportModal
         open={showModal}
-        onClose={setShowModal}
+        onClose={() => setShowModal(false)}
         report={selectedReport}
       />
 

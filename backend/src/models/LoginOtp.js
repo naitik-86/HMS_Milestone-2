@@ -4,7 +4,8 @@ const loginOtpSchema = new mongoose.Schema(
   {
     userType: {
       type: String,
-      enum: ['SUPER_ADMIN', 'CLINIC_ADMIN', 'USER'],
+      // Ensure 'STAFF' is in this enum array
+      enum: ['SUPER_ADMIN', 'CLINIC_ADMIN', 'STAFF', 'USER'], 
       required: true,
       index: true,
     },
@@ -22,7 +23,7 @@ const loginOtpSchema = new mongoose.Schema(
     },
     mobile: {
       type: String,
-      required: false,
+      required: false, // <--- FIX 1: MUST BE FALSE
       index: true,
       trim: true,
     },
@@ -32,7 +33,7 @@ const loginOtpSchema = new mongoose.Schema(
     },
     otpMobile: {
       type: String,
-      required: true,
+      required: false, // <--- FIX 2: MUST BE FALSE (Yehi error de raha tha)
     },
     expiresAt: {
       type: Date,
@@ -56,4 +57,3 @@ const loginOtpSchema = new mongoose.Schema(
 loginOtpSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 module.exports = mongoose.model('LoginOtp', loginOtpSchema);
-

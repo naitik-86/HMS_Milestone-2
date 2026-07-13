@@ -1,8 +1,8 @@
-/* eslint-disable no-useless-assignment */
-/* eslint-disable react-hooks/immutability */
+
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { Search } from "lucide-react";
+import { getCompletedPets } from "../../../api/doctorModuleApi"
 
 export default function CompletedPets() {
   const [search, setSearch] = useState("");
@@ -11,104 +11,28 @@ export default function CompletedPets() {
   const [loading, setLoading] = useState(true);
 
 
-  
+
+
+
   useEffect(() => {
-
-    getCompletedPets();
-
+    fetchCompletedPets();
   }, []);
 
-  const getCompletedPets = async () => {
-
+  const fetchCompletedPets = async () => {
     try {
+      const response = await getCompletedPets();
 
-      const res = await axios.get(
-        "http://localhost:5000/api/v1/doctorModule/completed-pets"
-      );
+      console.log(response.data);
 
-      setCompletedCases(res.data.data);
-
+      setCompletedCases(response.data.pets || response);
     } catch (error) {
-
-      console.log(error);
-
+      console.error("Error fetching completed pets:", error);
     } finally {
-
       setLoading(false);
-
     }
-
   };
 
-
-  const filteredCases = completedCases.filter((item) => {
-
-    const owner = item.ownerName?.toLowerCase() || "";
-    const phone = item.phone || "";
-
-    const updatedDate = new Date(item.updatedAt);
-
-    const today = new Date();
-
-    const yesterday = new Date();
-
-    yesterday.setDate(today.getDate() - 1);
-
-    let matchDate = false;
-
-    if (filter === "today") {
-
-      matchDate =
-        updatedDate.toDateString() ===
-        today.toDateString();
-
-    }
-
-    else if (filter === "yesterday") {
-
-      matchDate =
-        updatedDate.toDateString() ===
-        yesterday.toDateString();
-
-    }
-
-    else {
-
-      matchDate =
-        updatedDate < yesterday;
-
-    }
-
-    return (
-
-      (
-        owner.includes(search.toLowerCase()) ||
-
-        phone.includes(search)
-
-      )
-
-      &&
-
-      matchDate
-
-    );
-
-  });
-  const filters = [
-    {
-      label: "Today",
-      value: "today",
-    },
-    {
-      label: "Yesterday",
-      value: "yesterday",
-    },
-    {
-      label: "Past Cases",
-      value: "past",
-    },
-  ];
+  const filteredCases = completedCases
 
   if (loading) {
 
@@ -145,22 +69,7 @@ export default function CompletedPets() {
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-wrap gap-3 sm:gap-4">
-        {filters.map((item) => (
-          <button
-            key={item.value}
-            type="button"
-            onClick={() => setFilter(item.value)}
-            className={`rounded-xl px-4 py-3 text-sm font-medium transition sm:rounded-2xl sm:px-6 sm:text-base ${filter === item.value
-                ? "bg-orange-500 text-white shadow-sm"
-                : "bg-white text-slate-700 hover:bg-orange-50"
-              }`}
-          >
-            {item.label}
-          </button>
-        ))}
-      </div>
+
 
       {/* Mobile Heading */}
       <div className="md:hidden">
@@ -169,71 +78,71 @@ export default function CompletedPets() {
         </h2>
       </div>
 
- {/* Mobile Cards */}
-<div className="md:hidden space-y-4">
+      {/* Mobile Cards */}
+      <div className="md:hidden space-y-4">
 
-  {filteredCases.length === 0 ? (
+        {filteredCases.length === 0 ? (
 
-    <div className="rounded-2xl border bg-white p-8 text-center text-slate-500">
+          <div className="rounded-2xl border bg-white p-8 text-center text-slate-500">
 
-      No Completed Cases Found
-
-    </div>
-
-  ) : (
-
-    filteredCases.map((item) => (
-
-      <div
-        key={item._id}
-        className="rounded-2xl border bg-white p-4 shadow-sm"
-      >
-
-        <div className="mb-3 flex items-start justify-between">
-
-          <div>
-
-            <h3 className="text-lg font-bold">
-              {item.petId}
-            </h3>
-
-            <p className="text-sm text-slate-500">
-              {item.ownerName}
-            </p>
+            No Completed Cases Found
 
           </div>
 
-          <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700">
-            {item.status}
-          </span>
+        ) : (
 
-        </div>
+          filteredCases.map((item) => (
 
-        <div className="space-y-2 text-sm">
+            <div
+              key={item._id}
+              className="rounded-2xl border bg-white p-4 shadow-sm"
+            >
 
-          <p>
-            <span className="font-semibold">
-              Phone:
-            </span>{" "}
-            {item.phone || "-"}
-          </p>
+              <div className="mb-3 flex items-start justify-between">
 
-          <p>
-            <span className="font-semibold">
-              Date:
-            </span>{" "}
-            {new Date(item.updatedAt).toLocaleDateString()}
-          </p>
+                <div>
 
-        </div>
+                  <h3 className="text-lg font-bold">
+                    {item.petId?.name}
+                  </h3>
+
+                  <p className="text-sm text-slate-500">
+                    {item?.ownerId?.ownerName}
+                  </p>
+
+                </div>
+
+                <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700">
+                  {item.workflow?.doctorCompleted}
+                </span>
+
+              </div>
+
+              <div className="space-y-2 text-sm">
+
+                <p>
+                  <span className="font-semibold">
+                    Phone:
+                  </span>{" "}
+                  {item?.ownerId?.mobileNumber || "-"}
+                </p>
+
+                <p>
+                  <span className="font-semibold">
+                    Date:
+                  </span>{" "}
+                  {new Date(item.updatedAt).toLocaleDateString()}
+                </p>
+
+              </div>
+
+            </div>
+
+          ))
+
+        )}
 
       </div>
-
-    ))
-
-  )}
-
-</div>
 
       {/* Desktop Table */}
       <div className="rounded-2xl bg-white p-4 shadow-sm sm:p-6 lg:rounded-[30px] lg:p-8">
@@ -249,7 +158,7 @@ export default function CompletedPets() {
             <thead>
               <tr className="border-b text-sm text-slate-500">
                 <th className="py-4 pr-4 text-left font-semibold">
-                  Pet ID
+                  Pet Name
                 </th>
 
                 <th className="py-4 pr-4 text-left font-semibold">
@@ -297,22 +206,22 @@ export default function CompletedPets() {
                   >
 
                     <td className="py-4 pr-4 font-medium text-slate-900">
-                      {item.petId}
+                      {item.petId.name}
                     </td>
 
                     <td className="pr-4">
-                      {item.ownerName}
+                      {item?.ownerId?.ownerName}
                     </td>
 
                     <td className="pr-4">
-                      {item.phone || "-"}
+                      {item.ownerId?.mobileNumber || "-"}
                     </td>
 
                     <td className="pr-4">
 
-                      <span className="rounded-full bg-green-100 px-4 py-2 text-sm font-medium text-green-700">
+                      <span className="rounded-full bg-green-100 px-4 py-2 ml-0 text-sm font-medium text-green-700">
 
-                        {item.status}
+                        {item?.workflow?.doctorCompleted ? "Completed" : "Pending"}
 
                       </span>
 

@@ -12,12 +12,20 @@ import {
   getStaffById,
 } from '../../api/staffApi';
 
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const phoneRegex = /^\d{10}$/;
+const ifscRegex = /^[A-Z]{4}0[A-Z0-9]{6}$/;
+const digitsOnly = (value, max = 10) => value.replace(/\D/g, "").slice(0, max);
+const isFutureDate = (value) => value && new Date(value) > new Date();
+const isImageFile = (file) => file?.type?.startsWith("image/");
+
 // --- Multi-step Enrollment Form (Full-Screen Fixed Panel) ---
 function EnrollForm({ onClose, onSave, editData, mode, staff }) {
   const isView = mode === 'view';
   const isEdit = mode === 'edit';
 
   const [step, setStep] = useState(1);
+  const [managerOptions, setManagerOptions] = useState([]);
   const [form, setForm] = useState({
     fullName: '',
     profilePhoto: null,
@@ -58,6 +66,8 @@ function EnrollForm({ onClose, onSave, editData, mode, staff }) {
 
   const validateStep = () => {
     if (step === 1) {
+      const emergencyNumber = form.emergencyContacts[0]?.contactNumber?.trim();
+
       if (
         !form.fullName.trim() ||
         !form.gender ||
@@ -66,6 +76,31 @@ function EnrollForm({ onClose, onSave, editData, mode, staff }) {
         !form.email.trim()
       ) {
         alert("Please fill all required fields in Personal Information");
+        return false;
+      }
+
+      if (form.fullName.trim().length < 3) {
+        alert("Full name must be at least 3 characters");
+        return false;
+      }
+
+      if (isFutureDate(form.dateOfBirth)) {
+        alert("Date of birth cannot be a future date");
+        return false;
+      }
+
+      if (!phoneRegex.test(form.mobileNumber.trim())) {
+        alert("Mobile number must be exactly 10 digits");
+        return false;
+      }
+
+      if (!emailRegex.test(form.email.trim())) {
+        alert("Please enter a valid email address");
+        return false;
+      }
+
+      if (emergencyNumber && !phoneRegex.test(emergencyNumber)) {
+        alert("Emergency contact number must be exactly 10 digits");
         return false;
       }
     }
@@ -79,6 +114,11 @@ function EnrollForm({ onClose, onSave, editData, mode, staff }) {
         alert("Please fill all required fields in Work & Access");
         return false;
       }
+
+      if (isFutureDate(form.dateOfJoining)) {
+        alert("Date of joining cannot be a future date");
+        return false;
+      }
     }
 
     if (step === 3) {
@@ -89,6 +129,16 @@ function EnrollForm({ onClose, onSave, editData, mode, staff }) {
         !form.ifscCode.trim()
       ) {
         alert("Please fill all required Bank Account Details");
+        return false;
+      }
+
+      if (!/^\d{9,18}$/.test(form.accountNumber.trim())) {
+        alert("Account number must be 9 to 18 digits");
+        return false;
+      }
+
+      if (!ifscRegex.test(form.ifscCode.trim().toUpperCase())) {
+        alert("Please enter a valid IFSC code");
         return false;
       }
     }
@@ -106,6 +156,7 @@ function EnrollForm({ onClose, onSave, editData, mode, staff }) {
 
   useEffect(() => {
     if (editData) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setForm({
         fullName:
           editData.personalInfo?.fullName || "",
@@ -153,7 +204,9 @@ function EnrollForm({ onClose, onSave, editData, mode, staff }) {
           editData.employmentInfo?.staffId || "",
 
         reportingTo:
-          editData.employmentInfo?.reportingTo || "",
+          editData.employmentInfo?.reportingTo?._id ||
+          editData.employmentInfo?.reportingTo ||
+          "",
 
         department:
           editData.employmentInfo?.department || "",
@@ -211,6 +264,19 @@ function EnrollForm({ onClose, onSave, editData, mode, staff }) {
       }));
     }
   }, [editData]);
+
+  useEffect(() => {
+    const fetchManagers = async () => {
+      try {
+        const response = await getManagers();
+        setManagerOptions(response.data || []);
+      } catch (error) {
+        console.error("Failed to load reporting managers", error);
+      }
+    };
+
+    fetchManagers();
+  }, []);
 
 
 
@@ -401,8 +467,9 @@ function EnrollForm({ onClose, onSave, editData, mode, staff }) {
                     disabled={isView}
                     type="tel"
                     value={form.mobileNumber}
-                    onChange={e => update('mobileNumber', e.target.value)}
-                    placeholder="e.g. +91 98765 43210"
+                    maxLength={10}
+                    onChange={e => update('mobileNumber', digitsOnly(e.target.value))}
+                    placeholder="e.g. 9876543210"
                   />
                 </div>
 
@@ -439,7 +506,16 @@ function EnrollForm({ onClose, onSave, editData, mode, staff }) {
                     >
                       Upload File
                       <input id="photoUpload" type="file" accept="image/*" className="hidden"
-                        onChange={e => update('profilePhoto', e.target.files[0])} />
+                        onChange={e => {
+                          const file = e.target.files[0];
+                          if (!file) return;
+                          if (!isImageFile(file)) {
+                            alert("Profile photo must be an image file");
+                            e.target.value = "";
+                            return;
+                          }
+                          update('profilePhoto', file);
+                        }} />
                     </div>
                   )}
                 </div>
@@ -476,11 +552,12 @@ function EnrollForm({ onClose, onSave, editData, mode, staff }) {
                         update("emergencyContacts", [
                           {
                             ...form.emergencyContacts[0],
-                            contactNumber: e.target.value
+                            contactNumber: digitsOnly(e.target.value)
                           }
                         ])
                       }
-                      placeholder="e.g. +91 98765 00000"
+                      maxLength={10}
+                      placeholder="e.g. 9876500000"
                     />
                   </div>
                 </div>
@@ -528,12 +605,15 @@ function EnrollForm({ onClose, onSave, editData, mode, staff }) {
                       onChange={e => update('reportingTo', e.target.value)}
                     >
                       <option value="">Select Manager</option>
-                      {staff.map((s, index) => (
+                      {managerOptions
+                        .filter(s => s._id !== editData?._id)
+                        .map((s, index) => (
                         <option
-                          key={s.employmentInfo?.staffId || index}
-                          value={s.personalInfo?.fullName || ""}
+                          key={s._id || s.employmentInfo?.staffId || index}
+                          value={s._id || ""}
                         >
                           {s.personalInfo?.fullName || "No Name"}
+                          {s.employmentInfo?.staffId ? ` (${s.employmentInfo.staffId})` : ""}
                         </option>
                       ))}                   </select>
                   </div>
@@ -656,8 +736,9 @@ function EnrollForm({ onClose, onSave, editData, mode, staff }) {
                     disabled={isView}
                     value={form.accountNumber}
                     onChange={(e) =>
-                      update("accountNumber", e.target.value)
+                      update("accountNumber", digitsOnly(e.target.value, 18))
                     }
+                    maxLength={18}
                     placeholder="Enter Account Number"
                   />
                 </div>

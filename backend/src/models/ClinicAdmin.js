@@ -23,6 +23,10 @@ const clinicAdminSchema = new mongoose.Schema(
             type: String,
             default: "CLINIC_ADMIN",
         },
+        forcePasswordReset: {
+            type: Boolean,
+            default: true,
+        },
     },
     {
         timestamps: true,

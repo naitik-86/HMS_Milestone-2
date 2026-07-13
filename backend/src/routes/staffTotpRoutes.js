@@ -11,4 +11,3 @@ router.post('/setup', protect, setupTotp);
 router.post('/verify', protect, verifyTotp);
 
 module.exports = router;
-

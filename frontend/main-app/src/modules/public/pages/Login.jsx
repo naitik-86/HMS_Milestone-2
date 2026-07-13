@@ -27,6 +27,14 @@ export default function Login() {
   const [emailVerified, setEmailVerified] = useState(false);
 
   useEffect(() => {
+    // Destroy and clear all sessions immediately upon visiting the login page
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    localStorage.removeItem("role");
+    localStorage.removeItem("passwordResetRequired");
+    localStorage.removeItem("totpRequired");
+    sessionStorage.clear();
+
     const token = localStorage.getItem("token");
     const role = localStorage.getItem("role");
 
@@ -65,18 +73,17 @@ export default function Login() {
       // LOGIN API CALL HERE
       // ===========================
 
-
       const response = await authApi({
         email: form.email,
         password: form.password,
       });
 
       if (response.role !== "SUPER_ADMIN") {
-        localStorage.setItem("token", response.token);
+        // DO NOT set token here anymore. We wait for OTP.
         localStorage.setItem('totpRequired', response.requiresTotpSetup ? 'true' : 'false');
         localStorage.setItem('passwordResetRequired', response.requiresPasswordReset ? 'true' : 'false');
-        // staffId is not present in JWT; user will enter it on enable-totp page.
       }
+      
       localStorage.setItem("role", response.user?.role || response.role);
 
       setShowVerificationModal(true);
@@ -111,14 +118,13 @@ export default function Login() {
 
     setPhoneVerified(true);
     console.log("Phone OTP Verified");
-
-    console.log("Email OTP Verified");
   };
 
   const handleSendEmailOtp = () => {
     setEmailOtpSent(true);
     console.log("Send Email OTP:", form.email);
   };
+  
   const handleVerifyEmailOtp = () => {
     if (emailOtp.length !== 6) {
       alert("Please enter a valid 6 digit OTP");
@@ -132,31 +138,49 @@ export default function Login() {
 
   const handleContinue = async () => {
     const role = localStorage.getItem("role");
+    let verifyEndpoint = "";
+    let payload = {};
 
-    // Fix: Ensure OTPs are verified BEFORE redirecting for non-Super Admins
-    if (role !== "SUPER_ADMIN") {
-      if (!phoneVerified || !emailVerified) {
-        alert("Please verify both Phone and Email");
-        return;
-      }
-    }
-
+    // 1. Check conditions and prepare payload
     if (role === "SUPER_ADMIN") {
-      try {
-        const verifyRes = await API.post("/auth/superadmin/verify-otp", {
-          email: form.email,
-          otpEmail: emailOtp,
-          otpMobile: phoneOtp
-        });
-        if (verifyRes.data?.token) {
-          localStorage.setItem("token", verifyRes.data.token);
-        }
-      } catch (error) {
-        alert(error.response?.data?.message || "OTP Verification failed");
-        return;
-      }
+      if (!phoneVerified || !emailVerified) return alert("Please verify both Phone and Email");
+      verifyEndpoint = "/auth/superadmin/verify-otp";
+      payload = { email: form.email, otpEmail: emailOtp, otpMobile: phoneOtp };
+    } else if (role === "CLINIC_ADMIN") {
+      if (!emailVerified) return alert("Please verify Email");
+      verifyEndpoint = "/auth/clinicadmin/verify-otp";
+      payload = { email: form.email, otpEmail: emailOtp };
+    } else {
+      if (!phoneVerified || !emailVerified) return alert("Please verify both Phone and Email");
+      verifyEndpoint = "/auth/staff/verify-otp";
+      payload = { email: form.email, otpEmail: emailOtp, otpMobile: phoneOtp };
     }
 
+    // 2. Make Verification Call & Set Token
+    // 2. Make Verification Call & Set Token
+    try {
+      const verifyRes = await API.post(verifyEndpoint, payload);
+      if (verifyRes.data?.token) {
+        localStorage.setItem("token", verifyRes.data.token);
+
+        // =========== FORCE PASSWORD LOGIC ===========
+        if (verifyRes.data?.requiresPasswordReset) {
+          localStorage.setItem("passwordResetRequired", "true");
+          return navigate("/change-password", { replace: true });
+        } else {
+          localStorage.setItem("passwordResetRequired", "false");
+        }
+        // ============================================
+
+      } else {
+        throw new Error("No token received");
+      }
+    } catch (error) {
+      alert(error.response?.data?.message || "OTP Verification failed on server");
+      return;
+    }
+
+    // 3. Navigate to Dashboard with history replaced
     try {
       const redirectRes = await API.get("/dashboard");
       const redirectUrl = redirectRes.data?.data?.redirectUrl;
@@ -168,7 +192,7 @@ export default function Login() {
       console.warn("Dashboard redirect failed", e);
     }
 
-    // Updated Fallbacks to match actual routes
+    // Fallbacks
     if (role === "SUPER_ADMIN")
       return navigate("/superadmin", { replace: true });
 
@@ -176,13 +200,13 @@ export default function Login() {
       return navigate("/clinic", { replace: true });
 
     if (role === "DOCTOR")
-      return navigate("/clinic/doctor", { replace: true });
+      return navigate("/doctor/dashboard", { replace: true });
 
     if (role === "RECEPTIONIST")
       return navigate("/clinic/reception", { replace: true });
 
     if (role === "PARA_MEDICAL")
-      return navigate("/clinic/preconsultation", { replace: true });
+      return navigate("/clinic/pre-consultation", { replace: true });
   };
 
   return (
@@ -326,66 +350,67 @@ export default function Login() {
               Complete phone and email verification
             </p>
 
-            {/* PHONE */}
-
-            {/* PHONE NUMBER */}
-
-            <label className="block text-sm font-semibold mb-2">
-              Phone Number
-            </label>
-
-            <div className="flex gap-3">
-              <input
-                type="text"
-                value={form.phone}
-                readOnly
-                className="flex-1 border border-green-600 bg-slate-50 rounded-xl px-4 py-3"
-              />
-
-              <button
-                type="button"
-                onClick={handleSendPhoneOtp}
-                className="bg-green-700 hover:bg-green-800 text-white px-5 rounded-xl"
-              >
-                Send OTP
-              </button>
-            </div>
-
-            {/* PHONE OTP */}
-
-            {phoneOtpSent && (
+            {/* ONLY SHOW PHONE FOR SUPER ADMIN & STAFF */}
+            {localStorage.getItem("role") !== "CLINIC_ADMIN" && (
               <>
-                <label className="block text-sm font-semibold mt-5 mb-2">
-                  Phone OTP
+                {/* PHONE NUMBER */}
+                <label className="block text-sm font-semibold mb-2">
+                  Phone Number
                 </label>
 
                 <div className="flex gap-3">
                   <input
                     type="text"
-                    value={phoneOtp}
-                    onChange={(e) => {
-                      const value = e.target.value.replace(/\D/g, "");
-                      if (value.length <= 6) {
-                        setPhoneOtp(value);
-                      }
-                    }}
-                    placeholder="Enter 6 digit OTP"
-                    className="flex-1 border border-slate-200 rounded-xl px-4 py-3"
+                    value={form.phone}
+                    readOnly
+                    className="flex-1 border border-green-600 bg-slate-50 rounded-xl px-4 py-3"
                   />
 
                   <button
                     type="button"
-                    onClick={handleVerifyPhoneOtp}
-                    className={`px-5 rounded-xl text-white ${phoneVerified
-                      ? "bg-green-500"
-                      : "bg-green-700 hover:bg-green-800"
-                      }`}
+                    onClick={handleSendPhoneOtp}
+                    className="bg-green-700 hover:bg-green-800 text-white px-5 rounded-xl"
                   >
-                    {phoneVerified
-                      ? "Verified"
-                      : "Verify OTP"}
+                    Send OTP
                   </button>
                 </div>
+
+                {/* PHONE OTP */}
+                {phoneOtpSent && (
+                  <>
+                    <label className="block text-sm font-semibold mt-5 mb-2">
+                      Phone OTP
+                    </label>
+
+                    <div className="flex gap-3">
+                      <input
+                        type="text"
+                        value={phoneOtp}
+                        onChange={(e) => {
+                          const value = e.target.value.replace(/\D/g, "");
+                          if (value.length <= 6) {
+                            setPhoneOtp(value);
+                          }
+                        }}
+                        placeholder="Enter 6 digit OTP"
+                        className="flex-1 border border-slate-200 rounded-xl px-4 py-3"
+                      />
+
+                      <button
+                        type="button"
+                        onClick={handleVerifyPhoneOtp}
+                        className={`px-5 rounded-xl text-white ${phoneVerified
+                          ? "bg-green-500"
+                          : "bg-green-700 hover:bg-green-800"
+                          }`}
+                      >
+                        {phoneVerified
+                          ? "Verified"
+                          : "Verify OTP"}
+                      </button>
+                    </div>
+                  </>
+                )}
               </>
             )}
 

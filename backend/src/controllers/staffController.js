@@ -6,6 +6,9 @@ const generateUsername = require("../utils/generateUsername.js");
 const generatePassword = require("../utils/generatePassword.js");
 const sendEmail = require("../utils/emailService.js");
 
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const phoneRegex = /^\d{10}$/;
+
 const createStaff = async (req, res) => {
 
     console.log("****** -> createstaff");
@@ -368,6 +371,8 @@ const getManagers = async (
                 },
                 {
                     "personalInfo.fullName": 1,
+                    "employmentInfo.staffId": 1,
+                    "employmentInfo.role": 1,
                 }
             );
 
@@ -387,7 +392,29 @@ const getManagers = async (
         });
     }
 };
+exports.getDoctorStaff = async (req, res) => {
+    try {
+        const clinicId = req.user.clinicId;
 
+        const doctors = await Staff.find({
+            "employmentInfo.role": "Doctor",
+            clinicId,
+        }).select(
+            "personalInfo.fullName personalInfo.mobileNumber personalInfo.email employmentInfo.staffId"
+        );
+
+        return res.status(200).json({
+            success: true,
+            data: doctors,
+        });
+
+    } catch (err) {
+        return res.status(500).json({
+            success: false,
+            message: err.message,
+        });
+    }
+};
 exports.createStaff = createStaff;
 exports.getAllStaff = getAllStaff;
 exports.getStaffById = getStaffById;

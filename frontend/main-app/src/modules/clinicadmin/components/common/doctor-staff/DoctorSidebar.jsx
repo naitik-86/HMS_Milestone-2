@@ -20,7 +20,7 @@ export default function DoctorSidebar() {
     { name: "Pending Pets", path: "pending", icon: Clock3 },
 
     { name: "Completed Pets", path: "completed", icon: CheckCircle2 },
-    { name: "History", path: "history", icon: History },
+
   ];
 
   return (
