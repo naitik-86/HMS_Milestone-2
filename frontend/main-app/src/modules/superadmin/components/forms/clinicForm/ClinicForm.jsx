@@ -14,7 +14,7 @@ const DEFAULT_MAP_CENTER = {
     lng: 78.9629,
 };
 
-const MAP_ZOOM = 12;
+const DEFAULT_MAP_ZOOM = 12;
 const TILE_SIZE = 256;
 
 const lonToTileX = (lon, zoom) =>
@@ -73,7 +73,21 @@ export default function ClinicForm({
     const navigate = useNavigate();
 
     const states = State.getStatesOfCountry("IN");
+const idType = form.govtIdType || "Aadhar";
 
+const idNumberLabel =
+  idType === "PAN"
+    ? "PAN Number"
+    : idType === "Passport"
+    ? "Passport Number"
+    : "Aadhar Number";
+
+const idDocumentLabel =
+  idType === "PAN"
+    ? "Upload PAN Card"
+    : idType === "Passport"
+    ? "Upload Passport"
+    : "Upload Aadhar Card";
 const cities = form.state
   ? City.getCitiesOfState(
       "IN",
@@ -99,7 +113,9 @@ const handleMapLocationSelect = (location) => {
         pincode: location.pincode || prev.pincode,
         latitude: location.latitude,
         longitude: location.longitude,
-        serviceArea: location.city || prev.serviceArea,
+       serviceAreas: prev.serviceAreas?.length
+  ? [...prev.serviceAreas]
+  : [location.city || ""],
     }));
 };
 const validatePincode = async (pincode) => {
@@ -173,6 +189,31 @@ const validatePincode = async (pincode) => {
             description: "Unable to verify PIN Code.",
         });
     }
+};const addServiceArea = () => {
+  setForm((prev) => ({
+    ...prev,
+    serviceAreas: [...(prev.serviceAreas || []), ""],
+  }));
+};
+
+const updateServiceArea = (index, value) => {
+  const updated = [...(form.serviceAreas || [])];
+  updated[index] = value;
+
+  setForm((prev) => ({
+    ...prev,
+    serviceAreas: updated,
+  }));
+};
+
+const removeServiceArea = (index) => {
+  const updated = [...form.serviceAreas];
+  updated.splice(index, 1);
+
+  setForm((prev) => ({
+    ...prev,
+    serviceAreas: updated,
+  }));
 };
    const handleFileUpload = (field) => (e) => {
     const file = e.target.files?.[0];
@@ -386,10 +427,45 @@ const validatePincode = async (pincode) => {
                                         }
                                     }}
                                 />
+<Full>
+  <div className="space-y-3">
+    <label className="block text-sm font-medium text-gray-700">
+      Service Areas / Zones
+    </label>
 
-                                <Full>
-                                    <Input requiredField={true} name="serviceArea" label="Service Areas / Zones" value={form.serviceArea} onChange={handleChange} />
-                                </Full>
+    {(form.serviceAreas || [""]).map((area, index) => (
+      <div key={index} className="flex items-center gap-3">
+
+        <Input
+          label={`Service Area ${index + 1}`}
+          value={area}
+          onChange={(e) =>
+            updateServiceArea(index, e.target.value)
+          }
+        />
+
+        {index > 0 && (
+          <button
+            type="button"
+            onClick={() => removeServiceArea(index)}
+            className="px-4 py-2 rounded-lg bg-red-500 text-white"
+          >
+            Remove
+          </button>
+        )}
+
+      </div>
+    ))}
+
+    <button
+      type="button"
+      onClick={addServiceArea}
+      className="px-4 py-2 rounded-lg bg-orange-500 text-white hover:bg-orange-600"
+    >
+      + Add Service Area
+    </button>
+  </div>
+</Full>
 
                                 <Input name="latitude" label="Latitude" value={form.latitude} onChange={handleChange} readOnly />
                                 <Input name="longitude" label="Longitude" value={form.longitude} onChange={handleChange} readOnly />
@@ -402,49 +478,109 @@ const validatePincode = async (pincode) => {
                     {activeTab === "licenses" && (
                         <Card title="Registrations & Licenses">
                             <Grid>
+<div className="grid grid-cols-1 lg:grid-cols-2 gap-6 col-span-full">
 
-                                <Input requiredField={true} name="vetReg" label="Registration Number" value={form.vetReg} onChange={handleChange} />
+  {/* LEFT COLUMN */}
+  <div className="space-y-4">
 
-                                <Select
-                                    requiredField={true}
-                                    name="stateCouncil"
-                                    label="State Vet Council"
-                                    value={form.stateCouncil}
-                                    options={states.map((state) => state.name)}
-                                    onChange={handleChange}
-                                />
+    <Input
+      requiredField
+      name="vetReg"
+      label="Registration Number"
+      value={form.vetReg}
+      onChange={handleChange}
+    />
 
-                                <Input requiredField={false} type="date" name="expiry" label="Expiry Date" value={form.expiry} onChange={handleChange} />
-                                <Input requiredField={true} name="tradeLicense" label="Trade License No." value={form.tradeLicense} onChange={handleChange} />
-                                <Input requiredField={true} name="drugLicense" label="Drug License No." value={form.drugLicense} onChange={handleChange} />
-<div className="col-span-full">
-    <p className="text-sm text-orange-600 font-medium">
-        Upload any ONE of the following documents (PDF only).
-    </p>
+    <Select
+      requiredField
+      name="stateCouncil"
+      label="State Vet Council"
+      value={form.stateCouncil}
+      options={states.map((state) => state.name)}
+      onChange={handleChange}
+    />
+
+    <Input
+      type="date"
+      name="expiry"
+      label="Expiry Date"
+      value={form.expiry}
+      onChange={handleChange}
+    />
+
+  </div>
+
+  {/* RIGHT COLUMN */}
+  <div className="space-y-4">
+
+    <Input
+      requiredField
+      name="tradeLicense"
+      label="Trade License Number"
+      value={form.tradeLicense}
+      onChange={handleChange}
+    />
+
+    <Upload
+      requiredField
+      label="Trade License Document"
+      value={form.tradeDoc}
+      onChange={handleFileUpload("tradeDoc")}
+      onRemove={() =>
+        setForm((p) => ({
+          ...p,
+          tradeDoc: null,
+        }))
+      }
+    />
+
+  </div>
+
+  {/* LEFT BOTTOM */}
+  <div>
+
+    <Upload
+      requiredField
+      label="Registration Certificate"
+      value={form.vetCert}
+      onChange={handleFileUpload("vetCert")}
+      onRemove={() =>
+        setForm((p) => ({
+          ...p,
+          vetCert: null,
+        }))
+      }
+    />
+
+  </div>
+
+  {/* RIGHT BOTTOM */}
+  <div className="space-y-4">
+
+    <Input
+      requiredField
+      name="drugLicense"
+      label="Drug License Number"
+      value={form.drugLicense}
+      onChange={handleChange}
+    />
+
+    <Upload
+      requiredField
+      label="Drug License Document"
+      value={form.drugDoc}
+      onChange={handleFileUpload("drugDoc")}
+      onRemove={() =>
+        setForm((p) => ({
+          ...p,
+          drugDoc: null,
+        }))
+      }
+    />
+
+  </div>
+
 </div>
-                                <Upload
-                                    requiredField={true}
-                                    label="Registration Certificate"
-                                    value={form.vetCert}
-                                    onChange={handleFileUpload("vetCert")}
-                                    onRemove={() => setForm((p) => ({ ...p, vetCert: null }))}
-                                />
-
-                                <Upload
-                                    requiredField={true}
-                                    label="Trade License Doc"
-                                    value={form.tradeDoc}
-                                    onChange={handleFileUpload("tradeDoc")}
-                                    onRemove={() => setForm((p) => ({ ...p, tradeDoc: null }))}
-                                />
-
-                                <Upload
-                                    requiredField={true}
-                                    label="Drug License Doc"
-                                    value={form.drugDoc}
-                                    onChange={handleFileUpload("drugDoc")}
-                                    onRemove={() => setForm((p) => ({ ...p, drugDoc: null }))}
-                                />
                             </Grid>
                         </Card>
                     )}
@@ -489,15 +625,26 @@ const validatePincode = async (pincode) => {
                                     onChange={handleChange}
                                 />
 
-                                <Input requiredField={true} name="govtIdNumber" label="ID Number" value={form.govtIdNumber} onChange={handleChange} />
+                                <Input
+    requiredField
+    name="govtIdNumber"
+    label={idNumberLabel}
+    value={form.govtIdNumber}
+    onChange={handleChange}
+/>
 
-                                <Upload
-                                    requiredField={true}
-                                    label="ID Document"
-                                    value={form.idDoc}
-                                    onChange={handleFileUpload("idDoc")}
-                                    onRemove={() => setForm((p) => ({ ...p, idDoc: null }))}
-                                />
+                            <Upload
+    requiredField
+    label={idDocumentLabel}
+    value={form.idDoc}
+    onChange={handleFileUpload("idDoc")}
+    onRemove={() =>
+        setForm((p) => ({
+            ...p,
+            idDoc: null,
+        }))
+    }
+/>
 
                                 <Upload
                                     requiredField={true}
@@ -702,14 +849,14 @@ transition-all
 function ClinicLocationMap({ latitude, longitude, onSelect }) {
     const [loading, setLoading] = useState(false);
     const [mapError, setMapError] = useState("");
-
+    const [zoom, setZoom] = useState(DEFAULT_MAP_ZOOM);
     const center = {
         lat: Number(latitude) || DEFAULT_MAP_CENTER.lat,
         lng: Number(longitude) || DEFAULT_MAP_CENTER.lng,
     };
 
-    const centerTileX = lonToTileX(center.lng, MAP_ZOOM);
-    const centerTileY = latToTileY(center.lat, MAP_ZOOM);
+   const centerTileX = lonToTileX(center.lng, zoom);
+   const centerTileY = latToTileY(center.lat, zoom);
     const baseTileX = Math.floor(centerTileX);
     const baseTileY = Math.floor(centerTileY);
     const offsetX = (centerTileX - baseTileX) * TILE_SIZE;
@@ -730,9 +877,14 @@ function ClinicLocationMap({ latitude, longitude, onSelect }) {
 
     const reverseGeocode = async (lat, lng, errorMessage) => {
         try {
-            const response = await fetch(
-                `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&addressdetails=1`
-            );
+           const response = await fetch(
+  `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&addressdetails=1`,
+  {
+    headers: {
+      "Accept-Language": "en",
+    },
+  }
+);
             const data = await response.json();
             const address = data.address || {};
 
@@ -760,8 +912,8 @@ function ClinicLocationMap({ latitude, longitude, onSelect }) {
         const pixelY = e.clientY - rect.top - rect.height / 2;
         const clickedTileX = centerTileX + pixelX / TILE_SIZE;
         const clickedTileY = centerTileY + pixelY / TILE_SIZE;
-        const lng = tileXToLon(clickedTileX, MAP_ZOOM);
-        const lat = tileYToLat(clickedTileY, MAP_ZOOM);
+       const lng = tileXToLon(clickedTileX, zoom);
+       const lat = tileYToLat(clickedTileY, zoom);
 
         setLoading(true);
         setMapError("");
@@ -809,6 +961,25 @@ function ClinicLocationMap({ latitude, longitude, onSelect }) {
                 >
                     Use Current Location
                 </button>
+                <div className="flex gap-2">
+
+    <button
+        type="button"
+        onClick={() => setZoom((z) => Math.min(z + 1, 19))}
+        className="h-10 w-10 rounded-lg border bg-white hover:bg-gray-100"
+    >
+        +
+    </button>
+
+    <button
+        type="button"
+        onClick={() => setZoom((z) => Math.max(z - 1, 3))}
+        className="h-10 w-10 rounded-lg border bg-white hover:bg-gray-100"
+    >
+        −
+    </button>
+
+</div>
             </div>
 
             <button
@@ -820,7 +991,7 @@ function ClinicLocationMap({ latitude, longitude, onSelect }) {
                 {tiles.map((tile) => (
                     <img
                         key={tile.key}
-                        src={`https://tile.openstreetmap.org/${MAP_ZOOM}/${tile.x}/${tile.y}.png`}
+                        src={`https://tile.openstreetmap.org/${zoom}/${tile.x}/${tile.y}.png`}
                         alt=""
                         className="absolute max-w-none"
                         style={{
