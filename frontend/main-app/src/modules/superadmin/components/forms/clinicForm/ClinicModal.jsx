@@ -67,7 +67,7 @@ longitude: "",
         apiAccess: false,
         whiteLabel: false,
 
-        serviceArea: "",
+       serviceAreas: [""],
 
         vetReg: "",
         stateCouncil: "",
@@ -132,8 +132,8 @@ longitude: "",
                     form.city &&
                     form.district &&
                     form.state &&
-                    form.pincode &&
-                    form.serviceArea
+                    !form.serviceAreas ||
+form.serviceAreas.filter(a => a.trim() !== "").length >= 0
                 );
 
             case "licenses":
@@ -219,17 +219,18 @@ longitude: "",
                     }
                     break;
 
-                case "address":
-                    if (
-                        !form.address1 ||
-                        !form.city ||
-                        !form.district ||
-                        !form.state ||
-                        !form.pincode ||
-                        !form.serviceArea
-                    ) {
-                        return false;
-                    }
+               case "address":
+if (
+    !form.address1 ||
+    !form.city ||
+    !form.district ||
+    !form.state ||
+    !form.pincode ||
+    !form.serviceAreas?.length ||
+    form.serviceAreas.some(area => !area.trim())
+) {
+    return false;
+}
                     break;
 
             case "licenses":
