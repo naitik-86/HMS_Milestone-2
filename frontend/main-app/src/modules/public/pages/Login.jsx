@@ -26,6 +26,8 @@ export default function Login() {
   const [phoneVerified, setPhoneVerified] = useState(false);
   const [emailVerified, setEmailVerified] = useState(false);
 
+  const [loginResponse, setLoginResponse] = useState(null);
+
   useEffect(() => {
     const token = localStorage.getItem("token");
     const role = localStorage.getItem("role");
@@ -77,12 +79,16 @@ export default function Login() {
         password: form.password,
       });
 
+      console.log(response);
+      setLoginResponse(response);
+
+
       if (response.role !== "SUPER_ADMIN") {
         // DO NOT set token here anymore. We wait for OTP.
         localStorage.setItem('totpRequired', response.requiresTotpSetup ? 'true' : 'false');
         localStorage.setItem('passwordResetRequired', response.requiresPasswordReset ? 'true' : 'false');
       }
-      
+
       localStorage.setItem("role", response.user?.role || response.role);
 
       setShowVerificationModal(true);
@@ -123,7 +129,7 @@ export default function Login() {
     setEmailOtpSent(true);
     console.log("Send Email OTP:", form.email);
   };
-  
+
   const handleVerifyEmailOtp = () => {
     if (emailOtp.length !== 6) {
       alert("Please enter a valid 6 digit OTP");
@@ -147,6 +153,17 @@ export default function Login() {
       payload = { email: form.email, otpEmail: emailOtp, otpMobile: phoneOtp };
     } else if (role === "CLINIC_ADMIN") {
       if (!emailVerified) return alert("Please verify Email");
+
+      if (loginResponse?.user?.subscriptionStatus !== "ACTIVE") {
+        return navigate("/payment", {
+          replace: true,
+          state: {
+            email: loginResponse.user.email,
+            clinicId: loginResponse.user.clinicId._id,
+          },
+        });
+      }
+
       verifyEndpoint = "/auth/clinicadmin/verify-otp";
       payload = { email: form.email, otpEmail: emailOtp };
     } else {

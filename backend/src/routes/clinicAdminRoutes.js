@@ -11,7 +11,7 @@ const KennelRoutes = require("./clinicKennelRoutes")
 const LabRoutes = require("./clinicLabRoutes")
 const preConsultationRoutes = require("./clinicPreConsultationRoutes")
 const ReceptionRoutes = require("./clinisReceptionRoutes")
-
+const subscriptionRoutes = require("./subscriptionRoutes")
 const DoctorModuleRoutes = require("./DoctorModuleRoutes")
 
 router.use(protect);
@@ -25,6 +25,7 @@ router.use("/groomers", GroomerRoutes);
 router.use("/kennel", KennelRoutes);
 router.use("/reception", ReceptionRoutes);
 router.use("/pre-consultation", preConsultationRoutes);
+router.use("/subscription", subscriptionRoutes);
 
 
 
