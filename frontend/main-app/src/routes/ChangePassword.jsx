@@ -1,23 +1,70 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import API from '../shared/api/axios';
+import { changePassword } from '../modules/auth/api/authApi';
 
-
-// Minimal placeholder: backend password reset endpoint not present in this repo.
-// So this page can be wired once you implement /password-reset.
 export default function ChangePassword() {
   const navigate = useNavigate();
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  const submit = async () => {
-    setSubmitting(true);
+  const redirectAfterChange = async () => {
     try {
-      // TODO: implement backend endpoint for staff password reset on first login.
-      // For now, just clear the local flag so user can continue to TOTP.
-      localStorage.setItem('passwordResetRequired', 'false');
-      alert('Password reset endpoint not implemented yet. Proceeding to TOTP setup.');
-      navigate('/enable-totp');
+      const redirectRes = await API.get('/dashboard');
+      const redirectUrl = redirectRes.data?.data?.redirectUrl;
+
+      if (redirectUrl) {
+        navigate(redirectUrl, { replace: true });
+        return;
+      }
+    } catch (error) {
+      console.warn('Dashboard redirect failed after password change', error);
+    }
+
+    const role = localStorage.getItem('role');
+
+    if (role === 'SUPER_ADMIN') return navigate('/superadmin', { replace: true });
+    if (role === 'CLINIC_ADMIN') return navigate('/clinic', { replace: true });
+    if (role === 'DOCTOR') return navigate('/doctor/dashboard', { replace: true });
+    if (role === 'RECEPTIONIST') return navigate('/clinic/reception', { replace: true });
+    if (role === 'PARA_MEDICAL') return navigate('/clinic/pre-consultation', { replace: true });
+
+    navigate('/login', { replace: true });
+  };
+
+  const submit = async (event) => {
+    event.preventDefault();
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      alert('Please fill in all fields.');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      alert('New password and confirm password must match.');
+      return;
+    }
+
+    setSubmitting(true);
+
+    try {
+      await changePassword({
+        currentPassword,
+        newPassword,
+      });
+
+      localStorage.removeItem('passwordResetRequired');
+
+      alert('Password updated successfully.');
+      await redirectAfterChange();
+    } catch (error) {
+      alert(
+        error.response?.data?.message ||
+        error.message ||
+        'Unable to update password.'
+      );
     } finally {
       setSubmitting(false);
     }
@@ -27,11 +74,15 @@ export default function ChangePassword() {
     <div className="min-h-screen flex items-center justify-center p-6 bg-white">
       <div className="w-full max-w-lg border border-slate-200 rounded-2xl p-6">
         <h1 className="text-2xl font-bold text-slate-900">Change Password</h1>
-        <p className="text-slate-500 mt-2">First login password reset (to be wired with backend endpoint).</p>
+        <p className="text-slate-500 mt-2">
+          Update your temporary password to continue.
+        </p>
 
-        <div className="mt-6 space-y-4">
+        <form className="mt-6 space-y-4" onSubmit={submit}>
           <div>
-            <label className="block text-sm font-semibold text-slate-900 mb-2">Current password</label>
+            <label className="block text-sm font-semibold text-slate-900 mb-2">
+              Current password
+            </label>
             <input
               type="password"
               className="w-full border border-slate-200 rounded-xl px-4 py-3"
@@ -39,8 +90,11 @@ export default function ChangePassword() {
               onChange={(e) => setCurrentPassword(e.target.value)}
             />
           </div>
+
           <div>
-            <label className="block text-sm font-semibold text-slate-900 mb-2">New password</label>
+            <label className="block text-sm font-semibold text-slate-900 mb-2">
+              New password
+            </label>
             <input
               type="password"
               className="w-full border border-slate-200 rounded-xl px-4 py-3"
@@ -48,16 +102,28 @@ export default function ChangePassword() {
               onChange={(e) => setNewPassword(e.target.value)}
             />
           </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-slate-900 mb-2">
+              Confirm new password
+            </label>
+            <input
+              type="password"
+              className="w-full border border-slate-200 rounded-xl px-4 py-3"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+            />
+          </div>
+
           <button
-            onClick={submit}
-            className="w-full bg-green-700 hover:bg-green-800 text-white font-semibold py-3 rounded-xl"
+            type="submit"
+            className="w-full bg-green-700 hover:bg-green-800 text-white font-semibold py-3 rounded-xl disabled:opacity-60"
             disabled={submitting}
           >
             {submitting ? 'Saving...' : 'Save & Continue'}
           </button>
-        </div>
+        </form>
       </div>
     </div>
   );
 }
-

@@ -36,11 +36,6 @@ export default function Login() {
         return;
       }
 
-      if (localStorage.getItem("totpRequired") === "true") {
-        navigate("/enable-totp", { replace: true });
-        return;
-      }
-
       if (role === "SUPER_ADMIN") navigate("/superadmin", { replace: true });
       else if (role === "CLINIC_ADMIN") navigate("/clinic", { replace: true });
       else if (role === "DOCTOR") navigate("/doctor/dashboard", { replace: true });
@@ -52,7 +47,6 @@ export default function Login() {
     localStorage.removeItem("user");
     localStorage.removeItem("role");
     localStorage.removeItem("passwordResetRequired");
-    localStorage.removeItem("totpRequired");
     sessionStorage.clear();
   }, [navigate]);
 
@@ -78,8 +72,6 @@ export default function Login() {
       });
 
       if (response.role !== "SUPER_ADMIN") {
-        // DO NOT set token here anymore. We wait for OTP.
-        localStorage.setItem('totpRequired', response.requiresTotpSetup ? 'true' : 'false');
         localStorage.setItem('passwordResetRequired', response.requiresPasswordReset ? 'true' : 'false');
       }
       
@@ -142,17 +134,17 @@ export default function Login() {
 
     // 1. Check conditions and prepare payload
     if (role === "SUPER_ADMIN") {
-      if (!phoneVerified || !emailVerified) return alert("Please verify both Phone and Email");
+      if (!emailVerified) return alert("Please verify Email");
       verifyEndpoint = "/auth/superadmin/verify-otp";
-      payload = { email: form.email, otpEmail: emailOtp, otpMobile: phoneOtp };
+      payload = { email: form.email, otpEmail: emailOtp };
     } else if (role === "CLINIC_ADMIN") {
       if (!emailVerified) return alert("Please verify Email");
       verifyEndpoint = "/auth/clinicadmin/verify-otp";
       payload = { email: form.email, otpEmail: emailOtp };
     } else {
-      if (!phoneVerified || !emailVerified) return alert("Please verify both Phone and Email");
+      if (!emailVerified) return alert("Please verify Email");
       verifyEndpoint = "/auth/staff/verify-otp";
-      payload = { email: form.email, otpEmail: emailOtp, otpMobile: phoneOtp };
+      payload = { email: form.email, otpEmail: emailOtp };
     }
 
     // 2. Make Verification Call & Set Token

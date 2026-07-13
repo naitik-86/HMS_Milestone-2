@@ -46,13 +46,7 @@ export const createStaff = async (
     const res =
         await API.post(
             BASE_URL,
-            formData,
-            {
-                headers: {
-                    "Content-Type":
-                        "multipart/form-data",
-                },
-            }
+            formData
         );
 
     return res.data;
@@ -71,13 +65,7 @@ export const updateStaff = async (
     const res =
         await API.put(
             `${BASE_URL}/${id}`,
-            formData,
-            {
-                headers: {
-                    "Content-Type":
-                        "multipart/form-data",
-                },
-            }
+            formData
         );
 
     return res.data;

@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const { protect } = require('../middlewares/auth');
 // const {
 //     requestLoginOTP,
 //     verifyOTPAndLogin,
@@ -10,4 +11,5 @@ const authController = require('../controllers/authController');
 // router.post('/auth/login', verifySuperAdmin); // log in of superadmin via email & password
 //router.post('/auth/verify-otp', verifyOTPAndLogin);
 router.post('/login', authController.login);
+router.post('/change-password', protect, authController.changePassword);
 module.exports = router;

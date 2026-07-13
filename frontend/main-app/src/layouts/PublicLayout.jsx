@@ -11,10 +11,6 @@ function PublicLayout() {
             return <Navigate to="/change-password" replace />;
         }
 
-        if (localStorage.getItem("totpRequired") === "true") {
-            return <Navigate to="/enable-totp" replace />;
-        }
-
         if (role === "SUPER_ADMIN") return <Navigate to="/superadmin" replace />;
         if (role === "CLINIC_ADMIN") return <Navigate to="/clinic" replace />;
         if (role === "DOCTOR") return <Navigate to="/doctor/dashboard" replace />;

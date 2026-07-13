@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const clinicSchema = new mongoose.Schema({
   name: { type: String, required: true },
   address: { type: String, required: true },
+  contactEmail: { type: String, lowercase: true, trim: true },
   subscriptionType: { 
     type: String, 
     enum: ['6_MONTHS', '12_MONTHS', 'FREE_TIER'], 

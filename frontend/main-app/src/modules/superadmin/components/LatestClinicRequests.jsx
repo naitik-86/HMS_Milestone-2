@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import {
     MapPin,
-    Phone,
-    MoreHorizontal,
+    Mail,
     ClipboardCheck,
+    Trash2,
 } from "lucide-react";
+import { showToast } from "../../../shared/components/toast";
 
-import { getClinics } from "../api/clinicApi";
+import { deleteClinic, getClinics } from "../api/clinicApi";
 
 const statusStyles = {
     ACTIVE: "bg-green-100 text-green-700",
@@ -22,6 +23,7 @@ const statusStyles = {
 export default function LatestClinicApprovals() {
     const [clinics, setClinics] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [deletingClinicId, setDeletingClinicId] = useState(null);
 
     useEffect(() => {
         const fetchClinics = async () => {
@@ -40,6 +42,40 @@ export default function LatestClinicApprovals() {
 
         fetchClinics();
     }, []);
+
+    const handleDeleteClinic = async (clinic) => {
+        const confirmed = window.confirm(
+            `Delete "${clinic.name}"? This will remove the clinic, its admin, staff, and related records.`
+        );
+
+        if (!confirmed) {
+            return;
+        }
+
+        setDeletingClinicId(clinic._id);
+
+        try {
+            await deleteClinic(clinic._id);
+            setClinics((prev) => prev.filter((item) => item._id !== clinic._id));
+
+            showToast({
+                type: "success",
+                title: "Clinic deleted",
+                description: `${clinic.name} has been removed.`,
+            });
+        } catch (error) {
+            showToast({
+                type: "error",
+                title: "Delete failed",
+                description:
+                    error.response?.data?.message ||
+                    error.message ||
+                    "Unable to delete clinic.",
+            });
+        } finally {
+            setDeletingClinicId(null);
+        }
+    };
 
     return (
         <div className="bg-white rounded-2xl shadow border overflow-hidden">
@@ -138,11 +174,13 @@ export default function LatestClinicApprovals() {
 
                                 {/* CONTACT */}
                                 <div className="flex items-center gap-2 text-gray-700">
-                                    <Phone
+                                    <Mail
                                         size={14}
                                         className="text-orange-500 shrink-0"
                                     />
-                                    N/A
+                                    <span className="truncate">
+                                        {c.contactEmail || "N/A"}
+                                    </span>
                                 </div>
 
                                 {/* PLAN */}
@@ -167,8 +205,14 @@ export default function LatestClinicApprovals() {
 
                                 {/* ACTION */}
                                 <div className="flex justify-end">
-                                    <button className="p-2 hover:bg-gray-100 rounded-lg">
-                                        <MoreHorizontal size={18} />
+                                    <button
+                                        type="button"
+                                        onClick={() => handleDeleteClinic(c)}
+                                        disabled={deletingClinicId === c._id}
+                                        className="inline-flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-600 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+                                    >
+                                        <Trash2 size={16} />
+                                        {deletingClinicId === c._id ? "Deleting..." : "Delete"}
                                     </button>
                                 </div>
                             </div>

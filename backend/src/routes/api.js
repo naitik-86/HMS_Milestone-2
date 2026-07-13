@@ -8,7 +8,6 @@ const upload = require('../middlewares/upload'); // AWS S3 Multer Middleware
 // Route & Controller Imports
 const authRoutes = require('./authRoutes');
 const authOtpRoutes = require('./authOtpRoutes');
-const staffTotpRoutes = require('./staffTotpRoutes'); // IMPORT MOVED HERE FOR CLEAN CODE
 
 const {
   getMe,
@@ -17,6 +16,7 @@ const {
   updateStaff,
   deleteStaff,
   getAllClinics,
+  deleteClinic,
   updateSubscription,
   getAdminDashboard,
   updateClinicVerification, 
@@ -52,9 +52,6 @@ const { getDashboardRedirect } = require('../controllers/dashboardController');
 router.use('/auth', authRoutes);
 router.use('/auth', authOtpRoutes);
 
-// STAFF TOTP ROUTES (Protection is handled inside the staffTotpRoutes file)
-router.use('/staff-totp', staffTotpRoutes);
-
 
 // ==========================================
 // M1 & M4: USER & ADMIN ROUTES (Protected)
@@ -64,6 +61,7 @@ router.get('/users/me', protect, getMe);
 // Super Admin
 router.post('/clinics', protect, authorize('SUPER_ADMIN'), createClinic);
 router.get('/clinics', protect, authorize('SUPER_ADMIN'), getAllClinics);
+router.delete('/clinics/:id', protect, authorize('SUPER_ADMIN'), deleteClinic);
 router.put('/clinics/:id/subscription', protect, authorize('SUPER_ADMIN'), updateSubscription);
 router.get('/clinics/dashboard', protect, authorize('SUPER_ADMIN'), getAdminDashboard);
 router.put('/clinics/:id/verification', protect, authorize('SUPER_ADMIN'), updateClinicVerification);
