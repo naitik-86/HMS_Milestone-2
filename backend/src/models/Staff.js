@@ -35,6 +35,8 @@ const staffSchema = new mongoose.Schema(
                 type: String,
                 required: true,
                 unique: true,
+                lowercase: true,
+                trim: true,
             },
 
             mobileNumber: {
@@ -189,7 +191,6 @@ const staffSchema = new mongoose.Schema(
                 default: true,
             },
 
-            // TOTP (Authenticator app)
             twoFactorEnabled: {
                 type: Boolean,
                 default: false,

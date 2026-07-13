@@ -1,12 +1,35 @@
 const User = require('../models/User');
 const Clinic = require('../models/Clinic');
 const ClinicAdmin = require("../models/ClinicAdmin")
+const Appointment = require('../models/Appointment');
 const Groomer = require('../models/GroomerModel')
 const Kennel = require('../models/KennelModel')
+const LabRecord = require('../models/LabRecord');
+const LabReport = require('../models/LabReport');
 const LabTechnician = require('../models/LabTechnician')
 const DoctorDetails = require('../models/DoctorDetails')
+const DoctorModule = require('../models/DoctorConsultationModdel');
 const Owner = require('../models/Owner');
+const MedicalRecord = require('../models/MedicalRecord');
+const PreConsultation = require('../models/PreConsultation');
+const PetRegistration = require('../models/PetRegistration');
+const Review = require('../models/Review');
+const Visit = require('../models/visitModel');
+const OwnerReport = require('../models/OwnerReport');
+const LoginOtp = require('../models/LoginOtp');
+const Staff = require('../models/Staff');
+const { Pet } = require('../models/Pet');
 const sendEmail = require('../utils/emailService'); // NEW: Email Trigger Utility
+const bcrypt = require('bcryptjs');
+const generatePassword = require('../utils/generatePassword');
+
+const normalizeEmail = (value) => (typeof value === 'string' ? value.trim().toLowerCase() : '');
+const deleteManyByClinicId = (model, clinicId) => model.deleteMany({
+  $or: [
+    { clinicId },
+    { clinicId: clinicId.toString() },
+  ],
+});
 
 // ==========================================
 // M1: USER & ONBOARDING LOGIC
@@ -38,6 +61,24 @@ exports.createClinic = async (req, res) => {
       latitude
     } = req.body;
 
+    const contactEmail = normalizeEmail(email);
+    const clinicAdminEmail = normalizeEmail(adminEmail);
+
+    if (!clinicAdminEmail) {
+      return res.status(400).json({
+        success: false,
+        message: 'Admin email is required to create a clinic account.',
+      });
+    }
+
+    const existingClinicAdmin = await ClinicAdmin.findOne({ email: clinicAdminEmail });
+    if (existingClinicAdmin) {
+      return res.status(409).json({
+        success: false,
+        message: 'A clinic admin with this email already exists.',
+      });
+    }
+
     let expiryDate = new Date();
     if (subscriptionType === '6_MONTHS') expiryDate.setMonth(expiryDate.getMonth() + 6);
     if (subscriptionType === '12_MONTHS') expiryDate.setFullYear(expiryDate.getFullYear() + 1);
@@ -50,6 +91,7 @@ exports.createClinic = async (req, res) => {
       expiryDate,
       licenseLimits: { maxDoctors, maxStaff },
       addressDetails,
+      contactEmail: contactEmail || undefined,
       location: latitude && longitude
         ? {
             type: 'Point',
@@ -144,6 +186,77 @@ exports.getAllClinics = async (req, res) => {
   }
 };
 
+// DELETE /api/clinics/:id -> Remove a clinic and its tenant data
+exports.deleteClinic = async (req, res) => {
+  try {
+    const clinic = await Clinic.findById(req.params.id);
+
+    if (!clinic) {
+      return res.status(404).json({
+        success: false,
+        message: 'Clinic not found',
+      });
+    }
+
+    const [clinicAdmins, staffMembers, registrations] = await Promise.all([
+      ClinicAdmin.find({ clinicId: clinic._id }).select('_id email'),
+      Staff.find({ clinicId: clinic._id }).select('_id personalInfo.email'),
+      PetRegistration.find({ clinicId: clinic._id }).select('_id'),
+    ]);
+
+    const clinicAdminIds = clinicAdmins.map((admin) => admin._id);
+    const staffIds = staffMembers.map((staff) => staff._id);
+    const registrationIds = registrations.map((registration) => registration._id);
+
+    await Promise.all([
+      deleteManyByClinicId(ClinicAdmin, clinic._id),
+      deleteManyByClinicId(Staff, clinic._id),
+      deleteManyByClinicId(User, clinic._id),
+      deleteManyByClinicId(Appointment, clinic._id),
+      deleteManyByClinicId(Groomer, clinic._id),
+      deleteManyByClinicId(Kennel, clinic._id),
+      deleteManyByClinicId(LabTechnician, clinic._id),
+      deleteManyByClinicId(DoctorDetails, clinic._id),
+      deleteManyByClinicId(DoctorModule, clinic._id),
+      deleteManyByClinicId(LabRecord, clinic._id),
+      deleteManyByClinicId(LabReport, clinic._id),
+      deleteManyByClinicId(MedicalRecord, clinic._id),
+      deleteManyByClinicId(PreConsultation, clinic._id),
+      deleteManyByClinicId(Review, clinic._id),
+      deleteManyByClinicId(Visit, clinic._id),
+      deleteManyByClinicId(OwnerReport, clinic._id),
+      deleteManyByClinicId(PetRegistration, clinic._id),
+      registrationIds.length
+        ? Pet.deleteMany({ ownerId: { $in: registrationIds } })
+        : Promise.resolve({ deletedCount: 0 }),
+      (clinicAdminIds.length || staffIds.length)
+        ? LoginOtp.deleteMany({
+            userType: { $in: ['CLINIC_ADMIN', 'STAFF'] },
+            userId: { $in: [...clinicAdminIds, ...staffIds] },
+          })
+        : Promise.resolve({ deletedCount: 0 }),
+    ]);
+
+    await Clinic.findByIdAndDelete(clinic._id);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Clinic deleted successfully.',
+      data: {
+        clinicId: clinic._id,
+        clinicName: clinic.name,
+      },
+    });
+  } catch (error) {
+    console.error('DELETE CLINIC ERROR:', error.message);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to delete clinic',
+      error: error.message,
+    });
+  }
+};
+
 // PUT /api/clinics/:id/subscription -> Renew or suspend subscription
 exports.updateSubscription = async (req, res) => {
   try {
@@ -207,21 +320,52 @@ exports.updateClinicVerification = async (req, res) => {
     if (!clinic) return res.status(404).json({ success: false, message: 'Clinic not found' });
 
     // Flowchart Logic: Automated Email Triggers
-    if (status === 'APPROVED' && clinicEmail) {
-      await sendEmail({
-        email: clinicEmail,
-        subject: 'Clinic Account Activated',
-        message: 'Your clinic has been verified and your account is now active.'
-      });
-    } else if (status === 'REJECTED' && clinicEmail) {
-      await sendEmail({
-        email: clinicEmail,
-        subject: 'Clinic Registration Rejected',
-        message: `Your registration was rejected. Reason: ${rejectionReason}`
+    const clinicAdmin = await ClinicAdmin.findOne({ clinicId: clinic._id }).select('email');
+    const recipientEmails = [...new Set([
+      normalizeEmail(clinicEmail),
+      normalizeEmail(clinic.contactEmail),
+      normalizeEmail(clinicAdmin?.email),
+    ].filter(Boolean))];
+
+    const notificationWarnings = [];
+
+    if ((status === 'APPROVED' || status === 'REJECTED') && recipientEmails.length > 0) {
+      const subject = status === 'APPROVED'
+        ? 'Clinic Account Activated'
+        : 'Clinic Registration Rejected';
+
+      const message = status === 'APPROVED'
+        ? `Your clinic "${clinic.name}" has been verified and is now active. You can log in with your clinic admin email.`
+        : `Your clinic "${clinic.name}" registration was rejected. Reason: ${rejectionReason || 'Not provided'}`;
+
+      const results = await Promise.allSettled(
+        recipientEmails.map((recipientEmail) =>
+          sendEmail({
+            email: recipientEmail,
+            subject,
+            message,
+          })
+        )
+      );
+
+      results.forEach((result, index) => {
+        if (result.status === 'rejected') {
+          const failedEmail = recipientEmails[index];
+          const failureMessage = `Failed to send clinic verification email to ${failedEmail}: ${result.reason?.message || result.reason}`;
+          notificationWarnings.push(failureMessage);
+          console.error(failureMessage);
+        }
       });
     }
 
-    res.status(200).json({ success: true, data: clinic });
+    res.status(200).json({
+      success: true,
+      message: notificationWarnings.length
+        ? 'Clinic verification updated, but one or more notification emails failed.'
+        : 'Clinic verification updated successfully.',
+      data: clinic,
+      emailWarning: notificationWarnings.length ? notificationWarnings : undefined,
+    });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }

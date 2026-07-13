@@ -5,6 +5,7 @@ const { authorize } = require('../middlewares/auth');
 const {
     createClinic,
     getAllClinics,
+    deleteClinic,
     updateSubscription,
     getAdminDashboard,
     updateClinicVerification,
@@ -23,6 +24,7 @@ router.use(authorize('SUPER_ADMIN'));
 
 router.post('/clinics', createClinic);
 router.get('/clinics', getAllClinics);
+router.delete('/clinics/:id', deleteClinic);
 router.put('/clinics/:id/subscription', updateSubscription);
 router.get('/dashboard', getAdminDashboard);
 router.post('/plans', createPlan);

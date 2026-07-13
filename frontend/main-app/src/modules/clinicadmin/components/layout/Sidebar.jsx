@@ -133,9 +133,7 @@ const Sidebar = ({ isOpen = false, onClose }) => {
           onClick={() => {
             localStorage.removeItem("token");
             localStorage.removeItem("role");
-            localStorage.removeItem("totpRequired");
             localStorage.removeItem("passwordResetRequired");
-            localStorage.removeItem("staffIdForTotpSetup");
 
             navigate("/login", { replace: true });
             onClose?.();

@@ -8,6 +8,7 @@ const sendEmail = require("../utils/emailService.js");
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const phoneRegex = /^\d{10}$/;
+const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const createStaff = async (req, res) => {
 
@@ -15,6 +16,13 @@ const createStaff = async (req, res) => {
     console.log(req.body);
 
     try {
+        if (!req.user?.clinicId) {
+            return res.status(400).json({
+                success: false,
+                message: "Clinic context is missing for staff creation",
+            });
+        }
+
         const personalInfo = req.body.personalInfo
             ? JSON.parse(req.body.personalInfo)
             : {};
@@ -35,11 +43,38 @@ const createStaff = async (req, res) => {
             ? JSON.parse(req.body.moduleAccess)
             : {};
 
-        console.log(req.user.clinicId, " clininc id form staff creation");
+        if (!personalInfo.fullName || !personalInfo.email || !personalInfo.mobileNumber || !personalInfo.dateOfBirth) {
+            return res.status(400).json({
+                success: false,
+                message: "Full name, email, mobile number, and date of birth are required",
+            });
+        }
+
+        if (!employmentInfo.role) {
+            return res.status(400).json({
+                success: false,
+                message: "Staff role is required",
+            });
+        }
+
+        const normalizedEmail = typeof personalInfo.email === "string"
+            ? personalInfo.email.trim().toLowerCase()
+            : "";
+
+        if (!normalizedEmail || !emailRegex.test(normalizedEmail)) {
+            return res.status(400).json({
+                success: false,
+                message: "A valid staff email is required",
+            });
+        }
+
+        personalInfo.email = normalizedEmail;
 
         const existingEmail = await Staff.findOne({
-            clinicId: req.user.clinicId,
-            "personalInfo.email": personalInfo.email,
+            "personalInfo.email": {
+                $regex: `^${escapeRegExp(normalizedEmail)}$`,
+                $options: 'i',
+            },
         });
 
         if (existingEmail) {
@@ -82,7 +117,6 @@ const createStaff = async (req, res) => {
                 username,
                 temporaryPassword,
                 password: hashedPassword,
-                // TOTP defaults in schema; keep disabled on creation
             },
         });
 
@@ -95,19 +129,23 @@ const createStaff = async (req, res) => {
         // Send credentials to staff email
         try {
             await sendEmail({
-                email: personalInfo.email,
+                email: normalizedEmail,
                 subject: "Your HMS staff login credentials",
-                message: `Hello ${personalInfo.fullName},\n\nYour HMS account has been created by the clinic admin.\n\nStaff ID: ${staffId}\nUsername: ${username}\nTemporary Password: ${temporaryPassword}\n\nFirst login steps:\n1) Change your password\n2) Enable authenticator (TOTP)\n\nPlease keep this information secure.`,
+                message: `Hello ${personalInfo.fullName},\n\nYour HMS account has been created by the clinic admin.\n\nStaff ID: ${staffId}\nUsername: ${username}\nTemporary Password: ${temporaryPassword}\n\nFirst login steps:\n1) Change your password\n\nPlease keep this information secure.`,
             });
         } catch (emailErr) {
             // Don’t fail staff creation if email fails, but record the warning
             console.error("STAFF CREDENTIAL EMAIL ERROR:", emailErr.message);
-            emailWarning = `Staff created, but email failed: ${emailErr.message}`;
+            emailWarning = {
+                message: 'Staff created, but email failed',
+                reason: emailErr.message,
+            };
         }
 
         res.status(201).json({
             success: true,
-            message: emailWarning || "Staff created successfully",
+            message: emailWarning ? (typeof emailWarning === 'string' ? emailWarning : 'Staff created, but email failed') : "Staff created successfully",
+            emailWarning,
             username,
             temporaryPassword,
             data: staffResponse,
@@ -118,9 +156,34 @@ const createStaff = async (req, res) => {
             error.message
         );
 
+        if (error?.code === 11000) {
+            const duplicateField = Object.keys(error.keyPattern || {})[0];
+
+            if (duplicateField === "personalInfo.email") {
+                return res.status(409).json({
+                    success: false,
+                    message: "This email is already used by another staff member",
+                });
+            }
+
+            if (duplicateField === "employmentInfo.staffId") {
+                return res.status(409).json({
+                    success: false,
+                    message: "Staff ID already exists. Please try again.",
+                });
+            }
+
+            if (duplicateField === "accountInfo.username") {
+                return res.status(409).json({
+                    success: false,
+                    message: "Username already exists. Please try again.",
+                });
+            }
+        }
+
         res.status(500).json({
             success: false,
-            message: "Internal Server Error",
+            message: error.message || "Internal Server Error",
         });
     }
 };
@@ -262,6 +325,19 @@ const updateStaff = async (req, res) => {
         const moduleAccess = req.body.moduleAccess
             ? JSON.parse(req.body.moduleAccess)
             : {};
+
+        if (personalInfo.email) {
+            const normalizedEmail = personalInfo.email.trim().toLowerCase();
+
+            if (!emailRegex.test(normalizedEmail)) {
+                return res.status(400).json({
+                    success: false,
+                    message: "A valid staff email is required",
+                });
+            }
+
+            personalInfo.email = normalizedEmail;
+        }
 
         const updateData = {
             personalInfo,

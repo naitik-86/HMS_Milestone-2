@@ -5,7 +5,6 @@ import SuperAdminRoutes from "./SuperAdminRoutes";
 import ClinicAdminRoutes from "./ClinicAdminRoutes";
 import { PageNotFound } from "../modules/public/pages";
 
-import EnableTotp from './EnableTotp';
 import ChangePassword from './ChangePassword';
 import Payment from "../modules/billingModule/pages/PaymentPage";
 import PaymentSuccess from "../modules/billingModule/pages/PaymentSuccess";
@@ -28,7 +27,6 @@ function AppRoutes() {
             <Route path="/receipt" element={<Receipt />} />
 
 
-            <Route path="/enable-totp" element={<EnableTotp />} />
             <Route path="/change-password" element={<ChangePassword />} />
 
             <Route path="/unauthorized" element={<div />} />

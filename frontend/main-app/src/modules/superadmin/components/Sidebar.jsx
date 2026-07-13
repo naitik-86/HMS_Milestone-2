@@ -31,9 +31,7 @@ export default function Sidebar({ isOpen = false, onClose }) {
 
     localStorage.removeItem("token");
     localStorage.removeItem("role");
-    localStorage.removeItem("totpRequired");
     localStorage.removeItem("passwordResetRequired");
-    localStorage.removeItem("staffIdForTotpSetup");
 
     showToast({
         type: "success",

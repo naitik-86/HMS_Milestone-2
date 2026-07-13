@@ -352,6 +352,9 @@ const sendEmail = require('../utils/emailService');
 
 const Staff = require("../models/Staff");
 
+const normalizeEmail = (value) => (typeof value === 'string' ? value.trim().toLowerCase() : '');
+const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 /* ==========================================
    UNIVERSAL LOGIN (EMAIL + PASSWORD)
 ========================================== */
@@ -359,8 +362,9 @@ const Staff = require("../models/Staff");
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
+    const normalizedEmail = normalizeEmail(email);
 
-    if (!email || !password) {
+    if (!normalizedEmail || !password) {
       return res.status(400).json({
         success: false,
         message: "Email and password are required",
@@ -370,7 +374,7 @@ exports.login = async (req, res) => {
     /* =========================
        1. CHECK SUPER ADMIN
     ========================= */
-    const admin = await SuperAdmin.findOne({ email: email.toLowerCase() }).select("+password");
+    const admin = await SuperAdmin.findOne({ email: normalizedEmail }).select("+password");
 
     if (admin) {
       const isMatch = await bcrypt.compare(password, admin.password);
@@ -406,18 +410,26 @@ exports.login = async (req, res) => {
         expiresAt,
       });
 
-      // Send both OTPs via Email and WhatsApp/SMS
-      await sendOtpMultiChannel({
-        email: admin.email,
-        mobile,
-        otpEmail,
-        otpMobile,
-        emailSender: sendEmail,
-      });
+      try {
+        // Send both OTPs via Email and WhatsApp/SMS
+        await sendOtpMultiChannel({
+          email: admin.email,
+          mobile,
+          otpEmail,
+          otpMobile,
+          emailSender: sendEmail,
+        });
+      } catch (emailErr) {
+        return res.status(500).json({
+          success: false,
+          message: 'Failed to send super admin login OTP',
+          error: emailErr.message,
+        });
+      }
 
       return res.status(200).json({
         success: true,
-        message: "OTP sent to registered email and mobile. Verify to login.",
+        message: "OTP sent to registered email. Verify to login.",
         role: "SUPER_ADMIN",
         user: {
           id: admin._id,
@@ -462,12 +474,20 @@ exports.login = async (req, res) => {
         expiresAt,
       });
 
-      // Send Email OTP (keep developer bypass OTP generation, but do not skip sending)
-      await sendOtpMultiChannel({
-        email: clinicAdmin.email,
-        otpEmail,
-        emailSender: sendEmail,
-      });
+      try {
+        // Send Email OTP (keep developer bypass OTP generation, but do not skip sending)
+        await sendOtpMultiChannel({
+          email: clinicAdmin.email,
+          otpEmail,
+          emailSender: sendEmail,
+        });
+      } catch (emailErr) {
+        return res.status(500).json({
+          success: false,
+          message: 'Failed to send clinic admin login OTP email',
+          error: emailErr.message,
+        });
+      }
 
 
       return res.status(200).json({
@@ -489,7 +509,10 @@ exports.login = async (req, res) => {
        3. CHECK STAFF
     ========================= */
     const staff = await Staff.findOne({
-      "personalInfo.email": email.toLowerCase(),
+      "personalInfo.email": {
+        $regex: `^${escapeRegExp(normalizedEmail)}$`,
+        $options: 'i',
+      },
       isDeleted: false,
     });
 
@@ -530,18 +553,26 @@ exports.login = async (req, res) => {
         expiresAt,
       });
 
-      // Send both OTPs via Email and WhatsApp/SMS
-      await sendOtpMultiChannel({
-        email: staff.personalInfo.email,
-        mobile: mobile,
-        otpEmail,
-        otpMobile,
-        emailSender: sendEmail,
-      });
+      try {
+        // Send both OTPs via Email and WhatsApp/SMS
+        await sendOtpMultiChannel({
+          email: staff.personalInfo.email,
+          mobile: mobile,
+          otpEmail,
+          otpMobile,
+          emailSender: sendEmail,
+        });
+      } catch (emailErr) {
+        return res.status(500).json({
+          success: false,
+          message: 'Failed to send staff login OTP email',
+          error: emailErr.message,
+        });
+      }
 
       return res.status(200).json({
         success: true,
-        message: "OTP sent to registered email and mobile. Verify to login.",
+        message: "OTP sent to registered email. Verify to login.",
         role: staff.employmentInfo.role,
         user: {
           id: staff._id,
@@ -556,7 +587,7 @@ exports.login = async (req, res) => {
     /* =========================
        4. CHECK NORMAL USERS 
     ========================= */
-    const user = await User.findOne({ email: email.toLowerCase() }).select("+password");
+    const user = await User.findOne({ email: normalizedEmail }).select("+password");
 
     if (!user) {
       return res.status(404).json({
@@ -609,6 +640,120 @@ exports.login = async (req, res) => {
       success: false,
       message: "An internal server error occurred during login.",
       error: error.message
+    });
+  }
+};
+
+exports.changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const authUser = req.user || {};
+    const normalizedRole = (authUser.role || '').toUpperCase().replace(/\s+/g, '_');
+    const userId = authUser.id;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Not authorized',
+      });
+    }
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Current password and new password are required',
+      });
+    }
+
+    if (newPassword.length < 8) {
+      return res.status(400).json({
+        success: false,
+        message: 'New password must be at least 8 characters long',
+      });
+    }
+
+    if (normalizedRole === 'SUPER_ADMIN') {
+      const superAdmin = await SuperAdmin.findById(userId).select('+password');
+
+      if (!superAdmin) {
+        return res.status(404).json({
+          success: false,
+          message: 'Super admin not found',
+        });
+      }
+
+      const isMatch = await bcrypt.compare(currentPassword, superAdmin.password);
+      if (!isMatch) {
+        return res.status(401).json({
+          success: false,
+          message: 'Current password is incorrect',
+        });
+      }
+
+      superAdmin.password = await bcrypt.hash(newPassword, 10);
+      await superAdmin.save();
+    } else if (normalizedRole === 'CLINIC_ADMIN') {
+      const clinicAdmin = await ClinicAdmin.findById(userId).select('+password');
+
+      if (!clinicAdmin) {
+        return res.status(404).json({
+          success: false,
+          message: 'Clinic admin not found',
+        });
+      }
+
+      const isMatch = await bcrypt.compare(currentPassword, clinicAdmin.password);
+      if (!isMatch) {
+        return res.status(401).json({
+          success: false,
+          message: 'Current password is incorrect',
+        });
+      }
+
+      clinicAdmin.password = await bcrypt.hash(newPassword, 10);
+      clinicAdmin.forcePasswordReset = false;
+      await clinicAdmin.save();
+    } else {
+      const staff = await Staff.findById(userId);
+
+      if (!staff) {
+        return res.status(404).json({
+          success: false,
+          message: 'Staff member not found',
+        });
+      }
+
+      const existingPassword = staff.accountInfo?.password;
+      const isMatch = existingPassword
+        ? await bcrypt.compare(currentPassword, existingPassword)
+        : false;
+
+      if (!isMatch) {
+        return res.status(401).json({
+          success: false,
+          message: 'Current password is incorrect',
+        });
+      }
+
+      staff.accountInfo = staff.accountInfo || {};
+      staff.accountInfo.password = await bcrypt.hash(newPassword, 10);
+      staff.accountInfo.forcePasswordReset = false;
+      staff.accountInfo.temporaryPassword = undefined;
+      await staff.save();
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Password updated successfully',
+      requiresPasswordReset: false,
+      role: normalizedRole,
+    });
+  } catch (error) {
+    console.error('CHANGE PASSWORD ERROR:', error.message);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to update password',
+      error: error.message,
     });
   }
 };

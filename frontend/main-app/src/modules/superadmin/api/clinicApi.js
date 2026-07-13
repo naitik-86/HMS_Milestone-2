@@ -28,6 +28,10 @@ export const createClinic = async (clinicData) => {
         subscriptionType,
         maxDoctors: clinicData.maxDoctors || 5,
         maxStaff: clinicData.maxStaff || 10,
+        email: clinicData.email,
+        adminEmail: clinicData.adminEmail,
+        adminName: clinicData.adminName,
+        adminPhone: clinicData.adminPhone,
         latitude: clinicData.latitude,
         longitude: clinicData.longitude,
         addressDetails: {
@@ -77,5 +81,10 @@ export const createClinic = async (clinicData) => {
 export const getClinics = async () => {
     // 3. Fetch clinics (Updated endpoint)
     const res = await API.get("/super-admin/clinics");
+    return res.data;
+};
+
+export const deleteClinic = async (id) => {
+    const res = await API.delete(`/super-admin/clinics/${id}`);
     return res.data;
 };
