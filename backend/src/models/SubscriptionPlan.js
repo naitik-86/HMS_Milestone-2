@@ -6,6 +6,11 @@ const subscriptionPlanSchema = new mongoose.Schema({
     unique: true,
     index: true
   },
+  price: {
+    type: Number,
+    required: true,
+    min: 0,
+  },
   subscriptionPlan: {
     type: String,
     enum: ['Basic', 'Standard', 'Professional', 'Enterprise', 'Custom'],
@@ -13,7 +18,7 @@ const subscriptionPlanSchema = new mongoose.Schema({
   },
   billingCycle: {
     type: String,
-    enum: ['Monthly', 'Quarterly', 'Annual'],
+    enum: ['6_MONTHS', '12_MONTHS', 'FREE_TIER'],
     required: true
   },
   planStartDate: {
