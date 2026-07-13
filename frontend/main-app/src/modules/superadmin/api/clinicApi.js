@@ -51,13 +51,15 @@ export const createClinic = async (clinicData) => {
     }
 
     // 2. Upload the files if any exist
-    const hasFiles = clinicData.vetCert || clinicData.tradeDoc || clinicData.cheque;
+    const hasFiles = clinicData.logo || clinicData.vetCert || clinicData.tradeDoc || clinicData.cheque || clinicData.profile;
 
     if (hasFiles) {
         const fileData = {
+            clinicLogo: clinicData.logo,
             vetCouncilCertificate: clinicData.vetCert,
             tradeLicense: clinicData.tradeDoc,
-            cancelledCheque: clinicData.cheque
+            cancelledCheque: clinicData.cheque,
+            adminProfile: clinicData.profile
         };
         const formData = buildFormData(fileData);
 

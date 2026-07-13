@@ -35,9 +35,11 @@ router.put('/clinics/:id/verification', updateClinicVerification);
 router.post(
     '/clinics/:id/documents',
     upload.fields([
+        { name: 'clinicLogo', maxCount: 1 },
         { name: 'vetCouncilCertificate', maxCount: 1 },
         { name: 'tradeLicense', maxCount: 1 },
-        { name: 'cancelledCheque', maxCount: 1 }
+        { name: 'cancelledCheque', maxCount: 1 },
+        { name: 'adminProfile', maxCount: 1 }
     ]),
     uploadClinicDocuments
 );

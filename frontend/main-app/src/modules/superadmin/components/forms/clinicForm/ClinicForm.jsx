@@ -178,19 +178,37 @@ const validatePincode = async (pincode) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Logo & Profile images allowed
-    if (field === "logo" || field === "profile") {
-        const allowedImages = [
+    if (field === "logo") {
+        const allowedLogoFiles = [
             "image/png",
             "image/jpeg",
             "image/jpg",
+            "application/pdf",
         ];
 
-        if (!allowedImages.includes(file.type)) {
+        if (!allowedLogoFiles.includes(file.type)) {
             showToast({
                 type: "error",
                 title: "Invalid File",
-                description: "Only JPG, JPEG or PNG images are allowed.",
+                description: "Only JPG, JPEG, PNG or PDF files are allowed.",
+            });
+
+            e.target.value = "";
+            return;
+        }
+    } else if (field === "profile") {
+        const allowedProfileFiles = [
+            "image/png",
+            "image/jpeg",
+            "image/jpg",
+            "application/pdf",
+        ];
+
+        if (!allowedProfileFiles.includes(file.type)) {
+            showToast({
+                type: "error",
+                title: "Invalid File",
+                description: "Only JPG, JPEG, PNG or PDF files are allowed.",
             });
 
             e.target.value = "";
@@ -311,10 +329,11 @@ const validatePincode = async (pincode) => {
 
                                 <Upload
                                     requiredField={true}
-                                    label="Clinic Logo"
+                                    label="Clinic Logo / PDF"
                                     value={form.logo}
                                     onChange={handleFileUpload("logo")}
                                     onRemove={() => setForm((p) => ({ ...p, logo: null }))}
+                                    accept=".pdf,application/pdf,image/png,image/jpeg,image/jpg"
                                 />
                             </Grid>
                         </Card>
@@ -482,10 +501,11 @@ const validatePincode = async (pincode) => {
 
                                 <Upload
                                     requiredField={true}
-                                    label="Profile Photo"
+                                    label="Profile Photo / PDF"
                                     value={form.profile}
                                     onChange={handleFileUpload("profile")}
                                     onRemove={() => setForm((p) => ({ ...p, profile: null }))}
+                                    accept=".pdf,application/pdf,image/png,image/jpeg,image/jpg"
                                 />
                             </Grid>
                         </Card>
