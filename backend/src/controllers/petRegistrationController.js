@@ -374,72 +374,42 @@ const getPetHistory = async (req, res) => {
 const getExistingCustomers = async (req, res) => {
     try {
         const { search } = req.query;
-
         const clinicId = req.user.clinicId;
 
-        const owners = await PetRegistration.find({
-            clinicId,
-        });
-
-        console.log(owners);
-
-
+        const owners = await PetRegistration.find({ clinicId });
 
         let result = [];
 
-        owners.reverse().forEach(owner => {
+        [...owners].reverse().forEach((owner) => {
+            [...owner.pets].reverse().forEach((pet) => {
+                if (search) {
+                    const value = search.toLowerCase();
 
-            owner.pets.forEach(pet => {
-
-                const latestVisit =
-                    pet.visits?.[pet.visits.length - 1] || {};
+                    if (
+                        !owner.ownerName.toLowerCase().includes(value) &&
+                        !pet.petName.toLowerCase().includes(value) &&
+                        !(pet.uniquePetId || "").toLowerCase().includes(value)
+                    ) {
+                        return;
+                    }
+                }
 
                 result.push({
-                    ownerId: owner._id,
-                    petId: pet._id,
-                    petUniqueId: pet.uniquePetId,
-
-                    ownerName: owner.ownerName,
-                    mobileNumber: owner.mobileNumber,
-
-
-                    petName: pet.petName,
-                    species: pet.species,
-                    breed: pet.breed,
-                    gender: pet.gender,
-                    age: pet.age,
-                    color: pet.color,
-                    sterilized: pet.sterilized,
-
-
-                    reason: latestVisit.primaryReason || "-",
-                    status: latestVisit.status || "Pending"
+                    owner,
+                    pet,
                 });
-
             });
-
         });
-
-        if (search) {
-            const value = search.toLowerCase();
-
-            result = result.filter(item =>
-                item.ownerName.toLowerCase().includes(value) ||
-                item.petName.toLowerCase().includes(value) ||
-                (item.petUniqueId || "").toLowerCase().includes(value)
-            );
-        }
 
         res.status(200).json({
             success: true,
             count: result.length,
-            data: result
+            data: result,
         });
-
     } catch (error) {
         res.status(500).json({
             success: false,
-            message: error.message
+            message: error.message,
         });
     }
 };

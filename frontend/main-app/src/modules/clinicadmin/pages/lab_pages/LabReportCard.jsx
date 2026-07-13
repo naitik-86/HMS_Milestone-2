@@ -1,29 +1,22 @@
-import React from "react";
-import { FileText, User, PawPrint, Calendar } from "lucide-react";
+import { FileText } from "lucide-react";
 
 export default function LabReportModal({
     open,
     onClose,
     report,
 }) {
-
     if (!open || !report) return null;
 
     return (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 p-6">
-
-            <div className="bg-white w-[1050px] max-w-[96%] rounded-2xl shadow-2xl overflow-hidden">
-
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6 backdrop-blur-sm">
+            <div className="max-h-[90vh] w-[1100px] max-w-[96%] overflow-hidden rounded-2xl bg-white shadow-2xl">
                 {/* Header */}
-
-                <div className="bg-orange-500 text-white px-8 py-5 flex justify-between items-center">
-
+                <div className="flex items-center justify-between bg-orange-500 px-8 py-5 text-white">
                     <div>
                         <h2 className="text-2xl font-bold">
                             Laboratory Report
                         </h2>
-
-                        <p className="text-sm opacity-90 mt-1">
+                        <p className="mt-1 text-sm opacity-90">
                             Report Details
                         </p>
                     </div>
@@ -34,30 +27,24 @@ export default function LabReportModal({
                     >
                         ×
                     </button>
-
                 </div>
 
                 {/* Body */}
-
-                <div className="p-8 space-y-8 max-h-[80vh] overflow-y-auto">
-
+                <div className="max-h-[75vh] space-y-8 overflow-y-auto p-8">
                     {/* Patient Information */}
-
                     <div>
-
-                        <h3 className="text-lg font-semibold text-orange-600 mb-4">
+                        <h3 className="mb-4 text-lg font-semibold text-orange-600">
                             Patient Information
                         </h3>
 
-                        <div className="grid grid-cols-5 gap-4 bg-orange-50 border border-orange-200 rounded-xl p-5">
-
+                        <div className="grid grid-cols-2 gap-4 rounded-xl border border-orange-200 bg-orange-50 p-5 lg:grid-cols-5">
                             <div>
                                 <p className="text-xs text-gray-500">
-                                    Token
+                                    Pet ID
                                 </p>
 
                                 <p className="font-semibold">
-                                    {report?.visitId?.tokenNumber || "-"}
+                                    {report.pet?.uniquePetId || "-"}
                                 </p>
                             </div>
 
@@ -67,7 +54,7 @@ export default function LabReportModal({
                                 </p>
 
                                 <p className="font-semibold">
-                                    {report?.petId?.name || "-"}
+                                    {report.pet?.petName || "-"}
                                 </p>
                             </div>
 
@@ -77,7 +64,17 @@ export default function LabReportModal({
                                 </p>
 
                                 <p className="font-semibold">
-                                    {report?.ownerId?.ownerName || "-"}
+                                    {report.owner?.ownerName || "-"}
+                                </p>
+                            </div>
+
+                            <div>
+                                <p className="text-xs text-gray-500">
+                                    Mobile
+                                </p>
+
+                                <p className="font-semibold">
+                                    {report.owner?.mobileNumber || "-"}
                                 </p>
                             </div>
 
@@ -86,50 +83,86 @@ export default function LabReportModal({
                                     Status
                                 </p>
 
-                                <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs">
-                                    {report?.status}
+                                <span
+                                    className={`rounded-full px-3 py-1 text-xs font-semibold ${report.status === "Completed"
+                                        ? "bg-green-100 text-green-700"
+                                        : report.status === "Critical"
+                                            ? "bg-red-100 text-red-700"
+                                            : "bg-orange-100 text-orange-700"
+                                        }`}
+                                >
+                                    {report.status}
                                 </span>
                             </div>
 
                             <div>
                                 <p className="text-xs text-gray-500">
-                                    Uploaded
+                                    Species
                                 </p>
 
                                 <p className="font-semibold">
-                                    {new Date(report?.createdAt).toLocaleDateString()}
+                                    {report.pet?.species || "-"}
                                 </p>
                             </div>
 
-                        </div>
+                            <div>
+                                <p className="text-xs text-gray-500">
+                                    Breed
+                                </p>
 
+                                <p className="font-semibold">
+                                    {report.pet?.breed || "-"}
+                                </p>
+                            </div>
+
+                            <div>
+                                <p className="text-xs text-gray-500">
+                                    Gender
+                                </p>
+
+                                <p className="font-semibold">
+                                    {report.pet?.gender || "-"}
+                                </p>
+                            </div>
+
+                            <div>
+                                <p className="text-xs text-gray-500">
+                                    Age
+                                </p>
+
+                                <p className="font-semibold">
+                                    {report.pet?.age || "-"}
+                                </p>
+                            </div>
+
+                            <div>
+                                <p className="text-xs text-gray-500">
+                                    Uploaded On
+                                </p>
+
+                                <p className="font-semibold">
+                                    {new Date(report.createdAt).toLocaleDateString()}
+                                </p>
+                            </div>
+                        </div>
                     </div>
 
-                    {/* Reports */}
-
+                    {/* Uploaded Reports */}
                     <div>
-
-                        <h3 className="text-lg font-semibold text-orange-600 mb-4">
+                        <h3 className="mb-4 text-lg font-semibold text-orange-600">
                             Uploaded Reports
                         </h3>
 
                         <div className="space-y-4">
-
-                            {report?.reports?.length > 0 ? (
-
+                            {report.reports?.length ? (
                                 report.reports.map((item, index) => (
-
                                     <div
                                         key={index}
-                                        className="border rounded-xl p-5 hover:shadow-md transition"
+                                        className="rounded-xl border p-5 transition hover:shadow-md"
                                     >
-
-                                        <div className="flex justify-between items-center">
-
-                                            <div className="space-y-2">
-
+                                        <div className="flex items-center justify-between">
+                                            <div>
                                                 <div className="flex items-center gap-2">
-
                                                     <FileText
                                                         size={18}
                                                         className="text-orange-500"
@@ -138,77 +171,46 @@ export default function LabReportModal({
                                                     <span className="font-semibold text-orange-600">
                                                         {item.testName}
                                                     </span>
-
                                                 </div>
 
-                                                <p className="text-gray-600">
+                                                <p className="mt-2 text-gray-600">
                                                     {item.fileName}
                                                 </p>
-
                                             </div>
 
                                             <a
                                                 href={item.fileUrl}
                                                 target="_blank"
                                                 rel="noreferrer"
-                                                className="bg-orange-500 hover:bg-orange-600 text-white px-5 py-2 rounded-lg transition"
+                                                className="rounded-lg bg-orange-500 px-5 py-2 text-white transition hover:bg-orange-600"
                                             >
                                                 View PDF
                                             </a>
-
                                         </div>
-
                                     </div>
-
                                 ))
-
                             ) : (
-
-                                <div className="text-center py-10 text-gray-500">
-
+                                <div className="py-10 text-center text-gray-500">
                                     No reports uploaded.
-
                                 </div>
-
                             )}
-
                         </div>
-
                     </div>
 
                     {/* Remarks */}
-
                     <div>
-
-                        <h3 className="text-lg font-semibold text-orange-600 mb-3">
+                        <h3 className="mb-3 text-lg font-semibold text-orange-600">
                             Remarks
                         </h3>
 
-                        <div className="bg-gray-50 border rounded-xl p-5">
-
-                            {report?.remarks || "No Remarks"}
-
+                        <div className="rounded-xl border bg-gray-50 p-5">
+                            {report.remarks || "No remarks available."}
                         </div>
-
                     </div>
-
                 </div>
 
-                {/* Footer */}
-
-                <div className="bg-gray-50 border-t px-6 py-4 flex justify-end">
-
-                    <button
-                        onClick={onClose}
-                        className="px-6 py-2 border rounded-lg hover:bg-gray-100"
-                    >
-                        Close
-                    </button>
-
-                </div>
 
             </div>
-
         </div>
     );
 }

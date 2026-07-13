@@ -41,7 +41,8 @@ export default function LabPendingCases() {
                 item._id
             );
 
-
+            console.log(res);
+            console.log(res.data);
 
             setSelectedCase({
                 ...item,
@@ -62,6 +63,8 @@ export default function LabPendingCases() {
                 item.pet._id,
                 item._id
             );
+            console.log(res);
+            console.log(res.data);
 
             return res?.data || [];
 
@@ -70,6 +73,9 @@ export default function LabPendingCases() {
             return [];
         }
     };
+
+
+
     const handleUpload = async () => {
         const formData = new FormData();
 
@@ -79,20 +85,22 @@ export default function LabPendingCases() {
                 formData.append(testName, file);
             }
         });
-        // append extra data
-        console.log("selectedCase:", selectedCase);
-        console.log("visitId:", selectedCase?._id);
+
         formData.append("petId", selectedCase.pet._id);
         formData.append("visitId", selectedCase._id);
 
         try {
             await uploadLabReports(formData);
-            for (let [key, value] of formData.entries()) {
-                console.log(key, value);
-            }
+
 
             alert("Reports uploaded successfully");
             setShowUploadModal(false);
+
+            setFiles({});
+            setSelectedCase(null);
+
+            // Reload pending pets
+            await fetchCases();
 
         } catch (err) {
             console.error(err);
@@ -214,7 +222,7 @@ export default function LabPendingCases() {
                                         <button
                                             onClick={async () => {
                                                 const tests = await handleFetchTests(item);
-
+                                                console.log("Fetched tests:", tests);
                                                 setSelectedCase({
                                                     ...item,
                                                     tests

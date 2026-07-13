@@ -23,12 +23,17 @@ export const uploadLabReports = async (formData) => {
 };
 
 export const getRequiredLabTests = async (petId, visitId) => {
+    console.log(petId, visitId);
+
     const res = await API.get(`${BASE_URL}/required-tests`, {
         params: {
             petId,
             visitId
         }
     });
+
+    console.log(res);
+
     return res.data;
 };
 
