@@ -35,8 +35,7 @@ exports.createClinic = async (req, res) => {
       maxDoctors,
       maxStaff,
       addressDetails,
-      latitude,
-      longitude
+      latitude
     } = req.body;
 
     let expiryDate = new Date();
@@ -58,8 +57,6 @@ exports.createClinic = async (req, res) => {
           }
         : undefined
     });
-
-    res.status(201).json({ success: true, data: clinic });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
