@@ -454,14 +454,13 @@ exports.login = async (req, res) => {
         expiresAt,
       });
 
-      // Send Email OTP only if NOT the developer testing ID
-      if (email.toLowerCase() !== 'admin@clinic.com') {
-        await sendOtpMultiChannel({
-          email: clinicAdmin.email,
-          otpEmail,
-          emailSender: sendEmail,
-        });
-      }
+      // Send Email OTP (keep developer bypass OTP generation, but do not skip sending)
+      await sendOtpMultiChannel({
+        email: clinicAdmin.email,
+        otpEmail,
+        emailSender: sendEmail,
+      });
+
 
       return res.status(200).json({
         success: true,

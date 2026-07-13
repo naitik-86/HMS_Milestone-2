@@ -14,7 +14,6 @@ const createStaff = async (req, res) => {
     console.log("****** -> createstaff");
     console.log(req.body);
 
-
     try {
         const personalInfo = req.body.personalInfo
             ? JSON.parse(req.body.personalInfo)
@@ -91,6 +90,8 @@ const createStaff = async (req, res) => {
 
         delete staffResponse.accountInfo.password;
 
+        let emailWarning = null;
+
         // Send credentials to staff email
         try {
             await sendEmail({
@@ -99,13 +100,14 @@ const createStaff = async (req, res) => {
                 message: `Hello ${personalInfo.fullName},\n\nYour HMS account has been created by the clinic admin.\n\nStaff ID: ${staffId}\nUsername: ${username}\nTemporary Password: ${temporaryPassword}\n\nFirst login steps:\n1) Change your password\n2) Enable authenticator (TOTP)\n\nPlease keep this information secure.`,
             });
         } catch (emailErr) {
-            // Don’t fail staff creation if email fails
+            // Don’t fail staff creation if email fails, but record the warning
             console.error("STAFF CREDENTIAL EMAIL ERROR:", emailErr.message);
+            emailWarning = `Staff created, but email failed: ${emailErr.message}`;
         }
 
         res.status(201).json({
             success: true,
-            message: "Staff created successfully",
+            message: emailWarning || "Staff created successfully",
             username,
             temporaryPassword,
             data: staffResponse,
