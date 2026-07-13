@@ -9,4 +9,3 @@ router.use(authorize('SUPER_ADMIN'));
 router.get('/basic', getSuperAdminBasicReports);
 
 module.exports = router;
-

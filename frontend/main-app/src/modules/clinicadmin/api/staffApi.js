@@ -144,6 +144,18 @@ const buildStaffFormData = (staff) => {
                 staff.forcePasswordReset,
         })
     );
+    formData.append(
+        "bankDetails",
+        JSON.stringify({
+            bankName: staff.bankName,
+            accountHolderName: staff.accountHolderName,
+            accountNumber: staff.accountNumber,
+            ifscCode: staff.ifscCode,
+            branchName: staff.branchName,
+            upiId: staff.upiId,
+        })
+    );
+
 
     const moduleAccess = {};
 

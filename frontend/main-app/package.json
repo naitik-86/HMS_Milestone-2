@@ -13,7 +13,7 @@
     "@tailwindcss/vite": "^4.3.0",
     "axios": "^1.18.1",
     "country-state-city": "^3.2.1",
-    "indian-pincode": "^2.0.3",
+    "list": "^2.0.19",
     "lucide-react": "^1.18.0",
     "qrcode.react": "^4.2.0",
     "react": "^19.2.6",

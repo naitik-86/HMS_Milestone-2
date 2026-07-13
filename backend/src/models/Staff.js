@@ -133,6 +133,37 @@ const staffSchema = new mongoose.Schema(
             },
         },
 
+        bankDetails: {
+            bankName: {
+                type: String,
+                default: "",
+            },
+
+            accountHolderName: {
+                type: String,
+                default: "",
+            },
+
+            accountNumber: {
+                type: String,
+                default: "",
+            },
+
+            ifscCode: {
+                type: String,
+                default: "",
+            },
+
+            branchName: {
+                type: String,
+                default: "",
+            },
+
+            upiId: {
+                type: String,
+                default: "",
+            },
+        },
         accountInfo: {
             username: {
                 type: String,

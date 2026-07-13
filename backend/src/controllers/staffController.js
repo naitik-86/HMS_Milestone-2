@@ -24,45 +24,17 @@ const createStaff = async (req, res) => {
             ? JSON.parse(req.body.employmentInfo)
             : {};
 
-        const moduleAccess = req.body.moduleAccess
-            ? JSON.parse(req.body.moduleAccess)
-            : {};
-
         const accountInfo = req.body.accountInfo
             ? JSON.parse(req.body.accountInfo)
             : {};
 
-        const emergencyNumber =
-            personalInfo.emergencyContacts?.[0]
-                ?.contactNumber || "";
+        const bankDetails = req.body.bankDetails
+            ? JSON.parse(req.body.bankDetails)
+            : {};
 
-        if (!personalInfo.fullName || personalInfo.fullName.trim().length < 3) {
-            return res.status(400).json({
-                success: false,
-                message: "Full name must be at least 3 characters",
-            });
-        }
-
-        if (!emailRegex.test(personalInfo.email || "")) {
-            return res.status(400).json({
-                success: false,
-                message: "Please enter a valid email address",
-            });
-        }
-
-        if (!phoneRegex.test(personalInfo.mobileNumber || "")) {
-            return res.status(400).json({
-                success: false,
-                message: "Mobile number must be exactly 10 digits",
-            });
-        }
-
-        if (emergencyNumber && !phoneRegex.test(emergencyNumber)) {
-            return res.status(400).json({
-                success: false,
-                message: "Emergency contact number must be exactly 10 digits",
-            });
-        }
+        const moduleAccess = req.body.moduleAccess
+            ? JSON.parse(req.body.moduleAccess)
+            : {};
 
         console.log(req.user.clinicId, " clininc id form staff creation");
 
@@ -104,6 +76,7 @@ const createStaff = async (req, res) => {
             },
 
             moduleAccess,
+            bankDetails,
 
             accountInfo: {
                 ...accountInfo,
@@ -263,55 +236,76 @@ const getStaffById = async (
         });
     }
 };
-const updateStaff = async (
-    req,
-    res
-) => {
+const updateStaff = async (req, res) => {
     try {
 
         console.log("Form data - >>>>", req.body);
 
+        const personalInfo = req.body.personalInfo
+            ? JSON.parse(req.body.personalInfo)
+            : {};
+
+        const employmentInfo = req.body.employmentInfo
+            ? JSON.parse(req.body.employmentInfo)
+            : {};
+
+        const accountInfo = req.body.accountInfo
+            ? JSON.parse(req.body.accountInfo)
+            : {};
+
+        const bankDetails = req.body.bankDetails
+            ? JSON.parse(req.body.bankDetails)
+            : {};
+
+        const moduleAccess = req.body.moduleAccess
+            ? JSON.parse(req.body.moduleAccess)
+            : {};
+
+        const updateData = {
+            personalInfo,
+            employmentInfo,
+            accountInfo,
+            bankDetails,
+            moduleAccess,
+        };
+
+        // Profile photo update (optional)
+        if (req.file) {
+            updateData.personalInfo.profilePhoto =
+                req.file.path;
+        }
+
         const updatedStaff =
             await Staff.findOneAndUpdate(
-
                 {
-
                     _id: req.params.id,
-
-                    clinicId: req.user.clinicId
-
+                    clinicId: req.user.clinicId,
                 },
-
-                req.body,
-
+                updateData,
                 {
-
                     new: true,
-
+                    runValidators: true,
                 }
-
             );
 
         if (!updatedStaff) {
-
             return res.status(404).json({
-
                 success: false,
-
-                message: "Staff not found"
-
+                message: "Staff not found",
             });
-
         }
 
         res.status(200).json({
             success: true,
+            message: "Staff updated successfully",
             data: updatedStaff,
         });
+
     } catch (error) {
+
         console.error(
             "UPDATE STAFF ERROR:",
-            error.message
+            error
         );
 
         res.status(500).json({

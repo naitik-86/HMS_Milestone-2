@@ -1,4 +1,5 @@
 import { useState } from "react";
+import axios from "axios";
 import {
   Mail,
   Phone,
@@ -18,14 +19,45 @@ export default function Contact() {
     subject: "",
     message: "",
   });
+  const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
 
   const onChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
-  const onSubmit = (e) => {
+
+  const onSubmit = async (e) => {
     e.preventDefault();
-    setSent(true);
-    setTimeout(() => setSent(false), 3500);
-    setForm({ name: "", email: "", phone: "", subject: "", message: "" });
+    try {
+      setLoading(true);
+      const response = await axios.post(
+        // `${API_URL}/api/v1/contact`
+        "http://localhost:5000/api/v1/contact",
+        {
+          fullName: form.name,
+          email: form.email,
+          phone: form.phone,
+          subject: form.subject,
+          message: form.message,
+        },
+      );
+
+      if (response.data.success) {
+        setSent(true);
+        setForm({
+          name: "",
+          email: "",
+          phone: "",
+          subject: "",
+          message: "",
+        });
+        setTimeout(() => setSent(false), 3500);
+      }
+    } catch (error) {
+      console.error(error);
+
+      alert(error?.response?.data?.message || "Failed to send message");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -151,9 +183,11 @@ export default function Contact() {
             </div>
             <button
               type="submit"
-              className="mt-6 inline-flex items-center gap-2 bg-brand hover:bg-brand-dark text-white font-semibold px-7 py-3.5 rounded-xl"
+              disabled={loading}
+              className="mt-6 inline-flex items-center gap-2 bg-brand hover:bg-brand-dark text-white font-semibold px-7 py-3.5 rounded-xl disabled:opacity-50"
             >
-              Send Message <Send className="w-4 h-4" />
+              {loading ? "Sending..." : "Send Message"}
+              <Send className="w-4 h-4" />
             </button>
             {sent && (
               <p className="mt-4 text-sm text-brand-dark">
