@@ -58,11 +58,7 @@ exports.createClinic = async (req, res) => {
       maxDoctors,
       maxStaff,
       addressDetails,
-      latitude,
-      longitude,
-      email,
-      adminEmail,
-      adminName,
+      latitude
     } = req.body;
 
     const contactEmail = normalizeEmail(email);
@@ -102,71 +98,6 @@ exports.createClinic = async (req, res) => {
             coordinates: [Number(longitude), Number(latitude)]
           }
         : undefined
-    });
-
-    const temporaryPassword = generatePassword();
-    const hashedPassword = await bcrypt.hash(temporaryPassword, 10);
-
-    try {
-      await ClinicAdmin.create({
-        clinicId: clinic._id,
-        email: clinicAdminEmail,
-        password: hashedPassword,
-        forcePasswordReset: true,
-      });
-    } catch (clinicAdminError) {
-      await Clinic.findByIdAndDelete(clinic._id);
-      throw clinicAdminError;
-    }
-
-    const notificationWarnings = [];
-    const clinicDisplayName = name?.trim() || 'Clinic';
-    const adminDisplayName = adminName?.trim() || 'Clinic Admin';
-
-    const notificationJobs = [
-      {
-        email: clinicAdminEmail,
-        subject: `${clinicDisplayName} clinic admin account created`,
-        message: `Hello ${adminDisplayName},\n\nYour clinic "${clinicDisplayName}" has been created in HMS.\n\nLogin email: ${clinicAdminEmail}\nTemporary password: ${temporaryPassword}\n\nPlease sign in and change your password after the first login.`,
-      },
-    ];
-
-    if (contactEmail && contactEmail !== clinicAdminEmail) {
-      notificationJobs.push({
-        email: contactEmail,
-        subject: `${clinicDisplayName} clinic registration received`,
-        message: `Hello,\n\nYour clinic "${clinicDisplayName}" has been created in HMS.\n\nThe clinic admin login has been prepared separately and will use the admin email on file.\n\nIf you are the clinic contact, you will receive future approval and status updates here.`,
-      });
-    }
-
-    const notificationResults = await Promise.allSettled(
-      notificationJobs.map(({ email: recipientEmail, subject, message }) =>
-        sendEmail({
-          email: recipientEmail,
-          subject,
-          message,
-        })
-      )
-    );
-
-    notificationResults.forEach((result, index) => {
-      if (result.status === 'rejected') {
-        const failedEmail = notificationJobs[index].email;
-        const failureMessage = `Failed to send clinic onboarding email to ${failedEmail}: ${result.reason?.message || result.reason}`;
-        notificationWarnings.push(failureMessage);
-        console.error(failureMessage);
-      }
-    });
-
-    res.status(201).json({
-      success: true,
-      message: notificationWarnings.length
-        ? 'Clinic created successfully, but one or more notification emails failed.'
-        : 'Clinic created successfully. Login details sent to the clinic admin.',
-      data: clinic,
-      temporaryPassword,
-      clinicAdminEmail,
-      emailWarning: notificationWarnings.length ? notificationWarnings : undefined,
     });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });

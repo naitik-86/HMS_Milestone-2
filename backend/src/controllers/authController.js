@@ -1,6 +1,6 @@
 // {
 
-//  ANKIT's  CODE ++++++++++++
+
 
 // const User = require('../models/User');
 // const jwt = require('jsonwebtoken');
@@ -442,10 +442,18 @@ exports.login = async (req, res) => {
     /* =========================
        2. CHECK CLINIC ADMIN
     ========================= */
-    const clinicAdmin = await ClinicAdmin.findOne({ email: normalizedEmail }).select("+password");
+    const clinicAdmin = await ClinicAdmin.findOne({ email: email.toLowerCase() })
+      .select("+password")
+      .populate({
+        path: "clinicId",
+        select: "subscriptionStatus",
+      });;
 
     if (clinicAdmin) {
       const isMatch = await bcrypt.compare(password, clinicAdmin.password);
+
+
+      console.log(clinicAdmin);
 
       if (!isMatch) {
         return res.status(401).json({
@@ -490,7 +498,9 @@ exports.login = async (req, res) => {
           id: clinicAdmin._id,
           email: clinicAdmin.email,
           role: "CLINIC_ADMIN",
-          clinicId: clinicAdmin.clinicId || clinicAdmin.clinic
+          clinicId: clinicAdmin.clinicId || clinicAdmin.clinic,
+          subscriptionStatus: clinicAdmin.clinicId.subscriptionStatus,
+
         },
       });
     }
@@ -534,7 +544,7 @@ exports.login = async (req, res) => {
       const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes expiry
 
       await LoginOtp.create({
-        userType: 'STAFF', 
+        userType: 'STAFF',
         userId: staff._id,
         email: staff.personalInfo.email,
         mobile: mobile,

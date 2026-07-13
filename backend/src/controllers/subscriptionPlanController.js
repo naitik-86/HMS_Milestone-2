@@ -1,10 +1,74 @@
 const SubscriptionPlan = require('../models/SubscriptionPlan');
+const Clinic = require("../models/Clinic");
 
 const addMonths = (date, months) => {
   const next = new Date(date);
   next.setMonth(next.getMonth() + months);
   return next;
 };
+
+
+exports.getSubscriptionDetails = async (req, res) => {
+  try {
+    const { clinicId } = req.params;
+
+    // 1. Get Clinic
+    const clinic = await Clinic.findById(clinicId).select(
+      "name subscriptionType subscriptionStatus expiryDate"
+    );
+
+    if (!clinic) {
+      return res.status(404).json({
+        success: false,
+        message: "Clinic not found",
+      });
+    }
+
+    // 2. Find matching subscription plan
+    const plan = await SubscriptionPlan.findOne({
+      billingCycle: clinic.subscriptionType,
+      status: "Active",
+    }).select(
+      "subscriptionPlan billingCycle price featureLimits modules"
+    );
+
+    if (!plan) {
+      return res.status(404).json({
+        success: false,
+        message: "Subscription plan not found",
+      });
+    }
+
+    // 3. Return combined response
+    return res.status(200).json({
+      success: true,
+      data: {
+        clinicId: clinic._id,
+        clinicName: clinic.name,
+
+        subscriptionStatus: clinic.subscriptionStatus,
+        expiryDate: clinic.expiryDate,
+
+        planName: plan.subscriptionPlan,
+        billingCycle: plan.billingCycle,
+        price: plan.price,
+
+        featureLimits: plan.featureLimits,
+        modules: plan.modules,
+      },
+    });
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch subscription details",
+      error: error.message,
+    });
+  }
+};
+
+
 
 const getRenewalDate = (startDate, billingCycle) => {
   const date = new Date(startDate);
