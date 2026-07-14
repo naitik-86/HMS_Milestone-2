@@ -1,4 +1,4 @@
-
+import { useNavigate } from "react-router-dom";
 import { useLocation } from "react-router-dom";
 import { ShieldCheck, CreditCard, BadgeIndianRupee } from "lucide-react";
 
@@ -24,8 +24,18 @@ const Payment = ({
 
     const clinicId = state?.clinicId;
     const email = state?.email;
+    const navigate = useNavigate();
 
     console.log(email, clinicId);
+
+
+    const handleBackToLogin = () => {
+
+        localStorage.clear();
+        sessionStorage.clear();
+
+        navigate("/login");
+    };
 
 
     const [plan, setPlan] = useState(null);
@@ -51,9 +61,6 @@ const Payment = ({
     const handlePay = async () => {
         try {
             const data = await createSubscriptionPayment(clinicId);
-            console.log("Response:", JSON.stringify(data, null, 2));
-            console.log("Payment Data:", JSON.stringify(data.paymentData, null, 2));
-
 
             const paymentData = data.paymentData;
 
@@ -140,6 +147,13 @@ const Payment = ({
                         className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-xl font-semibold text-lg transition-all duration-300 shadow-md"
                     >
                         Proceed to Payment
+                    </button>
+
+                    <button
+                        onClick={handleBackToLogin}
+                        className="w-full mt-4 border border-gray-300 text-gray-700 py-3 rounded-xl font-medium hover:bg-gray-100 transition"
+                    >
+                        Back to Login
                     </button>
 
                     <p className="text-sm text-gray-500 mt-6 text-center">

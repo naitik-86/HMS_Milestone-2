@@ -1,6 +1,7 @@
 const SubscriptionPlan = require('../models/SubscriptionPlan');
 const Clinic = require("../models/Clinic");
 const crypto = require("crypto");
+const { log } = require('console');
 
 const addMonths = (date, months) => {
   const next = new Date(date);
@@ -195,11 +196,40 @@ exports.paymentSuccess = async (req, res) => {
     return res.status(500).send("Something went wrong");
   }
 };
+
 exports.paymentFailure = async (req, res) => {
   console.log("Payment Failed");
+  console.log(req.body);
+
+  const clinicId = req.body.udf1;
+
+  let clinic = null;
+
+  if (clinicId) {
+    clinic = await Clinic.findById(clinicId).select(
+      "name contactEmail subscriptionType"
+    );
+  }
+
+  console.log(clinic);
 
 
-  res.send("Payment Failed");
+  const params = new URLSearchParams({
+    status: req.body.status || "FAILED",
+    message: req.body.error_Message || req.body.error || "Payment Failed",
+    txnid: req.body.txnid || "",
+    amount: req.body.amount || "",
+    mode: req.body.mode || "",
+    attemptedAt: req.body.addedon || "",
+
+    clinicName: clinic?.name || "",
+    email: clinic?.contactEmail || "",
+    plan: clinic?.subscriptionType || "",
+  });
+
+  return res.redirect(
+    `${process.env.FRONTEND_URL}/payment-failure?${params.toString()}`
+  );
 };
 
 exports.getSubscriptionStatus = async (req, res) => {
