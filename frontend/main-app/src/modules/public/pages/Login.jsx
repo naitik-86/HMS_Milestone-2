@@ -79,6 +79,7 @@ export default function Login() {
       }
       
       localStorage.setItem("role", response.user?.role || response.role);
+      localStorage.setItem("userEmail", response.user?.email || form.email.trim());
 
       setShowVerificationModal(true);
     } catch (error) {
@@ -133,8 +134,8 @@ export default function Login() {
   const handleContinue = async () => {
     const role = localStorage.getItem("role");
     const normalizedRole = normalizeRole(role);
-    let verifyEndpoint = "";
-    let payload = {};
+    let verifyEndpoint;
+    let payload;
 
     // 1. Check conditions and prepare payload
     if (normalizedRole === "SUPER_ADMIN") {
@@ -157,6 +158,7 @@ export default function Login() {
       const verifyRes = await API.post(verifyEndpoint, payload);
       if (verifyRes.data?.token) {
         localStorage.setItem("token", verifyRes.data.token);
+        localStorage.setItem("userEmail", verifyRes.data.user?.email || form.email.trim());
 
         // =========== FORCE PASSWORD LOGIC ===========
         if (verifyRes.data?.requiresPasswordReset) {
