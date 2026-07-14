@@ -171,17 +171,23 @@ exports.getSubscriptionDetails = async (req, res) => {
 
 exports.paymentSuccess = async (req, res) => {
   try {
-
     const clinicId = req.body.udf1;
 
-    const clinic = await Clinic.findById(clinicId);
+    const clinic = await Clinic.findByIdAndUpdate(
+      clinicId,
+      {
+        subscriptionStatus: "ACTIVE",
+      },
+      {
+        new: true,
+      }
+    );
 
     if (!clinic) {
       return res.status(404).send("Clinic not found");
     }
 
     console.log("Clinic:", clinic.name);
-
 
     return res.redirect(`${process.env.FRONTEND_URL}/clinic`);
   } catch (err) {
@@ -194,6 +200,40 @@ exports.paymentFailure = async (req, res) => {
 
 
   res.send("Payment Failed");
+};
+
+exports.getSubscriptionStatus = async (req, res) => {
+  try {
+    const clinic = await Clinic.findById(req.user.clinicId).select(
+      "_id subscriptionStatus subscriptionType expiryDate"
+    );
+
+    if (!clinic) {
+      return res.status(404).json({
+        success: false,
+        message: "Clinic not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        _id: clinic._id,
+        name: clinic.name,
+        contactEmail: clinic.contactEmail,
+        subscriptionStatus: clinic.subscriptionStatus,
+        subscriptionType: clinic.subscriptionType,
+        expiryDate: clinic.expiryDate,
+      },
+    });
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch subscription status",
+    });
+  }
 };
 
 

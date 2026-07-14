@@ -37,6 +37,8 @@ export default function Login() {
     const role = localStorage.getItem("role");
     const dashboardPath = getDashboardPathForRole(role);
 
+
+
     if (token) {
       if (localStorage.getItem("passwordResetRequired") === "true") {
         navigate("/change-password", { replace: true });
