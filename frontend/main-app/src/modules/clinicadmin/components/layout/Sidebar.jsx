@@ -13,7 +13,6 @@ const Sidebar = ({ isOpen = false, onClose }) => {
     { id: "kennel", label: "Kennel", icon: "🐾" },
     { id: "reports", label: "Reports", icon: "📊" },
     { id: "reports-basic", label: "Basic Reports", icon: "✅" },
-    { id: "subscription", label: "Subscription", icon: "💳" },
     { id: "settings", label: "Settings", icon: "⚙️" },
   ];
 

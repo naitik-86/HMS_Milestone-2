@@ -50,7 +50,7 @@ import {
     DoctorHistoryPetsPage,
 } from "../modules/clinicadmin/pages";
 
-import Subscription from "../modules/clinicadmin/features/subscription/subscription";
+
 
 const ClinicAdminRoutes = (
     <>
@@ -73,7 +73,6 @@ const ClinicAdminRoutes = (
             <Route path="reports/basic" element={<Reports />} />
             <Route path="reports/basic" element={<BasicReports />} />
             <Route path="settings" element={<ClinicSettings />} />
-             <Route path="subscription" element={<Subscription />} />
         </Route>
 
         {/* {Preconsultation Routes} */}
