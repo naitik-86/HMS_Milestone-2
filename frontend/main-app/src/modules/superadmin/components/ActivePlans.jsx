@@ -43,6 +43,13 @@ export default function ActivePlans({ refreshKey = 0 }) {
         return new Date(value).toLocaleDateString("en-IN");
     };
 
+    const formatPrice = (value) =>
+        new Intl.NumberFormat("en-IN", {
+            style: "currency",
+            currency: "INR",
+            maximumFractionDigits: 0,
+        }).format(Number(value || 0));
+
     return (
         <div className="bg-white rounded-xl p-4 md:p-6 shadow-sm border overflow-hidden">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-5">
@@ -96,6 +103,7 @@ export default function ActivePlans({ refreshKey = 0 }) {
                             <Header>Plan ID</Header>
                             <Header>Subscription Plan</Header>
                             <Header>Billing</Header>
+                            <Header>Price</Header>
                             <Header>Renewal</Header>
                             <Header>Doctors</Header>
                             <Header>Staff</Header>
@@ -110,7 +118,7 @@ export default function ActivePlans({ refreshKey = 0 }) {
                     <tbody>
                         {loading && (
                             <tr>
-                                <td colSpan={12} className="py-8 px-3 text-center text-gray-500">
+                                <td colSpan={13} className="py-8 px-3 text-center text-gray-500">
                                     Loading plans...
                                 </td>
                             </tr>
@@ -118,7 +126,7 @@ export default function ActivePlans({ refreshKey = 0 }) {
 
                         {!loading && plans.length === 0 && (
                             <tr>
-                                <td colSpan={12} className="py-8 px-3 text-center text-gray-500">
+                                <td colSpan={13} className="py-8 px-3 text-center text-gray-500">
                                     No subscription plans created yet.
                                 </td>
                             </tr>
@@ -151,6 +159,7 @@ export default function ActivePlans({ refreshKey = 0 }) {
                                 </td>
 
                                 <Cell>{plan.billingCycle}</Cell>
+                                <Cell>{formatPrice(plan.price)}</Cell>
                                 <Cell>{formatDate(plan.planEndRenewalDate)}</Cell>
                                 <Cell>{plan.featureLimits?.maxDoctors}</Cell>
                                 <Cell>{plan.featureLimits?.maxStaffAccounts}</Cell>

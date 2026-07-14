@@ -18,7 +18,7 @@ const subscriptionPlanSchema = new mongoose.Schema({
   },
   billingCycle: {
     type: String,
-    enum: ['6_MONTHS', '12_MONTHS', 'FREE_TIER'],
+    enum: ['Monthly', 'Quarterly', 'Annual', '6_MONTHS', '12_MONTHS', 'FREE_TIER'],
     required: true
   },
   planStartDate: {
