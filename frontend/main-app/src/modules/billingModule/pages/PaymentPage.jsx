@@ -1,3 +1,4 @@
+
 import { useLocation } from "react-router-dom";
 import { ShieldCheck, CreditCard, BadgeIndianRupee } from "lucide-react";
 
@@ -77,11 +78,12 @@ const Payment = ({
                 <div className="bg-gradient-to-br from-blue-600 to-indigo-700 text-white p-10 flex flex-col justify-between">
                     <div>
                         <h1 className="text-4xl font-bold mb-4">
-                            {title}
+                            Subscription Payment
                         </h1>
 
                         <p className="text-blue-100 leading-relaxed">
-                            {description}
+                            Continue your subscription for
+                            {` ${plan?.clinicName}`}
                         </p>
                     </div>
 
@@ -112,7 +114,7 @@ const Payment = ({
 
                         <div className="flex justify-between mb-4">
                             <span className="text-gray-600">Billing Cycle</span>
-                            <span className="font-semibold">{billingCycle}</span>
+                            <span className="font-semibold">{plan?.billingCycle}</span>
                         </div>
 
                         <div className="flex justify-between items-center border-t pt-4">
@@ -122,7 +124,7 @@ const Payment = ({
 
                             <div className="flex items-center text-2xl font-bold text-green-600">
                                 <BadgeIndianRupee size={24} />
-                                {amount}
+                                {plan?.price}
                             </div>
                         </div>
                     </div>

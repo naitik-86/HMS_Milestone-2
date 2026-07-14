@@ -1,3 +1,4 @@
+
 import API from "../../../shared/api/axios";
 
 export const createSubscriptionPayment = async (payload) => {
@@ -15,6 +16,7 @@ export const createSubscriptionPayment = async (payload) => {
 
 
 export const getSubscriptionDetails = async (clinicId) => {
-    const { data } = await API.get(`/clinic/subscription/${clinicId}`);
-    return data;
-};
+    const response = await API.get(`/subscription/${clinicId}`);
+    return response.data.data;
+}
+

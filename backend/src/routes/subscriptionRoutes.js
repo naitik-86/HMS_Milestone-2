@@ -1,3 +1,4 @@
+
 const express = require("express");
 const router = express.Router();
 
@@ -7,15 +8,15 @@ const {
     getSubscriptionDetails,
 } = require("../controllers/subscriptionPlanController");
 
+router.use(authorize('CLINIC_ADMIN'));
+
 // router.post(
 //     "/create-subscription",
-//     authorize(),
 //     createSubscriptionPayment
 // );
 
 router.get(
     "/:clinicId",
-    authorize(),
     getSubscriptionDetails
 );
 
