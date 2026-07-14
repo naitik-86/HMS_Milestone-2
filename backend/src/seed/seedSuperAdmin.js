@@ -18,7 +18,7 @@ const seedDb = async () => {
     });
     console.log('Connected to MongoDB.');
 
-    const email = 'ankursati75956@gmail.com';
+    const email = 'ankur@webarclight.com';
     const plainPassword = 'Superadmin@123';
 
     // 1. Check if the admin already exists
