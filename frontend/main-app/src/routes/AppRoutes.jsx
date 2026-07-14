@@ -6,6 +6,9 @@ import ClinicAdminRoutes from "./ClinicAdminRoutes";
 import { PageNotFound } from "../modules/public/pages";
 
 import ChangePassword from './ChangePassword';
+import Payment from "../modules/billingModule/pages/PaymentPage";
+import PaymentSucess from "../modules/billingModule/pages/PaymentSuccess";
+import PaymentFailure from "../modules/billingModule/pages/PaymentFailed";
 
 
 function AppRoutes() {
@@ -14,6 +17,13 @@ function AppRoutes() {
             {PublicRoutes}
             {SuperAdminRoutes}
             {ClinicAdminRoutes}
+
+            <Route
+                path="/payment"
+                element={<Payment />}
+            />
+            <Route path="/payment-success" element={<PaymentSucess />} />
+            <Route path="/payment-failure" element={<PaymentFailure />} />
 
             <Route path="/change-password" element={<ChangePassword />} />
 
