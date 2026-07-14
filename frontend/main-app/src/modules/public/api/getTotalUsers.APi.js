@@ -7,3 +7,4 @@ export const getUsers = async () => {
 
     return res;
 };
+

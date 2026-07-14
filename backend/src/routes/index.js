@@ -13,6 +13,7 @@ const petOwnerRoutes = require("./petOwnerRoutes");
 const doctorModule = require('./DoctorModuleRoutes');
 const labRoutes = require("./labRoutes");
 const contactRoute = require("./contactRoutes")
+const subscriptionRoutes = require("./subscriptionRoutes")
 
 
 // Import middlewares and controllers for root-level routes
@@ -22,6 +23,7 @@ const { getDashboardRedirect } = require('../controllers/dashboardController');
 // Public routes
 router.use('/auth', authRoutes);
 router.use('/auth', authOtpRoutes);
+router.use("/subscription", subscriptionRoutes);
 
 // Protected role-based modules
 router.use('/super-admin', protect, superAdminRoutes);
