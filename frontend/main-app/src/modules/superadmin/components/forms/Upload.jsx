@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react";
+
 export default function Upload({
     label,
     requiredField = false,
@@ -6,7 +8,19 @@ export default function Upload({
     onRemove,
     accept = ".pdf,application/pdf",
 }) {
-    const isImage = value && value.type?.startsWith("image/");
+    const [previewUrl, setPreviewUrl] = useState("");
+
+    useEffect(() => {
+        if (!value || !value.type?.startsWith("image/")) {
+            setPreviewUrl("");
+            return;
+        }
+
+        const nextPreviewUrl = URL.createObjectURL(value);
+        setPreviewUrl(nextPreviewUrl);
+
+        return () => URL.revokeObjectURL(nextPreviewUrl);
+    }, [value]);
 
     return (
         <div className="w-full">

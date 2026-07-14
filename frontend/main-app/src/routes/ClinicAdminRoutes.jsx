@@ -1,5 +1,4 @@
-
-
+import { lazy } from "react";
 import { Route } from "react-router-dom";
 import ProtectedRoute from "./ProtectedRoute";
 import DoctorLayout from "../layouts/DoctorStaffLayout";
@@ -8,47 +7,38 @@ import ClinicAdminLayout from "../layouts/ClinicAdminLayout";
 import PreConsultationLayout from "../layouts/PreConsultationLayout";
 import LabLayout from "../layouts/LabLayout"
 
-// clinic pages
-import Dashboard from "../modules/clinicadmin/features/dashboard/Dashboard";
-import StaffEnrollment from "../modules/clinicadmin/features/staff/StaffEnrollment";
-import DoctorDetails from "../modules/clinicadmin/features/doctors/DoctorDetails";
-import LabTechnician from "../modules/clinicadmin/features/lab/LabTechnician";
-import Groomer from "../modules/clinicadmin/features/groomer/Groomer";
-import KennelStaff from "../modules/clinicadmin/features/kennel/KennelStaff";
-import ClinicSettings from "../modules/clinicadmin/features/settings/ClinicSettings";
-import Reports from "../modules/clinicadmin/features/reports/Reports";
-import BasicReports from "../modules/clinicadmin/features/reports/BasicReports";
+const Dashboard = lazy(() => import("../modules/clinicadmin/features/dashboard/Dashboard"));
+const StaffEnrollment = lazy(() => import("../modules/clinicadmin/features/staff/StaffEnrollment"));
+const DoctorDetails = lazy(() => import("../modules/clinicadmin/features/doctors/DoctorDetails"));
+const LabTechnician = lazy(() => import("../modules/clinicadmin/features/lab/LabTechnician"));
+const Groomer = lazy(() => import("../modules/clinicadmin/features/groomer/Groomer"));
+const KennelStaff = lazy(() => import("../modules/clinicadmin/features/kennel/KennelStaff"));
+const ClinicSettings = lazy(() => import("../modules/clinicadmin/features/settings/ClinicSettings"));
+const Reports = lazy(() => import("../modules/clinicadmin/features/reports/Reports"));
+const BasicReports = lazy(() => import("../modules/clinicadmin/features/reports/BasicReports"));
 
-//reception pages
-import ReceptionDashboard from "../modules/clinicadmin/pages/clinic-receptionist/ReceptionDashboard";
-import NewRegistrationPet from "../modules/clinicadmin/pages/clinic-receptionist/NewRegistrationPet";
-import ExistingCustomerPet from "../modules/clinicadmin/pages/clinic-receptionist/ExistingCustomerPet";
-import PetHistory from "../modules/clinicadmin/pages/clinic-receptionist/PetHistory";
-import CreateVisit from "../modules/clinicadmin/pages/clinic-receptionist/CreateVisit";
-// Lab Upload Dashboard
-import LabDashboard from "../modules/clinicadmin/pages/lab_pages/LabDashboard";
-import LabReportUpload from "../modules/clinicadmin/pages/lab_pages/LabReportUpload";
-import LabPendingCases from "../modules/clinicadmin/pages/lab_pages/PendingPetsLab";
+const ReceptionDashboard = lazy(() => import("../modules/clinicadmin/pages/clinic-receptionist/ReceptionDashboard"));
+const NewRegistrationPet = lazy(() => import("../modules/clinicadmin/pages/clinic-receptionist/NewRegistrationPet"));
+const ExistingCustomerPet = lazy(() => import("../modules/clinicadmin/pages/clinic-receptionist/ExistingCustomerPet"));
+const PetHistory = lazy(() => import("../modules/clinicadmin/pages/clinic-receptionist/PetHistory"));
+const CreateVisit = lazy(() => import("../modules/clinicadmin/pages/clinic-receptionist/CreateVisit"));
+const LabDashboard = lazy(() => import("../modules/clinicadmin/pages/lab_pages/LabDashboard"));
+const LabReportUpload = lazy(() => import("../modules/clinicadmin/pages/lab_pages/LabReportUpload"));
+const LabPendingCases = lazy(() => import("../modules/clinicadmin/pages/lab_pages/PendingPetsLab"));
 
-// pet owner module
-import PetOwnerDashboard from "../modules/clinicadmin/pages/pet-owner/PetOwnerDashboard";
-import PetOwnerHistory from "../modules/clinicadmin/pages/pet-owner/PetOwnerHistory";
-import PetOwnerUploadDocuments from "../modules/clinicadmin/pages/pet-owner/PetOwnerUploadDocuments";
+const PetOwnerDashboard = lazy(() => import("../modules/clinicadmin/pages/pet-owner/PetOwnerDashboard"));
+const PetOwnerHistory = lazy(() => import("../modules/clinicadmin/pages/pet-owner/PetOwnerHistory"));
+const PetOwnerUploadDocuments = lazy(() => import("../modules/clinicadmin/pages/pet-owner/PetOwnerUploadDocuments"));
 
-// preconsultation pages
-import {
-    PreConsultationDashboard,
-    PendingPets,
-    CompletedPets,
-    HistoryPets,
-} from "../modules/clinicadmin/pages";
-import DoctorLabPage from "../modules/clinicadmin/components/common/doctor-staff/DoctorLabPage";
-import {
-    DoctorDashboard,
-    DoctorPendingPetsPage,
-    DoctorCompletedPetsPage,
-    DoctorHistoryPetsPage,
-} from "../modules/clinicadmin/pages";
+const PreConsultationDashboard = lazy(() => import("../modules/clinicadmin/pages/pre-consultations/PreConsultationDashboard"));
+const PendingPets = lazy(() => import("../modules/clinicadmin/pages/pre-consultations/PendingPets"));
+const CompletedPets = lazy(() => import("../modules/clinicadmin/pages/pre-consultations/CompletedPets"));
+const HistoryPets = lazy(() => import("../modules/clinicadmin/pages/pre-consultations/HistoryPets"));
+
+const DoctorDashboard = lazy(() => import("../modules/clinicadmin/pages/doctor-staff/DoctorDashboard"));
+const DoctorPendingPetsPage = lazy(() => import("../modules/clinicadmin/pages/doctor-staff/DoctorPendingPetsPage"));
+const DoctorCompletedPetsPage = lazy(() => import("../modules/clinicadmin/pages/doctor-staff/DoctorCompletedPetsPage"));
+const DoctorHistoryPetsPage = lazy(() => import("../modules/clinicadmin/pages/doctor-staff/DoctorHistoryPetsPage"));
 
 
 

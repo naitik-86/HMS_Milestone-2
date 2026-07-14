@@ -1,7 +1,5 @@
-import {
-    AddClinicModal,
-    LatestClinicRequests,
-} from "../components";
+import AddClinicModal from "../components/forms/clinicForm/AddClinicModal";
+import LatestClinicRequests from "../components/LatestClinicRequests";
 
 function Clinics() {
     return (

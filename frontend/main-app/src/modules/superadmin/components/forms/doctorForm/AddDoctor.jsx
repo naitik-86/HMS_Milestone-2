@@ -1,6 +1,7 @@
 import { useState } from "react";
 
-import { VeterinarianHeader, DoctorModal } from "../../index"
+import VeterinarianHeader from "../VeterinarianHeader";
+import DoctorModal from "./DoctorModal";
 
 export default function AddDoctorModal() {
     const [open, setOpen] = useState(false);

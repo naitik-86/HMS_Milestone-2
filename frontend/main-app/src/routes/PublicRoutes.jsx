@@ -1,16 +1,15 @@
+import { lazy } from "react";
 import { Route } from "react-router-dom";
 import PublicLayout from "../layouts/PublicLayout";
 
-import {
-    Home,
-    About,
-    Contact,
-    Login,
-    Terms,
-    Privacy,
-    Cookies,
-    Info
-} from "../modules/public/pages";
+const Home = lazy(() => import("../modules/public/pages/Home"));
+const About = lazy(() => import("../modules/public/pages/About"));
+const Contact = lazy(() => import("../modules/public/pages/Contact"));
+const Login = lazy(() => import("../modules/public/pages/Login"));
+const Terms = lazy(() => import("../modules/public/pages/Terms"));
+const Privacy = lazy(() => import("../modules/public/pages/Privacy"));
+const Cookies = lazy(() => import("../modules/public/pages/Cookies"));
+const Info = lazy(() => import("../modules/public/pages/Info"));
 
 const PublicRoutes = (
     <Route element={<PublicLayout />}>

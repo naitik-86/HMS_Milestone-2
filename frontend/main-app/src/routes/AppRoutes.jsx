@@ -1,9 +1,10 @@
+import { Suspense, lazy } from "react";
 import { Routes, Route } from "react-router-dom";
 
 import PublicRoutes from "./PublicRoutes";
 import SuperAdminRoutes from "./SuperAdminRoutes";
 import ClinicAdminRoutes from "./ClinicAdminRoutes";
-import { PageNotFound } from "../modules/public/pages";
+import PageNotFound from "../modules/public/pages/PageNotFound";
 
 import ChangePassword from './ChangePassword';
 import Payment from "../modules/billingModule/pages/PaymentPage";

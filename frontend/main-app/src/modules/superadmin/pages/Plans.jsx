@@ -1,4 +1,5 @@
-import { PlanModal, ActivePlans } from "../components";
+import PlanModal from "../components/forms/plansForm/PlanModal";
+import ActivePlans from "../components/ActivePlans";
 import { useState } from "react";
 
 function Plans() {

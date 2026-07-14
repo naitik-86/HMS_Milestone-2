@@ -1,5 +1,7 @@
 const nodemailer = require('nodemailer');
 
+let cachedTransporter = null;
+
 function getRequiredEnv(name) {
   const value = process.env[name];
   if (!value) {
@@ -31,26 +33,16 @@ const sendEmail = async (options) => {
       throw new Error('Missing recipient email');
     }
 
-    const transporter = nodemailer.createTransport({
-      host: smtpHost,
-      port: smtpPort,
-      secure: smtpPort === 465,
-      auth: {
-        user: smtpEmail,
-        pass: smtpPassword,
-      },
-    });
-
-    // Connectivity check (helps when env is wrong / blocked). Only logs.
-    try {
-      await transporter.verify();
-    } catch (verifyErr) {
-      console.error('SMTP verify failed:', {
-        error: verifyErr.message,
-        smtpHost,
-        smtpPort,
+    if (!cachedTransporter) {
+      cachedTransporter = nodemailer.createTransport({
+        host: smtpHost,
+        port: smtpPort,
+        secure: smtpPort === 465,
+        auth: {
+          user: smtpEmail,
+          pass: smtpPassword,
+        },
       });
-      // Continue to try sendMail; some providers behave differently.
     }
 
     // Fallback for FROM_EMAIL added just in case .env is missing it
@@ -64,7 +56,7 @@ const sendEmail = async (options) => {
       text: options.message,
     };
 
-    const info = await transporter.sendMail(message);
+    const info = await cachedTransporter.sendMail(message);
     console.log('Message sent:', { to: recipientEmail, messageId: info.messageId });
     return info;
   } catch (err) {

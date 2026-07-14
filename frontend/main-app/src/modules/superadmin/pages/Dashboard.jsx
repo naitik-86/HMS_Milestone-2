@@ -1,4 +1,5 @@
-import { BottomGrid, ClientActivity } from "../components";
+import BottomGrid from "../components/BottomGrid";
+import ClientActivity from "../components/ClientActivity";
 import StatsCards from "../components/Statscards";
 
 const Dashboard = () => {

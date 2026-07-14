@@ -10,7 +10,6 @@ import { getPlans } from "../../../api/planApi";
 import { Upload, Card, Select, Grid, Full, Input } from "../../../components";
 import { useNavigate } from "react-router-dom";
 
-import { State, City } from "country-state-city";
 /* ---------------- MAIN FORM ---------------- */
 
 const DEFAULT_MAP_CENTER = {
@@ -112,6 +111,7 @@ export default function ClinicForm({
     const [plansLoading, setPlansLoading] = useState(false);
     const [plansError, setPlansError] = useState("");
     const navigate = useNavigate();
+    const stateOptions = INDIAN_STATE_OPTIONS;
 
     const states = State.getStatesOfCountry("IN");
     const idType = form.govtIdType || "Aadhar";
