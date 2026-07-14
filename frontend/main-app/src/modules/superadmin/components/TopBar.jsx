@@ -1,4 +1,4 @@
-import { Search, Bell, Menu } from "lucide-react";
+import { Menu } from "lucide-react";
 import { useLocation } from "react-router-dom";
 
 const Topbar = ({ onMenuClick }) => {
@@ -33,33 +33,8 @@ const Topbar = ({ onMenuClick }) => {
                 </h2>
             </div>
 
-            <div className="flex w-full flex-wrap items-center gap-3 sm:w-auto sm:gap-5">
-                <div className="flex min-w-0 flex-1 items-center rounded-lg bg-gray-100 px-3 py-2 sm:w-65 sm:flex-none">
-                    <Search size={16} className="shrink-0 text-gray-500" />
-                    <input
-                        type="text"
-                        placeholder="Search..."
-                        className="ml-2 w-full bg-transparent text-sm outline-none"
-                    />
-                </div>
-
-                <div className="relative cursor-pointer">
-                    <Bell size={20} className="text-gray-700" />
-
-                    <span className="absolute -right-2 -top-1 rounded-full bg-orange-500 px-1.5 py-px text-[10px] text-white">
-                        3
-                    </span>
-                </div>
-
-                <div className="hidden cursor-pointer items-center gap-2 sm:flex">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-orange-500 font-bold text-white">
-                        A
-                    </div>
-
-                    <span className="text-sm font-medium text-gray-800">
-                        Super Admin
-                    </span>
-                </div>
+            <div className="hidden h-9 w-9 items-center justify-center rounded-full bg-orange-500 font-bold text-white sm:flex">
+                A
             </div>
         </div>
     );
