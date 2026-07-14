@@ -1,6 +1,6 @@
 // {
 
-
+//  ANKIT's  CODE ++++++++++++
 
 // const User = require('../models/User');
 // const jwt = require('jsonwebtoken');
@@ -354,6 +354,22 @@ const Staff = require("../models/Staff");
 
 const normalizeEmail = (value) => (typeof value === 'string' ? value.trim().toLowerCase() : '');
 const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const comparePasswordWithWhitespaceFallback = async (plainPassword, hashedPassword) => {
+  if (typeof plainPassword !== 'string' || typeof hashedPassword !== 'string') {
+    return false;
+  }
+
+  if (await bcrypt.compare(plainPassword, hashedPassword)) {
+    return true;
+  }
+
+  const trimmedPassword = plainPassword.trim();
+  if (trimmedPassword !== plainPassword) {
+    return bcrypt.compare(trimmedPassword, hashedPassword);
+  }
+
+  return false;
+};
 
 /* ==========================================
    UNIVERSAL LOGIN (EMAIL + PASSWORD)
@@ -377,7 +393,7 @@ exports.login = async (req, res) => {
     const admin = await SuperAdmin.findOne({ email: normalizedEmail }).select("+password");
 
     if (admin) {
-      const isMatch = await bcrypt.compare(password, admin.password);
+      const isMatch = await comparePasswordWithWhitespaceFallback(password, admin.password);
 
       if (!isMatch) {
         return res.status(401).json({
@@ -442,18 +458,10 @@ exports.login = async (req, res) => {
     /* =========================
        2. CHECK CLINIC ADMIN
     ========================= */
-    const clinicAdmin = await ClinicAdmin.findOne({ email: email.toLowerCase() })
-      .select("+password")
-      .populate({
-        path: "clinicId",
-        select: "subscriptionStatus",
-      });;
+    const clinicAdmin = await ClinicAdmin.findOne({ email: normalizedEmail }).select("+password");
 
     if (clinicAdmin) {
-      const isMatch = await bcrypt.compare(password, clinicAdmin.password);
-
-
-      console.log(clinicAdmin);
+      const isMatch = await comparePasswordWithWhitespaceFallback(password, clinicAdmin.password);
 
       if (!isMatch) {
         return res.status(401).json({
@@ -498,9 +506,7 @@ exports.login = async (req, res) => {
           id: clinicAdmin._id,
           email: clinicAdmin.email,
           role: "CLINIC_ADMIN",
-          clinicId: clinicAdmin.clinicId || clinicAdmin.clinic,
-          subscriptionStatus: clinicAdmin.clinicId.subscriptionStatus,
-
+          clinicId: clinicAdmin.clinicId || clinicAdmin.clinic
         },
       });
     }
@@ -525,7 +531,7 @@ exports.login = async (req, res) => {
         });
       }
 
-      const isMatch = await bcrypt.compare(
+      const isMatch = await comparePasswordWithWhitespaceFallback(
         password,
         staff.accountInfo.password
       );
@@ -596,7 +602,7 @@ exports.login = async (req, res) => {
       });
     }
 
-    const isMatch = await bcrypt.compare(password, user.password);
+    const isMatch = await comparePasswordWithWhitespaceFallback(password, user.password);
 
     if (!isMatch) {
       return res.status(401).json({
@@ -682,7 +688,7 @@ exports.changePassword = async (req, res) => {
         });
       }
 
-      const isMatch = await bcrypt.compare(currentPassword, superAdmin.password);
+      const isMatch = await comparePasswordWithWhitespaceFallback(currentPassword, superAdmin.password);
       if (!isMatch) {
         return res.status(401).json({
           success: false,
@@ -702,7 +708,7 @@ exports.changePassword = async (req, res) => {
         });
       }
 
-      const isMatch = await bcrypt.compare(currentPassword, clinicAdmin.password);
+      const isMatch = await comparePasswordWithWhitespaceFallback(currentPassword, clinicAdmin.password);
       if (!isMatch) {
         return res.status(401).json({
           success: false,
@@ -725,7 +731,7 @@ exports.changePassword = async (req, res) => {
 
       const existingPassword = staff.accountInfo?.password;
       const isMatch = existingPassword
-        ? await bcrypt.compare(currentPassword, existingPassword)
+        ? await comparePasswordWithWhitespaceFallback(currentPassword, existingPassword)
         : false;
 
       if (!isMatch) {

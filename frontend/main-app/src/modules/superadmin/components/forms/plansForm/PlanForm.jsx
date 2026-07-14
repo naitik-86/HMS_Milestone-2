@@ -4,9 +4,21 @@ import { createPlan } from "../../../api/planApi";
 
 const today = new Date().toISOString().slice(0, 10);
 
+const PLAN_PRICES = {
+    Basic: { Monthly: 999, Quarterly: 2699, Annual: 9999 },
+    Standard: { Monthly: 1999, Quarterly: 5399, Annual: 19999 },
+    Professional: { Monthly: 3999, Quarterly: 10799, Annual: 39999 },
+    Enterprise: { Monthly: 7999, Quarterly: 21599, Annual: 79999 },
+    Custom: { Monthly: 0, Quarterly: 0, Annual: 0 },
+};
+
+const getPlanPrice = (subscriptionPlan, billingCycle) =>
+    PLAN_PRICES[subscriptionPlan]?.[billingCycle] ?? 0;
+
 const initialForm = {
     subscriptionPlan: "Basic",
     billingCycle: "Monthly",
+    price: getPlanPrice("Basic", "Monthly"),
     planStartDate: today,
     trialPeriodDays: 0,
     discountPromoCode: "",
@@ -45,10 +57,21 @@ export default function PlanForm({ onClose, onCreated }) {
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
-        setForm((prev) => ({
-            ...prev,
-            [name]: type === "checkbox" ? checked : value,
-        }));
+        setForm((prev) => {
+            const updated = {
+                ...prev,
+                [name]: type === "checkbox" ? checked : value,
+            };
+
+            if (name === "subscriptionPlan" || name === "billingCycle") {
+                updated.price = getPlanPrice(
+                    name === "subscriptionPlan" ? value : updated.subscriptionPlan,
+                    name === "billingCycle" ? value : updated.billingCycle
+                );
+            }
+
+            return updated;
+        });
     };
 
     const handleSubmit = async (e) => {
@@ -102,6 +125,7 @@ export default function PlanForm({ onClose, onCreated }) {
                         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
                             <SelectField label="Subscription Plan" name="subscriptionPlan" value={form.subscriptionPlan} onChange={handleChange} options={["Basic", "Standard", "Professional", "Enterprise", "Custom"]} required />
                             <SelectField label="Billing Cycle" name="billingCycle" value={form.billingCycle} onChange={handleChange} options={["Monthly", "Quarterly", "Annual"]} required />
+                            <Field label="Price (INR)" name="price" type="number" min="0" value={form.price} onChange={handleChange} required />
                             <Field label="Plan Start Date" name="planStartDate" type="date" value={form.planStartDate} onChange={handleChange} required />
                             <Field label="Plan End / Renewal Date" name="planEndRenewalDate" type="date" value={planEndRenewalDate} readOnly />
                             <Field label="Trial Period (Days)" name="trialPeriodDays" type="number" min="0" value={form.trialPeriodDays} onChange={handleChange} />
@@ -125,6 +149,29 @@ export default function PlanForm({ onClose, onCreated }) {
                             <Field label="Max Doctors" name="maxDoctors" type="number" min="0" value={form.maxDoctors} onChange={handleChange} required />
                             <Field label="Max Pet Records" name="maxPetRecords" type="number" min="0" value={form.maxPetRecords} onChange={handleChange} disabled={form.maxPetRecordsUnlimited} />
                             <Field label="Storage Limit (GB)" name="storageLimitGb" type="number" min="0" value={form.storageLimitGb} onChange={handleChange} required />
+                        </div>
+
+                        <Section title="Module Access" />
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                            {[
+                                ["labModuleEnabled", "Lab module enabled"],
+                                ["groomingModuleEnabled", "Grooming module enabled"],
+                                ["kennelModuleEnabled", "Kennel module enabled"],
+                                ["onlinePharmacyModuleEnabled", "Online pharmacy module enabled"],
+                                ["apiAccessEnabled", "API access enabled"],
+                                ["whiteLabelCustomBranding", "White-label / custom branding"],
+                            ].map(([name, label]) => (
+                                <label key={name} className="flex items-center justify-between gap-4 rounded-xl border px-4 py-3 text-sm font-medium text-slate-700">
+                                    <span>{label}</span>
+                                    <input
+                                        type="checkbox"
+                                        name={name}
+                                        checked={form[name]}
+                                        onChange={handleChange}
+                                        className="h-5 w-5 accent-orange-500"
+                                    />
+                                </label>
+                            ))}
                         </div>
 
                         <div className="rounded-xl border bg-slate-50 px-4 py-3">

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import API from '../shared/api/axios';
 import { changePassword } from '../modules/auth/api/authApi';
+import { getDashboardPathForRole } from '../shared/utils/roleRedirects';
 
 export default function ChangePassword() {
   const navigate = useNavigate();
@@ -23,13 +24,11 @@ export default function ChangePassword() {
       console.warn('Dashboard redirect failed after password change', error);
     }
 
-    const role = localStorage.getItem('role');
+    const dashboardPath = getDashboardPathForRole(localStorage.getItem('role'));
 
-    if (role === 'SUPER_ADMIN') return navigate('/superadmin', { replace: true });
-    if (role === 'CLINIC_ADMIN') return navigate('/clinic', { replace: true });
-    if (role === 'DOCTOR') return navigate('/doctor/dashboard', { replace: true });
-    if (role === 'RECEPTIONIST') return navigate('/clinic/reception', { replace: true });
-    if (role === 'PARA_MEDICAL') return navigate('/clinic/pre-consultation', { replace: true });
+    if (dashboardPath) {
+      return navigate(dashboardPath, { replace: true });
+    }
 
     navigate('/login', { replace: true });
   };

@@ -3,6 +3,10 @@ import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { authApi } from "../../auth/api/authApi";
 import API from "../../../shared/api/axios";
+import {
+  getDashboardPathForRole,
+  normalizeRole,
+} from "../../../shared/utils/roleRedirects";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -26,11 +30,10 @@ export default function Login() {
   const [phoneVerified, setPhoneVerified] = useState(false);
   const [emailVerified, setEmailVerified] = useState(false);
 
-  const [loginResponse, setLoginResponse] = useState(null);
-
   useEffect(() => {
     const token = localStorage.getItem("token");
     const role = localStorage.getItem("role");
+    const dashboardPath = getDashboardPathForRole(role);
 
     if (token) {
       if (localStorage.getItem("passwordResetRequired") === "true") {
@@ -38,11 +41,9 @@ export default function Login() {
         return;
       }
 
-      if (role === "SUPER_ADMIN") navigate("/superadmin", { replace: true });
-      else if (role === "CLINIC_ADMIN") navigate("/clinic", { replace: true });
-      else if (role === "DOCTOR") navigate("/doctor/dashboard", { replace: true });
-      else if (role === "RECEPTIONIST") navigate("/clinic/reception", { replace: true });
-      else if (role === "PARA_MEDICAL") navigate("/clinic/pre-consultation", { replace: true });
+      if (dashboardPath) {
+        navigate(dashboardPath, { replace: true });
+      }
       return;
     }
 
@@ -73,14 +74,10 @@ export default function Login() {
         password: form.password,
       });
 
-      console.log(response);
-      setLoginResponse(response);
-
-
       if (response.role !== "SUPER_ADMIN") {
         localStorage.setItem('passwordResetRequired', response.requiresPasswordReset ? 'true' : 'false');
       }
-
+      
       localStorage.setItem("role", response.user?.role || response.role);
 
       setShowVerificationModal(true);
@@ -121,7 +118,7 @@ export default function Login() {
     setEmailOtpSent(true);
     console.log("Send Email OTP:", form.email);
   };
-
+  
   const handleVerifyEmailOtp = () => {
     if (emailOtp.length !== 6) {
       alert("Please enter a valid 6 digit OTP");
@@ -135,27 +132,17 @@ export default function Login() {
 
   const handleContinue = async () => {
     const role = localStorage.getItem("role");
+    const normalizedRole = normalizeRole(role);
     let verifyEndpoint = "";
     let payload = {};
 
     // 1. Check conditions and prepare payload
-    if (role === "SUPER_ADMIN") {
+    if (normalizedRole === "SUPER_ADMIN") {
       if (!emailVerified) return alert("Please verify Email");
       verifyEndpoint = "/auth/superadmin/verify-otp";
       payload = { email: form.email, otpEmail: emailOtp };
-    } else if (role === "CLINIC_ADMIN") {
+    } else if (normalizedRole === "CLINIC_ADMIN") {
       if (!emailVerified) return alert("Please verify Email");
-
-      if (loginResponse?.user?.subscriptionStatus !== "ACTIVE") {
-        return navigate("/payment", {
-          replace: true,
-          state: {
-            email: loginResponse.user.email,
-            clinicId: loginResponse.user.clinicId._id,
-          },
-        });
-      }
-
       verifyEndpoint = "/auth/clinicadmin/verify-otp";
       payload = { email: form.email, otpEmail: emailOtp };
     } else {
@@ -201,20 +188,10 @@ export default function Login() {
     }
 
     // Fallbacks
-    if (role === "SUPER_ADMIN")
-      return navigate("/superadmin", { replace: true });
-
-    if (role === "CLINIC_ADMIN")
-      return navigate("/clinic", { replace: true });
-
-    if (role === "DOCTOR")
-      return navigate("/doctor/dashboard", { replace: true });
-
-    if (role === "RECEPTIONIST")
-      return navigate("/clinic/reception", { replace: true });
-
-    if (role === "PARA_MEDICAL")
-      return navigate("/clinic/pre-consultation", { replace: true });
+    const dashboardPath = getDashboardPathForRole(role);
+    if (dashboardPath) {
+      return navigate(dashboardPath, { replace: true });
+    }
   };
 
   return (

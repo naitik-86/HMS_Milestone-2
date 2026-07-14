@@ -77,6 +77,8 @@ const getRenewalDate = (startDate, billingCycle) => {
   if (billingCycle === 'Monthly') return addMonths(date, 1);
   if (billingCycle === 'Quarterly') return addMonths(date, 3);
   if (billingCycle === 'Annual') return addMonths(date, 12);
+  if (billingCycle === '6_MONTHS') return addMonths(date, 6);
+  if (billingCycle === '12_MONTHS') return addMonths(date, 12);
 
   return null;
 };
@@ -87,6 +89,7 @@ const buildPlanPayload = (body) => {
   return {
     subscriptionPlan: body.subscriptionPlan,
     billingCycle: body.billingCycle,
+    price: Number(body.price || 0),
     planStartDate: body.planStartDate,
     planEndRenewalDate: renewalDate,
     trialPeriodDays: Number(body.trialPeriodDays || 0),

@@ -1,21 +1,21 @@
 
 import { Navbar, Footer } from "../modules/public/components"
 import { Navigate, Outlet } from "react-router-dom";
+import { getDashboardPathForRole } from "../shared/utils/roleRedirects";
 
 function PublicLayout() {
     const token = localStorage.getItem("token");
     const role = localStorage.getItem("role");
+    const dashboardPath = getDashboardPathForRole(role);
 
     if (token) {
         if (localStorage.getItem("passwordResetRequired") === "true") {
             return <Navigate to="/change-password" replace />;
         }
 
-        if (role === "SUPER_ADMIN") return <Navigate to="/superadmin" replace />;
-        if (role === "CLINIC_ADMIN") return <Navigate to="/clinic" replace />;
-        if (role === "DOCTOR") return <Navigate to="/doctor/dashboard" replace />;
-        if (role === "RECEPTIONIST") return <Navigate to="/clinic/reception" replace />;
-        if (role === "PARA_MEDICAL") return <Navigate to="/clinic/pre-consultation" replace />;
+        if (dashboardPath) {
+            return <Navigate to={dashboardPath} replace />;
+        }
     }
 
     return (
