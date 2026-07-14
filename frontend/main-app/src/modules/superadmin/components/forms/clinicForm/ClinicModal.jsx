@@ -133,8 +133,12 @@ longitude: "",
                     form.city &&
                     form.district &&
                     form.state &&
-                    !form.serviceAreas ||
-form.serviceAreas.filter(a => a.trim() !== "").length >= 0
+                    form.pincode &&
+                    /^\d{6}$/.test(form.pincode) &&
+                    (
+                        !form.serviceAreas ||
+                        form.serviceAreas.filter(a => a.trim() !== "").length >= 0
+                    )
                 );
 
             case "licenses":
@@ -323,37 +327,6 @@ if (
                     setActiveTab={setActiveTab}
                 />
 
-                {/* TABS */}
-                <div className="bg-slate-100 py-3">
-                    <div className="flex gap-2 px-3 sm:px-6 overflow-x-auto scrollbar-hide">
-                        {tabs.map(([key, label]) => (
-                            <button
-                                key={key}
-                                onClick={() => {
-                                    if (!validateTab()) {
-                                        showToast({
-                                            type: "error",
-                                            title: "Validation Error",
-                                            description: "Please fill all required fields.",
-                                        });
-                                        console.log("Fill all fields to continue");
-
-                                        return;
-                                    }
-
-                                    setActiveTab(key);
-                                }}
-                                   className={`shrink-0 px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-medium transition
-        ${activeTab === key
-            ? "bg-orange-500 text-white shadow-md"
-            : "bg-white text-slate-600 hover:bg-orange-50 hover:text-orange-500"
-        }`}
-                            >
-                                {label}
-                            </button>
-                        ))}
-                    </div>
-                </div>
 
                 {/* FORM */}
                 <div className="flex-1 overflow-y-auto px-3 sm:px-6 pb-6">

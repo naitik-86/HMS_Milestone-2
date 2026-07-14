@@ -458,7 +458,12 @@ exports.login = async (req, res) => {
     /* =========================
        2. CHECK CLINIC ADMIN
     ========================= */
-    const clinicAdmin = await ClinicAdmin.findOne({ email: normalizedEmail }).select("+password");
+    const clinicAdmin = await ClinicAdmin.findOne({ email: normalizedEmail })
+      .select("+password")
+      .populate({
+        path: "clinicId",
+        select: "_id name subscriptionType subscriptionStatus expiryDate",
+      });
 
     if (clinicAdmin) {
       const isMatch = await comparePasswordWithWhitespaceFallback(password, clinicAdmin.password);

@@ -6,31 +6,33 @@ import SuperAdminRoutes from "./SuperAdminRoutes";
 import ClinicAdminRoutes from "./ClinicAdminRoutes";
 import PageNotFound from "../modules/public/pages/PageNotFound";
 
-const ChangePassword = lazy(() => import("./ChangePassword"));
+import ChangePassword from './ChangePassword';
+import Payment from "../modules/billingModule/pages/PaymentPage";
+import PaymentSucess from "../modules/billingModule/pages/PaymentSuccess";
+import PaymentFailure from "../modules/billingModule/pages/PaymentFailed";
 
 
 function AppRoutes() {
     return (
-        <Suspense
-            fallback={
-                <div className="min-h-screen flex items-center justify-center text-slate-500">
-                    Loading...
-                </div>
-            }
-        >
-            <Routes>
-                {PublicRoutes}
-                {SuperAdminRoutes}
-                {ClinicAdminRoutes}
+        <Routes>
+            {PublicRoutes}
+            {SuperAdminRoutes}
+            {ClinicAdminRoutes}
 
-                <Route path="/change-password" element={<ChangePassword />} />
+            <Route
+                path="/payment"
+                element={<Payment />}
+            />
+            <Route path="/payment-success" element={<PaymentSucess />} />
+            <Route path="/payment-failure" element={<PaymentFailure />} />
 
-                <Route path="/unauthorized" element={<div />} />
+            <Route path="/change-password" element={<ChangePassword />} />
 
-                <Route path="*" element={<PageNotFound />} />
+            <Route path="/unauthorized" element={<div />} />
 
-            </Routes>
-        </Suspense>
+            <Route path="*" element={<PageNotFound />} />
+
+        </Routes>
     );
 }
 

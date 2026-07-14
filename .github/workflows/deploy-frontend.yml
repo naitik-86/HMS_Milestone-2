@@ -61,7 +61,14 @@ jobs:
 
       - name: Sync to S3
         run: |
-          aws s3 sync dist/ "s3://${{ secrets.S3_FRONTEND_BUCKET }}" --delete
+          # Hashed assets (filename changes every build): cache forever.
+          aws s3 sync dist/ "s3://${{ secrets.S3_FRONTEND_BUCKET }}" --delete \
+            --exclude "index.html" \
+            --cache-control "public, max-age=31536000, immutable"
+          # index.html: never cache, so browsers always fetch the latest
+          # build reference instead of an old cached bundle hash.
+          aws s3 cp dist/index.html "s3://${{ secrets.S3_FRONTEND_BUCKET }}/index.html" \
+            --cache-control "no-cache, must-revalidate"
 
       - name: Copy build to EC2
         uses: appleboy/scp-action@v0.1.7

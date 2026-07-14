@@ -30,10 +30,14 @@ export default function Login() {
   const [phoneVerified, setPhoneVerified] = useState(false);
   const [emailVerified, setEmailVerified] = useState(false);
 
+  const [loginUser, setLoginUser] = useState(null);
+
   useEffect(() => {
     const token = localStorage.getItem("token");
     const role = localStorage.getItem("role");
     const dashboardPath = getDashboardPathForRole(role);
+
+
 
     if (token) {
       if (localStorage.getItem("passwordResetRequired") === "true") {
@@ -77,8 +81,12 @@ export default function Login() {
       if (response.role !== "SUPER_ADMIN") {
         localStorage.setItem('passwordResetRequired', response.requiresPasswordReset ? 'true' : 'false');
       }
-      
+
+      console.log(response);
+
+
       localStorage.setItem("role", response.user?.role || response.role);
+      localStorage.setItem("userEmail", response.user?.email || form.email.trim());
 
       setShowVerificationModal(true);
     } catch (error) {
@@ -118,7 +126,7 @@ export default function Login() {
     setEmailOtpSent(true);
     console.log("Send Email OTP:", form.email);
   };
-  
+
   const handleVerifyEmailOtp = () => {
     if (emailOtp.length !== 6) {
       alert("Please enter a valid 6 digit OTP");
@@ -133,8 +141,8 @@ export default function Login() {
   const handleContinue = async () => {
     const role = localStorage.getItem("role");
     const normalizedRole = normalizeRole(role);
-    let verifyEndpoint = "";
-    let payload = {};
+    let verifyEndpoint;
+    let payload;
 
     // 1. Check conditions and prepare payload
     if (normalizedRole === "SUPER_ADMIN") {
@@ -157,6 +165,7 @@ export default function Login() {
       const verifyRes = await API.post(verifyEndpoint, payload);
       if (verifyRes.data?.token) {
         localStorage.setItem("token", verifyRes.data.token);
+        localStorage.setItem("userEmail", verifyRes.data.user?.email || form.email.trim());
 
         // =========== FORCE PASSWORD LOGIC ===========
         if (verifyRes.data?.requiresPasswordReset) {
@@ -175,6 +184,39 @@ export default function Login() {
       return;
     }
 
+    // check for plan status
+
+    try {
+      if (
+        loginUser?.role === "CLINIC_ADMIN" &&
+        loginUser?.user?.clinicId?.subscriptionStatus !== "ACTIVE"
+      ) {
+        return navigate("/payment", {
+          replace: true,
+          state: {
+            email: loginUser?.user?.email,
+            clinicId: loginUser?.user?.clinicId._id,
+          },
+        });
+      }
+    } catch (error) {
+      console.warn("Error In making Payment", error);
+    }
+
+
+    // 3. Navigate to Dashboard with history replaced
+    try {
+      const redirectRes = await API.get("/dashboard");
+      const redirectUrl = redirectRes.data?.data?.redirectUrl;
+
+      if (redirectUrl) {
+        return navigate(redirectUrl, { replace: true });
+      }
+    } catch (e) {
+      console.warn("Dashboard redirect failed", e);
+    }
+
+    // Fallbacks
     const dashboardPath = getDashboardPathForRole(role);
     if (dashboardPath) {
       return navigate(dashboardPath, { replace: true });

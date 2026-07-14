@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import { useLocation } from "react-router-dom";
 import { ShieldCheck, CreditCard, BadgeIndianRupee } from "lucide-react";
 
@@ -23,6 +24,19 @@ const Payment = ({
 
     const clinicId = state?.clinicId;
     const email = state?.email;
+    const navigate = useNavigate();
+
+    console.log(email, clinicId);
+
+
+    const handleBackToLogin = () => {
+
+        localStorage.clear();
+        sessionStorage.clear();
+
+        navigate("/login");
+    };
+
 
     const [plan, setPlan] = useState(null);
 
@@ -46,13 +60,13 @@ const Payment = ({
 
     const handlePay = async () => {
         try {
-            const data = await createSubscriptionPayment(email);
+            const data = await createSubscriptionPayment(clinicId);
 
             const paymentData = data.paymentData;
 
             const form = document.createElement("form");
             form.method = "POST";
-            form.action = "https://test.payu.in/_payment";
+            form.action = import.meta.env.VITE_PAYU_BASE_URL;;
 
             Object.entries(paymentData).forEach(([key, value]) => {
                 const input = document.createElement("input");
@@ -77,11 +91,12 @@ const Payment = ({
                 <div className="bg-gradient-to-br from-blue-600 to-indigo-700 text-white p-10 flex flex-col justify-between">
                     <div>
                         <h1 className="text-4xl font-bold mb-4">
-                            {title}
+                            Subscription Payment
                         </h1>
 
-                        <p className="text-blue-100 leading-relaxed">
-                            {description}
+                        <p className="text-blue-100  leading-relaxed">
+                            Continue your subscription for
+                            {` ${plan?.clinicName}`}
                         </p>
                     </div>
 
@@ -112,7 +127,7 @@ const Payment = ({
 
                         <div className="flex justify-between mb-4">
                             <span className="text-gray-600">Billing Cycle</span>
-                            <span className="font-semibold">{billingCycle}</span>
+                            <span className="font-semibold">{plan?.billingCycle}</span>
                         </div>
 
                         <div className="flex justify-between items-center border-t pt-4">
@@ -122,7 +137,7 @@ const Payment = ({
 
                             <div className="flex items-center text-2xl font-bold text-green-600">
                                 <BadgeIndianRupee size={24} />
-                                {amount}
+                                {plan?.price}
                             </div>
                         </div>
                     </div>
@@ -132,6 +147,13 @@ const Payment = ({
                         className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-xl font-semibold text-lg transition-all duration-300 shadow-md"
                     >
                         Proceed to Payment
+                    </button>
+
+                    <button
+                        onClick={handleBackToLogin}
+                        className="w-full mt-4 border border-gray-300 text-gray-700 py-3 rounded-xl font-medium hover:bg-gray-100 transition"
+                    >
+                        Back to Login
                     </button>
 
                     <p className="text-sm text-gray-500 mt-6 text-center">

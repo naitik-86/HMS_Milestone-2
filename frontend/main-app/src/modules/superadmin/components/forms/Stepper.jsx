@@ -1,7 +1,6 @@
 export default function Stepper({
     tabs,
     activeTab,
-    setActiveTab,
 }) {
     const currentStep =
         tabs.findIndex(([key]) => key === activeTab);
@@ -12,8 +11,8 @@ export default function Stepper({
 
     return (
         <div className="bg-white border-b">
-            <div className="overflow-x-auto scrollbar-hide">
-                <div className="flex items-center min-w-max px-4 md:px-8 py-4">
+            <div>
+                <div className="flex items-center justify-between px-4 py-4">
 
                     {tabs.map(([key, label], index) => {
                         const step = index + 1;
@@ -22,20 +21,18 @@ export default function Stepper({
                         return (
                             <div
                                 key={key}
-                                className="flex items-center flex-shrink-0"
+                                className="flex items-center flex-1 min-w-0"
                             >
                                 {/* STEP */}
-                                <div className="flex flex-col items-center">
+                                <div className="flex flex-col items-center shrink-0">
 
-                                    <button
-                                        onClick={() => setActiveTab(key)}
+                                    <div
                                         className={`
-                                            w-9 h-9 md:w-10 md:h-10
+                                            w-8 h-8
                                             rounded-full
                                             flex items-center justify-center
-                                            text-sm md:text-base
+                                            text-xs
                                             font-semibold
-                                            transition
                                             ${completed
                                                 ? "bg-orange-500 text-white"
                                                 : "bg-orange-100 text-orange-400"
@@ -43,13 +40,12 @@ export default function Stepper({
                                         `}
                                     >
                                         {step}
-                                    </button>
+                                    </div>
 
                                     {/* MOBILE LABEL */}
                                     <span
                                         className={`
-                                            mt-2 text-[10px]
-                                            max-w-[70px]
+                                            mt-2 text-[9px]
                                             text-center
                                             md:hidden
                                             ${completed
@@ -63,11 +59,11 @@ export default function Stepper({
                                 </div>
 
                                 {/* DESKTOP LABEL */}
-                                <div className="ml-3 mr-5 hidden md:block">
+                                <div className="ml-2 mr-2 hidden md:block min-w-0 flex-1">
                                     <p
                                         className={`
-                                            text-sm font-medium
-                                            flex items-center gap-2
+                                            text-xs font-medium
+                                            truncate
                                             ${completed
                                                 ? "text-orange-600"
                                                 : "text-slate-400"
@@ -77,7 +73,7 @@ export default function Stepper({
                                         {label}
 
                                         {activeTab === key && (
-                                            <span className="px-2 py-0.5 text-[10px] rounded-full bg-orange-100 text-orange-600 font-semibold">
+                                            <span className="ml-2 px-2 py-0.5 text-[10px] rounded-full bg-orange-100 text-orange-600 font-semibold">
                                                 {progress}%
                                             </span>
                                         )}
@@ -88,7 +84,7 @@ export default function Stepper({
                                 {index !== tabs.length - 1 && (
                                     <div
                                         className="
-                                            w-10 sm:w-14 md:w-24
+                                            flex-1
                                             h-1
                                             rounded-full
                                             bg-orange-100
@@ -98,9 +94,7 @@ export default function Stepper({
                                     >
                                         <div
                                             className={`
-                                                h-full
-                                                transition-all
-                                                duration-300
+                                                h-full transition-all duration-300
                                                 ${index < currentStep
                                                     ? "bg-orange-500 w-full"
                                                     : "bg-orange-500 w-0"

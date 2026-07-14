@@ -29,6 +29,24 @@ const PaymentFailure = ({
     const navigate = useNavigate();
 
 
+    const [searchParams] = useSearchParams();
+
+    const clinicName = searchParams.get("clinicName");
+    const email = searchParams.get("email");
+    const plan = searchParams.get("plan");
+
+    const txnid = searchParams.get("txnid");
+    const amount = searchParams.get("amount");
+    const mode = searchParams.get("mode");
+    const attemptedAt = searchParams.get("attemptedAt");
+    const message = searchParams.get("message");
+
+    const handleBackToLogin = () => {
+        localStorage.clear();
+        sessionStorage.clear();
+
+        navigate("/login", { replace: true });
+    };
 
 
     return (
@@ -109,10 +127,22 @@ const PaymentFailure = ({
                                 </p>
 
                                 <h2 className="text-4xl font-bold text-red-600">
-                                    ₹{paymentData.amount || "0"}
+                                    ₹{amount || "0"}
                                 </h2>
 
                             </div>
+
+
+                            <div className="bg-white rounded-2xl border p-5">
+                                <p className="text-sm text-slate-500">
+                                    Transaction ID
+                                </p>
+                                <h3 className="font-semibold mt-1 break-all">
+                                    {txnid || "-"}
+                                </h3>
+                            </div>
+
+
 
                             <div className="bg-gradient-to-br from-slate-50 to-white rounded-3xl p-6 border shadow-sm">
 
@@ -121,22 +151,12 @@ const PaymentFailure = ({
                                 </p>
 
                                 <h2 className="text-xl font-semibold">
-                                    {paymentData.productinfo || "N/A"}
+                                    {plan || "N/A"}
                                 </h2>
 
                             </div>
 
-                            <div className="bg-gradient-to-br from-slate-50 to-white rounded-3xl p-6 border shadow-sm">
 
-                                <p className="text-sm text-slate-500 mb-2">
-                                    Status
-                                </p>
-
-                                <span className="inline-flex bg-red-100 text-red-700 px-4 py-2 rounded-full font-semibold">
-                                    FAILED
-                                </span>
-
-                            </div>
 
                         </div>
 
@@ -151,7 +171,7 @@ const PaymentFailure = ({
                                 <div>
 
                                     <h2 className="text-2xl font-bold">
-                                        Failure Details
+                                        Clinic Details
                                     </h2>
 
                                     <p className="text-slate-500">
@@ -169,7 +189,7 @@ const PaymentFailure = ({
                                         Clinic Name
                                     </p>
                                     <h3 className="font-semibold text-lg mt-1">
-                                        {paymentData.firstname || "-"}
+                                        {clinicName || "-"}
                                     </h3>
                                 </div>
 
@@ -178,55 +198,15 @@ const PaymentFailure = ({
                                         Email
                                     </p>
                                     <h3 className="font-semibold mt-1 break-all">
-                                        {paymentData.email || "-"}
+                                        {email || "-"}
                                     </h3>
                                 </div>
 
-                                <div className="bg-white rounded-2xl border p-5">
-                                    <p className="text-sm text-slate-500">
-                                        Transaction ID
-                                    </p>
-                                    <h3 className="font-semibold mt-1 break-all">
-                                        {paymentData.txnid || "-"}
-                                    </h3>
-                                </div>
 
-                                <div className="bg-white rounded-2xl border p-5">
-                                    <p className="text-sm text-slate-500">
-                                        Payment Mode
-                                    </p>
 
-                                    <div className="flex items-center gap-2 mt-1">
-                                        <CreditCard size={18} />
-                                        <h3 className="font-semibold">
-                                            {paymentData.mode || "-"}
-                                        </h3>
-                                    </div>
-                                </div>
 
-                                <div className="bg-white rounded-2xl border p-5">
-                                    <p className="text-sm text-slate-500">
-                                        Attempt Time
-                                    </p>
 
-                                    <div className="flex items-center gap-2 mt-1">
-                                        <CalendarDays size={18} />
-                                        <h3 className="font-semibold">
-                                            {paymentData.addedon || "-"}
-                                        </h3>
-                                    </div>
-                                </div>
 
-                                <div className="bg-white rounded-2xl border p-5">
-                                    <p className="text-sm text-slate-500">
-                                        Error Message
-                                    </p>
-
-                                    <h3 className="font-semibold text-red-600 mt-1">
-                                        {paymentData.error_Message ||
-                                            "Transaction Failed"}
-                                    </h3>
-                                </div>
 
                             </div>
 
@@ -265,16 +245,10 @@ const PaymentFailure = ({
 
                         <div className="space-y-4">
 
-                            <button
-                                onClick={() => navigate("/payment")}
-                                className="w-full py-4 rounded-2xl bg-black text-white font-semibold hover:opacity-90 transition flex items-center justify-center gap-3"
-                            >
-                                <RotateCcw size={20} />
-                                Try Payment Again
-                            </button>
+
 
                             <button
-                                onClick={() => navigate("/login")}
+                                onClick={handleBackToLogin}
                                 className="w-full py-4 rounded-2xl bg-gradient-to-r from-red-600 to-rose-700 text-white font-semibold shadow-lg hover:shadow-xl transition flex items-center justify-center gap-3"
                             >
                                 <LogIn size={20} />

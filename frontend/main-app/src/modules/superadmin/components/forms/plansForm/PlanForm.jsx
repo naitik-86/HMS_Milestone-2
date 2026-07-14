@@ -15,6 +15,8 @@ const PLAN_PRICES = {
 const getPlanPrice = (subscriptionPlan, billingCycle) =>
     PLAN_PRICES[subscriptionPlan]?.[billingCycle] ?? 0;
 
+const clampNonNegativeNumber = (value) => Math.max(Number(value || 0), 0);
+
 const initialForm = {
     subscriptionPlan: "Basic",
     billingCycle: "Monthly",
@@ -58,9 +60,21 @@ export default function PlanForm({ onClose, onCreated }) {
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
         setForm((prev) => {
+            const nextValue = type === "checkbox"
+                ? checked
+                : [
+                    "price",
+                    "trialPeriodDays",
+                    "maxStaffAccounts",
+                    "maxDoctors",
+                    "maxPetRecords",
+                    "storageLimitGb",
+                ].includes(name)
+                    ? clampNonNegativeNumber(value)
+                    : value;
             const updated = {
                 ...prev,
-                [name]: type === "checkbox" ? checked : value,
+                [name]: nextValue,
             };
 
             if (name === "subscriptionPlan" || name === "billingCycle") {
@@ -80,7 +94,11 @@ export default function PlanForm({ onClose, onCreated }) {
         setError("");
 
         try {
-            await createPlan({ ...form, planEndRenewalDate });
+            await createPlan({
+                ...form,
+                trialPeriodDays: clampNonNegativeNumber(form.trialPeriodDays),
+                planEndRenewalDate,
+            });
             onCreated?.();
             onClose();
         } catch (err) {

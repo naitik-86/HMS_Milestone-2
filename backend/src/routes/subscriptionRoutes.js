@@ -1,22 +1,31 @@
+
 const express = require("express");
 const router = express.Router();
 
 const { authorize } = require('../middlewares/auth');
 const {
-
+    createSubscriptionPayment,
     getSubscriptionDetails,
+    paymentFailure,
+    paymentSuccess,
+
 } = require("../controllers/subscriptionPlanController");
 
-// router.post(
-//     "/create-subscription",
-//     authorize(),
-//     createSubscriptionPayment
-// );
+router.post("/payment-success", paymentSuccess);
+
+router.post("/payment-failure", paymentFailure);
+
+
+
+router.post(
+    "/create-subscription",
+    createSubscriptionPayment
+);
 
 router.get(
     "/:clinicId",
-    authorize(),
     getSubscriptionDetails
 );
+
 
 module.exports = router;

@@ -12,8 +12,39 @@ import {
 } from "lucide-react";
 import { showToast } from "../../../shared/components/toast";
 
+const getStoredAdminEmail = () => {
+    const storedEmail = localStorage.getItem("userEmail");
+
+    if (storedEmail) {
+        return storedEmail;
+    }
+
+    try {
+        const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
+        return storedUser.email || "";
+    } catch {
+        // Keep trying the token fallback below.
+    }
+
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+        return "";
+    }
+
+    try {
+        const [, payload] = token.split(".");
+        const decodedPayload = JSON.parse(window.atob(payload.replace(/-/g, "+").replace(/_/g, "/")));
+        return decodedPayload.email || decodedPayload.sub || "";
+    } catch {
+        return "";
+    }
+};
+
 export default function Sidebar({ isOpen = false, onClose }) {
     const navigate = useNavigate();
+    const adminEmail = getStoredAdminEmail();
+    const adminInitial = (adminEmail?.[0] || "A").toUpperCase();
 
     const menu = [
         { name: "Dashboard", path: "/superadmin", icon: LayoutDashboard, end: true },
@@ -32,6 +63,7 @@ export default function Sidebar({ isOpen = false, onClose }) {
     localStorage.removeItem("token");
     localStorage.removeItem("role");
     localStorage.removeItem("passwordResetRequired");
+    localStorage.removeItem("userEmail");
 
     showToast({
         type: "success",
@@ -113,12 +145,14 @@ export default function Sidebar({ isOpen = false, onClose }) {
 
                     <div className="border-t border-slate-700 pt-4 flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center font-bold">
-                            A
+                            {adminInitial}
                         </div>
 
                         <div className="min-w-0">
                             <p className="text-sm">Super Admin</p>
-                            <p className="truncate text-xs text-slate-400">admin@hms.com</p>
+                            <p className="truncate text-xs text-slate-400">
+                                {adminEmail || "Email unavailable"}
+                            </p>
                         </div>
                     </div>
                 </div>

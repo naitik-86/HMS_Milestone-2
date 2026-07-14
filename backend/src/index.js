@@ -28,9 +28,14 @@ const allowedOrigins = (process.env.ALLOWED_ORIGINS || '')
 
 // Global Middlewares
 app.use(cors({
+
   origin: function (origin, callback) {
-    // allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
+    console.log("Origin:", origin);
+
+
+    if (!origin || origin === "null") {
+      return callback(null, true);
+    }
     // Allow any localhost origin for development
     if (/^http:\/\/localhost:\d+$/.test(origin) || /^http:\/\/127\.0\.0\.1:\d+$/.test(origin)) {
       return callback(null, true);
