@@ -30,6 +30,8 @@ export default function Login() {
   const [phoneVerified, setPhoneVerified] = useState(false);
   const [emailVerified, setEmailVerified] = useState(false);
 
+  const [loginUser, setLoginUser] = useState(null);
+
   useEffect(() => {
     const token = localStorage.getItem("token");
     const role = localStorage.getItem("role");
@@ -77,8 +79,13 @@ export default function Login() {
       if (response.role !== "SUPER_ADMIN") {
         localStorage.setItem('passwordResetRequired', response.requiresPasswordReset ? 'true' : 'false');
       }
-      
+
+      console.log(response);
+
+
       localStorage.setItem("role", response.user?.role || response.role);
+      setLoginUser(response);
+      console.log(loginUser);
 
       setShowVerificationModal(true);
     } catch (error) {
@@ -118,7 +125,7 @@ export default function Login() {
     setEmailOtpSent(true);
     console.log("Send Email OTP:", form.email);
   };
-  
+
   const handleVerifyEmailOtp = () => {
     if (emailOtp.length !== 6) {
       alert("Please enter a valid 6 digit OTP");
@@ -174,6 +181,26 @@ export default function Login() {
       alert(error.response?.data?.message || "OTP Verification failed on server");
       return;
     }
+
+    // check for plan status
+
+    try {
+      if (
+        loginUser?.role === "CLINIC_ADMIN" &&
+        loginUser?.user?.clinicId?.subscriptionStatus !== "ACTIVE"
+      ) {
+        return navigate("/payment", {
+          replace: true,
+          state: {
+            email: loginUser?.user?.email,
+            clinicId: loginUser?.user?.clinicId._id,
+          },
+        });
+      }
+    } catch (error) {
+      console.warn("Error In making Payment", error);
+    }
+
 
     // 3. Navigate to Dashboard with history replaced
     try {

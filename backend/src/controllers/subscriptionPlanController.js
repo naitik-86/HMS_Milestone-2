@@ -1,5 +1,6 @@
 const SubscriptionPlan = require('../models/SubscriptionPlan');
 const Clinic = require("../models/Clinic");
+const crypto = require("crypto");
 
 const addMonths = (date, months) => {
   const next = new Date(date);
@@ -8,8 +9,108 @@ const addMonths = (date, months) => {
 };
 
 
+exports.createSubscriptionPayment = async (req, res) => {
+  try {
+    const { clinicId } = req.body;
+
+    if (!clinicId) {
+      return res.status(400).json({
+        success: false,
+        message: "Clinic ID is required",
+      });
+    }
+
+    // Get Clinic
+    const clinic = await Clinic.findById(clinicId);
+
+    if (!clinic) {
+      return res.status(404).json({
+        success: false,
+        message: "Clinic not found",
+      });
+    }
+
+    // Find matching subscription
+    const plan = await SubscriptionPlan.findOne({
+      billingCycle: clinic.subscriptionType,
+      status: "Active",
+    });
+
+    if (!plan) {
+      return res.status(404).json({
+        success: false,
+        message: "Subscription plan not found",
+      });
+    }
+
+    const txnid = `TXN_${Date.now()}`;
+
+    const key = process.env.PAYU_KEY;
+    const salt = process.env.PAYU_SALT;
+
+    const amount = Number(plan.price).toFixed(2);
+
+    const productinfo = plan.subscriptionPlan;
+
+    const firstname = clinic.name;
+
+    const email = clinic.contactEmail;
+
+
+
+    let successUrl = process.env.PAYU_SUCCESS_URL;
+
+    let failureUrl = process.env.PAYU_FAILURE_URL;
+
+
+    console.log(successUrl);
+
+
+    const udf1 = clinic._id.toString();
+
+    const hashString =
+      `${key}|${txnid}|${amount}|${productinfo}|${firstname}|${email}|${udf1}` +
+      `||||||||||${salt}`;
+
+    const hash = crypto
+      .createHash("sha512")
+      .update(hashString)
+      .digest("hex");
+
+
+
+    return res.status(200).json({
+      success: true,
+      paymentData: {
+        key,
+        txnid,
+        amount,
+        productinfo,
+        firstname,
+        email,
+
+        surl: successUrl,
+        furl: failureUrl,
+        hash,
+        service_provider: "payu_paisa",
+        udf1: clinic._id.toString(),
+      },
+    });
+  } catch (err) {
+    console.error(err);
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to create payment.",
+    });
+  }
+};
+
+
 exports.getSubscriptionDetails = async (req, res) => {
   try {
+    console.log("reached");
+
     const { clinicId } = req.params;
 
     // 1. Get Clinic
@@ -68,6 +169,32 @@ exports.getSubscriptionDetails = async (req, res) => {
   }
 };
 
+exports.paymentSuccess = async (req, res) => {
+  try {
+
+    const clinicId = req.body.udf1;
+
+    const clinic = await Clinic.findById(clinicId);
+
+    if (!clinic) {
+      return res.status(404).send("Clinic not found");
+    }
+
+    console.log("Clinic:", clinic.name);
+
+
+    return res.redirect(`${process.env.FRONTEND_URL}/clinic`);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).send("Something went wrong");
+  }
+};
+exports.paymentFailure = async (req, res) => {
+  console.log("Payment Failed");
+
+
+  res.send("Payment Failed");
+};
 
 
 const getRenewalDate = (startDate, billingCycle) => {

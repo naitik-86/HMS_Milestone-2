@@ -25,6 +25,9 @@ const Payment = ({
     const clinicId = state?.clinicId;
     const email = state?.email;
 
+    console.log(email, clinicId);
+
+
     const [plan, setPlan] = useState(null);
 
     useEffect(() => {
@@ -47,13 +50,16 @@ const Payment = ({
 
     const handlePay = async () => {
         try {
-            const data = await createSubscriptionPayment(email);
+            const data = await createSubscriptionPayment(clinicId);
+            console.log("Response:", JSON.stringify(data, null, 2));
+            console.log("Payment Data:", JSON.stringify(data.paymentData, null, 2));
+
 
             const paymentData = data.paymentData;
 
             const form = document.createElement("form");
             form.method = "POST";
-            form.action = "https://test.payu.in/_payment";
+            form.action = import.meta.env.VITE_PAYU_BASE_URL;;
 
             Object.entries(paymentData).forEach(([key, value]) => {
                 const input = document.createElement("input");
@@ -81,7 +87,7 @@ const Payment = ({
                             Subscription Payment
                         </h1>
 
-                        <p className="text-blue-100 leading-relaxed">
+                        <p className="text-blue-100  leading-relaxed">
                             Continue your subscription for
                             {` ${plan?.clinicName}`}
                         </p>

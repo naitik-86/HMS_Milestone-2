@@ -4,20 +4,26 @@ const router = express.Router();
 
 const { authorize } = require('../middlewares/auth');
 const {
-
+    createSubscriptionPayment,
     getSubscriptionDetails,
+    paymentFailure,
+    paymentSuccess,
 } = require("../controllers/subscriptionPlanController");
 
-router.use(authorize('CLINIC_ADMIN'));
+router.post("/payment-success", paymentSuccess);
 
-// router.post(
-//     "/create-subscription",
-//     createSubscriptionPayment
-// );
+router.post("/payment-failure", paymentFailure);
+
+
+router.post(
+    "/create-subscription",
+    createSubscriptionPayment
+);
 
 router.get(
     "/:clinicId",
     getSubscriptionDetails
 );
+
 
 module.exports = router;
