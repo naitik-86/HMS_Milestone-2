@@ -1,11 +1,15 @@
 import { useState } from "react";
 import { showToast } from "../../../../../shared/components/toast";
+import { INDIAN_STATE_OPTIONS } from "../../../../../shared/constants/indiaStates";
 
 import { createClinic } from "../../../api/clinicApi";
-import { Upload, Card, Select, Grid, Full, Input } from "../../../components"
+import Upload from "../Upload";
+import Card from "../Card";
+import Select from "../Select";
+import { Grid, Full } from "../Grid";
+import Input from "../Input";
 import { useNavigate } from "react-router-dom";
 
-import { State, City } from "country-state-city";
 /* ---------------- MAIN FORM ---------------- */
 
 const DEFAULT_MAP_CENTER = {
@@ -70,8 +74,8 @@ export default function ClinicForm({
 
     const [submitting, setSubmitting] = useState(false);
     const navigate = useNavigate();
+    const stateOptions = INDIAN_STATE_OPTIONS;
 
-    const states = State.getStatesOfCountry("IN");
 const idType = form.govtIdType || "Aadhar";
 
 const idNumberLabel =
@@ -87,19 +91,6 @@ const idDocumentLabel =
     : idType === "Passport"
     ? "Upload Passport"
     : "Upload Aadhar Card";
-const cities = form.state
-  ? City.getCitiesOfState(
-      "IN",
-      states.find((s) => s.name === form.state)?.isoCode
-    )
-  : [];
-const cityOptions = form.city && !cities.some((city) => city.name === form.city)
-    ? [form.city, ...cities.map((city) => city.name)]
-    : cities.map((city) => city.name);
-
-const stateOptions = form.state && !states.some((state) => state.name === form.state)
-    ? [form.state, ...states.map((state) => state.name)]
-    : states.map((state) => state.name);
 
 const handleMapLocationSelect = (location) => {
     setForm((prev) => ({
@@ -403,14 +394,13 @@ const removeServiceArea = (index) => {
                                     options={stateOptions}
                                     onChange={handleChange}
                                 />
-                                    <Select
-                                requiredField
-                                name="city"
-                                label="City"
-                                value={form.city}
-                                options={cityOptions}
-                                onChange={handleChange}
-                            />
+                                <Input
+                                    requiredField
+                                    name="city"
+                                    label="City"
+                                    value={form.city}
+                                    onChange={handleChange}
+                                />
                                <Input requiredField name="district" label="District" value={form.district} onChange={handleChange} />
                                <Input
                                     requiredField
@@ -490,14 +480,14 @@ const removeServiceArea = (index) => {
       onChange={handleChange}
     />
 
-    <Select
-      requiredField
-      name="stateCouncil"
-      label="State Vet Council"
-      value={form.stateCouncil}
-      options={states.map((state) => state.name)}
-      onChange={handleChange}
-    />
+                                <Select
+                                    requiredField
+                                    name="stateCouncil"
+                                    label="State Vet Council"
+                                    value={form.stateCouncil}
+                                    options={stateOptions}
+                                    onChange={handleChange}
+                                />
 
     <Input
       type="date"

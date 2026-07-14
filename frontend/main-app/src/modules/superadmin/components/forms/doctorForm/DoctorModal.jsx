@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { showToast } from "../../../../../shared/components/toast";
 
-import { DoctorForm, Stepper } from "../../index"
+import DoctorForm from "./DoctorForm";
+import Stepper from "../Stepper";
 
 const tabs = [
     ["personal", "Personal Information"],

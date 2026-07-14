@@ -175,19 +175,6 @@ export default function Login() {
       return;
     }
 
-    // 3. Navigate to Dashboard with history replaced
-    try {
-      const redirectRes = await API.get("/dashboard");
-      const redirectUrl = redirectRes.data?.data?.redirectUrl;
-
-      if (redirectUrl) {
-        return navigate(redirectUrl, { replace: true });
-      }
-    } catch (e) {
-      console.warn("Dashboard redirect failed", e);
-    }
-
-    // Fallbacks
     const dashboardPath = getDashboardPathForRole(role);
     if (dashboardPath) {
       return navigate(dashboardPath, { replace: true });

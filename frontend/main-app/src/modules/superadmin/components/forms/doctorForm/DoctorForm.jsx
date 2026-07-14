@@ -1,22 +1,14 @@
-import React, { useState } from "react";
 import { showToast } from "../../../../../shared/components/toast";
-import { State,City } from "country-state-city";
-import { Card, Input, Select, Grid, Full, Upload } from "../../../components"
+import { INDIAN_STATE_OPTIONS } from "../../../../../shared/constants/indiaStates";
+import Card from "../Card";
+import Input from "../Input";
+import Select from "../Select";
+import { Grid, Full } from "../Grid";
+import Upload from "../Upload";
 // import { createDoctor } from "../../../api/doctorApi";
 
 export default function DoctorForm({ activeTab, form, setForm, qualifications, setQualifications }) {
-
-    const states = State.getStatesOfCountry("IN");
-    const cities = form.state
-  ? [
-      ...new Map(
-        City.getCitiesOfState(
-          "IN",
-          states.find((s) => s.name === form.state)?.isoCode
-        ).map((city) => [city.name, city])
-      ).values(),
-    ]
-  : [];
+    const stateOptions = INDIAN_STATE_OPTIONS;
 
   const validatePincode = async (pincode) => {
     if (pincode.length !== 6) return;
@@ -232,31 +224,30 @@ export default function DoctorForm({ activeTab, form, setForm, qualifications, s
                                     requiredField={true}
                                     name="state"
                                     label="State"
-                                    options={states.map((state) => state.name)}
+                                    options={stateOptions}
                                     onChange={handleChange}
                                 />
-                                <Select
-    value={form.city || ""}
-    requiredField={true}
-    name="city"
-    label="City"
-    options={cities.map((city) => city.name)}
-    onChange={handleChange}
-/>
-                               <Input
-    value={form.pincode}
-    requiredField
-    name="pincode"
-    label="PIN Code"
-    maxLength={6}
-    onChange={(e) => {
-        handleChange(e);
+                                <Input
+                                    value={form.city || ""}
+                                    requiredField={true}
+                                    name="city"
+                                    label="City"
+                                    onChange={handleChange}
+                                />
+                                <Input
+                                    value={form.pincode}
+                                    requiredField
+                                    name="pincode"
+                                    label="PIN Code"
+                                    maxLength={6}
+                                    onChange={(e) => {
+                                        handleChange(e);
 
-        if (e.target.value.length === 6) {
-            validatePincode(e.target.value);
-        }
-    }}
-/>
+                                        if (e.target.value.length === 6) {
+                                            validatePincode(e.target.value);
+                                        }
+                                    }}
+                                />
 
                                 <Select value={form.govtIdType || ""} requiredField={true} name="govtIdType" label="Government ID Type" options={["Aadhaar", "PAN", "Passport"]} onChange={handleChange} />
                                 <Input value={form.govtIdNumber} requiredField={true} name="govtIdNumber" label="Government ID Number" onChange={handleChange} />
@@ -368,7 +359,7 @@ transition
                                     requiredField={true}
                                     name="stateVetCouncil"
                                     label="State Veterinary Council"
-                                    options={states.map((state) => state.name)}
+                                    options={stateOptions}
                                     onChange={handleChange}
                                 />
                                 <Full>

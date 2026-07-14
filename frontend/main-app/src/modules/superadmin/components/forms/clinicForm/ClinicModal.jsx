@@ -2,7 +2,8 @@ import { useState } from "react";
 import { showToast } from "../../../../../shared/components/toast";
 import { calculateEndDate, getTodayDate } from "../../../../../shared/utils/calculateEndDate "
 
-import { ClinicForm, Stepper } from "../../index"
+import ClinicForm from "./ClinicForm";
+import Stepper from "../Stepper";
 
 const tabs = [
     ["identity", "Clinic Identity"],

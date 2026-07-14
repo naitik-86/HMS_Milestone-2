@@ -1,18 +1,16 @@
+import { lazy } from "react";
 import { Route } from "react-router-dom";
 import ProtectedRoute from "./ProtectedRoute";
 import SuperAdminLayout from "../layouts/SuperAdminLayout";
 
-import {
-    Dashboard,
-    Clinics,
-    Doctors,
-    Plans,
-    Reports,
-    Verification,
-    Settings,
-    // sub-pages
-    BasicReports,
-} from "../modules/superadmin/pages";
+const Dashboard = lazy(() => import("../modules/superadmin/pages/Dashboard"));
+const Clinics = lazy(() => import("../modules/superadmin/pages/Clinics"));
+const Doctors = lazy(() => import("../modules/superadmin/pages/Doctors"));
+const Plans = lazy(() => import("../modules/superadmin/pages/Plans"));
+const Reports = lazy(() => import("../modules/superadmin/pages/Reports"));
+const Verification = lazy(() => import("../modules/superadmin/pages/Verification"));
+const Settings = lazy(() => import("../modules/superadmin/pages/Settings"));
+const BasicReports = lazy(() => import("../modules/superadmin/pages/BasicReports"));
 
 const SuperAdminRoutes = (
     <Route

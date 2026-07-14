@@ -67,11 +67,12 @@ export const createClinic = async (clinicData) => {
         };
         const formData = buildFormData(fileData);
 
-        // Updated endpoint for document upload
-        await API.post(`/super-admin/clinics/${clinicId}/documents`, formData, {
+        API.post(`/super-admin/clinics/${clinicId}/documents`, formData, {
             headers: {
                 "Content-Type": "multipart/form-data",
             },
+        }).catch((error) => {
+            console.warn("Clinic document upload failed", error);
         });
     }
 

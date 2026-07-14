@@ -12,20 +12,31 @@ async function sendOtpMultiChannel({
   emailSender,
   smsChannel = 'SMS',
 }) {
-  // send email otp
-  await emailSender({
-    email,
-    subject: 'Your HMS Login OTP',
-    message: `Your login OTP is ${otpEmail}. It is valid for 5 minutes.`,
-  });
+  const deliveryTasks = [
+    emailSender({
+      email,
+      subject: 'Your HMS Login OTP',
+      message: `Your login OTP is ${otpEmail}. It is valid for 5 minutes.`,
+    }),
+  ];
 
-  // send mobile otp
   if (mobile) {
-    if (smsChannel === 'WHATSAPP') {
-      await sendWhatsApp(mobile, otpMobile);
-    } else {
-      await sendSMS(mobile, otpMobile);
-    }
+    deliveryTasks.push(
+      smsChannel === 'WHATSAPP'
+        ? sendWhatsApp(mobile, otpMobile)
+        : sendSMS(mobile, otpMobile)
+    );
+  }
+
+  const results = await Promise.allSettled(deliveryTasks);
+  const failures = results.filter((result) => result.status === 'rejected');
+
+  if (failures.length) {
+    const errorMessage = failures
+      .map((result) => result.reason?.message || 'OTP delivery failed')
+      .join(' | ');
+
+    throw new Error(errorMessage);
   }
 }
 

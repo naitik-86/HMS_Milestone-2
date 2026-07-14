@@ -1,13 +1,11 @@
 import React, { useState } from "react";
 
-import {
-    BrandingTab,
-    EmailTab,
-    GeneralTab,
-    PaymentTab,
-    SecurityTab,
-    SmsTab,
-} from "../components";
+import BrandingTab from "../components/settings/BrandingTab";
+import EmailTab from "../components/settings/EmailTab";
+import GeneralTab from "../components/settings/GeneralTab";
+import PaymentTab from "../components/settings/PaymentTab";
+import SecurityTab from "../components/settings/SecurityTab";
+import SmsTab from "../components/settings/SmsTab";
 
 export default function SettingsPage() {
     const [activeTab, setActiveTab] = useState("branding");
