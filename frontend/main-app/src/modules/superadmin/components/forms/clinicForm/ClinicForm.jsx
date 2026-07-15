@@ -111,7 +111,7 @@ export default function ClinicForm({
     const [plansLoading, setPlansLoading] = useState(false);
     const [plansError, setPlansError] = useState("");
     const navigate = useNavigate();
-    const stateOptions = INDIAN_STATE_OPTIONS;
+    // const stateOptions = INDIAN_STATE_OPTIONS;
 
     const states = State.getStatesOfCountry("IN");
     const idType = form.govtIdType || "Aadhar";
