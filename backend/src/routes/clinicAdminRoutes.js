@@ -14,6 +14,7 @@ const ReceptionRoutes = require("./clinisReceptionRoutes")
 const subscriptionRoutes = require("./subscriptionRoutes")
 const subscriptionController = require("../controllers/subscriptionPlanController")
 const DoctorModuleRoutes = require("./DoctorModuleRoutes")
+const clinicDashboardController = require("../controllers/clinicDashboardController");
 
 router.use(protect);
 
@@ -50,6 +51,8 @@ const petRegistrationController = require('../controllers/petRegistrationControl
 
 
 router.use(authorize('CLINIC_ADMIN'));
+
+router.get("/dashboard", clinicDashboardController.getDashboard);
 
 
 // labreport was commented from start
