@@ -9,7 +9,7 @@ export default function Upload({
     accept = ".pdf,application/pdf",
 }) {
     const [previewUrl, setPreviewUrl] = useState("");
-
+    const isImage = value?.type?.startsWith("image/");
     useEffect(() => {
         if (!value || !value.type?.startsWith("image/")) {
             setPreviewUrl("");
