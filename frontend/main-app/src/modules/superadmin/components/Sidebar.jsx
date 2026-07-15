@@ -49,45 +49,43 @@ export default function Sidebar({ isOpen = false, onClose }) {
     const menu = [
         { name: "Dashboard", path: "/superadmin", icon: LayoutDashboard, end: true },
         { name: "Clinics", path: "/superadmin/clinics", icon: Building2 },
-        { name: "Veterinarian", path: "/superadmin/Veterinarian", icon: Users },
+        { name: "Veterinarian", path: "/superadmin/Veterinarian", icon: Users, disabled: true },
         { name: "Plans", path: "/superadmin/plans", icon: ClipboardList },
         { name: "Verification", path: "/superadmin/verification", icon: ShieldCheck },
         { name: "Reports", path: "/superadmin/reports", icon: BarChart3 },
-        { name: "Basic Reports", path: "/superadmin/reports/basic", icon: BarChart3 },
-        { name: "Settings", path: "/superadmin/settings", icon: Settings },
+        { name: "Basic Reports", path: "/superadmin/reports/basic", icon: BarChart3, disabled: true },
+        { name: "Settings", path: "/superadmin/settings", icon: Settings, disabled: true },
     ];
 
     const handleLogout = () => {
-    console.log("Logout clicked");
+        console.log("Logout clicked");
 
-    localStorage.removeItem("token");
-    localStorage.removeItem("role");
-    localStorage.removeItem("passwordResetRequired");
-    localStorage.removeItem("userEmail");
+        localStorage.removeItem("token");
+        localStorage.removeItem("role");
+        localStorage.removeItem("passwordResetRequired");
+        localStorage.removeItem("userEmail");
 
-    showToast({
-        type: "success",
-        title: "Logout Successful",
-        description: "You have been logged out",
-    });
+        showToast({
+            type: "success",
+            title: "Logout Successful",
+            description: "You have been logged out",
+        });
 
-    navigate("/login", { replace: true });
-    onClose?.();
-};
+        navigate("/login", { replace: true });
+        onClose?.();
+    };
 
     return (
         <>
             <div
-                className={`fixed inset-0 z-40 bg-black/40 transition-opacity duration-200 lg:hidden ${
-                    isOpen ? "opacity-100" : "pointer-events-none opacity-0"
-                }`}
+                className={`fixed inset-0 z-40 bg-black/40 transition-opacity duration-200 lg:hidden ${isOpen ? "opacity-100" : "pointer-events-none opacity-0"
+                    }`}
                 onClick={onClose}
             />
 
             <aside
-                className={`fixed inset-y-0 left-0 z-50 h-screen w-65 shrink-0 transform bg-gradient-to-b from-[#020617] to-[#0f172a] text-white transition-transform duration-300 ease-out lg:sticky lg:top-0 lg:z-auto lg:translate-x-0 ${
-                    isOpen ? "translate-x-0" : "-translate-x-full"
-                } flex flex-col justify-between px-4 py-5`}
+                className={`fixed inset-y-0 left-0 z-50 h-screen w-65 shrink-0 transform bg-gradient-to-b from-[#020617] to-[#0f172a] text-white transition-transform duration-300 ease-out lg:sticky lg:top-0 lg:z-auto lg:translate-x-0 ${isOpen ? "translate-x-0" : "-translate-x-full"
+                    } flex flex-col justify-between px-4 py-5`}
             >
                 <div>
                     <div className="flex items-center justify-between gap-3">
@@ -112,6 +110,24 @@ export default function Sidebar({ isOpen = false, onClose }) {
                         {menu.map((item) => {
                             const Icon = item.icon;
 
+                            if (item.disabled) {
+                                return (
+                                    <div
+                                        key={item.name}
+                                        className="flex items-center justify-between px-4 py-3 rounded-lg text-sm mb-2 text-slate-500 cursor-not-allowed opacity-60"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <Icon size={18} />
+                                            {item.name}
+                                        </div>
+
+                                        <span className="rounded-full bg-orange-500/20 px-2 py-0.5 text-[10px] font-medium text-orange-400">
+                                            Soon
+                                        </span>
+                                    </div>
+                                );
+                            }
+
                             return (
                                 <NavLink
                                     key={item.name}
@@ -119,10 +135,9 @@ export default function Sidebar({ isOpen = false, onClose }) {
                                     end={item.end}
                                     onClick={onClose}
                                     className={({ isActive }) =>
-                                        `flex items-center gap-3 px-4 py-3 rounded-lg text-sm mb-2 transition-all ${
-                                            isActive
-                                                ? "bg-gradient-to-r from-orange-500 to-orange-400 text-white"
-                                                : "text-slate-300 hover:bg-slate-800"
+                                        `flex items-center gap-3 px-4 py-3 rounded-lg text-sm mb-2 transition-all ${isActive
+                                            ? "bg-gradient-to-r from-orange-500 to-orange-400 text-white"
+                                            : "text-slate-300 hover:bg-slate-800"
                                         }`
                                     }
                                 >

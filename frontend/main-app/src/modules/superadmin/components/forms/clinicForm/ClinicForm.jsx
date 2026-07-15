@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { showToast } from "../../../../../shared/components/toast";
+import { INDIAN_STATE_OPTIONS } from "../../../../../shared/constants/indiaStates";
 import {
     ClipboardDocumentListIcon,
     BeakerIcon,
@@ -111,9 +112,7 @@ export default function ClinicForm({
     const [plansLoading, setPlansLoading] = useState(false);
     const [plansError, setPlansError] = useState("");
     const navigate = useNavigate();
-    // const stateOptions = INDIAN_STATE_OPTIONS;
-
-    const states = State.getStatesOfCountry("IN");
+    const stateOptions = INDIAN_STATE_OPTIONS;
     const idType = form.govtIdType || "Aadhar";
 
     const idNumberLabel =
@@ -129,20 +128,6 @@ export default function ClinicForm({
             : idType === "Passport"
                 ? "Upload Passport"
                 : "Upload Aadhar Card";
-    const cities = form.state
-        ? City.getCitiesOfState(
-            "IN",
-            states.find((s) => s.name === form.state)?.isoCode
-        )
-        : [];
-    const cityOptions = form.city && !cities.some((city) => city.name === form.city)
-        ? [form.city, ...cities.map((city) => city.name)]
-        : cities.map((city) => city.name);
-
-    const stateOptions = form.state && !states.some((state) => state.name === form.state)
-        ? [form.state, ...states.map((state) => state.name)]
-        : states.map((state) => state.name);
-
     useEffect(() => {
         if (activeTab !== "plan" || plans.length) return;
 
@@ -275,25 +260,11 @@ export default function ClinicForm({
     };
 
     const applyKnownLocationCoordinates = (locationForm = form) => {
-        const selectedState = states.find(
-            (state) => state.name === locationForm.state
-        );
+        const latitude = Number(locationForm.latitude);
+        const longitude = Number(locationForm.longitude);
 
-        if (!selectedState) return false;
-
-        if (locationForm.city) {
-            const selectedCity = City.getCitiesOfState("IN", selectedState.isoCode).find(
-                (city) => city.name.toLowerCase() === locationForm.city.toLowerCase()
-            );
-
-            if (selectedCity?.latitude && selectedCity?.longitude) {
-                updateMapCoordinates(selectedCity.latitude, selectedCity.longitude);
-                return true;
-            }
-        }
-
-        if (selectedState.latitude && selectedState.longitude) {
-            updateMapCoordinates(selectedState.latitude, selectedState.longitude);
+        if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
+            updateMapCoordinates(latitude, longitude);
             return true;
         }
 
@@ -1171,18 +1142,18 @@ export default function ClinicForm({
                                     onChange={handleChange}
                                 />
 
-                               <Input
-    requiredField={false}
-    name="year"
-    label="Year of Establishment"
-    value={form.year}
-    maxLength={4}
-    onChange={(e) => {
-        if (/^\d*$/.test(e.target.value)) {
-            handleChange(e);
-        }
-    }}
-/>
+                                <Input
+                                    requiredField={false}
+                                    name="year"
+                                    label="Year of Establishment"
+                                    value={form.year}
+                                    maxLength={4}
+                                    onChange={(e) => {
+                                        if (/^\d*$/.test(e.target.value)) {
+                                            handleChange(e);
+                                        }
+                                    }}
+                                />
                                 <Input requiredField={true} name="email" label="Official Email" value={form.email} onChange={handleChange} />
                                 <Input requiredField={true} name="phone" label="Primary Contact" value={form.phone} maxLength={10} inputMode="numeric" onChange={handlePhoneChange} />
                                 <Input name="altPhone" label="Alternate Contact" value={form.altPhone} maxLength={10} inputMode="numeric" onChange={handlePhoneChange} />
@@ -1225,12 +1196,11 @@ export default function ClinicForm({
                                     options={stateOptions}
                                     onChange={handleAddressSelectChange}
                                 />
-                                <Select
+                                <Input
                                     requiredField
                                     name="city"
                                     label="City"
                                     value={form.city}
-                                    options={cityOptions}
                                     onChange={handleAddressSelectChange}
                                 />
                                 <Input requiredField name="district" label="District" value={form.district} onChange={handleAddressChange} />
@@ -1319,7 +1289,7 @@ export default function ClinicForm({
                                         name="stateCouncil"
                                         label="State Vet Council"
                                         value={form.stateCouncil}
-                                        options={states.map((state) => state.name)}
+                                        options={stateOptions}
                                         onChange={handleChange}
                                     />
 
@@ -1707,39 +1677,39 @@ export default function ClinicForm({
                     )}
 
                     {/* SAVE */}
-   <div className="flex justify-between items-center">
+                    <div className="flex justify-between items-center">
 
-    {activeTab !== "identity" ? (
-        <button
-            type="button"
-            onClick={handlePrevious}
-            className="px-6 py-3 rounded-xl border border-gray-300 hover:bg-gray-100"
-        >
-            ← Previous
-        </button>
-    ) : (
-        <div />
-    )}
+                        {activeTab !== "identity" ? (
+                            <button
+                                type="button"
+                                onClick={handlePrevious}
+                                className="px-6 py-3 rounded-xl border border-gray-300 hover:bg-gray-100"
+                            >
+                                ← Previous
+                            </button>
+                        ) : (
+                            <div />
+                        )}
 
-    {activeTab !== "plan" ? (
-        <button
-            type="button"
-            onClick={handleNext}
-            className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-xl"
-        >
-            Next →
-        </button>
-    ) : (
-        <button
-            type="button"
-            onClick={handleSubmit}
-            className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-xl"
-        >
-            Submit
-        </button>
-    )}
+                        {activeTab !== "plan" ? (
+                            <button
+                                type="button"
+                                onClick={handleNext}
+                                className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-xl"
+                            >
+                                Next →
+                            </button>
+                        ) : (
+                            <button
+                                type="button"
+                                onClick={handleSubmit}
+                                className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-xl"
+                            >
+                                Submit
+                            </button>
+                        )}
 
-</div>
+                    </div>
 
                 </div>
             </div>
