@@ -9,6 +9,7 @@ import { createClinic } from "../../../api/clinicApi";
 import { getPlans } from "../../../api/planApi";
 import { Upload, Card, Select, Grid, Full, Input } from "../../../components";
 import { useNavigate } from "react-router-dom";
+import { City, State } from "country-state-city";
 
 /* ---------------- MAIN FORM ---------------- */
 
@@ -103,7 +104,12 @@ export default function ClinicForm({
     validateTab,
     setActiveTab,
     tabs,
-    onClose
+    onClose,
+    readOnly = false,
+    submitLabel = "Submit",
+    onSubmitClinic,
+    skipSubmitValidation = false,
+    skipTabValidation = false,
 }) {
 
     const [mapLocating, setMapLocating] = useState(false);
@@ -1035,6 +1041,18 @@ export default function ClinicForm({
     };
 
     const handleNext = () => {
+        if (readOnly || skipTabValidation) {
+            const currentIndex = tabs.findIndex(
+                ([key]) => key === activeTab
+            );
+
+            if (currentIndex < tabs.length - 1) {
+                setActiveTab(tabs[currentIndex + 1][0]);
+            }
+
+            return;
+        }
+
         if (activeTab === "identity" && !validateIdentityFields()) {
             return;
         }
@@ -1086,30 +1104,41 @@ export default function ClinicForm({
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        if (!validateIdentityFields()) {
-            return;
-        }
+        if (readOnly) return;
 
-        if (!validateAddressFields()) {
-            return;
-        }
+        if (!skipSubmitValidation) {
+            if (!validateIdentityFields()) {
+                return;
+            }
 
-        if (!validateTaxFields()) {
-            return;
-        }
+            if (!validateAddressFields()) {
+                return;
+            }
 
-        if (!validateAdminFields()) {
-            return;
-        }
+            if (!validateTaxFields()) {
+                return;
+            }
 
-        if (!validatePlanFields()) {
-            return;
+            if (!validateAdminFields()) {
+                return;
+            }
+
+            if (!validatePlanFields()) {
+                return;
+            }
         }
 
         console.log("FORM SUBMITTED");
         console.log("SUBMIT FIRED", activeTab);
 
         try {
+            if (onSubmitClinic) {
+                await onSubmitClinic({
+                    ...form,
+                    trialDays: clampTrialDays(form.trialDays, maxTrialDays),
+                });
+                return;
+            }
 
             const data = await createClinic({
                 ...form,
@@ -1142,6 +1171,7 @@ export default function ClinicForm({
         <form >
             <div className="p-3 sm:p-4 md:p-6 bg-gray-100 min-h-full">
                 <div className="max-w-6xl mx-auto space-y-4 md:space-y-6">
+                    <fieldset disabled={readOnly} className={readOnly ? "opacity-75" : ""}>
 
                     {/* 1 IDENTITY */}
                     {activeTab === "identity" && (
@@ -1705,6 +1735,7 @@ export default function ClinicForm({
                             )}
                         </Card>
                     )}
+                    </fieldset>
 
                     {/* SAVE */}
    <div className="flex justify-between items-center">
@@ -1729,13 +1760,21 @@ export default function ClinicForm({
         >
             Next →
         </button>
+    ) : readOnly ? (
+        <button
+            type="button"
+            onClick={onClose}
+            className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-xl"
+        >
+            Close
+        </button>
     ) : (
         <button
             type="button"
             onClick={handleSubmit}
             className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-xl"
         >
-            Submit
+            {submitLabel}
         </button>
     )}
 

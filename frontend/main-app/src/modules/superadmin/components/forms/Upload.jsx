@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo } from "react";
 
 export default function Upload({
     label,
@@ -8,19 +8,17 @@ export default function Upload({
     onRemove,
     accept = ".pdf,application/pdf",
 }) {
-    const [previewUrl, setPreviewUrl] = useState("");
+    const previewUrl = useMemo(() => {
+        if (!value || !value.type?.startsWith("image/")) return "";
+        return URL.createObjectURL(value);
+    }, [value]);
+    const isImage = Boolean(previewUrl);
 
     useEffect(() => {
-        if (!value || !value.type?.startsWith("image/")) {
-            setPreviewUrl("");
-            return;
-        }
+        if (!previewUrl) return undefined;
 
-        const nextPreviewUrl = URL.createObjectURL(value);
-        setPreviewUrl(nextPreviewUrl);
-
-        return () => URL.revokeObjectURL(nextPreviewUrl);
-    }, [value]);
+        return () => URL.revokeObjectURL(previewUrl);
+    }, [previewUrl]);
 
     return (
         <div className="w-full">
@@ -78,7 +76,7 @@ export default function Upload({
                         <div className="flex items-center gap-2 flex-1 min-w-0">
                             {isImage && (
                                 <img
-                                    src={URL.createObjectURL(value)}
+                                    src={previewUrl}
                                     alt="preview"
                                     className="w-8 h-8 rounded object-cover border"
                                 />
