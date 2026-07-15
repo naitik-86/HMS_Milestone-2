@@ -86,6 +86,11 @@ export const getClinics = async () => {
     return res.data;
 };
 
+export const updateClinic = async (id, clinicData) => {
+    const res = await API.put(`/super-admin/clinics/${id}`, clinicData);
+    return res.data;
+};
+
 export const deleteClinic = async (id) => {
     const res = await API.delete(`/super-admin/clinics/${id}`);
     return res.data;
