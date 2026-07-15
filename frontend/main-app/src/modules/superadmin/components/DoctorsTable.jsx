@@ -1,5 +1,6 @@
 import React from "react";
-import { MoreVertical } from "lucide-react";
+import { useState } from "react";
+import { MoreVertical, Eye, Pencil } from "lucide-react";
 
 const doctors = [
     {
@@ -55,7 +56,31 @@ const statusStyles = {
     Suspended: "bg-red-100 text-red-600",
 };
 
+
+const handleDoctorAction = (action, doctor) => {
+    switch (action) {
+        case "View":
+            console.log("View", doctor);
+            break;
+
+        case "Edit":
+            console.log("Edit", doctor);
+            break;
+
+        default:
+            break;
+    }
+};
+
+
 const DoctorsTable = () => {
+
+    const [openMenu, setOpenMenu] = useState(null);
+    const [selectedDoctor, setSelectedDoctor] = useState(null);
+    const [showDoctorModal, setShowDoctorModal] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
+    const [editData, setEditData] = useState({});
+
     return (
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
 
@@ -73,9 +98,7 @@ const DoctorsTable = () => {
                     </p>
                 </div>
 
-                <button className="w-full sm:w-auto text-sm border px-4 py-2 rounded-lg hover:bg-gray-100 text-orange-500 border-orange-200 transition">
-                    View All Veterinarian →
-                </button>
+
             </div>
 
             {/* TABLE */}
@@ -134,10 +157,44 @@ const DoctorsTable = () => {
                                     </span>
                                 </td>
 
-                                <td className="px-4 md:px-6 py-4 text-right">
-                                    <button className="p-2 rounded-lg hover:bg-gray-100">
+                                <td className="relative px-4 md:px-6 py-4 text-right">
+                                    <button
+                                        type="button"
+                                        onClick={() =>
+                                            setOpenMenu(openMenu === doc.id ? null : doc.id)
+                                        }
+                                        className="p-2 rounded-lg hover:bg-gray-100 transition"
+                                    >
                                         <MoreVertical size={18} />
                                     </button>
+
+                                    {openMenu === doc.id && (
+                                        <div className="absolute right-6 mt-2 w-40 rounded-lg border border-gray-200 bg-white shadow-lg z-50 overflow-hidden">
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    handleDoctorAction("View", doc);
+                                                    setOpenMenu(null);
+                                                }}
+                                                className="flex w-full items-center gap-2 px-4 py-2 text-sm hover:bg-blue-50"
+                                            >
+                                                <Eye size={16} className="text-blue-600" />
+                                                View
+                                            </button>
+
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    handleDoctorAction("Edit", doc);
+                                                    setOpenMenu(null);
+                                                }}
+                                                className="flex w-full items-center gap-2 px-4 py-2 text-sm hover:bg-orange-50"
+                                            >
+                                                <Pencil size={16} className="text-orange-600" />
+                                                Edit
+                                            </button>
+                                        </div>
+                                    )}
                                 </td>
                             </tr>
                         ))}
