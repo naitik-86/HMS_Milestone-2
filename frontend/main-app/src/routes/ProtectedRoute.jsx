@@ -1,16 +1,20 @@
 import { Navigate, useLocation } from "react-router-dom";
 import API from "../shared/api/axios";
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { normalizeRole } from "../shared/utils/roleRedirects";
+import TrialPaymentModal from "../modules/billingModule/components/TrialPaymentModal";
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
     const location = useLocation();
     const token = localStorage.getItem("token");
     const rawRole = localStorage.getItem("role");
-
+    const navigate = useNavigate();
     const normalizedRole = normalizeRole(rawRole) || null;
     const [loading, setLoading] = useState(true);
     const [subscriptionData, setSubscriptionData] = useState(null);
+    const [remainingTrialDays, setRemainingTrialDays] = useState(0);
+    const [showTrialPopup, setShowTrialPopup] = useState(false);
 
     useEffect(() => {
         const checkSubscription = async () => {
@@ -31,7 +35,20 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
                 console.log(data);
 
 
-                setSubscriptionData(data.data);
+                setSubscriptionData(data);
+                setRemainingTrialDays(data.remainingTrialDays);
+
+                if (
+                    data.subscription.status === "TRIAL" &&
+                    !sessionStorage.getItem("trial-popup")
+                ) {
+                    setShowTrialPopup(true);
+
+                    sessionStorage.setItem(
+                        "trial-popup",
+                        "true"
+                    );
+                }
 
             } catch (err) {
                 console.error(err);
@@ -61,21 +78,49 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
     }
 
 
-    if (
-        normalizedRole === "CLINIC_ADMIN" &&
-        subscriptionData &&
-        subscriptionData.subscriptionStatus !== "ACTIVE"
-    ) {
-        return (
-            <Navigate
-                to="/payment"
-                replace
-                state={{
-                    clinicId: subscriptionData._id,
-                    email: subscriptionData.contactEmail,
-                }}
-            />
-        );
+    if (normalizedRole === "CLINIC_ADMIN" && subscriptionData) {
+
+        const clinic = subscriptionData.data;
+        const subscription = subscriptionData.subscription;
+
+        // Allow access during trial or active subscription
+        if (
+            subscription.status === "TRIAL" ||
+            subscription.status === "ACTIVE"
+        ) {
+            return (
+                <>
+                    {children}
+
+                    {showTrialPopup && (
+                        <TrialPaymentModal
+                            open={showTrialPopup}
+                            onClose={() => setShowTrialPopup(false)}
+                            remainingTrialDays={remainingTrialDays}
+                            clinicId={clinic._id}
+                            email={clinic.contactEmail}
+                        />
+                    )}
+                </>
+            );
+        }
+
+        // Redirect when payment is required or subscription expired
+        if (
+            subscription.status === "PAYMENT_REQUIRED" ||
+            subscription.status === "EXPIRED"
+        ) {
+            return (
+                <Navigate
+                    to="/payment"
+                    replace
+                    state={{
+                        clinicId: clinic._id,
+                        email: clinic.contactEmail,
+                    }}
+                />
+            );
+        }
     }
 
     return children;
