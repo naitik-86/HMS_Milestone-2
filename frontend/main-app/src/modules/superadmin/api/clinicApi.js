@@ -1,21 +1,16 @@
 import API from "../../../shared/api/axios";
 
-/* 🔹 helper to convert object → FormData */
 const buildFormData = (data) => {
     const formData = new FormData();
-
     Object.keys(data).forEach((key) => {
         if (data[key] !== null && data[key] !== undefined) {
             formData.append(key, data[key]);
         }
     });
-
     return formData;
 };
 
-/* 🔹 API CALL */
 export const createClinic = async (clinicData) => {
-    // Map form data to backend expected format for Clinic
     let subscriptionType = "FREE_TIER";
     if (clinicData.plan === "Standard" || clinicData.billing === "Monthly") subscriptionType = "6_MONTHS";
     if (clinicData.plan === "Professional" || clinicData.plan === "Enterprise" || clinicData.billing === "Annual") subscriptionType = "12_MONTHS";
@@ -25,16 +20,24 @@ export const createClinic = async (clinicData) => {
     const jsonPayload = {
         name: clinicData.clinicName,
         facilityType: clinicData.facilityType,
+        yearOfEstablishment: clinicData.year,
         address: addressString,
-        subscriptionType,
-        maxDoctors: clinicData.maxDoctors || 5,
-        maxStaff: clinicData.maxStaff || 10,
+        contactEmail: clinicData.email,
         email: clinicData.email,
-        adminEmail: clinicData.adminEmail,
-        adminName: clinicData.adminName,
-        adminPhone: clinicData.adminPhone,
-        latitude: clinicData.latitude,
-        longitude: clinicData.longitude,
+        phone: clinicData.phone,
+        altPhone: clinicData.altPhone,
+        website: clinicData.website,
+        subscriptionType,
+        billingCycle: clinicData.billing,
+        planStartDate: clinicData.startDate,
+        planEndDate: clinicData.endDate,
+        
+        licenseLimits: {
+            maxDoctors: clinicData.maxDoctors || 5,
+            maxStaff: clinicData.maxStaff || 10,
+            maxPets: clinicData.maxPets,
+            storageLimit: clinicData.storageLimit
+        },
         addressDetails: {
             addressLine1: clinicData.address1,
             addressLine2: clinicData.address2,
@@ -42,11 +45,44 @@ export const createClinic = async (clinicData) => {
             district: clinicData.district,
             state: clinicData.state,
             pincode: clinicData.pincode,
-            serviceArea: clinicData.serviceArea
+            serviceAreas: clinicData.serviceAreas
+        },
+        adminDetails: {
+            adminName: clinicData.adminName,
+            adminEmail: clinicData.adminEmail,
+            adminPhone: clinicData.adminPhone,
+            designation: clinicData.designation,
+            govtIdType: clinicData.govtIdType,
+            govtIdNumber: clinicData.govtIdNumber
+        },
+        taxDetails: {
+            gstNumber: clinicData.gst,
+            panNumber: clinicData.pan,
+            bankName: clinicData.bankName,
+            accountNumber: clinicData.accountNumber,
+            ifscCode: clinicData.ifsc
+        },
+        registrationDetails: {
+            vetRegistrationNumber: clinicData.vetReg,
+            stateCouncil: clinicData.stateCouncil,
+            vetExpiry: clinicData.vetExpiry,
+            tradeLicenseNumber: clinicData.tradeLicense,
+            tradeExpiry: clinicData.tradeExpiry,
+            drugLicenseNumber: clinicData.drugLicense,
+            drugExpiry: clinicData.drugExpiry
+        },
+        features: {
+            labModule: clinicData.labModule,
+            groomingModule: clinicData.groomingModule,
+            kennelModule: clinicData.kennelModule,
+            pharmacyModule: clinicData.pharmacyModule,
+            inventoryModule: clinicData.inventoryModule,
+            telemedicineModule: clinicData.telemedicineModule,
+            apiAccess: clinicData.apiAccess,
+            whiteLabel: clinicData.whiteLabel
         }
     };
 
-    // 1. Create the clinic (Updated endpoint)
     const createRes = await API.post("/super-admin/clinics", jsonPayload);
     const clinic = createRes.data?.data;
     const clinicId = clinic?._id;
@@ -55,8 +91,7 @@ export const createClinic = async (clinicData) => {
         throw new Error("Failed to retrieve clinic ID from response");
     }
 
-    // 2. Upload the files if any exist
-    const hasFiles = clinicData.logo || clinicData.vetCert || clinicData.tradeDoc || clinicData.cheque || clinicData.profile;
+    const hasFiles = clinicData.logo || clinicData.vetCert || clinicData.tradeDoc || clinicData.cheque || clinicData.profile || clinicData.drugDoc || clinicData.idDoc;
 
     if (hasFiles) {
         const fileData = {
@@ -64,24 +99,21 @@ export const createClinic = async (clinicData) => {
             vetCouncilCertificate: clinicData.vetCert,
             tradeLicense: clinicData.tradeDoc,
             cancelledCheque: clinicData.cheque,
-            adminProfile: clinicData.profile
+            adminProfile: clinicData.profile,
+            drugLicense: clinicData.drugDoc,
+            idDocument: clinicData.idDoc
         };
         const formData = buildFormData(fileData);
 
         API.post(`/super-admin/clinics/${clinicId}/documents`, formData, {
-            headers: {
-                "Content-Type": "multipart/form-data",
-            },
-        }).catch((error) => {
-            console.warn("Clinic document upload failed", error);
-        });
+            headers: { "Content-Type": "multipart/form-data" },
+        }).catch((error) => console.warn("Clinic document upload failed", error));
     }
 
     return createRes.data;
 };
 
 export const getClinics = async () => {
-    // 3. Fetch clinics (Updated endpoint)
     const res = await API.get("/super-admin/clinics");
     return res.data;
 };

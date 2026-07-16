@@ -5,11 +5,16 @@ const { authorize } = require('../middlewares/auth');
 const {
     createClinic,
     getAllClinics,
+    updateClinic, // <--- 1. ADDED IMPORT HERE
     deleteClinic,
     updateSubscription,
     getAdminDashboard,
     updateClinicVerification,
-    uploadClinicDocuments
+    uploadClinicDocuments,
+    getVeterinarians,
+    deleteVeterinarian,
+    updateVeterinarian,
+    createVeterinarian
 } = require('../controllers/adminController');
 const {
     createPlan,
@@ -24,9 +29,32 @@ router.use(authorize('SUPER_ADMIN'));
 
 router.post('/clinics', createClinic);
 router.get('/clinics', getAllClinics);
+router.put('/clinics/:id', updateClinic); // <--- 2. ADDED ROUTE HERE
 router.delete('/clinics/:id', deleteClinic);
 router.put('/clinics/:id/subscription', updateSubscription);
 router.get('/dashboard', getAdminDashboard);
+router.get('/veterinarians', getVeterinarians);
+router.delete('/veterinarians/:id', deleteVeterinarian);
+router.put(
+    '/veterinarians/:id',
+    upload.fields([
+        { name: 'profilePhoto', maxCount: 1 },
+        { name: 'govtIdDocument', maxCount: 1 },
+        { name: 'degreeCertificates', maxCount: 10 },
+        { name: 'registrationCertificate', maxCount: 1 }
+    ]),
+    updateVeterinarian
+);
+router.post(
+    '/veterinarians',
+    upload.fields([
+        { name: 'profilePhoto', maxCount: 1 },
+        { name: 'govtIdDocument', maxCount: 1 },
+        { name: 'degreeCertificates', maxCount: 10 },
+        { name: 'registrationCertificate', maxCount: 1 }
+    ]),
+    createVeterinarian
+);
 router.post('/plans', createPlan);
 router.get('/plans', getPlans);
 router.put('/plans/:id', updatePlan);

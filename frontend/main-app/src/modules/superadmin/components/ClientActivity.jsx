@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 
 const formatDate = (value) => {
@@ -56,7 +56,6 @@ const getInitials = (name) => {
 
 function ClientActivity({ summary = {}, clinics = [] }) {
     const navigate = useNavigate();
-    const [checked, setChecked] = useState({});
 
     const visibleClinics = Array.isArray(clinics) ? clinics : [];
 
@@ -145,16 +144,9 @@ function ClientActivity({ summary = {}, clinics = [] }) {
             </div>
 
             <div className="overflow-x-auto">
-                <table className="min-w-[900px] w-full">
+                <table className="min-w-[800px] w-full">
                     <thead>
                         <tr className="border-b border-gray-100">
-                            <th className="py-2 px-3 text-left w-8">
-                                <input
-                                    type="checkbox"
-                                    className="accent-orange-500 w-3.5 h-3.5"
-                                />
-                            </th>
-
                             <th className="py-2 px-3 text-left text-xs font-semibold text-gray-400">
                                 Clinic ID
                             </th>
@@ -178,8 +170,6 @@ function ClientActivity({ summary = {}, clinics = [] }) {
                             <th className="py-2 px-3 text-left text-xs font-semibold text-gray-400">
                                 Joined On
                             </th>
-
-                            <th></th>
                         </tr>
                     </thead>
 
@@ -197,29 +187,13 @@ function ClientActivity({ summary = {}, clinics = [] }) {
                                         key={rowKey}
                                         className="border-b border-gray-50 hover:bg-gray-50 transition-colors"
                                     >
-                                        <td className="py-2.5 px-3">
-                                            <input
-                                                type="checkbox"
-                                                className="accent-orange-500 w-3.5 h-3.5"
-                                                checked={!!checked[rowKey]}
-                                                onChange={() =>
-                                                    setChecked((current) => ({
-                                                        ...current,
-                                                        [rowKey]: !current[rowKey],
-                                                    }))
-                                                }
-                                            />
-                                        </td>
-
                                         <td className="py-2.5 px-3 text-orange-500 font-semibold">
                                             {clinic.displayId || "#---"}
                                         </td>
 
                                         <td className="py-2.5 px-3">
                                             <div className="flex items-center gap-2.5">
-                                                <div
-                                                    className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0 bg-gradient-to-br from-orange-500 to-orange-700"
-                                                >
+                                                <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0 bg-gradient-to-br from-orange-500 to-orange-700">
                                                     {getInitials(clinic.name)}
                                                 </div>
 
@@ -253,22 +227,13 @@ function ClientActivity({ summary = {}, clinics = [] }) {
                                         <td className="py-2.5 px-3 text-gray-500">
                                             {formatDate(clinic.createdAt)}
                                         </td>
-
-                                        <td className="py-2.5 px-3">
-                                            <button
-                                                type="button"
-                                                className="text-gray-300 hover:text-gray-500 text-lg px-1"
-                                            >
-                                                ⋮
-                                            </button>
-                                        </td>
                                     </tr>
                                 );
                             })
                         ) : (
                             <tr>
                                 <td
-                                    colSpan={8}
+                                    colSpan={6}
                                     className="py-8 text-center text-sm text-gray-400"
                                 >
                                     No recent clinic records found.
