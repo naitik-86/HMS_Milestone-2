@@ -27,6 +27,7 @@ exports.createVisit = async (req, res) => {
 
         // ✅ Create visit
         const visit = await Visit.create({
+            
             ...req.body,
             clinicId: req.user.clinicId,
             receptionistId: req.user._id,
@@ -39,7 +40,8 @@ exports.createVisit = async (req, res) => {
                 receptionCompleted: true
             }
         });
-
+console.log("===== VISIT CREATED =====");
+console.log(visit);
         res.status(201).json({
             success: true,
             data: visit

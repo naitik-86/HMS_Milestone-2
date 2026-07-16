@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { Menu, X } from "lucide-react";
-import { NavLink } from "react-router-dom";
+import { LogOut, Menu, X } from "lucide-react";
+import { NavLink, useNavigate } from "react-router-dom";
 
 export default function ReceptionSidebar() {
   const [isOpen, setIsOpen] = useState(false);
+  const navigate = useNavigate();
 
   const menus = [
     { name: "Dashboard", path: "", icon: "DB" },
@@ -12,6 +13,13 @@ export default function ReceptionSidebar() {
     { name: "Existing Customer", path: "existing-customer", icon: "EC" },
 
   ];
+
+  const handleLogout = () => {
+    localStorage.clear();
+    sessionStorage.clear();
+    setIsOpen(false);
+    navigate("/login", { replace: true });
+  };
 
   return (
     <>
@@ -99,6 +107,15 @@ export default function ReceptionSidebar() {
         </div>
 
         <div className="p-4 border-t border-slate-800">
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="mb-4 flex w-full items-center justify-center gap-3 rounded-xl bg-red-500/10 px-4 py-3 text-sm font-semibold text-red-300 transition hover:bg-red-500/20"
+          >
+            <LogOut className="h-4 w-4" />
+            Logout
+          </button>
+
           <div className="flex items-center gap-3">
             <div className="w-11 h-11 rounded-full bg-orange-500 flex items-center justify-center font-bold">
               RC

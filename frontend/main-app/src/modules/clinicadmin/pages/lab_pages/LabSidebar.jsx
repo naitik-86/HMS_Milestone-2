@@ -3,6 +3,7 @@ import {
   useNavigate,
   useLocation,
 } from "react-router-dom";
+import { LogOut } from "lucide-react";
 
 export default function LabSidebar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -27,6 +28,13 @@ export default function LabSidebar() {
 
     },
   ];
+
+  const handleLogout = () => {
+    localStorage.clear();
+    sessionStorage.clear();
+    setIsOpen(false);
+    navigate("/login", { replace: true });
+  };
 
   return (
     <>
@@ -121,6 +129,15 @@ export default function LabSidebar() {
         </div>
         {/* Bottom Card */}
         <div className="absolute bottom-6 left-4 right-4">
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="mb-4 flex w-full items-center justify-center gap-3 rounded-xl bg-red-500/10 px-4 py-3 text-sm font-semibold text-red-300 transition hover:bg-red-500/20"
+          >
+            <LogOut className="h-4 w-4" />
+            Logout
+          </button>
+
           <div className="rounded-2xl bg-white/5 p-4 border border-white/10">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-full bg-orange-500 flex items-center justify-center font-bold">

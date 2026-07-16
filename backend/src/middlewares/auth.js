@@ -58,7 +58,9 @@ const authorize = (...roles) => {
 
     // Normalize the role string to match constants (e.g., "Clinic Admin" -> "CLINIC_ADMIN")
     const rawRole = req.user?.role || "";
-    const normalizedRole = rawRole.toUpperCase().replace(/\s+/g, '_');
+   const normalizedRole = rawRole
+  .toUpperCase()
+  .replace(/[\s-]+/g, "_");
 
     // DEBUG role matching
     console.log("AUTHZ ROLE CHECK:", { expectedRoles: roles, rawRole, normalizedRole, tokenRole: req.user?.role });
