@@ -4,12 +4,14 @@ import {
     Users,
     Stethoscope,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export default function SubscriptionPlanCard({
     status,
     plan,
     isCurrent,
 }) {
+    const navigate = useNavigate();
     const features = [];
 
     if (plan.modules.lab) features.push("Lab Module");
@@ -145,10 +147,17 @@ export default function SubscriptionPlanCard({
             {/* Button */}
 
             <button
+                onClick={() =>
+                    navigate("/payment", {
+                        state: {
+
+                        },
+                    })
+                }
                 disabled={isCurrent && status !== "TRIAL"}
                 className={`mt-8 w-full rounded-xl py-3 text-sm font-semibold transition-all ${isCurrent && status !== "TRIAL"
-                        ? "cursor-not-allowed border border-orange-200 bg-orange-50 text-orange-600"
-                        : "bg-slate-900 text-white hover:bg-slate-800"
+                    ? "cursor-not-allowed border border-orange-200 bg-orange-50 text-orange-600"
+                    : "bg-slate-900 text-white hover:bg-slate-800"
                     }`}
             >
                 {isCurrent && status !== "TRIAL"
