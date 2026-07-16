@@ -1,7 +1,7 @@
 import { X } from "lucide-react";
 import ReportList from "./ReportLists";
 
-function ReportModal({ category, onClose }) {
+function ReportModal({ category, catalog, catalogLoading, onClose }) {
     if (!category) return null;
 
     return (
@@ -50,7 +50,11 @@ function ReportModal({ category, onClose }) {
 
                 {/* Content */}
                 <div className="flex-1 overflow-y-auto p-4 md:p-8 bg-slate-50">
-                    <ReportList reports={category.reports} />
+                    <ReportList
+                        category={category}
+                        catalog={catalog}
+                        catalogLoading={catalogLoading}
+                    />
                 </div>
             </div>
 

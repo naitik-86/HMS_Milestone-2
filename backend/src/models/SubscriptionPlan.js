@@ -1,6 +1,11 @@
 const mongoose = require('mongoose');
 
 const subscriptionPlanSchema = new mongoose.Schema({
+  planType: {
+    type: String,
+    enum: ['Clinic', 'Solo Doctor'],
+    default: 'Clinic'
+  },
   planCode: {
     type: String,
     unique: true,
@@ -13,7 +18,7 @@ const subscriptionPlanSchema = new mongoose.Schema({
   },
   subscriptionPlan: {
     type: String,
-    enum: ['Basic', 'Standard', 'Professional', 'Enterprise', 'Custom'],
+    enum: ['Basic', 'Standard', 'Professional', 'Enterprise', 'Solo Basic', 'Solo Pro', 'Custom'],
     required: true
   },
   billingCycle: {

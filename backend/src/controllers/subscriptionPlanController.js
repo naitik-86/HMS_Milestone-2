@@ -9,6 +9,25 @@ const addMonths = (date, months) => {
   return next;
 };
 
+const SOLO_DOCTOR_PLAN_NAMES = new Set(['Solo Basic', 'Solo Pro']);
+
+const normalizePlanType = (planType, subscriptionPlan) => {
+  const explicitPlanType = typeof planType === 'string' ? planType.trim() : '';
+
+  if (explicitPlanType === 'Solo Doctor') {
+    return 'Solo Doctor';
+  }
+
+  if (SOLO_DOCTOR_PLAN_NAMES.has(subscriptionPlan)) {
+    return 'Solo Doctor';
+  }
+
+  return 'Clinic';
+};
+
+const normalizePlanName = (planName) =>
+  typeof planName === 'string' ? planName.trim() : planName;
+
 
 exports.createSubscriptionPayment = async (req, res) => {
   try {
@@ -281,10 +300,13 @@ const getRenewalDate = (startDate, billingCycle) => {
 };
 
 const buildPlanPayload = (body) => {
+  const planType = normalizePlanType(body.planType, body.subscriptionPlan);
+  const subscriptionPlan = normalizePlanName(body.subscriptionPlan);
   const renewalDate = body.planEndRenewalDate || getRenewalDate(body.planStartDate, body.billingCycle);
 
   return {
-    subscriptionPlan: body.subscriptionPlan,
+    planType,
+    subscriptionPlan,
     billingCycle: body.billingCycle,
     price: Number(body.price || 0),
     planStartDate: body.planStartDate,

@@ -49,11 +49,11 @@ export default function Sidebar({ isOpen = false, onClose }) {
     const menu = [
         { name: "Dashboard", path: "/superadmin", icon: LayoutDashboard, end: true },
         { name: "Clinics", path: "/superadmin/clinics", icon: Building2 },
-        { name: "Veterinarian", path: "/superadmin/Veterinarian", icon: Users, disabled: true },
+        { name: "Veterinarian", path: "/superadmin/Veterinarian", icon: Users},
         { name: "Plans", path: "/superadmin/plans", icon: ClipboardList },
-        { name: "Verification", path: "/superadmin/verification", icon: ShieldCheck },
+        { name: "Verification", path: "/superadmin/verification", icon: ShieldCheck, disabled: true },
         { name: "Reports", path: "/superadmin/reports", icon: BarChart3 },
-        { name: "Basic Reports", path: "/superadmin/reports/basic", icon: BarChart3, disabled: true },
+        // { name: "Basic Reports", path: "/superadmin/reports/basic", icon: BarChart3 },
         { name: "Settings", path: "/superadmin/settings", icon: Settings, disabled: true },
     ];
 

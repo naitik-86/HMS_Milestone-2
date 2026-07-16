@@ -18,6 +18,7 @@ const Visit = require('../models/visitModel');
 const OwnerReport = require('../models/OwnerReport');
 const LoginOtp = require('../models/LoginOtp');
 const Staff = require('../models/Staff');
+const SubscriptionPlan = require('../models/SubscriptionPlan');
 const { Pet } = require('../models/Pet');
 const sendEmail = require('../utils/emailService'); // NEW: Email Trigger Utility
 const bcrypt = require('bcryptjs');
@@ -30,6 +31,52 @@ const deleteManyByClinicId = (model, clinicId) => model.deleteMany({
     { clinicId: clinicId.toString() },
   ],
 });
+
+const MONTH_NAMES = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];
+
+const buildMonthKey = (date) =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+
+const getMonthDate = (baseDate, offset) =>
+  new Date(baseDate.getFullYear(), baseDate.getMonth() - offset, 1);
+
+const monthLabel = (date) =>
+  MONTH_NAMES[date.getMonth()] || date.toLocaleString('en-US', { month: 'short' });
+
+const buildMonthlySeries = (aggregation, fieldName, months = 12) => {
+  const values = new Map(
+    aggregation.map((item) => [
+      buildMonthKey(new Date(item._id.year, item._id.month - 1, 1)),
+      Number(item[fieldName] || 0),
+    ])
+  );
+
+  const now = new Date();
+  const series = [];
+
+  for (let offset = months - 1; offset >= 0; offset -= 1) {
+    const monthDate = getMonthDate(now, offset);
+    series.push({
+      month: monthLabel(monthDate),
+      value: Number(values.get(buildMonthKey(monthDate)) || 0),
+    });
+  }
+
+  return series;
+};
 
 // ==========================================
 // M1: USER & ONBOARDING LOGIC
@@ -353,17 +400,204 @@ exports.updateSubscription = async (req, res) => {
 // GET /api/clinics/dashboard -> Platform stats
 exports.getAdminDashboard = async (req, res) => {
   try {
-    const totalClinics = await Clinic.countDocuments();
-    const activeClinics = await Clinic.countDocuments({ subscriptionStatus: 'ACTIVE' });
-    const totalOwners = await Owner.countDocuments();
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - 6);
+    startOfWeek.setHours(0, 0, 0, 0);
+    const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+
+    const [
+      totalClinics,
+      activeClinics,
+      suspendedClinics,
+      totalOwners,
+      totalDoctors,
+      activeDoctors,
+      activePlans,
+      newClinicsThisWeek,
+      newClinicsThisMonth,
+      newDoctorsThisMonth,
+      newPlansThisMonth,
+      recentClinics,
+      verificationAggregation,
+      revenueAggregation,
+      lastMonthRevenueAggregation,
+    ] = await Promise.all([
+      Clinic.countDocuments(),
+      Clinic.countDocuments({ subscriptionStatus: 'ACTIVE' }),
+      Clinic.countDocuments({ subscriptionStatus: { $in: ['SUSPENDED', 'EXPIRED'] } }),
+      Owner.countDocuments(),
+      DoctorDetails.countDocuments(),
+      DoctorDetails.countDocuments({ status: 'Active' }),
+      SubscriptionPlan.countDocuments({ status: 'Active' }),
+      Clinic.countDocuments({ createdAt: { $gte: startOfWeek } }),
+      Clinic.countDocuments({ createdAt: { $gte: startOfMonth } }),
+      DoctorDetails.countDocuments({ createdAt: { $gte: startOfMonth } }),
+      SubscriptionPlan.countDocuments({ createdAt: { $gte: startOfMonth } }),
+      Clinic.find()
+        .select('name contactEmail subscriptionStatus verificationStatus createdAt expiryDate')
+        .sort({ createdAt: -1 })
+        .limit(6)
+        .lean(),
+      Clinic.aggregate([
+        {
+          $group: {
+            _id: '$verificationStatus',
+            value: { $sum: 1 },
+          },
+        },
+      ]),
+      Appointment.aggregate([
+        {
+          $match: {
+            status: 'COMPLETED',
+          },
+        },
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'doctorId',
+            foreignField: '_id',
+            as: 'doctor',
+          },
+        },
+        {
+          $unwind: {
+            path: '$doctor',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $addFields: {
+            fee: { $ifNull: ['$doctor.consultationFee', 0] },
+          },
+        },
+        {
+          $group: {
+            _id: {
+              year: { $year: '$appointmentDate' },
+              month: { $month: '$appointmentDate' },
+            },
+            revenue: { $sum: '$fee' },
+          },
+        },
+        {
+          $sort: {
+            '_id.year': 1,
+            '_id.month': 1,
+          },
+        },
+      ]),
+      Appointment.aggregate([
+        {
+          $match: {
+            status: 'COMPLETED',
+            appointmentDate: {
+              $gte: startOfLastMonth,
+              $lte: endOfLastMonth,
+            },
+          },
+        },
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'doctorId',
+            foreignField: '_id',
+            as: 'doctor',
+          },
+        },
+        {
+          $unwind: {
+            path: '$doctor',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            revenue: {
+              $sum: { $ifNull: ['$doctor.consultationFee', 0] },
+            },
+          },
+        },
+      ]),
+    ]);
+
+    const revenueTrend = buildMonthlySeries(revenueAggregation, 'revenue', 12);
+    const currentMonthRevenue = revenueTrend.at(-1)?.value || 0;
+    const previousMonthRevenue = revenueTrend.at(-2)?.value || 0;
+    const lastMonthRevenue = lastMonthRevenueAggregation[0]?.revenue || 0;
+
+    const verificationMap = verificationAggregation.reduce((accumulator, item) => {
+      accumulator[item._id || 'UNKNOWN'] = Number(item.value || 0);
+      return accumulator;
+    }, {
+      SUBMITTED: 0,
+      UNDER_REVIEW: 0,
+      DOCS_VERIFIED: 0,
+      APPROVED: 0,
+      REJECTED: 0,
+      UNKNOWN: 0,
+    });
+
+    const pendingVerifications =
+      Number(verificationMap.SUBMITTED || 0) +
+      Number(verificationMap.UNDER_REVIEW || 0) +
+      Number(verificationMap.DOCS_VERIFIED || 0);
+
+    const approvedClinics = Number(verificationMap.APPROVED || 0);
+    const rejectedClinics = Number(verificationMap.REJECTED || 0);
+    const unknownClinics = Number(verificationMap.UNKNOWN || 0);
+
+    const totalRevenue = revenueAggregation.reduce(
+      (sum, item) => sum + Number(item.revenue || 0),
+      0
+    );
 
     res.status(200).json({
       success: true,
       data: {
         totalClinics,
         activeClinics,
-        suspendedClinics: totalClinics - activeClinics,
-        totalPlatformUsers: totalOwners
+        suspendedClinics,
+        totalPlatformUsers: totalOwners,
+        totalDoctors,
+        activeDoctors,
+        activePlans,
+        totalRevenue,
+        newClinicsThisWeek,
+        newClinicsThisMonth,
+        newDoctorsThisMonth,
+        newPlansThisMonth,
+        verificationSummary: {
+          SUBMITTED: Number(verificationMap.SUBMITTED || 0),
+          UNDER_REVIEW: Number(verificationMap.UNDER_REVIEW || 0),
+          DOCS_VERIFIED: Number(verificationMap.DOCS_VERIFIED || 0),
+          APPROVED: approvedClinics,
+          REJECTED: rejectedClinics,
+          UNKNOWN: unknownClinics,
+        },
+        verificationDistribution: [
+          { name: 'Approved', value: approvedClinics, color: '#22c55e' },
+          { name: 'Pending Review', value: pendingVerifications, color: '#f59e0b' },
+          { name: 'Rejected', value: rejectedClinics, color: '#ef4444' },
+        ],
+        recentClinics: recentClinics.map((clinic, index) => ({
+          ...clinic,
+          displayId: `#${String(index + 1).padStart(3, '0')}`,
+        })),
+        revenueTrend,
+        revenueComparison: {
+          currentMonthRevenue,
+          previousMonthRevenue,
+          lastMonthRevenue,
+          difference: currentMonthRevenue - previousMonthRevenue,
+          monthOverMonthChange: previousMonthRevenue
+            ? ((currentMonthRevenue - previousMonthRevenue) / previousMonthRevenue) * 100
+            : null,
+        },
       }
     });
   } catch (error) {

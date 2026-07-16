@@ -1,18 +1,14 @@
 import PlanForm from "./PlanForm";
-import PlansHeaderButton from "./PlansHeaderButton";
 
-import { useState } from "react";
-
-export default function PlanModal({ onCreated }) {
-    const [open, setOpen] = useState(false);
+export default function PlanModal({ open, plan, onClose, onSaved, onCreated }) {
+    if (!open) return null;
 
     return (
-        <div className="p-0 py-8 space-y-6">
-            <PlansHeaderButton onAdd={() => setOpen(true)} />
-
-            {open && (
-                <PlanForm onClose={() => setOpen(false)} onCreated={onCreated} />
-            )}
-        </div>
+        <PlanForm
+            plan={plan}
+            onClose={onClose}
+            onSaved={onSaved}
+            onCreated={onCreated}
+        />
     );
 }

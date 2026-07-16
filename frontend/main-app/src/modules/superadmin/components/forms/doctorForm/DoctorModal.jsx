@@ -1,8 +1,18 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { showToast } from "../../../../../shared/components/toast";
 
 import DoctorForm from "./DoctorForm";
 import Stepper from "../Stepper";
+import { getPlans } from "../../../api/planApi";
+
+const SOLO_DOCTOR_PLAN_NAMES = new Set(["Solo Basic", "Solo Pro"]);
+const DEFAULT_SOLO_DOCTOR_PLAN_OPTIONS = ["Solo Basic", "Solo Pro"];
+
+const resolvePlanType = (plan) => {
+    if (plan?.planType === "Solo Doctor") return "Solo Doctor";
+    if (SOLO_DOCTOR_PLAN_NAMES.has(plan?.subscriptionPlan)) return "Solo Doctor";
+    return "Clinic";
+};
 
 const tabs = [
     ["personal", "Personal Information"],
@@ -14,8 +24,40 @@ const tabs = [
 
 export default function DoctorModal({ onClose }) {
     const [activeTab, setActiveTab] = useState("personal");
+    const [planOptions, setPlanOptions] = useState([]);
+    const [plansLoaded, setPlansLoaded] = useState(false);
 
-    // const [activeTab, setActiveTab] = useState("personal");
+    useEffect(() => {
+        let active = true;
+
+        const loadPlans = async () => {
+            try {
+                const response = await getPlans();
+                const soloDoctorPlans = (Array.isArray(response.data) ? response.data : [])
+                    .filter((plan) => resolvePlanType(plan) === "Solo Doctor" && (!plan.status || plan.status === "Active"))
+                    .map((plan) => plan.subscriptionPlan)
+                    .filter(Boolean);
+
+                if (active) {
+                    setPlanOptions([...new Set(soloDoctorPlans)]);
+                }
+            } catch (error) {
+                if (active) {
+                    setPlanOptions([]);
+                }
+            } finally {
+                if (active) {
+                    setPlansLoaded(true);
+                }
+            }
+        };
+
+        loadPlans();
+
+        return () => {
+            active = false;
+        };
+    }, []);
 
     const [form, setForm] = useState({
         fullName: "",
@@ -61,6 +103,23 @@ export default function DoctorModal({ onClose }) {
     const [qualifications, setQualifications] = useState([
         { degree: "", institution: "", year: "" },
     ]);
+
+    const availablePlanOptions = planOptions.length ? planOptions : DEFAULT_SOLO_DOCTOR_PLAN_OPTIONS;
+
+    useEffect(() => {
+        if (!plansLoaded) return;
+
+        const nextPlan = availablePlanOptions.includes(form.plan)
+            ? form.plan
+            : availablePlanOptions[0];
+
+        if (nextPlan && nextPlan !== form.plan) {
+            setForm((previous) => ({
+                ...previous,
+                plan: nextPlan,
+            }));
+        }
+    }, [availablePlanOptions, form.plan, plansLoaded]);
 
     const validateTab = () => {
         switch (activeTab) {
@@ -210,6 +269,7 @@ ${activeTab === key
                         setForm={setForm}
                         qualifications={qualifications}
                         setQualifications={setQualifications}
+                        planOptions={availablePlanOptions}
 
 
                     />

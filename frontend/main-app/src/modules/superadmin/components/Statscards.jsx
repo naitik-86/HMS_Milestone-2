@@ -1,92 +1,74 @@
 import { Building2, Users, ClipboardList, IndianRupee } from "lucide-react";
 
-const statCards = [
+const DEFAULT_CARDS = [
     {
         label: "Total Clinics",
-        value: "12",
-        change: "+2 this month",
+        value: "0",
+        change: "No data yet",
         bg: "#3b82f6",
         icon: Building2,
     },
     {
         label: "Total Doctors",
-        value: "45",
-        change: "+7 this month",
+        value: "0",
+        change: "No data yet",
         bg: "#22c55e",
         icon: Users,
     },
     {
         label: "Active Plans",
-        value: "8",
-        change: "+1 this month",
+        value: "0",
+        change: "No data yet",
         bg: "#f97316",
         icon: ClipboardList,
     },
     {
         label: "Total Revenue",
-        value: "₹1,20,000",
-        change: "+18.4% this month",
+        value: "₹0",
+        change: "No data yet",
         bg: "#8b5cf6",
         icon: IndianRupee,
     },
 ];
 
-const StatsCards = () => {
+const StatsCards = ({ cards = DEFAULT_CARDS }) => {
+    const visibleCards = Array.isArray(cards) && cards.length ? cards : DEFAULT_CARDS;
+
     return (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-            {statCards.map((s, i) => {
-                const Icon = s.icon;
+            {visibleCards.map((card) => {
+                const Icon = card.icon;
 
                 return (
                     <div
-                        key={i}
-                        className="
-                            bg-white
-                            rounded-2xl
-                            p-4 md:p-5
-                            flex
-                            items-start
-                            gap-4
-                            shadow-sm
-                            border
-                            border-gray-100
-                        "
+                        key={card.label}
+                        className="bg-white rounded-2xl p-4 md:p-5 flex items-start gap-4 shadow-sm border border-gray-100"
                     >
                         <div
-                            className="
-                                w-12 h-12
-                                rounded-xl
-                                flex
-                                items-center
-                                justify-center
-                                shrink-0
-                            "
-                            style={{ background: s.bg }}
+                            className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
+                            style={{ background: card.bg }}
                         >
-                            <Icon
-                                size={22}
-                                className="text-white"
-                            />
+                            <Icon size={22} className="text-white" />
                         </div>
 
                         <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between gap-2">
                                 <p className="text-xs text-gray-400 truncate">
-                                    {s.label}
+                                    {card.label}
                                 </p>
 
-                                <span className="text-gray-300 cursor-pointer">
-                                    •••
-                                </span>
+                                <span className="text-gray-300">⋯</span>
                             </div>
 
                             <h3 className="text-xl md:text-2xl font-bold text-[#1a1a2e] mt-1 break-words">
-                                {s.value}
+                                {card.value}
                             </h3>
 
-                            <p className="text-xs text-green-500 mt-2">
-                                {s.change}
-                            </p>
+                            {card.change ? (
+                                <p className="text-xs text-green-500 mt-2">
+                                    {card.change}
+                                </p>
+                            ) : null}
                         </div>
                     </div>
                 );

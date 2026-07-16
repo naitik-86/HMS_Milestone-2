@@ -1,41 +1,99 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { X } from "lucide-react";
-import { createPlan } from "../../../api/planApi";
+import { createPlan, updatePlan } from "../../../api/planApi";
+import { showToast } from "../../../../../shared/components/toast";
 
 const today = new Date().toISOString().slice(0, 10);
 
-const PLAN_PRICES = {
-    Basic: { Monthly: 999, Quarterly: 2699, Annual: 9999 },
-    Standard: { Monthly: 1999, Quarterly: 5399, Annual: 19999 },
-    Professional: { Monthly: 3999, Quarterly: 10799, Annual: 39999 },
-    Enterprise: { Monthly: 7999, Quarterly: 21599, Annual: 79999 },
-    Custom: { Monthly: 0, Quarterly: 0, Annual: 0 },
+const PLAN_TYPE_CONFIG = {
+    Clinic: {
+        planNames: ["Basic", "Standard", "Professional", "Enterprise", "Custom"],
+        defaults: {
+            maxStaffAccounts: 5,
+            maxDoctors: 2,
+            maxPetRecords: 100,
+            storageLimitGb: 5,
+        },
+        pricePresets: {
+            Basic: { Monthly: 999, Quarterly: 2699, Annual: 9999 },
+            Standard: { Monthly: 1999, Quarterly: 5399, Annual: 19999 },
+            Professional: { Monthly: 3999, Quarterly: 10799, Annual: 39999 },
+            Enterprise: { Monthly: 7999, Quarterly: 21599, Annual: 79999 },
+            Custom: { Monthly: 0, Quarterly: 0, Annual: 0 },
+        },
+    },
+    "Solo Doctor": {
+        planNames: ["Solo Basic", "Solo Pro", "Custom"],
+        defaults: {
+            maxStaffAccounts: 0,
+            maxDoctors: 1,
+            maxPetRecords: 50,
+            storageLimitGb: 2,
+        },
+        pricePresets: {
+            "Solo Basic": { Monthly: 499, Quarterly: 1299, Annual: 4999 },
+            "Solo Pro": { Monthly: 999, Quarterly: 2699, Annual: 9999 },
+            Custom: { Monthly: 0, Quarterly: 0, Annual: 0 },
+        },
+    },
 };
 
-const getPlanPrice = (subscriptionPlan, billingCycle) =>
-    PLAN_PRICES[subscriptionPlan]?.[billingCycle] ?? 0;
+const BILLING_CYCLES = ["Monthly", "Quarterly", "Annual"];
+const STATUS_OPTIONS = ["Active", "Inactive", "Archived"];
 
 const clampNonNegativeNumber = (value) => Math.max(Number(value || 0), 0);
 
-const initialForm = {
-    subscriptionPlan: "Basic",
-    billingCycle: "Monthly",
-    price: getPlanPrice("Basic", "Monthly"),
-    planStartDate: today,
-    trialPeriodDays: 0,
-    discountPromoCode: "",
-    customPlanNotes: "",
-    maxStaffAccounts: 5,
-    maxDoctors: 2,
-    maxPetRecords: 100,
-    maxPetRecordsUnlimited: false,
-    storageLimitGb: 5,
-    labModuleEnabled: false,
-    groomingModuleEnabled: false,
-    kennelModuleEnabled: false,
-    onlinePharmacyModuleEnabled: false,
-    apiAccessEnabled: false,
-    whiteLabelCustomBranding: false,
+const resolvePlanType = (plan) => {
+    if (plan?.planType === "Solo Doctor") return "Solo Doctor";
+    if (["Solo Basic", "Solo Pro"].includes(plan?.subscriptionPlan)) return "Solo Doctor";
+    return "Clinic";
+};
+
+const formatDateForInput = (value) => {
+    if (!value) return today;
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return today;
+
+    return date.toISOString().slice(0, 10);
+};
+
+const getPlanPrice = (planType, subscriptionPlan, billingCycle) =>
+    PLAN_TYPE_CONFIG[planType]?.pricePresets?.[subscriptionPlan]?.[billingCycle] ?? 0;
+
+const getPlanDefaults = (planType) => PLAN_TYPE_CONFIG[planType]?.defaults || PLAN_TYPE_CONFIG.Clinic.defaults;
+
+const buildInitialForm = (plan) => {
+    const planType = resolvePlanType(plan);
+    const planConfig = PLAN_TYPE_CONFIG[planType];
+    const subscriptionPlan = plan?.subscriptionPlan && planConfig.planNames.includes(plan.subscriptionPlan)
+        ? plan.subscriptionPlan
+        : planConfig.planNames[0];
+    const billingCycle = BILLING_CYCLES.includes(plan?.billingCycle) ? plan.billingCycle : "Monthly";
+    const defaults = getPlanDefaults(planType);
+
+    return {
+        planType,
+        subscriptionPlan,
+        billingCycle,
+        price: Number(plan?.price ?? getPlanPrice(planType, subscriptionPlan, billingCycle)),
+        planStartDate: formatDateForInput(plan?.planStartDate),
+        trialPeriodDays: Number(plan?.trialPeriodDays ?? 0),
+        discountPromoCode: plan?.discountPromoCode ?? "",
+        customPlanNotes: plan?.customPlanNotes ?? "",
+        maxStaffAccounts: Number(plan?.featureLimits?.maxStaffAccounts ?? defaults.maxStaffAccounts),
+        maxDoctors: Number(plan?.featureLimits?.maxDoctors ?? defaults.maxDoctors),
+        maxPetRecords: Number(plan?.featureLimits?.maxPetRecords ?? defaults.maxPetRecords),
+        maxPetRecordsUnlimited: Boolean(plan?.featureLimits?.maxPetRecordsUnlimited),
+        storageLimitGb: Number(plan?.featureLimits?.storageLimitGb ?? defaults.storageLimitGb),
+        labModuleEnabled: Boolean(plan?.modules?.lab),
+        groomingModuleEnabled: Boolean(plan?.modules?.grooming),
+        kennelModuleEnabled: Boolean(plan?.modules?.kennel),
+        onlinePharmacyModuleEnabled: Boolean(plan?.modules?.onlinePharmacy),
+        apiAccessEnabled: Boolean(plan?.modules?.apiAccess),
+        whiteLabelCustomBranding: Boolean(plan?.modules?.whiteLabelBranding),
+        status: plan?.status ?? "Active",
+    };
 };
 
 const getRenewalDate = (startDate, billingCycle) => {
@@ -47,62 +105,108 @@ const getRenewalDate = (startDate, billingCycle) => {
     return date.toISOString().slice(0, 10);
 };
 
-export default function PlanForm({ onClose, onCreated }) {
-    const [form, setForm] = useState(initialForm);
+export default function PlanForm({ plan, onClose, onSaved, onCreated }) {
+    const isEditing = Boolean(plan?._id);
+    const [form, setForm] = useState(() => buildInitialForm(plan));
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState("");
+
+    useEffect(() => {
+        setForm(buildInitialForm(plan));
+        setError("");
+    }, [plan]);
 
     const planEndRenewalDate = useMemo(
         () => getRenewalDate(form.planStartDate, form.billingCycle),
         [form.planStartDate, form.billingCycle]
     );
 
-    const handleChange = (e) => {
-        const { name, value, type, checked } = e.target;
-        setForm((prev) => {
+    const subscriptionPlanOptions = PLAN_TYPE_CONFIG[form.planType]?.planNames || PLAN_TYPE_CONFIG.Clinic.planNames;
+
+    const handleChange = (event) => {
+        const { name, value, type, checked } = event.target;
+
+        setForm((previous) => {
+            if (name === "planType") {
+                const nextPlanType = value in PLAN_TYPE_CONFIG ? value : "Clinic";
+                const nextPlanOptions = PLAN_TYPE_CONFIG[nextPlanType].planNames;
+                const nextSubscriptionPlan = nextPlanOptions.includes(previous.subscriptionPlan)
+                    ? previous.subscriptionPlan
+                    : nextPlanOptions[0];
+                const nextBillingCycle = BILLING_CYCLES.includes(previous.billingCycle) ? previous.billingCycle : "Monthly";
+                const nextDefaults = getPlanDefaults(nextPlanType);
+
+                return {
+                    ...previous,
+                    planType: nextPlanType,
+                    subscriptionPlan: nextSubscriptionPlan,
+                    price: getPlanPrice(nextPlanType, nextSubscriptionPlan, nextBillingCycle),
+                    maxStaffAccounts: nextDefaults.maxStaffAccounts,
+                    maxDoctors: nextDefaults.maxDoctors,
+                    maxPetRecords: nextDefaults.maxPetRecords,
+                    maxPetRecordsUnlimited: false,
+                    storageLimitGb: nextDefaults.storageLimitGb,
+                };
+            }
+
+            const numericFields = new Set([
+                "price",
+                "trialPeriodDays",
+                "maxStaffAccounts",
+                "maxDoctors",
+                "maxPetRecords",
+                "storageLimitGb",
+            ]);
+
             const nextValue = type === "checkbox"
                 ? checked
-                : [
-                    "price",
-                    "trialPeriodDays",
-                    "maxStaffAccounts",
-                    "maxDoctors",
-                    "maxPetRecords",
-                    "storageLimitGb",
-                ].includes(name)
+                : numericFields.has(name)
                     ? clampNonNegativeNumber(value)
                     : value;
-            const updated = {
-                ...prev,
+
+            const nextForm = {
+                ...previous,
                 [name]: nextValue,
             };
 
             if (name === "subscriptionPlan" || name === "billingCycle") {
-                updated.price = getPlanPrice(
-                    name === "subscriptionPlan" ? value : updated.subscriptionPlan,
-                    name === "billingCycle" ? value : updated.billingCycle
-                );
+                const nextSubscriptionPlan = name === "subscriptionPlan" ? value : nextForm.subscriptionPlan;
+                const nextBillingCycle = name === "billingCycle" ? value : nextForm.billingCycle;
+                nextForm.price = getPlanPrice(nextForm.planType, nextSubscriptionPlan, nextBillingCycle);
             }
 
-            return updated;
+            return nextForm;
         });
     };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
+    const handleSubmit = async (event) => {
+        event.preventDefault();
         setSaving(true);
         setError("");
 
+        const payload = {
+            ...form,
+            price: clampNonNegativeNumber(form.price),
+            trialPeriodDays: clampNonNegativeNumber(form.trialPeriodDays),
+            planEndRenewalDate,
+        };
+
         try {
-            await createPlan({
-                ...form,
-                trialPeriodDays: clampNonNegativeNumber(form.trialPeriodDays),
-                planEndRenewalDate,
+            const response = isEditing
+                ? await updatePlan(plan._id, payload)
+                : await createPlan(payload);
+
+            showToast({
+                type: "success",
+                title: isEditing ? "Plan Updated" : "Plan Created",
+                description: response?.message || `The ${form.planType.toLowerCase()} plan has been saved successfully.`,
             });
-            onCreated?.();
+
+            onSaved?.(response?.data);
+            onCreated?.(response?.data);
             onClose();
         } catch (err) {
-            setError(err.response?.data?.message || "Unable to create plan");
+            setError(err.response?.data?.message || (isEditing ? "Unable to update plan" : "Unable to create plan"));
         } finally {
             setSaving(false);
         }
@@ -114,10 +218,10 @@ export default function PlanForm({ onClose, onCreated }) {
                 <div className="flex items-start justify-between gap-4 px-6 py-5 border-b">
                     <div>
                         <h2 className="text-2xl font-bold text-slate-900">
-                            Subscription Plan Assignment
+                            {isEditing ? "Edit Subscription Plan" : "Create Subscription Plan"}
                         </h2>
                         <p className="text-sm text-slate-500 mt-1">
-                            Configure plan selection, limits, modules and invoice generation.
+                            Configure clinic and solo doctor pricing, limits, modules and renewal details.
                         </p>
                     </div>
 
@@ -141,12 +245,14 @@ export default function PlanForm({ onClose, onCreated }) {
 
                         <Section title="Plan Selection" />
                         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-                            <SelectField label="Subscription Plan" name="subscriptionPlan" value={form.subscriptionPlan} onChange={handleChange} options={["Basic", "Standard", "Professional", "Enterprise", "Custom"]} required />
-                            <SelectField label="Billing Cycle" name="billingCycle" value={form.billingCycle} onChange={handleChange} options={["Monthly", "Quarterly", "Annual"]} required />
+                            <SelectField label="Plan Type" name="planType" value={form.planType} onChange={handleChange} options={Object.keys(PLAN_TYPE_CONFIG)} required />
+                            <SelectField label="Subscription Plan" name="subscriptionPlan" value={form.subscriptionPlan} onChange={handleChange} options={subscriptionPlanOptions} required />
+                            <SelectField label="Billing Cycle" name="billingCycle" value={form.billingCycle} onChange={handleChange} options={BILLING_CYCLES} required />
                             <Field label="Price (INR)" name="price" type="number" min="0" value={form.price} onChange={handleChange} required />
                             <Field label="Plan Start Date" name="planStartDate" type="date" value={form.planStartDate} onChange={handleChange} required />
                             <Field label="Plan End / Renewal Date" name="planEndRenewalDate" type="date" value={planEndRenewalDate} readOnly />
                             <Field label="Trial Period (Days)" name="trialPeriodDays" type="number" min="0" value={form.trialPeriodDays} onChange={handleChange} />
+                            <SelectField label="Status" name="status" value={form.status} onChange={handleChange} options={STATUS_OPTIONS} required />
                             <Field label="Discount / Promo Code" name="discountPromoCode" value={form.discountPromoCode} onChange={handleChange} />
                         </div>
 
@@ -203,7 +309,7 @@ export default function PlanForm({ onClose, onCreated }) {
                             Cancel
                         </button>
                         <button type="submit" disabled={saving} className="bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white px-6 py-2.5 rounded-xl font-medium">
-                            {saving ? "Creating..." : "Create Plan"}
+                            {saving ? (isEditing ? "Updating..." : "Creating...") : (isEditing ? "Update Plan" : "Create Plan")}
                         </button>
                     </div>
                 </form>
@@ -239,9 +345,17 @@ function SelectField({ label, name, value, onChange, options, required = false }
     return (
         <div>
             <label className="text-sm font-medium text-slate-700">{label}</label>
-            <select name={name} value={value} onChange={onChange} required={required} className="w-full mt-2 border rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-orange-500">
+            <select
+                name={name}
+                value={value}
+                onChange={onChange}
+                required={required}
+                className="w-full mt-2 border rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-orange-500"
+            >
                 {options.map((option) => (
-                    <option key={option} value={option}>{option}</option>
+                    <option key={option} value={option}>
+                        {option}
+                    </option>
                 ))}
             </select>
         </div>

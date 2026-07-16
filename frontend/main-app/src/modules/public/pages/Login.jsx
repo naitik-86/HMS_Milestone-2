@@ -1,22 +1,24 @@
 import { LogIn, Mail, Lock, Phone } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
-import { authApi } from "../../auth/api/authApi";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { authApi, googleLoginApi } from "../../auth/api/authApi";
 import API from "../../../shared/api/axios";
-import {
-  getDashboardPathForRole,
-  normalizeRole,
-} from "../../../shared/utils/roleRedirects";
 
 export default function Login() {
   const navigate = useNavigate();
+  const googleButtonRef = useRef(null);
+  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
   const [form, setForm] = useState({
     email: "",
     phone: "",
     password: "",
   });
-
+  const [errors, setErrors] = useState({
+    email: "",
+    phone: "",
+    password: "",
+  });
   const [showVerificationModal, setShowVerificationModal] =
     useState(false);
 
@@ -29,15 +31,55 @@ export default function Login() {
 
   const [phoneVerified, setPhoneVerified] = useState(false);
   const [emailVerified, setEmailVerified] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
-  const [loginUser, setLoginUser] = useState(null);
+  const openOtpVerification = useCallback((response, values = {}) => {
+    const role = response.user?.role || response.role;
+    const email = values.email || response.user?.email || response.googleUser?.email || "";
+    const phone = values.phone || response.user?.mobile || "";
+
+    if (response.role !== "SUPER_ADMIN") {
+      localStorage.setItem("totpRequired", response.requiresTotpSetup ? "true" : "false");
+      localStorage.setItem("passwordResetRequired", response.requiresPasswordReset ? "true" : "false");
+    }
+
+    localStorage.setItem("role", role);
+
+    setForm((prev) => ({
+      ...prev,
+      email: email || prev.email,
+      phone: phone || prev.phone,
+    }));
+    setPhoneOtp("");
+    setEmailOtp("");
+    setPhoneVerified(false);
+    setEmailVerified(false);
+    setEmailOtpSent(true);
+    setPhoneOtpSent(role !== "CLINIC_ADMIN");
+    setShowVerificationModal(true);
+  }, []);
+
+  const handleGoogleCredential = useCallback(async (credentialResponse) => {
+    if (!credentialResponse?.credential) {
+      alert("Google login failed. Please try again.");
+      return;
+    }
+
+    setGoogleLoading(true);
+
+    try {
+      const response = await googleLoginApi(credentialResponse.credential);
+      openOtpVerification(response);
+    } catch (error) {
+      alert(error.message || "Google login failed");
+    } finally {
+      setGoogleLoading(false);
+    }
+  }, [openOtpVerification]);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
     const role = localStorage.getItem("role");
-    const dashboardPath = getDashboardPathForRole(role);
-
-
 
     if (token) {
       if (localStorage.getItem("passwordResetRequired") === "true") {
@@ -45,30 +87,118 @@ export default function Login() {
         return;
       }
 
-      if (dashboardPath) {
-        navigate(dashboardPath, { replace: true });
+      if (localStorage.getItem("totpRequired") === "true") {
+        navigate("/enable-totp", { replace: true });
+        return;
       }
+
+      if (role === "SUPER_ADMIN") navigate("/superadmin", { replace: true });
+      else if (role === "CLINIC_ADMIN") navigate("/clinic", { replace: true });
+      else if (role === "DOCTOR") navigate("/doctor/dashboard", { replace: true });
+      else if (role === "RECEPTIONIST") navigate("/clinic/reception", { replace: true });
+      else if (role === "PARA_MEDICAL") navigate("/clinic/pre-consultation", { replace: true });
       return;
     }
 
     localStorage.removeItem("user");
     localStorage.removeItem("role");
     localStorage.removeItem("passwordResetRequired");
+    localStorage.removeItem("totpRequired");
     sessionStorage.clear();
   }, [navigate]);
 
+  useEffect(() => {
+    if (!googleClientId) return;
+
+    let isMounted = true;
+
+    const renderGoogleButton = () => {
+      if (!isMounted || !window.google?.accounts?.id || !googleButtonRef.current) return;
+
+      window.google.accounts.id.initialize({
+        client_id: googleClientId,
+        callback: handleGoogleCredential,
+      });
+
+      googleButtonRef.current.innerHTML = "";
+      window.google.accounts.id.renderButton(googleButtonRef.current, {
+        theme: "outline",
+        size: "large",
+        text: "continue_with",
+        shape: "rectangular",
+        logo_alignment: "left",
+        width: 382,
+      });
+    };
+
+    const existingScript = document.querySelector(
+      'script[src="https://accounts.google.com/gsi/client"]'
+    );
+
+    if (window.google?.accounts?.id) {
+      renderGoogleButton();
+    } else if (existingScript) {
+      existingScript.addEventListener("load", renderGoogleButton);
+    } else {
+      const script = document.createElement("script");
+      script.src = "https://accounts.google.com/gsi/client";
+      script.async = true;
+      script.defer = true;
+      script.addEventListener("load", renderGoogleButton);
+      document.body.appendChild(script);
+    }
+
+    return () => {
+      isMounted = false;
+      existingScript?.removeEventListener("load", renderGoogleButton);
+    };
+  }, [googleClientId, handleGoogleCredential]);
+
   const handleChange = (e) => {
+    const { name, value } = e.target;
+
     setForm({
       ...form,
-      [e.target.name]: e.target.value,
+      [name]: value,
+    });
+
+    setErrors({
+      ...errors,
+      [name]: "",
     });
   };
+  const validateForm = () => {
+    const newErrors = {};
 
+    if (!form.email.trim()) {
+      newErrors.email = "Email is required";
+    } else if (
+      !/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(form.email)
+    ) {
+      newErrors.email = "Enter a valid email";
+    }
 
+    if (!form.phone.trim()) {
+      newErrors.phone = "Phone number is required";
+    } else if (!/^[6-9]\d{9}$/.test(form.phone)) {
+      newErrors.phone =
+        "Enter a valid 10-digit mobile number";
+    }
+
+    if (!form.password.trim()) {
+      newErrors.password = "Password is required";
+    }
+
+    setErrors(newErrors);
+
+    return Object.keys(newErrors).length === 0;
+  };
   const handleSubmit = async (e) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    try {
+  if (!validateForm()) return;
+
+  try {
       // ===========================
       // LOGIN API CALL HERE
       // ===========================
@@ -78,17 +208,10 @@ export default function Login() {
         password: form.password,
       });
 
-      if (response.role !== "SUPER_ADMIN") {
-        localStorage.setItem('passwordResetRequired', response.requiresPasswordReset ? 'true' : 'false');
-      }
-
-      console.log(response);
-
-
-      localStorage.setItem("role", response.user?.role || response.role);
-      localStorage.setItem("userEmail", response.user?.email || form.email.trim());
-
-      setShowVerificationModal(true);
+      openOtpVerification(response, {
+        email: form.email,
+        phone: form.phone,
+      });
     } catch (error) {
       console.error("Login Error:", error);
       console.log(error.response?.data);
@@ -126,7 +249,7 @@ export default function Login() {
     setEmailOtpSent(true);
     console.log("Send Email OTP:", form.email);
   };
-
+  
   const handleVerifyEmailOtp = () => {
     if (emailOtp.length !== 6) {
       alert("Please enter a valid 6 digit OTP");
@@ -140,23 +263,22 @@ export default function Login() {
 
   const handleContinue = async () => {
     const role = localStorage.getItem("role");
-    const normalizedRole = normalizeRole(role);
-    let verifyEndpoint;
-    let payload;
+    let verifyEndpoint = "";
+    let payload = {};
 
     // 1. Check conditions and prepare payload
-    if (normalizedRole === "SUPER_ADMIN") {
-      if (!emailVerified) return alert("Please verify Email");
+    if (role === "SUPER_ADMIN") {
+      if (!phoneVerified || !emailVerified) return alert("Please verify both Phone and Email");
       verifyEndpoint = "/auth/superadmin/verify-otp";
-      payload = { email: form.email, otpEmail: emailOtp };
-    } else if (normalizedRole === "CLINIC_ADMIN") {
+      payload = { email: form.email, otpEmail: emailOtp, otpMobile: phoneOtp };
+    } else if (role === "CLINIC_ADMIN") {
       if (!emailVerified) return alert("Please verify Email");
       verifyEndpoint = "/auth/clinicadmin/verify-otp";
       payload = { email: form.email, otpEmail: emailOtp };
     } else {
-      if (!emailVerified) return alert("Please verify Email");
+      if (!phoneVerified || !emailVerified) return alert("Please verify both Phone and Email");
       verifyEndpoint = "/auth/staff/verify-otp";
-      payload = { email: form.email, otpEmail: emailOtp };
+      payload = { email: form.email, otpEmail: emailOtp, otpMobile: phoneOtp };
     }
 
     // 2. Make Verification Call & Set Token
@@ -165,7 +287,6 @@ export default function Login() {
       const verifyRes = await API.post(verifyEndpoint, payload);
       if (verifyRes.data?.token) {
         localStorage.setItem("token", verifyRes.data.token);
-        localStorage.setItem("userEmail", verifyRes.data.user?.email || form.email.trim());
 
         // =========== FORCE PASSWORD LOGIC ===========
         if (verifyRes.data?.requiresPasswordReset) {
@@ -184,26 +305,6 @@ export default function Login() {
       return;
     }
 
-    // check for plan status
-
-    try {
-      if (
-        loginUser?.role === "CLINIC_ADMIN" &&
-        loginUser?.user?.clinicId?.subscriptionStatus !== "ACTIVE"
-      ) {
-        return navigate("/payment", {
-          replace: true,
-          state: {
-            email: loginUser?.user?.email,
-            clinicId: loginUser?.user?.clinicId._id,
-          },
-        });
-      }
-    } catch (error) {
-      console.warn("Error In making Payment", error);
-    }
-
-
     // 3. Navigate to Dashboard with history replaced
     try {
       const redirectRes = await API.get("/dashboard");
@@ -217,10 +318,20 @@ export default function Login() {
     }
 
     // Fallbacks
-    const dashboardPath = getDashboardPathForRole(role);
-    if (dashboardPath) {
-      return navigate(dashboardPath, { replace: true });
-    }
+    if (role === "SUPER_ADMIN")
+      return navigate("/superadmin", { replace: true });
+
+    if (role === "CLINIC_ADMIN")
+      return navigate("/clinic", { replace: true });
+
+    if (role === "DOCTOR")
+      return navigate("/doctor/dashboard", { replace: true });
+
+    if (role === "RECEPTIONIST")
+      return navigate("/clinic/reception", { replace: true });
+
+    if (role === "PARA_MEDICAL")
+      return navigate("/clinic/pre-consultation", { replace: true });
   };
 
   return (
@@ -247,13 +358,23 @@ export default function Login() {
       >
         {/* GOOGLE BUTTON */}
 
-        <button
-          type="button"
-          className="w-full border border-slate-200 rounded-xl py-3 flex items-center justify-center gap-3 font-medium hover:bg-slate-50"
-        >
-          <GoogleIcon />
-          Continue with Google
-        </button>
+        {googleClientId ? (
+          <div className="w-full min-h-[44px] flex justify-center">
+            <div
+              ref={googleButtonRef}
+              className={googleLoading ? "pointer-events-none opacity-60" : ""}
+            />
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => alert("Google login is not configured")}
+            className="w-full border border-slate-200 rounded-xl py-3 flex items-center justify-center gap-3 font-medium hover:bg-slate-50"
+          >
+            <GoogleIcon />
+            Continue with Google
+          </button>
+        )}
 
         <div className="flex items-center gap-3 my-6">
           <div className="flex-1 h-px bg-slate-200" />
@@ -279,10 +400,18 @@ export default function Login() {
             onChange={handleChange}
             placeholder="you@example.com"
             required
-            className="w-full border border-green-600 rounded-xl pl-10 pr-4 py-3 focus:outline-none"
+            className={`w-full rounded-xl pl-10 pr-4 py-3 focus:outline-none ${
+              errors.email
+                ? "border border-red-500"
+                : "border border-green-600"
+            }`}
           />
         </div>
-
+        {errors.email && (
+          <p className="text-red-500 text-sm mt-1">
+            {errors.email}
+          </p>
+        )}
         {/* PHONE */}
 
         <label className="block text-sm font-semibold text-slate-900 mt-5 mb-2">
@@ -298,18 +427,32 @@ export default function Login() {
             value={form.phone}
             onChange={(e) => {
               const value = e.target.value.replace(/\D/g, "");
+
               if (value.length <= 10) {
                 setForm({
                   ...form,
                   phone: value,
                 });
+
+                setErrors({
+                  ...errors,
+                  phone: "",
+                });
               }
             }}
             placeholder="Enter phone number"
-            className="w-full border border-slate-200 rounded-xl pl-10 pr-4 py-3"
+            className={`w-full rounded-xl pl-10 pr-4 py-3 ${
+              errors.phone
+                ? "border border-red-500"
+                : "border border-slate-200"
+            }`}
           />
         </div>
-
+        {errors.phone && (
+          <p className="text-red-500 text-sm mt-1">
+            {errors.phone}
+          </p>
+        )}
         {/* PASSWORD */}
 
         <div className="flex justify-between items-center mt-5 mb-2">
@@ -327,10 +470,18 @@ export default function Login() {
             value={form.password}
             onChange={handleChange}
             required
-            className="w-full border border-slate-200 rounded-xl pl-10 pr-4 py-3 focus:outline-none focus:border-green-600"
+            className={`w-full rounded-xl pl-10 pr-4 py-3 focus:outline-none ${
+              errors.password
+                ? "border border-red-500"
+                : "border border-slate-200 focus:border-green-600"
+            }`}
           />
         </div>
-
+        {errors.password && (
+          <p className="text-red-500 text-sm mt-1">
+            {errors.password}
+          </p>
+        )}
         <button
           type="submit"
           className="mt-7 w-full bg-green-700 hover:bg-green-800 text-white font-semibold py-3.5 rounded-xl"
@@ -338,16 +489,6 @@ export default function Login() {
           Log in
         </button>
       </form>
-
-      <p className="mt-7 text-sm text-slate-600">
-        Don't have an account?{" "}
-        <Link
-          to="/signup"
-          className="text-green-700 font-semibold"
-        >
-          Create one
-        </Link>
-      </p>
 
       {/* ================================= */}
       {/* VERIFICATION MODAL */}

@@ -1,11 +1,43 @@
+import { useState } from "react";
 import { Download, FileText } from "lucide-react";
+import { downloadReportSnapshot } from "./reportDownload";
 
-function ReportList({ reports }) {
+function ReportList({ category, catalog, catalogLoading = false }) {
+    const [downloadingReport, setDownloadingReport] = useState("");
+
+    const reports = category?.reports ?? [];
+
+    const handleExport = async (report) => {
+        if (!catalog) {
+            return;
+        }
+
+        setDownloadingReport(report.key);
+
+        try {
+            downloadReportSnapshot({
+                category,
+                report,
+                catalog,
+            });
+        } catch (error) {
+            console.error("Failed to export backend report:", error);
+        } finally {
+            setDownloadingReport("");
+        }
+    };
+
     return (
         <div className="space-y-4">
+            {catalogLoading ? (
+                <div className="rounded-2xl border border-orange-100 bg-orange-50 px-4 py-3 text-sm text-orange-700">
+                    Loading backend report data...
+                </div>
+            ) : null}
+
             {reports.map((report) => (
                 <div
-                    key={report}
+                    key={report.key}
                     className="
                         bg-white
                         border
@@ -33,17 +65,20 @@ function ReportList({ reports }) {
 
                         <div className="min-w-0">
                             <h3 className="font-medium text-sm md:text-base text-slate-800 break-words">
-                                {report}
+                                {report.title}
                             </h3>
 
                             <p className="text-xs text-slate-500 mt-1">
-                                Export report in PDF, Excel or CSV format
+                                Download a backend-backed PDF report
                             </p>
                         </div>
                     </div>
 
                     {/* Right */}
                     <button
+                        type="button"
+                        onClick={() => handleExport(report)}
+                        disabled={catalogLoading || !catalog || downloadingReport === report.key}
                         className="
                             w-full
                             sm:w-auto
@@ -61,10 +96,12 @@ function ReportList({ reports }) {
                             font-medium
                             transition
                             shrink-0
+                            disabled:opacity-70
+                            disabled:cursor-not-allowed
                         "
-                    >
+                        >
                         <Download size={16} />
-                        Export
+                        {downloadingReport === report.key ? "Preparing..." : "Export PDF"}
                     </button>
                 </div>
             ))}

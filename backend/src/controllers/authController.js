@@ -352,14 +352,58 @@ const sendEmail = require('../utils/emailService');
 
 const Staff = require("../models/Staff");
 
-const normalizeEmail = (value) => (typeof value === 'string' ? value.trim().toLowerCase() : '');
-const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const GOOGLE_TOKENINFO_URL = "https://oauth2.googleapis.com/tokeninfo";
+
+const verifyGoogleCredential = async (credential) => {
+  if (!credential) {
+    const error = new Error("Google credential is required");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const { default: axios } = await import("axios");
+  const { data } = await axios.get(GOOGLE_TOKENINFO_URL, {
+    params: { id_token: credential },
+  });
+
+  const expectedClientId = process.env.GOOGLE_CLIENT_ID;
+  if (!expectedClientId) {
+    const error = new Error("GOOGLE_CLIENT_ID is not configured");
+    error.statusCode = 500;
+    throw error;
+  }
+
+  if (data.aud !== expectedClientId) {
+    const error = new Error("Invalid Google client");
+    error.statusCode = 401;
+    throw error;
+  }
+
+  if (!data.email || data.email_verified !== "true") {
+    const error = new Error("Google email is not verified");
+    error.statusCode = 401;
+    throw error;
+  }
+
+  return {
+    email: data.email.toLowerCase(),
+    name: data.name,
+    picture: data.picture,
+  };
+};
+
+const normalizeRole = (role) =>
+  typeof role === "string"
+    ? role.trim().toUpperCase().replace(/[\s-]+/g, "_")
+    : "";
+
 const comparePasswordWithWhitespaceFallback = async (plainPassword, hashedPassword) => {
-  if (typeof plainPassword !== 'string' || typeof hashedPassword !== 'string') {
+  if (!plainPassword || !hashedPassword) {
     return false;
   }
 
-  if (await bcrypt.compare(plainPassword, hashedPassword)) {
+  const exactMatch = await bcrypt.compare(plainPassword, hashedPassword);
+  if (exactMatch) {
     return true;
   }
 
@@ -371,6 +415,145 @@ const comparePasswordWithWhitespaceFallback = async (plainPassword, hashedPasswo
   return false;
 };
 
+const createOtpChallengeForLogin = async ({ account, accountType, email }) => {
+  const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+
+  if (accountType === "SUPER_ADMIN") {
+    const mobile = process.env.SUPER_ADMIN_MOBILE;
+    if (!mobile) {
+      const error = new Error("SUPER_ADMIN_MOBILE is not configured in .env");
+      error.statusCode = 500;
+      throw error;
+    }
+
+    const otpEmail = generateOTP();
+    const otpMobile = generateOTP();
+
+    await LoginOtp.create({
+      userType: "SUPER_ADMIN",
+      userId: account._id,
+      email: account.email,
+      mobile,
+      otpEmail,
+      otpMobile,
+      expiresAt,
+    });
+
+    await sendOtpMultiChannel({
+      email: account.email,
+      mobile,
+      otpEmail,
+      otpMobile,
+      emailSender: sendEmail,
+    });
+
+    return {
+      message: "OTP sent to registered email and mobile. Verify to login.",
+      role: "SUPER_ADMIN",
+      user: {
+        id: account._id,
+        email: account.email,
+        mobile,
+        role: "SUPER_ADMIN",
+      },
+    };
+  }
+
+  if (accountType === "CLINIC_ADMIN") {
+    const otpEmail = email === "admin@clinic.com" ? "123456" : generateOTP();
+
+    await LoginOtp.create({
+      userType: "CLINIC_ADMIN",
+      userId: account._id,
+      email: account.email,
+      otpEmail,
+      expiresAt,
+    });
+
+    await sendOtpMultiChannel({
+      email: account.email,
+      otpEmail,
+      emailSender: sendEmail,
+    });
+
+    return {
+      message: "OTP sent to registered email. Verify to login.",
+      role: "CLINIC_ADMIN",
+      user: {
+        id: account._id,
+        email: account.email,
+        role: "CLINIC_ADMIN",
+        clinicId: account.clinicId || account.clinic,
+      },
+    };
+  }
+
+  if (accountType === "STAFF") {
+    if (!account.accountInfo.accountActive) {
+      const error = new Error("Account is inactive");
+      error.statusCode = 403;
+      throw error;
+    }
+
+    const otpEmail = generateOTP();
+    const otpMobile = generateOTP();
+    const mobile = account.personalInfo.mobileNumber;
+
+    await LoginOtp.create({
+      userType: "STAFF",
+      userId: account._id,
+      email: account.personalInfo.email,
+      mobile,
+      otpEmail,
+      otpMobile,
+      expiresAt,
+    });
+
+    await sendOtpMultiChannel({
+      email: account.personalInfo.email,
+      mobile,
+      otpEmail,
+      otpMobile,
+      emailSender: sendEmail,
+    });
+
+    return {
+      message: "OTP sent to registered email and mobile. Verify to login.",
+      role: account.employmentInfo.role,
+      user: {
+        id: account._id,
+        name: account.personalInfo.fullName,
+        email: account.personalInfo.email,
+        mobile,
+        role: account.employmentInfo.role,
+        clinicId: account.clinicId,
+      },
+    };
+  }
+
+  const error = new Error("Unsupported account type");
+  error.statusCode = 400;
+  throw error;
+};
+
+const findOtpLoginAccountByEmail = async (email) => {
+  const normalizedEmail = email.toLowerCase();
+
+  const admin = await SuperAdmin.findOne({ email: normalizedEmail }).select("+password");
+  if (admin) return { account: admin, accountType: "SUPER_ADMIN" };
+
+  const clinicAdmin = await ClinicAdmin.findOne({ email: normalizedEmail }).select("+password");
+  if (clinicAdmin) return { account: clinicAdmin, accountType: "CLINIC_ADMIN" };
+
+  const staff = await Staff.findOne({
+    "personalInfo.email": normalizedEmail,
+    isDeleted: false,
+  });
+  if (staff) return { account: staff, accountType: "STAFF" };
+
+  return null;
+};
+
 /* ==========================================
    UNIVERSAL LOGIN (EMAIL + PASSWORD)
 ========================================== */
@@ -378,9 +561,8 @@ const comparePasswordWithWhitespaceFallback = async (plainPassword, hashedPasswo
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
-    const normalizedEmail = normalizeEmail(email);
 
-    if (!normalizedEmail || !password) {
+    if (!email || !password) {
       return res.status(400).json({
         success: false,
         message: "Email and password are required",
@@ -390,10 +572,10 @@ exports.login = async (req, res) => {
     /* =========================
        1. CHECK SUPER ADMIN
     ========================= */
-    const admin = await SuperAdmin.findOne({ email: normalizedEmail }).select("+password");
+    const admin = await SuperAdmin.findOne({ email: email.toLowerCase() }).select("+password");
 
     if (admin) {
-      const isMatch = await comparePasswordWithWhitespaceFallback(password, admin.password);
+      const isMatch = await bcrypt.compare(password, admin.password);
 
       if (!isMatch) {
         return res.status(401).json({
@@ -426,26 +608,18 @@ exports.login = async (req, res) => {
         expiresAt,
       });
 
-      try {
-        // Send both OTPs via Email and WhatsApp/SMS
-        await sendOtpMultiChannel({
-          email: admin.email,
-          mobile,
-          otpEmail,
-          otpMobile,
-          emailSender: sendEmail,
-        });
-      } catch (emailErr) {
-        return res.status(500).json({
-          success: false,
-          message: 'Failed to send super admin login OTP',
-          error: emailErr.message,
-        });
-      }
+      // Send both OTPs via Email and WhatsApp/SMS
+      await sendOtpMultiChannel({
+        email: admin.email,
+        mobile,
+        otpEmail,
+        otpMobile,
+        emailSender: sendEmail,
+      });
 
       return res.status(200).json({
         success: true,
-        message: "OTP sent to registered email. Verify to login.",
+        message: "OTP sent to registered email and mobile. Verify to login.",
         role: "SUPER_ADMIN",
         user: {
           id: admin._id,
@@ -458,15 +632,10 @@ exports.login = async (req, res) => {
     /* =========================
        2. CHECK CLINIC ADMIN
     ========================= */
-    const clinicAdmin = await ClinicAdmin.findOne({ email: normalizedEmail })
-      .select("+password")
-      .populate({
-        path: "clinicId",
-        select: "_id name subscriptionType subscriptionStatus expiryDate",
-      });
+    const clinicAdmin = await ClinicAdmin.findOne({ email: email.toLowerCase() }).select("+password");
 
     if (clinicAdmin) {
-      const isMatch = await comparePasswordWithWhitespaceFallback(password, clinicAdmin.password);
+      const isMatch = await bcrypt.compare(password, clinicAdmin.password);
 
       if (!isMatch) {
         return res.status(401).json({
@@ -487,20 +656,12 @@ exports.login = async (req, res) => {
         expiresAt,
       });
 
-      try {
-        // Send Email OTP (keep developer bypass OTP generation, but do not skip sending)
-        await sendOtpMultiChannel({
-          email: clinicAdmin.email,
-          otpEmail,
-          emailSender: sendEmail,
-        });
-      } catch (emailErr) {
-        return res.status(500).json({
-          success: false,
-          message: 'Failed to send clinic admin login OTP email',
-          error: emailErr.message,
-        });
-      }
+      // Send Email OTP (keep developer bypass OTP generation, but do not skip sending)
+      await sendOtpMultiChannel({
+        email: clinicAdmin.email,
+        otpEmail,
+        emailSender: sendEmail,
+      });
 
 
       return res.status(200).json({
@@ -520,10 +681,7 @@ exports.login = async (req, res) => {
        3. CHECK STAFF
     ========================= */
     const staff = await Staff.findOne({
-      "personalInfo.email": {
-        $regex: `^${escapeRegExp(normalizedEmail)}$`,
-        $options: 'i',
-      },
+      "personalInfo.email": email.toLowerCase(),
       isDeleted: false,
     });
 
@@ -536,7 +694,7 @@ exports.login = async (req, res) => {
         });
       }
 
-      const isMatch = await comparePasswordWithWhitespaceFallback(
+      const isMatch = await bcrypt.compare(
         password,
         staff.accountInfo.password
       );
@@ -555,7 +713,7 @@ exports.login = async (req, res) => {
       const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes expiry
 
       await LoginOtp.create({
-        userType: 'STAFF',
+        userType: 'STAFF', 
         userId: staff._id,
         email: staff.personalInfo.email,
         mobile: mobile,
@@ -564,26 +722,18 @@ exports.login = async (req, res) => {
         expiresAt,
       });
 
-      try {
-        // Send both OTPs via Email and WhatsApp/SMS
-        await sendOtpMultiChannel({
-          email: staff.personalInfo.email,
-          mobile: mobile,
-          otpEmail,
-          otpMobile,
-          emailSender: sendEmail,
-        });
-      } catch (emailErr) {
-        return res.status(500).json({
-          success: false,
-          message: 'Failed to send staff login OTP email',
-          error: emailErr.message,
-        });
-      }
+      // Send both OTPs via Email and WhatsApp/SMS
+      await sendOtpMultiChannel({
+        email: staff.personalInfo.email,
+        mobile: mobile,
+        otpEmail,
+        otpMobile,
+        emailSender: sendEmail,
+      });
 
       return res.status(200).json({
         success: true,
-        message: "OTP sent to registered email. Verify to login.",
+        message: "OTP sent to registered email and mobile. Verify to login.",
         role: staff.employmentInfo.role,
         user: {
           id: staff._id,
@@ -598,7 +748,7 @@ exports.login = async (req, res) => {
     /* =========================
        4. CHECK NORMAL USERS 
     ========================= */
-    const user = await User.findOne({ email: normalizedEmail }).select("+password");
+    const user = await User.findOne({ email: email.toLowerCase() }).select("+password");
 
     if (!user) {
       return res.status(404).json({
@@ -607,7 +757,7 @@ exports.login = async (req, res) => {
       });
     }
 
-    const isMatch = await comparePasswordWithWhitespaceFallback(password, user.password);
+    const isMatch = await bcrypt.compare(password, user.password);
 
     if (!isMatch) {
       return res.status(401).json({
@@ -657,114 +807,156 @@ exports.login = async (req, res) => {
 
 exports.changePassword = async (req, res) => {
   try {
-    const { currentPassword, newPassword } = req.body;
-    const authUser = req.user || {};
-    const normalizedRole = (authUser.role || '').toUpperCase().replace(/\s+/g, '_');
-    const userId = authUser.id;
-
-    if (!userId) {
-      return res.status(401).json({
-        success: false,
-        message: 'Not authorized',
-      });
-    }
+    const { currentPassword, newPassword } = req.body || {};
+    const role = normalizeRole(req.user?.role);
+    const userId = req.user?.id;
 
     if (!currentPassword || !newPassword) {
       return res.status(400).json({
         success: false,
-        message: 'Current password and new password are required',
+        message: "Current password and new password are required",
       });
     }
 
-    if (newPassword.length < 8) {
-      return res.status(400).json({
+    if (!userId || !role) {
+      return res.status(401).json({
         success: false,
-        message: 'New password must be at least 8 characters long',
+        message: "Not authorized",
       });
     }
 
-    if (normalizedRole === 'SUPER_ADMIN') {
-      const superAdmin = await SuperAdmin.findById(userId).select('+password');
+    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
 
-      if (!superAdmin) {
+    if (role === "SUPER_ADMIN") {
+      const admin = await SuperAdmin.findById(userId).select("+password");
+
+      if (!admin) {
         return res.status(404).json({
           success: false,
-          message: 'Super admin not found',
+          message: "Super admin not found",
         });
       }
 
-      const isMatch = await comparePasswordWithWhitespaceFallback(currentPassword, superAdmin.password);
+      const isMatch = await comparePasswordWithWhitespaceFallback(currentPassword, admin.password);
       if (!isMatch) {
         return res.status(401).json({
           success: false,
-          message: 'Current password is incorrect',
+          message: "Current password is incorrect",
         });
       }
 
-      superAdmin.password = await bcrypt.hash(newPassword, 10);
-      await superAdmin.save();
-    } else if (normalizedRole === 'CLINIC_ADMIN') {
-      const clinicAdmin = await ClinicAdmin.findById(userId).select('+password');
+      admin.password = hashedNewPassword;
+      await admin.save();
 
-      if (!clinicAdmin) {
-        return res.status(404).json({
-          success: false,
-          message: 'Clinic admin not found',
-        });
-      }
-
-      const isMatch = await comparePasswordWithWhitespaceFallback(currentPassword, clinicAdmin.password);
-      if (!isMatch) {
-        return res.status(401).json({
-          success: false,
-          message: 'Current password is incorrect',
-        });
-      }
-
-      clinicAdmin.password = await bcrypt.hash(newPassword, 10);
-      clinicAdmin.forcePasswordReset = false;
-      await clinicAdmin.save();
-    } else {
-      const staff = await Staff.findById(userId);
-
-      if (!staff) {
-        return res.status(404).json({
-          success: false,
-          message: 'Staff member not found',
-        });
-      }
-
-      const existingPassword = staff.accountInfo?.password;
-      const isMatch = existingPassword
-        ? await comparePasswordWithWhitespaceFallback(currentPassword, existingPassword)
-        : false;
-
-      if (!isMatch) {
-        return res.status(401).json({
-          success: false,
-          message: 'Current password is incorrect',
-        });
-      }
-
-      staff.accountInfo = staff.accountInfo || {};
-      staff.accountInfo.password = await bcrypt.hash(newPassword, 10);
-      staff.accountInfo.forcePasswordReset = false;
-      staff.accountInfo.temporaryPassword = undefined;
-      await staff.save();
+      return res.status(200).json({
+        success: true,
+        message: "Password updated successfully",
+      });
     }
+
+    if (role === "CLINIC_ADMIN") {
+      const admin = await ClinicAdmin.findOne({ _id: userId }).select("+password");
+
+      if (!admin) {
+        return res.status(404).json({
+          success: false,
+          message: "Clinic admin not found",
+        });
+      }
+
+      const isMatch = await comparePasswordWithWhitespaceFallback(currentPassword, admin.password);
+      if (!isMatch) {
+        return res.status(401).json({
+          success: false,
+          message: "Current password is incorrect",
+        });
+      }
+
+      admin.password = hashedNewPassword;
+      admin.forcePasswordReset = false;
+      await admin.save();
+
+      return res.status(200).json({
+        success: true,
+        message: "Password updated successfully",
+      });
+    }
+
+    const staff = await Staff.findOne({
+      _id: userId,
+      clinicId: req.user?.clinicId,
+      isDeleted: false,
+    });
+
+    if (staff) {
+      const storedPassword = staff.accountInfo?.password;
+      const isMatch = await comparePasswordWithWhitespaceFallback(currentPassword, storedPassword);
+
+      if (!isMatch) {
+        return res.status(401).json({
+          success: false,
+          message: "Current password is incorrect",
+        });
+      }
+
+      staff.accountInfo.password = hashedNewPassword;
+      staff.accountInfo.forcePasswordReset = false;
+      staff.accountInfo.temporaryPassword = "";
+
+      await staff.save();
+
+      return res.status(200).json({
+        success: true,
+        message: "Password updated successfully",
+      });
+    }
+
+    return res.status(404).json({
+      success: false,
+      message: "Account not found for password update",
+    });
+  } catch (error) {
+    console.error("CHANGE PASSWORD ERROR:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Failed to update password",
+    });
+  }
+};
+
+/* ==========================================
+   GOOGLE LOGIN (GOOGLE ACCOUNT + OTP)
+========================================== */
+
+exports.googleLogin = async (req, res) => {
+  try {
+    const { credential } = req.body;
+    const googleUser = await verifyGoogleCredential(credential);
+    const match = await findOtpLoginAccountByEmail(googleUser.email);
+
+    if (!match) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    const challenge = await createOtpChallengeForLogin({
+      account: match.account,
+      accountType: match.accountType,
+      email: googleUser.email,
+    });
 
     return res.status(200).json({
       success: true,
-      message: 'Password updated successfully',
-      requiresPasswordReset: false,
-      role: normalizedRole,
+      ...challenge,
+      googleUser,
     });
   } catch (error) {
-    console.error('CHANGE PASSWORD ERROR:', error.message);
-    return res.status(500).json({
+    console.error("GOOGLE LOGIN ERROR:", error);
+    return res.status(error.statusCode || 500).json({
       success: false,
-      message: 'Failed to update password',
-      error: error.message,
+      message: error.message || "Google login failed",
     });
   }
 };
