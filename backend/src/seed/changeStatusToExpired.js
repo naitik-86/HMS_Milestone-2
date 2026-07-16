@@ -1,4 +1,4 @@
-// expireClinicSubscription.js
+// expireClinicAndSubscription.js
 
 const path = require("path");
 const mongoose = require("mongoose");
@@ -8,6 +8,7 @@ require("dotenv").config({
 });
 
 const Clinic = require("../models/Clinic");
+const ClinicSubscriptionTracker = require("../models/ClinicSubscriptionTracker");
 
 const connectDB = async () => {
     try {
@@ -19,42 +20,80 @@ const connectDB = async () => {
     }
 };
 
-const expireSubscription = async () => {
+const expireClinicSubscription = async () => {
     try {
         await connectDB();
 
         const clinicId = "6a563353f8b2d9067b35bd28";
 
-        const clinic = await Clinic.findByIdAndUpdate(
-            clinicId,
-            {
-                subscriptionStatus: "EXPIRED",
-                expiryDate: new Date(), // Optional: Sets expiry date to now
-            },
-            {
-                new: true,
-            }
-        );
+        // Expire it 30 days ago
+        const expiredDate = new Date();
+        expiredDate.setDate(expiredDate.getDate() - 30);
+
+        // ------------------------------------
+        // EXPIRE CLINIC
+        // ------------------------------------
+
+        const clinic = await Clinic.findById(clinicId);
 
         if (!clinic) {
             console.log("❌ Clinic not found");
             process.exit(1);
         }
 
-        console.log("✅ Clinic subscription marked as EXPIRED");
+        clinic.subscriptionStatus = "EXPIRED";
+        clinic.expiryDate = expiredDate;
+
+        await clinic.save();
+
+        console.log("✅ Clinic expired.");
+
+        // ------------------------------------
+        // EXPIRE SUBSCRIPTION TRACKER
+        // ------------------------------------
+
+        const tracker = await ClinicSubscriptionTracker.findOne({ clinicId });
+
+        if (!tracker) {
+            console.log("⚠️ Subscription tracker not found.");
+        } else {
+            tracker.status = "EXPIRED";
+            tracker.planEndRenewalDate = expiredDate;
+
+            // Optional if you want to expire the trial too
+            tracker.trialEndDate = expiredDate;
+
+            await tracker.save();
+
+            console.log("✅ Subscription tracker expired.");
+
+            console.log({
+                trackerId: tracker._id,
+                clinicId: tracker.clinicId,
+                status: tracker.status,
+                paymentStatus: tracker.paymentStatus,
+                trialEndDate: tracker.trialEndDate,
+                planEndRenewalDate: tracker.planEndRenewalDate,
+            });
+        }
+
+        console.log("\n========== FINAL STATUS ==========");
+
         console.log({
             clinicId: clinic._id,
-            name: clinic.name,
-            subscriptionType: clinic.subscriptionType,
+            clinicName: clinic.name,
             subscriptionStatus: clinic.subscriptionStatus,
             expiryDate: clinic.expiryDate,
         });
 
+        await mongoose.connection.close();
         process.exit(0);
+
     } catch (error) {
         console.error("❌ Error:", error);
+        await mongoose.connection.close();
         process.exit(1);
     }
 };
 
-expireSubscription();
+expireClinicSubscription();

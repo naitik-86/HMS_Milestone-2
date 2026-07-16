@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { normalizeRole } from "../shared/utils/roleRedirects";
 import TrialPaymentModal from "../modules/billingModule/components/TrialPaymentModal";
+import { getSubscriptionStatus } from "../modules/clinicadmin/api/subscriptionApi"
+
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
     const location = useLocation();
@@ -32,6 +34,7 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
             try {
                 const { data } = await API.get("/clinic/subscription/status");
 
+                console.log("STATUS API");
                 console.log(data);
 
 

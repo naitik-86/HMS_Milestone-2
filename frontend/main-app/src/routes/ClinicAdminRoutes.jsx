@@ -39,7 +39,7 @@ const DoctorDashboard = lazy(() => import("../modules/clinicadmin/pages/doctor-s
 const DoctorPendingPetsPage = lazy(() => import("../modules/clinicadmin/pages/doctor-staff/DoctorPendingPetsPage"));
 const DoctorCompletedPetsPage = lazy(() => import("../modules/clinicadmin/pages/doctor-staff/DoctorCompletedPetsPage"));
 const DoctorHistoryPetsPage = lazy(() => import("../modules/clinicadmin/pages/doctor-staff/DoctorHistoryPetsPage"));
-
+import PrePaidSubscription from "../modules/clinicadmin/features/subscription/PrePaidSubscription";
 
 
 const ClinicAdminRoutes = (
@@ -61,8 +61,9 @@ const ClinicAdminRoutes = (
             <Route path="kennel" element={<KennelStaff />} />
             <Route path="reports" element={<Reports />} />
             <Route path="reports/basic" element={<Reports />} />
-            <Route path="reports/basic" element={<BasicReports />} />
+            {/* <Route path="reports/basic" element={<BasicReports />} /> */}
             <Route path="settings" element={<ClinicSettings />} />
+            <Route path="subscription" element={<PrePaidSubscription />} />
         </Route>
 
         {/* {Preconsultation Routes} */}

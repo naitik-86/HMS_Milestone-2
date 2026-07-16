@@ -26,6 +26,97 @@ const normalizePlanType = (planType, subscriptionPlan) => {
   return 'Clinic';
 };
 
+
+exports.getCurrentSubscription = async (req, res) => {
+  try {
+    const clinicId = req.user.clinicId;
+
+    const subscription = await clinincSubscriptionTracker
+      .findOne({ clinicId })
+      .populate("planId");
+
+    if (!subscription) {
+      return res.status(404).json({
+        success: false,
+        message: "No subscription found.",
+      });
+    }
+
+    let remainingDays = 0;
+
+    if (subscription.status === "TRIAL") {
+      if (subscription.trialEndDate) {
+        remainingDays = Math.max(
+          0,
+          Math.ceil(
+            (subscription.trialEndDate - new Date()) /
+            (1000 * 60 * 60 * 24)
+          )
+        );
+      }
+    } else if (subscription.status === "ACTIVE") {
+      if (subscription.planEndRenewalDate) {
+        remainingDays = Math.max(
+          0,
+          Math.ceil(
+            (subscription.planEndRenewalDate - new Date()) /
+            (1000 * 60 * 60 * 24)
+          )
+        );
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        status: subscription.status,
+        paymentStatus: subscription.paymentStatus,
+        paymentDate: subscription.paymentDate,
+        planStartDate: subscription.planStartDate,
+        planEndRenewalDate: subscription.planEndRenewalDate,
+        trialStartDate: subscription.trialStartDate,
+        trialEndDate: subscription.trialEndDate,
+        amountPaid: subscription.amountPaid,
+        transactionId: subscription.transactionId,
+        remainingDays,
+        plan: subscription.planId,
+      },
+    });
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch current subscription.",
+    });
+  }
+};
+
+
+exports.getAllPlans = async (req, res) => {
+  try {
+    const plans = await SubscriptionPlan.find({
+      planType: "Clinic",
+      status: "Active",
+    }).sort({
+      price: 1,
+    });
+
+    return res.status(200).json({
+      success: true,
+      totalPlans: plans.length,
+      data: plans,
+    });
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch subscription plans.",
+    });
+  }
+};
+
 const normalizePlanName = (planName) =>
   typeof planName === 'string' ? planName.trim() : planName;
 

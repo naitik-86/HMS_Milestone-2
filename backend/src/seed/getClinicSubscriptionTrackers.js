@@ -1,4 +1,4 @@
-// getSubscriptionPlans.js
+// getClinicSubscriptionTrackers.js
 
 const path = require("path");
 const mongoose = require("mongoose");
@@ -7,7 +7,7 @@ require("dotenv").config({
     path: path.resolve(__dirname, "../../.env"),
 });
 
-const SubscriptionPlan = require("../models/SubscriptionPlan");
+const ClinicSubscriptionTracker = require("../models/ClinicSubscriptionTracker");
 
 const connectDB = async () => {
     try {
@@ -19,22 +19,23 @@ const connectDB = async () => {
     }
 };
 
-const getPlans = async () => {
+const getClinicSubscriptionTrackers = async () => {
     try {
         await connectDB();
 
-        const plans = await SubscriptionPlan.find({
-            "billingCycle": "6_MONTHS"
-        }).lean();
+        const trackers = await ClinicSubscriptionTracker.find();
 
-        console.log("📦 Subscription Plans:");
-        console.log(JSON.stringify(plans, null, 2));
+        console.dir(trackers, { depth: null });
 
+        console.log(`\n✅ Total Trackers: ${trackers.length}`);
+
+        await mongoose.connection.close();
         process.exit(0);
     } catch (error) {
-        console.error("❌ Error fetching plans:", error);
+        console.error("❌ Error:", error);
+        await mongoose.connection.close();
         process.exit(1);
     }
 };
 
-getPlans();
+getClinicSubscriptionTrackers();

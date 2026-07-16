@@ -9,11 +9,11 @@ const Sidebar = ({ isOpen = false, onClose }) => {
     { id: "dashboard", label: "Dashboard", icon: "🏠" },
     { id: "staff", label: "Staff", icon: "👨‍⚕️" },
     { id: "doctors", label: "Doctors", icon: "🩺" },
-    { id: "groomer", label: "Groomer", icon: "✂️" },
-    { id: "kennel", label: "Kennel", icon: "🐾" },
-    { id: "reports", label: "Reports", icon: "📊" },
-    { id: "reports-basic", label: "Basic Reports", icon: "✅" },
-    { id: "settings", label: "Settings", icon: "⚙️" },
+    { id: "subscription", label: "Subscription", icon: "💳" },
+    { id: "groomer", label: "Groomer", icon: "✂️", disabled: true },
+    { id: "kennel", label: "Kennel", icon: "🐾", disabled: true },
+    { id: "reports", label: "Reports", icon: "📊", disabled: true },
+    { id: "settings", label: "Settings", icon: "⚙️", disabled: true },
   ];
 
   const handleNavigate = (item) => {
@@ -82,15 +82,60 @@ const Sidebar = ({ isOpen = false, onClose }) => {
               <X size={20} />
             </button>
           </div>
+          {navItems.map((item) => {
+            const isActive =
+              item.id === "dashboard"
+                ? location.pathname === "/clinic"
+                : item.id === "reports-basic"
+                  ? location.pathname === "/clinic/reports/basic"
+                  : location.pathname.startsWith(`/clinic/${item.id}`);
 
-        {navItems.map((item) => {
-          const isActive =
-            item.id === "dashboard"
-              ? location.pathname === "/clinic"
-              : item.id === "reports-basic"
-                ? location.pathname === "/clinic/reports/basic"
-                : location.pathname.startsWith(`/clinic/${item.id}`);
+            // Disabled Menu
+            if (item.disabled) {
+              return (
+                <div
+                  key={item.id}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    width: "100%",
+                    padding: "12px 14px",
+                    borderRadius: 10,
+                    marginBottom: 6,
+                    color: "#6B7280",
+                    cursor: "not-allowed",
+                    opacity: 0.6,
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 12,
+                    }}
+                  >
+                    <span>{item.icon}</span>
+                    {item.label}
+                  </div>
 
+                  <span
+                    style={{
+                      background: "rgba(232,99,10,.15)",
+                      color: "#E8630A",
+                      fontSize: 10,
+                      padding: "3px 8px",
+                      borderRadius: 999,
+                      fontWeight: 600,
+                    }}
+                  >
+                    Soon
+                  </span>
+                </div>
+              );
+            }
+
+            // Enabled Menu
             return (
               <button
                 key={item.id}
