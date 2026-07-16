@@ -1,17 +1,48 @@
+import { useState } from "react";
+import PlansHeaderButton from "../components/forms/plansForm/PlansHeaderButton";
 import PlanModal from "../components/forms/plansForm/PlanModal";
 import ActivePlans from "../components/ActivePlans";
-import { useState } from "react";
 
 function Plans() {
     const [refreshKey, setRefreshKey] = useState(0);
+    const [editorState, setEditorState] = useState({
+        open: false,
+        plan: null,
+    });
+
+    const openCreateModal = () => {
+        setEditorState({ open: true, plan: null });
+    };
+
+    const openEditModal = (plan) => {
+        setEditorState({ open: true, plan });
+    };
+
+    const closeModal = () => {
+        setEditorState({ open: false, plan: null });
+    };
+
+    const handleSaved = () => {
+        setRefreshKey((key) => key + 1);
+        closeModal();
+    };
 
     return (
         <div className="p-4 sm:p-6 space-y-6">
+            <PlansHeaderButton onAdd={openCreateModal} />
 
-            <PlanModal onCreated={() => setRefreshKey((key) => key + 1)} />
+            <PlanModal
+                open={editorState.open}
+                plan={editorState.plan}
+                onClose={closeModal}
+                onSaved={handleSaved}
+            />
 
-            <ActivePlans refreshKey={refreshKey} />
-
+            <ActivePlans
+                refreshKey={refreshKey}
+                onEditPlan={openEditModal}
+                onChanged={() => setRefreshKey((key) => key + 1)}
+            />
         </div>
     );
 }

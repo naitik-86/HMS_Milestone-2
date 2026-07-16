@@ -54,6 +54,14 @@ const getTrialLimit = (planRecords) =>
         0
     );
 
+const SOLO_DOCTOR_PLAN_NAMES = new Set(["Solo Basic", "Solo Pro"]);
+
+const resolvePlanType = (plan) => {
+    if (plan?.planType === "Solo Doctor") return "Solo Doctor";
+    if (SOLO_DOCTOR_PLAN_NAMES.has(plan?.subscriptionPlan)) return "Solo Doctor";
+    return "Clinic";
+};
+
 const clampTrialDays = (value, max) =>
     Math.min(getNonNegativeNumber(value), getNonNegativeNumber(max));
 
@@ -184,7 +192,12 @@ export default function ClinicForm({
     }, [activeTab, plans.length]);
 
     const activePlans = useMemo(
-        () => plans.filter((plan) => !plan.status || plan.status === "Active"),
+        () =>
+            plans.filter(
+                (plan) =>
+                    resolvePlanType(plan) === "Clinic" &&
+                    (!plan.status || plan.status === "Active")
+            ),
         [plans]
     );
 
@@ -941,7 +954,7 @@ export default function ClinicForm({
             showToast({
                 type: "error",
                 title: "No Plans Available",
-                description: "Please create an active subscription plan before assigning one.",
+                description: "Please create an active clinic subscription plan before assigning one.",
             });
 
             return false;

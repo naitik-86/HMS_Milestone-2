@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import API from "../../../shared/api/axios";
 import {
   LineChart,
   Line,
@@ -13,8 +12,13 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Legend
+  Legend,
 } from "recharts";
+import {
+  downloadSuperAdminBasicReport,
+  fetchSuperAdminBasicReports,
+  shareSuperAdminBasicReport,
+} from "./basicReportsApi";
 
 const ACCENT = "#E8630A";
 const INDIGO = "#6366F1";
@@ -29,14 +33,14 @@ const Card = ({ children, style = {} }) => (
       borderRadius: 16,
       padding: 22,
       boxShadow: "0 1px 4px rgba(15,23,42,0.05)",
-      ...style
+      ...style,
     }}
   >
     {children}
   </div>
 );
 
-const KPI = ({ label, value, color, sub }) => (
+const KPI = ({ label, value, color, sub, badge = "●" }) => (
   <Card>
     <div
       style={{
@@ -70,9 +74,7 @@ const KPI = ({ label, value, color, sub }) => (
         >
           {value}
         </div>
-        {sub ? (
-          <div style={{ marginTop: 8, fontSize: 13, color: "#64748B" }}>{sub}</div>
-        ) : null}
+        {sub ? <div style={{ marginTop: 8, fontSize: 13, color: "#64748B" }}>{sub}</div> : null}
       </div>
       <div
         style={{
@@ -84,28 +86,102 @@ const KPI = ({ label, value, color, sub }) => (
           alignItems: "center",
           justifyContent: "center",
           fontWeight: 900,
+          fontSize: badge === "₹" ? 16 : 13,
           color,
           flexShrink: 0,
         }}
       >
-        {label === "Total Payment collected" ? "₹" : "●"}
+        {badge}
       </div>
     </div>
   </Card>
 );
 
+const formatDownloadName = (format) => {
+  const stamp = new Date().toISOString().slice(0, 10);
+
+  if (format === "csv") {
+    return `superadmin-basic-report-${stamp}.csv`;
+  }
+
+  if (format === "xls" || format === "xlsx" || format === "excel") {
+    return `superadmin-basic-report-${stamp}.xls`;
+  }
+
+  return `superadmin-basic-report-${stamp}.pdf`;
+};
+
+const parseFilename = (contentDisposition, fallbackName) => {
+  if (!contentDisposition) return fallbackName;
+
+  const utf8Match = contentDisposition.match(/filename\*=UTF-8''([^;]+)/i);
+  if (utf8Match?.[1]) {
+    return decodeURIComponent(utf8Match[1]);
+  }
+
+  const asciiMatch = contentDisposition.match(/filename="?([^"]+)"?/i);
+  if (asciiMatch?.[1]) {
+    return asciiMatch[1];
+  }
+
+  return fallbackName;
+};
+
+const triggerDownload = (blob, fileName) => {
+  const url = window.URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = fileName;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+
+  window.setTimeout(() => {
+    window.URL.revokeObjectURL(url);
+  }, 0);
+};
+
+const toBlob = (data, contentType = "application/octet-stream") => {
+  if (typeof Blob !== "undefined" && data instanceof Blob) {
+    return data;
+  }
+
+  return new Blob([data], { type: contentType });
+};
+
+const formatDateTime = (value) => {
+  if (!value) return "";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+
+  return new Intl.DateTimeFormat("en-IN", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(date);
+};
+
 export default function BasicReports() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  // Totals
   const [totalClinics, setTotalClinics] = useState(0);
+  const [activeClinics, setActiveClinics] = useState(0);
+  const [inactiveClinics, setInactiveClinics] = useState(0);
   const [totalPaymentCollected, setTotalPaymentCollected] = useState(0);
-
-  // Chart Data Arrays
+  const [generatedAt, setGeneratedAt] = useState("");
   const [revenueData, setRevenueData] = useState([]);
   const [clinicTrendData, setClinicTrendData] = useState([]);
   const [clinicDistribution, setClinicDistribution] = useState([]);
+  const [downloadingFormat, setDownloadingFormat] = useState("");
+  const [downloadFeedback, setDownloadFeedback] = useState(null);
+  const [shareEmail, setShareEmail] = useState("");
+  const [shareSubject, setShareSubject] = useState("Super Admin Basic Report");
+  const [shareMessage, setShareMessage] = useState(
+    "Please find attached the latest super admin report."
+  );
+  const [shareFormat, setShareFormat] = useState("pdf");
+  const [sharing, setSharing] = useState(false);
+  const [shareFeedback, setShareFeedback] = useState(null);
 
   const fmtINR = useMemo(
     () =>
@@ -115,6 +191,8 @@ export default function BasicReports() {
     []
   );
 
+  const generatedAtLabel = useMemo(() => formatDateTime(generatedAt), [generatedAt]);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -123,49 +201,28 @@ export default function BasicReports() {
         setLoading(true);
         setError(null);
 
-        const res = await API.get("/super-admin-reports/basic");
-        const data = res?.data?.data || res?.data || {};
+        const data = await fetchSuperAdminBasicReports();
 
-        const fetchedTotalClinics = data?.totalClinics ?? data?.totalClinicOnboarded ?? 0;
-        const fetchedTotalPayment = data?.totalPaymentCollected ?? data?.totalPayment ?? 0;
+        if (cancelled) return;
+
+        const fetchedTotalClinics = Number(data?.totalClinics ?? data?.totalClinicOnboarded ?? 0);
+        const fetchedActiveClinics = Number(data?.activeClinics ?? 0);
+        const fetchedInactiveClinics = Number(data?.suspendedClinics ?? 0);
+        const fetchedTotalPayment = Number(data?.totalPaymentCollected ?? data?.totalPayment ?? 0);
 
         setTotalClinics(fetchedTotalClinics);
+        setActiveClinics(fetchedActiveClinics);
+        setInactiveClinics(fetchedInactiveClinics);
         setTotalPaymentCollected(fetchedTotalPayment);
-
-        // Map backend arrays (with fallback dummy data for demonstration if backend only sends totals)
-        setRevenueData(
-          data?.revenueTrend || [
-            { month: "Jan", revenue: fetchedTotalPayment * 0.1 },
-            { month: "Feb", revenue: fetchedTotalPayment * 0.15 },
-            { month: "Mar", revenue: fetchedTotalPayment * 0.2 },
-            { month: "Apr", revenue: fetchedTotalPayment * 0.25 },
-            { month: "May", revenue: fetchedTotalPayment * 0.3 },
-          ]
-        );
-
-        setClinicTrendData(
-          data?.clinicTrend || [
-            { month: "Jan", clinics: Math.round(fetchedTotalClinics * 0.1) },
-            { month: "Feb", clinics: Math.round(fetchedTotalClinics * 0.2) },
-            { month: "Mar", clinics: Math.round(fetchedTotalClinics * 0.15) },
-            { month: "Apr", clinics: Math.round(fetchedTotalClinics * 0.25) },
-            { month: "May", clinics: Math.round(fetchedTotalClinics * 0.3) },
-          ]
-        );
-
-        setClinicDistribution(
-          data?.clinicDistribution || [
-            { name: "Active Plans", value: Math.round(fetchedTotalClinics * 0.7) },
-            { name: "Free Tier", value: Math.round(fetchedTotalClinics * 0.2) },
-            { name: "Suspended", value: Math.round(fetchedTotalClinics * 0.1) },
-          ]
-        );
-
-        if (!cancelled) setLoading(false);
-      } catch (e) {
+        setGeneratedAt(data?.generatedAt || "");
+        setRevenueData(Array.isArray(data?.revenueTrend) ? data.revenueTrend : []);
+        setClinicTrendData(Array.isArray(data?.clinicTrend) ? data.clinicTrend : []);
+        setClinicDistribution(Array.isArray(data?.clinicDistribution) ? data.clinicDistribution : []);
+        setLoading(false);
+      } catch (fetchError) {
         if (cancelled) return;
         setLoading(false);
-        setError(e?.response?.data?.message || e.message || "Failed to load reports");
+        setError(fetchError?.response?.data?.message || fetchError.message || "Failed to load reports");
       }
     };
 
@@ -175,6 +232,84 @@ export default function BasicReports() {
       cancelled = true;
     };
   }, []);
+
+  const handleDownload = async (format) => {
+    setDownloadingFormat(format);
+    setDownloadFeedback(null);
+
+    try {
+      const res = await downloadSuperAdminBasicReport(format);
+      const blob = toBlob(res?.data, res?.headers?.["content-type"] || "application/octet-stream");
+      const contentDisposition =
+        res?.headers?.["content-disposition"] ||
+        res?.headers?.["Content-Disposition"] ||
+        res?.request?.getResponseHeader?.("content-disposition") ||
+        "";
+      const fileName = parseFilename(contentDisposition, formatDownloadName(format));
+
+      triggerDownload(blob, fileName);
+      setDownloadFeedback({
+        type: "success",
+        message: `Downloaded ${fileName}.`,
+      });
+    } catch (downloadError) {
+      setDownloadFeedback({
+        type: "error",
+        message:
+          downloadError?.response?.data?.message ||
+          downloadError.message ||
+          "Failed to download the report.",
+      });
+    } finally {
+      setDownloadingFormat("");
+    }
+  };
+
+  const handleShare = async (event) => {
+    event.preventDefault();
+
+    const recipientEmails = shareEmail.trim();
+    if (!recipientEmails) {
+      setShareFeedback({
+        type: "error",
+        message: "Please enter at least one recipient email.",
+      });
+      return;
+    }
+
+    setSharing(true);
+    setShareFeedback(null);
+
+    try {
+      const result = await shareSuperAdminBasicReport({
+        recipientEmail: recipientEmails,
+        subject: shareSubject,
+        message: shareMessage,
+        format: shareFormat,
+      });
+
+      setShareFeedback({
+        type: "success",
+        message: result?.message || "Report shared successfully.",
+      });
+    } catch (shareError) {
+      setShareFeedback({
+        type: "error",
+        message:
+          shareError?.response?.data?.message ||
+          shareError.message ||
+          "Failed to share the report.",
+      });
+    } finally {
+      setSharing(false);
+    }
+  };
+
+  const actionButtons = [
+    { format: "pdf", label: "Download PDF", color: ACCENT },
+    { format: "xls", label: "Download Excel", color: INDIGO },
+    { format: "csv", label: "Download CSV", color: GREEN },
+  ];
 
   return (
     <div
@@ -188,11 +323,219 @@ export default function BasicReports() {
         color: "#0F172A",
       }}
     >
-      <div style={{ marginBottom: 22 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 900, margin: 0 }}>Basic Reports</h1>
-        <p style={{ margin: "6px 0 0", fontSize: 13, color: "#64748B" }}>
-          Platform-level KPIs & visual analytics for the super admin.
-        </p>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+          gap: 16,
+          flexWrap: "wrap",
+          marginBottom: 22,
+        }}
+      >
+        <div>
+          <h1 style={{ fontSize: 22, fontWeight: 900, margin: 0 }}>Basic Reports</h1>
+          <p style={{ margin: "6px 0 0", fontSize: 13, color: "#64748B" }}>
+            Live database-backed analytics for the super admin.
+          </p>
+          <div style={{ marginTop: 8, fontSize: 12, color: "#94A3B8" }}>
+            {generatedAtLabel ? `Last refreshed: ${generatedAtLabel}` : "Refreshing live data from the database."}
+          </div>
+        </div>
+      </div>
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+          gap: 16,
+          marginBottom: 16,
+        }}
+      >
+        <Card>
+          <div style={{ fontSize: 14, fontWeight: 800, color: "#0F172A", marginBottom: 12 }}>
+            Export report
+          </div>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            {actionButtons.map((button) => {
+              const isBusy = downloadingFormat === button.format || sharing;
+
+              return (
+                <button
+                  key={button.label}
+                  type="button"
+                  onClick={() => handleDownload(button.format)}
+                  disabled={isBusy}
+                  style={{
+                    background: button.color,
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: 12,
+                    padding: "10px 16px",
+                    fontSize: 13,
+                    fontWeight: 700,
+                    cursor: isBusy ? "not-allowed" : "pointer",
+                    opacity: isBusy ? 0.7 : 1,
+                  }}
+                >
+                  {downloadingFormat === button.format ? "Preparing..." : button.label}
+                </button>
+              );
+            })}
+          </div>
+          <div style={{ marginTop: 12, fontSize: 12, color: "#64748B" }}>
+            Each export is generated from the latest data stored in the database.
+          </div>
+          {downloadFeedback?.message ? (
+            <div
+              style={{
+                marginTop: 12,
+                fontSize: 13,
+                fontWeight: 600,
+                color: downloadFeedback.type === "success" ? "#166534" : "#B91C1C",
+              }}
+            >
+              {downloadFeedback.message}
+            </div>
+          ) : null}
+        </Card>
+
+        <Card>
+          <form onSubmit={handleShare}>
+            <div style={{ fontSize: 14, fontWeight: 800, color: "#0F172A", marginBottom: 12 }}>
+              Share by email
+            </div>
+
+            <div style={{ display: "grid", gap: 12 }}>
+              <label style={{ fontSize: 12, fontWeight: 700, color: "#0F172A" }}>
+                Recipient email(s)
+                <input
+                  type="text"
+                  value={shareEmail}
+                  onChange={(event) => setShareEmail(event.target.value)}
+                  placeholder="admin@example.com, accounts@example.com"
+                  style={{
+                    width: "100%",
+                    marginTop: 6,
+                    border: "1px solid #D7DDE5",
+                    borderRadius: 10,
+                    padding: "10px 12px",
+                    fontSize: 14,
+                    outline: "none",
+                    background: "#fff",
+                  }}
+                />
+              </label>
+
+              <label style={{ fontSize: 12, fontWeight: 700, color: "#0F172A" }}>
+                Subject
+                <input
+                  type="text"
+                  value={shareSubject}
+                  onChange={(event) => setShareSubject(event.target.value)}
+                  style={{
+                    width: "100%",
+                    marginTop: 6,
+                    border: "1px solid #D7DDE5",
+                    borderRadius: 10,
+                    padding: "10px 12px",
+                    fontSize: 14,
+                    outline: "none",
+                    background: "#fff",
+                  }}
+                />
+              </label>
+
+              <label style={{ fontSize: 12, fontWeight: 700, color: "#0F172A" }}>
+                Message
+                <textarea
+                  value={shareMessage}
+                  onChange={(event) => setShareMessage(event.target.value)}
+                  rows={4}
+                  style={{
+                    width: "100%",
+                    marginTop: 6,
+                    border: "1px solid #D7DDE5",
+                    borderRadius: 10,
+                    padding: "10px 12px",
+                    fontSize: 14,
+                    outline: "none",
+                    resize: "vertical",
+                    background: "#fff",
+                    fontFamily: "inherit",
+                  }}
+                />
+              </label>
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+                  gap: 12,
+                  alignItems: "end",
+                }}
+              >
+                <label style={{ fontSize: 12, fontWeight: 700, color: "#0F172A" }}>
+                  Report format
+                  <select
+                    value={shareFormat}
+                    onChange={(event) => setShareFormat(event.target.value)}
+                    style={{
+                      width: "100%",
+                      marginTop: 6,
+                      border: "1px solid #D7DDE5",
+                      borderRadius: 10,
+                      padding: "10px 12px",
+                      fontSize: 14,
+                      outline: "none",
+                      background: "#fff",
+                    }}
+                  >
+                    <option value="pdf">PDF</option>
+                    <option value="xls">Excel</option>
+                    <option value="csv">CSV</option>
+                  </select>
+                </label>
+
+                <button
+                  type="submit"
+                  disabled={sharing}
+                  style={{
+                    background: ACCENT,
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: 12,
+                    padding: "11px 16px",
+                    fontSize: 13,
+                    fontWeight: 700,
+                    cursor: sharing ? "not-allowed" : "pointer",
+                    opacity: sharing ? 0.75 : 1,
+                    height: 42,
+                  }}
+                >
+                  {sharing ? "Sharing..." : "Share report"}
+                </button>
+              </div>
+            </div>
+
+            {shareFeedback?.message ? (
+              <div
+                style={{
+                  marginTop: 12,
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: shareFeedback.type === "success" ? "#166534" : "#B91C1C",
+                }}
+              >
+                {shareFeedback.message}
+              </div>
+            ) : null}
+
+            <div style={{ marginTop: 12, fontSize: 12, color: "#64748B" }}>
+              You can separate multiple emails with commas or semicolons.
+            </div>
+          </form>
+        </Card>
       </div>
 
       {loading ? (
@@ -204,30 +547,44 @@ export default function BasicReports() {
         </Card>
       ) : (
         <>
-          {/* Top KPI Row */}
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+              gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
               gap: 16,
               marginBottom: 16,
             }}
           >
             <KPI
-              label="Total clinic on-boarded"
+              label="Total clinics"
               value={totalClinics}
               color={INDIGO}
-              sub="Total registered clinics in system"
+              sub="Registered clinics in the system"
+              badge="TC"
             />
             <KPI
-              label="Total Payment collected"
+              label="Active clinics"
+              value={activeClinics}
+              color={GREEN}
+              sub="Clinics with active subscriptions"
+              badge="AC"
+            />
+            <KPI
+              label="Inactive clinics"
+              value={inactiveClinics}
+              color={ACCENT}
+              sub="Suspended or expired clinics"
+              badge="IC"
+            />
+            <KPI
+              label="Total payment collected"
               value={`₹${fmtINR.format(totalPaymentCollected)}`}
               color={ACCENT}
-              sub="Sum of all completed consultation fees"
+              sub="Completed consultation revenue"
+              badge="₹"
             />
           </div>
 
-          {/* Charts Row 1: Line & Bar */}
           <div
             style={{
               display: "grid",
@@ -236,7 +593,6 @@ export default function BasicReports() {
               marginBottom: 16,
             }}
           >
-            {/* Line Chart: Revenue Trend */}
             <Card style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               <div>
                 <div style={{ fontSize: 14, fontWeight: 800, color: "#0F172A" }}>Revenue Trend</div>
@@ -246,16 +602,32 @@ export default function BasicReports() {
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={revenueData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#EEF0F3" vertical={false} />
-                    <XAxis dataKey="month" tick={{ fontSize: 12, fill: "#94A3B8" }} axisLine={false} tickLine={false} />
-                    <YAxis tick={{ fontSize: 12, fill: "#94A3B8" }} axisLine={false} tickLine={false} tickFormatter={(v) => `₹${v / 1000}k`} />
-                    <Tooltip formatter={(value) => [`₹${fmtINR.format(value)}`, "Revenue"]} />
-                    <Line type="monotone" dataKey="revenue" stroke={ACCENT} strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                    <XAxis
+                      dataKey="month"
+                      tick={{ fontSize: 12, fill: "#94A3B8" }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 12, fill: "#94A3B8" }}
+                      axisLine={false}
+                      tickLine={false}
+                      tickFormatter={(value) => `₹${Math.round(Number(value || 0) / 1000)}k`}
+                    />
+                    <Tooltip formatter={(value) => [`₹${fmtINR.format(Number(value || 0))}`, "Revenue"]} />
+                    <Line
+                      type="monotone"
+                      dataKey="revenue"
+                      stroke={ACCENT}
+                      strokeWidth={3}
+                      dot={{ r: 4 }}
+                      activeDot={{ r: 6 }}
+                    />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
             </Card>
 
-            {/* Bar Chart: Clinic Onboarding */}
             <Card style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               <div>
                 <div style={{ fontSize: 14, fontWeight: 800, color: "#0F172A" }}>Clinic Onboarding Rate</div>
@@ -265,9 +637,19 @@ export default function BasicReports() {
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={clinicTrendData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#EEF0F3" vertical={false} />
-                    <XAxis dataKey="month" tick={{ fontSize: 12, fill: "#94A3B8" }} axisLine={false} tickLine={false} />
-                    <YAxis tick={{ fontSize: 12, fill: "#94A3B8" }} axisLine={false} tickLine={false} allowDecimals={false} />
-                    <Tooltip formatter={(value) => [value, "New Clinics"]} cursor={{ fill: "#F8F9FB" }} />
+                    <XAxis
+                      dataKey="month"
+                      tick={{ fontSize: 12, fill: "#94A3B8" }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 12, fill: "#94A3B8" }}
+                      axisLine={false}
+                      tickLine={false}
+                      allowDecimals={false}
+                    />
+                    <Tooltip formatter={(value) => [value, "New clinics"]} cursor={{ fill: "#F8F9FB" }} />
                     <Bar dataKey="clinics" fill={INDIGO} radius={[4, 4, 0, 0]} barSize={40} />
                   </BarChart>
                 </ResponsiveContainer>
@@ -275,7 +657,6 @@ export default function BasicReports() {
             </Card>
           </div>
 
-          {/* Charts Row 2: Pie & Details */}
           <div
             style={{
               display: "grid",
@@ -283,7 +664,6 @@ export default function BasicReports() {
               gap: 16,
             }}
           >
-            {/* Pie Chart: Clinic Distribution */}
             <Card style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               <div>
                 <div style={{ fontSize: 14, fontWeight: 800, color: "#0F172A" }}>Clinic Status Distribution</div>
@@ -302,42 +682,48 @@ export default function BasicReports() {
                       dataKey="value"
                     >
                       {clinicDistribution.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        <Cell key={`cell-${entry.name || index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
                     <Tooltip formatter={(value) => [value, "Clinics"]} />
-                    <Legend verticalAlign="middle" align="right" layout="vertical" wrapperStyle={{ fontSize: 12, color: "#64748B" }} />
+                    <Legend
+                      verticalAlign="middle"
+                      align="right"
+                      layout="vertical"
+                      wrapperStyle={{ fontSize: 12, color: "#64748B" }}
+                    />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
             </Card>
 
-            {/* Brief Details / Summary Block */}
             <Card style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               <div>
                 <div style={{ fontSize: 14, fontWeight: 800, color: "#0F172A" }}>Data Summary & Details</div>
                 <div style={{ fontSize: 12, color: "#64748B" }}>What these metrics represent</div>
               </div>
-              
+
               <div style={{ display: "flex", flexDirection: "column", gap: 14, marginTop: 8 }}>
                 <div style={{ padding: 12, background: "#EEF2FF", borderRadius: 8, borderLeft: `4px solid ${INDIGO}` }}>
                   <div style={{ fontSize: 13, fontWeight: 700, color: INDIGO }}>Clinic Acquisition</div>
                   <div style={{ fontSize: 12, color: "#475569", marginTop: 4 }}>
-                    The Bar Chart illustrates monthly growth. The current total active base stands at <strong>{totalClinics}</strong> clinics system-wide.
+                    The bar chart illustrates monthly growth. The current total base stands at{" "}
+                    <strong>{totalClinics}</strong> clinics system-wide.
                   </div>
                 </div>
 
                 <div style={{ padding: 12, background: "#FFF7ED", borderRadius: 8, borderLeft: `4px solid ${ACCENT}` }}>
                   <div style={{ fontSize: 13, fontWeight: 700, color: ACCENT }}>Financial Performance</div>
                   <div style={{ fontSize: 12, color: "#475569", marginTop: 4 }}>
-                    The Line Chart tracks the revenue stream. Platform aggregate revenue is currently <strong>₹{fmtINR.format(totalPaymentCollected)}</strong>.
+                    The line chart tracks the revenue stream. Platform aggregate revenue is currently{" "}
+                    <strong>₹{fmtINR.format(totalPaymentCollected)}</strong>.
                   </div>
                 </div>
 
                 <div style={{ padding: 12, background: "#F0FDF4", borderRadius: 8, borderLeft: `4px solid ${GREEN}` }}>
                   <div style={{ fontSize: 13, fontWeight: 700, color: GREEN }}>Account Health</div>
                   <div style={{ fontSize: 12, color: "#475569", marginTop: 4 }}>
-                    The Donut Chart segments your user base, helping identify the ratio of paying clinics vs. free/suspended accounts.
+                    The donut chart segments the active, suspended and expired clinic states so you can spot churn at a glance.
                   </div>
                 </div>
               </div>
@@ -346,38 +732,8 @@ export default function BasicReports() {
         </>
       )}
 
-      {/* Action Buttons */}
-      <div style={{ marginTop: 24, display: "flex", gap: 12, flexWrap: "wrap", borderTop: "1px solid #E8ECF0", paddingTop: 20 }}>
-        {[
-          { label: "Download PDF", color: "#E8630A" },
-          { label: "Download Excel", color: "#6366F1" },
-          { label: "Download CSV", color: "#22C55E" },
-        ].map((b) => (
-          <button
-            key={b.label}
-            type="button"
-            onClick={() => window.print()}
-            style={{
-              background: b.color,
-              color: "#fff",
-              border: "none",
-              borderRadius: 12,
-              padding: "10px 16px",
-              fontSize: 13,
-              fontWeight: 700,
-              cursor: "pointer",
-              transition: "opacity 0.2s",
-            }}
-            onMouseOver={(e) => (e.target.style.opacity = 0.8)}
-            onMouseOut={(e) => (e.target.style.opacity = 1)}
-          >
-            {b.label}
-          </button>
-        ))}
-      </div>
-
       <div style={{ marginTop: 12, fontSize: 12, color: "#94A3B8" }}>
-        Data fetched securely from `/super-admin-reports/basic`.
+        Reports are generated live from <code>/super-admin-reports/basic</code>, with download and email sharing available above.
       </div>
     </div>
   );

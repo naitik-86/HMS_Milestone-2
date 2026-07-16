@@ -54,6 +54,8 @@ const sendEmail = async (options) => {
       to: recipientEmail,
       subject: options.subject,
       text: options.message,
+      html: options.html,
+      attachments: options.attachments,
     };
 
     const info = await cachedTransporter.sendMail(message);

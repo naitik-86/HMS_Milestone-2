@@ -7,7 +7,7 @@ import { Grid, Full } from "../Grid";
 import Upload from "../Upload";
 // import { createDoctor } from "../../../api/doctorApi";
 
-export default function DoctorForm({ activeTab, form, setForm, qualifications, setQualifications }) {
+export default function DoctorForm({ activeTab, form, setForm, qualifications, setQualifications, planOptions = ["Solo Basic", "Solo Pro"] }) {
     const stateOptions = INDIAN_STATE_OPTIONS;
 
   const validatePincode = async (pincode) => {
@@ -412,7 +412,7 @@ transition
                                 <Input requiredField={true} name="ifsc" value={form.ifsc} label="IFSC Code" onChange={handleChange} />
                                 <Input requiredField={true} name="bankName" label="Bank Name" value={form.bankName} onChange={handleChange} />
                                 <Input requiredField={true} name="branch" label="Branch" value={form.branch} onChange={handleChange} />
-                                <Select value={form.plan || ""} requiredField={true} name="plan" label="Plan Assigned" options={["Solo Basic", "Solo Pro"]} onChange={handleChange} />
+                                <Select value={form.plan || ""} requiredField={true} name="plan" label="Plan Assigned" options={planOptions} onChange={handleChange} />
                             </Grid>
                         </Card>
                     )}
