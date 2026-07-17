@@ -564,7 +564,6 @@ export default function NewRegistrationPet() {
 
                       <input
                         name="petId"
-                        value={formData.petId}
                         onChange={handleChange}
                         type="text"
                         value="PET-2026-001"

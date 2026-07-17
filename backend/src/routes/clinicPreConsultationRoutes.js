@@ -13,7 +13,7 @@ const {
     completePreConsultation
 } = require("../controllers/preConsultationController");
 
-router.use(authorize("PRE_CONSULTATION", "CLINIC_ADMIN"));
+router.use(authorize("PRE_CONSULTATION_STAFF", "CLINIC_ADMIN"));
 
 // Dashboard
 router.get("/dashboard", getDashboard);

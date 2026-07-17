@@ -79,11 +79,6 @@ const visitSchema = new mongoose.Schema(
                 "PRE_CONSULTATION",
                 "DOCTOR",
                 "LAB",
-                "GROOMER",
-                "KENNEL",
-                "BILLING",
-                "COMPLETED",
-                "CANCELLED"
             ],
             default: "RECEPTION"
         },

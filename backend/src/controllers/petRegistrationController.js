@@ -1,5 +1,12 @@
 const PetRegistration = require("../models/PetRegistration");
 
+const normalizeSpecies = (species = "") => {
+    const value = species.toString().trim().toUpperCase();
+    return value === "RABBIT" || value === "BIRD" || value === "CAT" || value === "DOG"
+        ? value
+        : "OTHER";
+};
+
 const createRegistration = async (req, res) => {
 
     try {
@@ -35,6 +42,10 @@ const createRegistration = async (req, res) => {
 
         const petData = {
             ...pet,
+            name: pet?.name || pet?.petName,
+            petName: pet?.petName || pet?.name,
+            species: normalizeSpecies(pet?.species),
+            isSterilised: pet?.sterilized === true,
             uniquePetId,
 
             history: {
@@ -57,6 +68,7 @@ const createRegistration = async (req, res) => {
 
         // Existing Owner
         if (owner) {
+            petData.ownerId = owner._id;
             owner.pets.push(petData);
 
             await owner.save();
@@ -69,7 +81,7 @@ const createRegistration = async (req, res) => {
         }
 
         // New Owner
-        owner = await PetRegistration.create({
+        owner = new PetRegistration({
             clinicId,
             mobileNumber,
             ownerName,
@@ -81,8 +93,12 @@ const createRegistration = async (req, res) => {
             city,
             district,
             pincode,
-            pets: [petData],
+            pets: [],
         });
+
+        petData.ownerId = owner._id;
+        owner.pets.push(petData);
+        await owner.save();
 
         console.log("submitted");
 

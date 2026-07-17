@@ -195,14 +195,19 @@ exports.getDashboard = async (req, res) => {
 exports.getPendingPets = async (req, res) => {
   try {
     const clinicId = req.user.clinicId;
+
     console.log("req.user.clinicId:", req.user.clinicId);
     console.log("type:", typeof req.user.clinicId);
+console.log("Clinic ID:", clinicId);
 
     const pendingVisits = await Visit.find({
       clinicId,
       currentStage: "PRE_CONSULTATION",
       status: "WAITING"
     });
+
+console.log("Pending Visits Count:", pendingVisits.length);
+console.log("Pending Visits:", pendingVisits);
 
     const owners = await PetRegistration.find({
       "pets._id": {
@@ -450,10 +455,10 @@ exports.getSinglePreConsultation = async (
 exports.updatePreConsultation = async (req, res) => {
 
   try {
-    console.log("***********");
-
+       console.log("========== UPDATE PRE CONSULTATION ==========");
     console.log("Params:", req.params);
     console.log("Body:", req.body);
+    console.log("Clinic:", req.user.clinicId);
     const clinicId = req.user.clinicId;
 
     const { id } = req.params; // this is Visit ID
@@ -531,17 +536,16 @@ exports.updatePreConsultation = async (req, res) => {
 
     });
 
-  } catch (error) {
+  }catch (error) {
+    console.error("========== ERROR ==========");
+    console.error(error);
+    console.error(error.stack);
 
     return res.status(500).json({
-
-      success: false,
-
-      message: error.message,
-
+        success: false,
+        message: error.message,
     });
-
-  }
+}
 
 };
 exports.searchHistoryPets = async (req, res) => {

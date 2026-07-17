@@ -1,8 +1,10 @@
 import { useState } from "react";
-import { NavLink } from "react-router-dom";
+import { LogOut } from "lucide-react";
+import { NavLink, useNavigate } from "react-router-dom";
 
 export default function PreConsulatationSideBar() {
   const [isOpen, setIsOpen] = useState(false);
+  const navigate = useNavigate();
 
   const menus = [
     {
@@ -26,6 +28,13 @@ export default function PreConsulatationSideBar() {
       icon: "📋",
     },
   ];
+
+  const handleLogout = () => {
+    localStorage.clear();
+    sessionStorage.clear();
+    setIsOpen(false);
+    navigate("/login", { replace: true });
+  };
 
   return (
     <>
@@ -144,6 +153,15 @@ export default function PreConsulatationSideBar() {
 
         {/* Footer */}
         <div className="border-t border-slate-800 p-5">
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="mb-4 flex w-full items-center justify-center gap-3 rounded-xl bg-red-500/10 px-4 py-3 text-sm font-semibold text-red-300 transition hover:bg-red-500/20"
+          >
+            <LogOut className="h-4 w-4" />
+            Logout
+          </button>
+
           <div className="rounded-2xl bg-white/5 p-4">
             <p className="font-semibold">
               Reception Staff

@@ -3,17 +3,18 @@ import { NavLink } from "react-router-dom";
 import {
   CheckCircle2,
   Clock3,
-  History,
-  FlaskConical,
   LayoutDashboard,
+  LogOut,
   Menu,
   Stethoscope,
   X,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 
 export default function DoctorSidebar() {
   const [isOpen, setIsOpen] = useState(false);
+  const navigate = useNavigate();
 
   const menuItems = [
     { name: "Dashboard", path: "", icon: LayoutDashboard },
@@ -22,6 +23,13 @@ export default function DoctorSidebar() {
     { name: "Completed Pets", path: "completed", icon: CheckCircle2 },
 
   ];
+
+  const handleLogout = () => {
+    localStorage.clear();
+    sessionStorage.clear();
+    setIsOpen(false);
+    navigate("/login", { replace: true });
+  };
 
   return (
     <>
@@ -113,6 +121,15 @@ export default function DoctorSidebar() {
         </nav>
 
         <div className="border-t border-slate-800 p-6">
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="mb-4 flex w-full items-center justify-center gap-3 rounded-xl bg-red-500/10 px-4 py-3 text-sm font-semibold text-red-300 transition hover:bg-red-500/20"
+          >
+            <LogOut className="h-4 w-4" />
+            Logout
+          </button>
+
           <p className="text-sm text-slate-500">
             Veterinary Management System
           </p>
