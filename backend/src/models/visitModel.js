@@ -72,16 +72,17 @@ const visitSchema = new mongoose.Schema(
             ref: "Appointment"
         },
 
-        currentStage: {
-            type: String,
-            enum: [
-                "RECEPTION",
-                "PRE_CONSULTATION",
-                "DOCTOR",
-                "LAB",
-            ],
-            default: "RECEPTION"
-        },
+      currentStage: {
+    type: String,
+    enum: [
+        "RECEPTION",
+        "PRE_CONSULTATION",
+        "DOCTOR",
+        "LAB",
+        "COMPLETED"
+    ],
+    default: "RECEPTION"
+},
 
         status: {
             type: String,

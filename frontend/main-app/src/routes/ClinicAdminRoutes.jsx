@@ -29,6 +29,7 @@ const LabPendingCases = lazy(() => import("../modules/clinicadmin/pages/lab_page
 const PetOwnerDashboard = lazy(() => import("../modules/clinicadmin/pages/pet-owner/PetOwnerDashboard"));
 const PetOwnerHistory = lazy(() => import("../modules/clinicadmin/pages/pet-owner/PetOwnerHistory"));
 const PetOwnerUploadDocuments = lazy(() => import("../modules/clinicadmin/pages/pet-owner/PetOwnerUploadDocuments"));
+const ComingSoon = lazy(() => import("../modules/clinicadmin/pages/pet-owner/ComingSoon"));
 
 const PreConsultationDashboard = lazy(() => import("../modules/clinicadmin/pages/pre-consultations/PreConsultationDashboard"));
 const PendingPets = lazy(() => import("../modules/clinicadmin/pages/pre-consultations/PendingPets"));
@@ -122,10 +123,11 @@ const ClinicAdminRoutes = (
         </Route>
 
 
-        <Route path="/clinic/owner">
-            <Route index element={<PetOwnerDashboard />} />
+        <Route path="/clinic/owner/*">
+        <Route path="/clinic/owner/*" element={<ComingSoon />} />
+            {/* <Route index element={<PetOwnerDashboard />} />
             <Route path="history" element={<PetOwnerHistory />} />
-            <Route path="upload" element={<PetOwnerUploadDocuments />} />
+            <Route path="upload" element={<PetOwnerUploadDocuments />} /> */}
         </Route>
 
 
