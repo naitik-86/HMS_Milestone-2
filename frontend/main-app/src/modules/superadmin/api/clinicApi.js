@@ -24,6 +24,11 @@ export const createClinic = async (clinicData) => {
         address: addressString,
         contactEmail: clinicData.email,
         email: clinicData.email,
+        // The clinic onboarding endpoint reads the account owner details from
+        // the request body, not from the nested adminDetails object.
+        adminName: clinicData.adminName,
+        adminEmail: clinicData.adminEmail,
+        adminPhone: clinicData.adminPhone,
         phone: clinicData.phone,
         altPhone: clinicData.altPhone,
         website: clinicData.website,

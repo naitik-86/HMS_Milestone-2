@@ -905,63 +905,33 @@ export default function ClinicForm({
         return nextErrors;
     };
 
-    const validateLicensesFields = (allowEmptySection = false) => {
+    const validateLicensesFields = () => {
         const nextErrors = {};
-        const sectionHasData = hasAnyValue([
-            form.stateCouncil,
-            form.vetReg,
-            form.vetExpiry,
-            form.vetCert,
-            form.tradeLicense,
-            form.tradeExpiry,
-            form.tradeDoc,
-            form.drugLicense,
-            form.drugExpiry,
-            form.drugDoc,
-        ]);
+        const licensePairs = [
+            { numberField: "vetReg", documentField: "vetCert", label: "Registration" },
+            { numberField: "tradeLicense", documentField: "tradeDoc", label: "Trade license" },
+            { numberField: "drugLicense", documentField: "drugDoc", label: "Drug license" },
+        ];
 
-        if (allowEmptySection && !sectionHasData) {
-            return nextErrors;
-        }
+        const hasCompletePair = licensePairs.some(({ numberField, documentField }) =>
+            normalizeText(form[numberField]) && isFileLike(form[documentField])
+        );
 
-        if (!normalizeText(form.stateCouncil)) {
-            nextErrors.stateCouncil = "State Vet Council is required.";
-        }
+        licensePairs.forEach(({ numberField, documentField, label }) => {
+            const hasNumber = Boolean(normalizeText(form[numberField]));
+            const hasDocument = isFileLike(form[documentField]);
 
-        if (!normalizeText(form.vetReg)) {
-            nextErrors.vetReg = "Registration number is required.";
-        }
+            if (hasNumber && !hasDocument) {
+                nextErrors[documentField] = `${label} document is required when its number is provided.`;
+            }
 
-        if (!normalizeText(form.vetExpiry)) {
-            nextErrors.vetExpiry = "Registration expiry date is required.";
-        }
+            if (!hasNumber && hasDocument) {
+                nextErrors[numberField] = `${label} number is required when its document is uploaded.`;
+            }
+        });
 
-        if (!isFileLike(form.vetCert)) {
-            nextErrors.vetCert = "Registration certificate is required.";
-        }
-
-        if (!normalizeText(form.tradeLicense)) {
-            nextErrors.tradeLicense = "Trade license number is required.";
-        }
-
-        if (!normalizeText(form.tradeExpiry)) {
-            nextErrors.tradeExpiry = "Trade license expiry date is required.";
-        }
-
-        if (!isFileLike(form.tradeDoc)) {
-            nextErrors.tradeDoc = "Trade license document is required.";
-        }
-
-        if (!normalizeText(form.drugLicense)) {
-            nextErrors.drugLicense = "Drug license number is required.";
-        }
-
-        if (!normalizeText(form.drugExpiry)) {
-            nextErrors.drugExpiry = "Drug license expiry date is required.";
-        }
-
-        if (!isFileLike(form.drugDoc)) {
-            nextErrors.drugDoc = "Drug license document is required.";
+        if (!hasCompletePair) {
+            nextErrors.vetReg = "Provide any one license number and its supporting document.";
         }
 
         return nextErrors;
@@ -1265,11 +1235,19 @@ export default function ClinicForm({
                 trialDays: clampTrialDays(form.trialDays, maxTrialDays),
             });
 
-            showToast({
-                type: "success",
-                title: "Clinic Created",
-                description: data.message,
-            });
+            if (data.emailWarning?.length) {
+                showToast({
+                    type: "error",
+                    title: "Clinic Created, Email Not Sent",
+                    description: data.emailWarning.join(" "),
+                });
+            } else {
+                showToast({
+                    type: "success",
+                    title: "Clinic Created",
+                    description: data.message,
+                });
+            }
 
             onClose();
             navigate("/superadmin/clinics");
@@ -1460,7 +1438,7 @@ export default function ClinicForm({
                                     </h2>
 
                                     <p className="text-sm text-slate-500 mt-1">
-                                        Upload all mandatory registration and license documents.
+                                        Provide one license number with its document. All other license details and expiry dates are optional.
                                     </p>
                                 </div>
 
@@ -1469,7 +1447,6 @@ export default function ClinicForm({
                                 <div className="mb-10">
 
                                 <Select
-                                    requiredField
                                     name="stateCouncil"
                                     label="State Vet Council"
                                     value={form.stateCouncil}
@@ -1499,7 +1476,6 @@ export default function ClinicForm({
                                         {/* Number */}
 
                                         <Input
-                                            requiredField
                                             name="vetReg"
                                             label="Registration Number"
                                             value={form.vetReg}
@@ -1511,7 +1487,6 @@ export default function ClinicForm({
                                         {/* Upload */}
 
                                         <Upload
-                                            requiredField
                                             label="Registration Certificate"
                                             value={form.vetCert}
                                             error={errors.vetCert}
@@ -1528,7 +1503,6 @@ export default function ClinicForm({
 
                                         <Input
                                             type="date"
-                                            requiredField
                                             name="vetExpiry"
                                             label="Expiry Date"
                                             value={form.vetExpiry}
@@ -1556,7 +1530,6 @@ export default function ClinicForm({
                                         </div>
 
                                         <Input
-                                            requiredField
                                             name="drugLicense"
                                             label="Drug License Number"
                                             value={form.drugLicense}
@@ -1566,7 +1539,6 @@ export default function ClinicForm({
                                         />
 
                                         <Upload
-                                            requiredField
                                             label="Drug License Document"
                                             value={form.drugDoc}
                                             error={errors.drugDoc}
@@ -1581,7 +1553,6 @@ export default function ClinicForm({
 
                                         <Input
                                             type="date"
-                                            requiredField
                                             name="drugExpiry"
                                             label="Expiry Date"
                                             value={form.drugExpiry}
@@ -1609,7 +1580,6 @@ export default function ClinicForm({
                                         </div>
 
                                         <Input
-                                            requiredField
                                             name="tradeLicense"
                                             label="Trade License Number"
                                             value={form.tradeLicense}
@@ -1619,7 +1589,6 @@ export default function ClinicForm({
                                         />
 
                                         <Upload
-                                            requiredField
                                             label="Trade License Document"
                                             value={form.tradeDoc}
                                             error={errors.tradeDoc}
@@ -1634,7 +1603,6 @@ export default function ClinicForm({
 
                                         <Input
                                             type="date"
-                                            requiredField
                                             name="tradeExpiry"
                                             label="Expiry Date"
                                             value={form.tradeExpiry}

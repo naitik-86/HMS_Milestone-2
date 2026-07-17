@@ -237,7 +237,7 @@ const getUpdatePayload = (form) => {
         email: form.email,
         contactEmail: form.email,
         phone: form.phone,
-        altPhone: form.altPhone,
+        alternateContact: form.altPhone,
         website: form.website,
         adminName: form.adminName,
         adminEmail: form.adminEmail,

@@ -865,6 +865,8 @@ exports.createClinic = async (req, res) => {
 
     let expiryDate = new Date();
     if (subscriptionType === '6_MONTHS') expiryDate.setMonth(expiryDate.getMonth() + 6);
+    if (subscriptionType === 'Monthly') expiryDate.setMonth(expiryDate.getMonth() + 1);
+    if (subscriptionType === 'Quarterly') expiryDate.setMonth(expiryDate.getMonth() + 3);
     if (subscriptionType === '12_MONTHS') expiryDate.setFullYear(expiryDate.getFullYear() + 1);
     if (subscriptionType === 'FREE_TIER') expiryDate = null;
 
@@ -1592,6 +1594,8 @@ exports.updateSubscription = async (req, res) => {
     if (subscriptionType) {
       let expiryDate = new Date();
       if (subscriptionType === '6_MONTHS') expiryDate.setMonth(expiryDate.getMonth() + 6);
+      if (subscriptionType === 'Monthly') expiryDate.setMonth(expiryDate.getMonth() + 1);
+      if (subscriptionType === 'Quarterly') expiryDate.setMonth(expiryDate.getMonth() + 3);
       if (subscriptionType === '12_MONTHS') expiryDate.setFullYear(expiryDate.getFullYear() + 1);
 
       updateData.subscriptionType = subscriptionType;
