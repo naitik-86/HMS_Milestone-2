@@ -147,13 +147,7 @@ export default function SubscriptionPlanCard({
             {/* Button */}
 
             <button
-                onClick={() =>
-                    navigate("/payment", {
-                        state: {
 
-                        },
-                    })
-                }
                 disabled={isCurrent && status !== "TRIAL"}
                 className={`mt-8 w-full rounded-xl py-3 text-sm font-semibold transition-all ${isCurrent && status !== "TRIAL"
                     ? "cursor-not-allowed border border-orange-200 bg-orange-50 text-orange-600"
@@ -162,7 +156,7 @@ export default function SubscriptionPlanCard({
             >
                 {isCurrent && status !== "TRIAL"
                     ? "Current Plan"
-                    : "Upgrade Plan"}
+                    : "Contact Admin To Change Plan"}
             </button>
 
         </div>
