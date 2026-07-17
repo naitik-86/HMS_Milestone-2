@@ -27,12 +27,7 @@ export default function TrialPaymentModal({
 
                 <div className="relative border-b bg-white px-8 py-7">
 
-                    <button
-                        onClick={onClose}
-                        className="absolute right-5 top-5 rounded-full p-2 text-gray-500 hover:bg-gray-100"
-                    >
-                        <X size={20} />
-                    </button>
+
 
                     <div className="flex items-center gap-4">
 
