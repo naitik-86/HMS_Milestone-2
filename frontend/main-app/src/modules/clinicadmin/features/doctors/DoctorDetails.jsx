@@ -1,7 +1,7 @@
 import React from 'react';
 import { showToast } from '../../../../shared/components/toast';
 // import { useEffect } from 'react';
-import { createDoctor, getDoctors, updateDoctor } from '../../api/doctorApi';
+import { createDoctor, getDoctors, updateDoctor, deleteDoctor } from '../../api/doctorApi';
 import { useEffect, useState } from "react";
 import { getDoctorStaff } from "../../api/staffApi";
 // ── Mock Data ────────────────────────────────────────────────────────────────
@@ -87,7 +87,7 @@ function DoctorForm({ onClose, onSave, existingData, isEdit }) {
     avgDuration: existingData?.avgDuration || 15,
     emergency: existingData?.emergency ?? false,
     experience: existingData?.experience || "",
-});
+  });
 
   const u = (k, v) => {
     setFormData(p => ({ ...p, [k]: v }));
@@ -178,18 +178,18 @@ function DoctorForm({ onClose, onSave, existingData, isEdit }) {
   const chipCls = (active) =>
     `flex items-center gap-2 px-4 py-2.5 rounded-xl border cursor-pointer transition-all text-xs font-semibold ${active ? 'border-[#E8630A] bg-[#FEF3EB] text-[#E8630A]' : 'border-[#E5E7EB] bg-white text-[#6B7280] hover:border-gray-300'
     }`;
-useEffect(() => {
+  useEffect(() => {
     fetchDoctorStaff();
-}, []);
+  }, []);
 
-const fetchDoctorStaff = async () => {
+  const fetchDoctorStaff = async () => {
     try {
-        const data = await getDoctorStaff();
-        setDoctorStaff(data);
+      const data = await getDoctorStaff();
+      setDoctorStaff(data);
     } catch (err) {
-        console.log(err);
+      console.log(err);
     }
-};
+  };
   return (
     <div
       className="fixed inset-0 z-1000 flex items-center justify-center p-3 sm:p-5"
@@ -296,52 +296,52 @@ const fetchDoctorStaff = async () => {
                   <div>
                     <label className={labelCls}>Doctor Full Name <span className="text-[#E8630A]">*</span></label>
                     <select
-    className={errors.name ? inputErrCls : inputCls}
-    value={formData.staffId || ""}
-    onChange={(e) => {
+                      className={errors.name ? inputErrCls : inputCls}
+                      value={formData.staffId || ""}
+                      onChange={(e) => {
 
-        const doctor = doctorStaff.find(
-            d => d._id === e.target.value
-        );
+                        const doctor = doctorStaff.find(
+                          d => d._id === e.target.value
+                        );
 
-        if (!doctor) return;
+                        if (!doctor) return;
 
-        setFormData(prev => ({
-            ...prev,
+                        setFormData(prev => ({
+                          ...prev,
 
-            staffId: doctor._id,
-            staff: doctor._id,
-            staffCode:
-                doctor.employmentInfo?.staffId || "",
+                          staffId: doctor._id,
+                          staff: doctor._id,
+                          staffCode:
+                            doctor.employmentInfo?.staffId || "",
 
-            name:
-                doctor.personalInfo.fullName,
+                          name:
+                            doctor.personalInfo.fullName,
 
-            mobile:
-                doctor.personalInfo.mobileNumber,
+                          mobile:
+                            doctor.personalInfo.mobileNumber,
 
-            email:
-                doctor.personalInfo.email,
-        }));
-    }}
->
-    <option value="">
-        Select Doctor
-    </option>
+                          email:
+                            doctor.personalInfo.email,
+                        }));
+                      }}
+                    >
+                      <option value="">
+                        Select Doctor
+                      </option>
 
-    {doctorStaff.map(doc => (
-        <option
-            key={doc._id}
-            value={doc._id}
-        >
-            {doc.employmentInfo.staffId}
-            {" | "}
-            {doc.personalInfo.fullName}
-            {" | "}
-            {doc.personalInfo.mobileNumber}
-        </option>
-    ))}
-</select>
+                      {doctorStaff.map(doc => (
+                        <option
+                          key={doc._id}
+                          value={doc._id}
+                        >
+                          {doc.employmentInfo.staffId}
+                          {" | "}
+                          {doc.personalInfo.fullName}
+                          {" | "}
+                          {doc.personalInfo.mobileNumber}
+                        </option>
+                      ))}
+                    </select>
                     {errors.name && <p className="text-red-500 text-xs mt-1.5">{errors.name}</p>}
                   </div>
                   <div>
@@ -595,9 +595,12 @@ const fetchDoctorStaff = async () => {
   );
 }
 
+
 // ── ViewProfile Modal ────────────────────────────────────────────────────────
-function ViewProfileModal({ doctor, onClose, onEdit }) {
+function ViewProfileModal({ doctor, onClose, onEdit, onDelete }) {
   if (!doctor) return null;
+
+
 
   const statItems = [
     { label: 'Specialization', value: doctor.specialization || '—' },
@@ -678,11 +681,11 @@ function ViewProfileModal({ doctor, onClose, onEdit }) {
       )}
 
       <div className="flex justify-end gap-3 pt-3 border-t border-[#EAE5DC]">
+        <button onClick={() => onDelete(doctor._id)} className="px-6 py-2.5 bg-[#E8630A] hover:bg-[#D05A09] text-white text-sm font-semibold rounded-xl cursor-pointer border-none transition-colors">
+          Delete
+        </button>
         <button onClick={onClose} className="px-6 py-2.5 bg-gray-100 hover:bg-gray-200 text-[#1A1D2E] text-sm font-semibold rounded-xl cursor-pointer border-none transition-colors">
           Close
-        </button>
-        <button onClick={onEdit} className="px-6 py-2.5 bg-[#E8630A] hover:bg-[#D05A09] text-white text-sm font-semibold rounded-xl cursor-pointer border-none transition-colors">
-          Edit Details
         </button>
       </div>
     </div>
@@ -778,6 +781,31 @@ export default function DoctorDetails() {
 
   const closeModal = () => setModal(null);
 
+  const handleDelete = async (doctorId) => {
+    try {
+      await deleteDoctor(doctorId);
+
+      showToast({
+        type: "success",
+        title: "Doctor Deleted",
+        description: "Doctor has been deleted successfully.",
+      });
+
+      await fetchDoctors();
+
+      closeModal();
+    } catch (err) {
+      console.error(err);
+
+      showToast({
+        type: "error",
+        title: "Delete Failed",
+        description:
+          err?.response?.data?.message || "Unable to delete doctor.",
+      });
+    }
+  };
+
   const handleSave = async (formData) => {
     try {
 
@@ -851,6 +879,7 @@ export default function DoctorDetails() {
             <ViewProfileModal
               doctor={modal.doctor}
               onClose={closeModal}
+              onDelete={handleDelete}
               onEdit={() => { closeModal(); setTimeout(() => setModal({ type: 'edit', doctor: modal.doctor }), 50); }}
             />
           </div>
