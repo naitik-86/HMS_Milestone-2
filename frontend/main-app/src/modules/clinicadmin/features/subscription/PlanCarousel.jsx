@@ -1,5 +1,5 @@
 import SubscriptionPlanCard from "./SubscriptionPlanCard";
-
+import { Sparkles } from "lucide-react";
 export default function PlanCarousel({
     status,
     plans,
@@ -12,14 +12,23 @@ export default function PlanCarousel({
             <div className="mb-6 flex items-center justify-between">
 
                 <div>
-                    <h2 className="text-2xl font-bold text-slate-900">
-                        Available Plans
-                    </h2>
+                    <div className="flex items-center gap-3">
+                        <h2 className="text-2xl font-bold text-slate-900">
+                            Available Plans
+                        </h2>
+
+                        <span className="flex items-center gap-1 rounded-full bg-orange-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-orange-700">
+                            <Sparkles size={14} />
+                            Coming Soon
+                        </span>
+                    </div>
 
                     <p className="mt-1 text-sm text-gray-500">
                         Compare plans and upgrade your clinic whenever you're ready.
                     </p>
                 </div>
+
+
 
                 <span className="rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-xs font-semibold text-orange-600">
                     {plans.length} Plans

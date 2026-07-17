@@ -1,9 +1,17 @@
-const Doctor = require("../models/DoctorDetails.js");
+const Doctor = require("../models/DoctorDetails");
 
 const generateDoctorId = async () => {
-    const count = await Doctor.countDocuments();
+    const lastDoctor = await Doctor.findOne()
+        .sort({ createdAt: -1 })
+        .select("doctorId");
 
-    return `DOC-${String(count + 1).padStart(4, "0")}`;
+    if (!lastDoctor) {
+        return "DOC-0001";
+    }
+
+    const lastNumber = parseInt(lastDoctor.doctorId.split("-")[1], 10);
+
+    return `DOC-${String(lastNumber + 1).padStart(4, "0")}`;
 };
 
 module.exports = generateDoctorId;
