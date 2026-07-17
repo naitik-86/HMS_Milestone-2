@@ -1936,34 +1936,38 @@ exports.getTotalUsers = async (req, res) => {
 };
 
 // POST /api/clinics/:id/documents
-// Local/dev replacement: multer stores uploads in memory.
-// We don't upload to S3 here; instead we accept the files and return success.
-// (Production can re-introduce S3 storage + req.files[].location mapping.)
 exports.uploadClinicDocuments = async (req, res) => {
   try {
-    // In-memory uploads => files won't have .location
-    // We just ensure the request is multipart and the clinic exists.
     const clinic = await Clinic.findById(req.params.id);
     if (!clinic) return res.status(404).json({ success: false, message: 'Clinic not found' });
 
-    // Optionally: validate required documents exist
-    const normalize = (v) => {
-      if (!v) return [];
-      return Array.isArray(v) ? v : [v];
+    const documentFields = {
+      clinicLogo: ['clinicLogoUrl', 'clinicLogoName'],
+      vetCouncilCertificate: ['vetCouncilCertificateUrl', 'vetCouncilCertificateName'],
+      tradeLicense: ['tradeLicenseUrl', 'tradeLicenseName'],
+      drugLicense: ['drugLicenseUrl', 'drugLicenseName'],
+      cancelledCheque: ['cancelledChequeUrl', 'cancelledChequeName'],
+      adminProfile: ['adminProfileUrl', 'adminProfileName'],
+      idDocument: ['idDocumentUrl', 'idDocumentName'],
     };
 
-    const logo = normalize(req.files?.clinicLogo);
-    const vet = normalize(req.files?.vetCouncilCertificate);
-    const trade = normalize(req.files?.tradeLicense);
-    const cheque = normalize(req.files?.cancelledCheque);
-    const adminProfile = normalize(req.files?.adminProfile);
+    const uploadedDocuments = Object.entries(documentFields)
+      .map(([field, [urlKey, nameKey]]) => ({ field, urlKey, nameKey, file: req.files?.[field]?.[0] }))
+      .filter(({ file }) => file);
 
-    const hasAny = logo.length > 0 || vet.length > 0 || trade.length > 0 || cheque.length > 0 || adminProfile.length > 0;
-
-
-    if (!hasAny) {
+    if (!uploadedDocuments.length) {
       return res.status(400).json({ success: false, message: 'No documents uploaded' });
     }
+
+    // The upload middleware keeps files in memory. Store a data URL so the
+    // document remains available for the clinic view even in local deployments.
+    // Production deployments can replace this value with an object-storage URL.
+    clinic.legalDocuments = clinic.legalDocuments || {};
+    uploadedDocuments.forEach(({ urlKey, nameKey, file }) => {
+      clinic.legalDocuments[urlKey] = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
+      clinic.legalDocuments[nameKey] = file.originalname;
+    });
+    await clinic.save();
 
     return res.status(200).json({ success: true, data: clinic });
   } catch (error) {

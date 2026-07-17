@@ -38,7 +38,7 @@ const PLAN_TYPE_CONFIG = {
     },
 };
 
-const BILLING_CYCLES = ["Monthly", "Quarterly", "Annual"];
+const BILLING_CYCLES = ["Monthly", "Quarterly", "Half-Yearly", "Annual"];
 const STATUS_OPTIONS = ["Active", "Inactive", "Archived"];
 
 const clampNonNegativeNumber = (value) => Math.max(Number(value || 0), 0);
@@ -100,7 +100,7 @@ const getRenewalDate = (startDate, billingCycle) => {
     const date = new Date(startDate);
     if (Number.isNaN(date.getTime())) return "";
 
-    const months = { Monthly: 1, Quarterly: 3, Annual: 12 }[billingCycle] || 1;
+    const months = { Monthly: 1, Quarterly: 3, "Half-Yearly": 6, Annual: 12 }[billingCycle] || 1;
     date.setMonth(date.getMonth() + months);
     return date.toISOString().slice(0, 10);
 };

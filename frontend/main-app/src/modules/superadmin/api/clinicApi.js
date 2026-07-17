@@ -11,9 +11,13 @@ const buildFormData = (data) => {
 };
 
 export const createClinic = async (clinicData) => {
-    let subscriptionType = "FREE_TIER";
-    if (clinicData.plan === "Standard" || clinicData.billing === "Monthly") subscriptionType = "6_MONTHS";
-    if (clinicData.plan === "Professional" || clinicData.plan === "Enterprise" || clinicData.billing === "Annual") subscriptionType = "12_MONTHS";
+    const subscriptionTypesByBillingCycle = {
+        Monthly: "Monthly",
+        Quarterly: "Quarterly",
+        "Half-Yearly": "6_MONTHS",
+        Annual: "12_MONTHS",
+    };
+    const subscriptionType = subscriptionTypesByBillingCycle[clinicData.billing] || "FREE_TIER";
 
     const addressString = `${clinicData.address1 || ""}, ${clinicData.city || ""}, ${clinicData.state || ""}`;
 
@@ -96,24 +100,7 @@ export const createClinic = async (clinicData) => {
         throw new Error("Failed to retrieve clinic ID from response");
     }
 
-    const hasFiles = clinicData.logo || clinicData.vetCert || clinicData.tradeDoc || clinicData.cheque || clinicData.profile || clinicData.drugDoc || clinicData.idDoc;
-
-    if (hasFiles) {
-        const fileData = {
-            clinicLogo: clinicData.logo,
-            vetCouncilCertificate: clinicData.vetCert,
-            tradeLicense: clinicData.tradeDoc,
-            cancelledCheque: clinicData.cheque,
-            adminProfile: clinicData.profile,
-            drugLicense: clinicData.drugDoc,
-            idDocument: clinicData.idDoc
-        };
-        const formData = buildFormData(fileData);
-
-        API.post(`/super-admin/clinics/${clinicId}/documents`, formData, {
-            headers: { "Content-Type": "multipart/form-data" },
-        }).catch((error) => console.warn("Clinic document upload failed", error));
-    }
+    await uploadClinicDocuments(clinicId, clinicData);
 
     return createRes.data;
 };
@@ -131,4 +118,28 @@ export const updateClinic = async (id, clinicData) => {
 export const deleteClinic = async (id) => {
     const res = await API.delete(`/super-admin/clinics/${id}`);
     return res.data;
+};
+
+export const uploadClinicDocuments = async (clinicId, clinicData) => {
+    const documentFields = {
+        clinicLogo: clinicData.logo,
+        vetCouncilCertificate: clinicData.vetCert,
+        tradeLicense: clinicData.tradeDoc,
+        drugLicense: clinicData.drugDoc,
+        cancelledCheque: clinicData.cheque,
+        adminProfile: clinicData.profile,
+        idDocument: clinicData.idDoc,
+    };
+    const filesToUpload = Object.fromEntries(
+        Object.entries(documentFields).filter(([, file]) => file instanceof File)
+    );
+
+    if (!Object.keys(filesToUpload).length) return null;
+
+    const response = await API.post(
+        `/super-admin/clinics/${clinicId}/documents`,
+        buildFormData(filesToUpload),
+        { headers: { "Content-Type": "multipart/form-data" } }
+    );
+    return response.data;
 };

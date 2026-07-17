@@ -24,33 +24,10 @@ const TILE_SIZE = 256;
 const BILLING_MONTHS = {
     Monthly: 1,
     Quarterly: 3,
+    "Half-Yearly": 6,
     Annual: 12,
 };
-
-const OPTIONAL_CLINIC_TABS = new Set(["licenses", "tax"]);
-
-const SKIPPABLE_TAB_DEFAULTS = {
-    licenses: {
-        stateCouncil: "",
-        vetReg: "",
-        vetExpiry: "",
-        vetCert: null,
-        tradeLicense: "",
-        tradeExpiry: "",
-        tradeDoc: null,
-        drugLicense: "",
-        drugExpiry: "",
-        drugDoc: null,
-    },
-    tax: {
-        gst: "",
-        pan: "",
-        bankName: "",
-        accountNumber: "",
-        ifsc: "",
-        cheque: null,
-    },
-};
+const CLINIC_BILLING_CYCLES = ["Monthly", "Quarterly", "Half-Yearly", "Annual"];
 
 const GOVT_ID_TYPES = ["Aadhar", "PAN", "Passport"];
 
@@ -75,11 +52,15 @@ const getNonNegativeNumber = (value) => {
     return Number.isFinite(number) ? Math.max(number, 0) : 0;
 };
 
-const getTrialLimit = (planRecords) =>
-    planRecords.reduce(
-        (max, plan) => Math.max(max, getNonNegativeNumber(plan.trialPeriodDays)),
-        0
+const getTrialDaysForPlanCycle = (plans, subscriptionPlan, billingCycle) => {
+    const matchingPlan = plans.find(
+        (plan) =>
+            plan.subscriptionPlan === subscriptionPlan &&
+            plan.billingCycle === billingCycle
     );
+
+    return getNonNegativeNumber(matchingPlan?.trialPeriodDays);
+};
 
 const SOLO_DOCTOR_PLAN_NAMES = new Set(["Solo Basic", "Solo Pro"]);
 
@@ -88,9 +69,6 @@ const resolvePlanType = (plan) => {
     if (SOLO_DOCTOR_PLAN_NAMES.has(plan?.subscriptionPlan)) return "Solo Doctor";
     return "Clinic";
 };
-
-const clampTrialDays = (value, max) =>
-    Math.min(getNonNegativeNumber(value), getNonNegativeNumber(max));
 
 const lonToTileX = (lon, zoom) =>
     ((lon + 180) / 360) * Math.pow(2, zoom);
@@ -155,8 +133,6 @@ export default function ClinicForm({
     const navigate = useNavigate();
     const stateOptions = INDIAN_STATE_OPTIONS;
     const idType = form.govtIdType || "";
-    const isOptionalTab = OPTIONAL_CLINIC_TABS.has(activeTab);
-
     const idNumberLabel =
         idType === "PAN"
             ? "PAN Number"
@@ -237,30 +213,21 @@ export default function ClinicForm({
     );
 
     const planOptions = useMemo(
-        () => [...new Set(activePlans.map((plan) => plan.subscriptionPlan).filter(Boolean))],
+        () =>
+            [...new Set(activePlans.map((plan) => plan.subscriptionPlan).filter(Boolean))]
+                .sort((first, second) => {
+                    if (first === "Custom") return -1;
+                    if (second === "Custom") return 1;
+                    return first.localeCompare(second);
+                }),
         [activePlans]
     );
 
-    const billingOptions = useMemo(
-        () => [
-            ...new Set(
-                activePlans
-                    .filter((plan) => plan.subscriptionPlan === form.plan)
-                    .map((plan) => plan.billingCycle)
-                    .filter(Boolean)
-            ),
-        ],
-        [activePlans, form.plan]
-    );
-
-    const selectedPlanRecords = useMemo(
-        () => activePlans.filter((plan) => plan.subscriptionPlan === form.plan),
-        [activePlans, form.plan]
-    );
+    const billingOptions = CLINIC_BILLING_CYCLES;
 
     const maxTrialDays = useMemo(
-        () => getTrialLimit(selectedPlanRecords),
-        [selectedPlanRecords]
+        () => getTrialDaysForPlanCycle(activePlans, form.plan, form.billing),
+        [activePlans, form.billing, form.plan]
     );
 
     useEffect(() => {
@@ -268,20 +235,15 @@ export default function ClinicForm({
 
         setForm((prev) => {
             const nextPlan = planOptions.includes(prev.plan) ? prev.plan : planOptions[0];
-            const nextBillingOptions = [
-                ...new Set(
-                    activePlans
-                        .filter((plan) => plan.subscriptionPlan === nextPlan)
-                        .map((plan) => plan.billingCycle)
-                        .filter(Boolean)
-                ),
-            ];
+            const nextBillingOptions = CLINIC_BILLING_CYCLES;
             const nextBilling = nextBillingOptions.includes(prev.billing)
                 ? prev.billing
                 : nextBillingOptions[0] || "";
-            const nextPlanRecords = activePlans
-                .filter((plan) => plan.subscriptionPlan === nextPlan);
-            const nextTrialDays = clampTrialDays(prev.trialDays, getTrialLimit(nextPlanRecords));
+            const nextTrialDays = getTrialDaysForPlanCycle(
+                activePlans,
+                nextPlan,
+                nextBilling
+            );
             const nextEndDate = prev.startDate && nextBilling
                 ? getPlanEndDate(prev.startDate, nextBilling)
                 : "";
@@ -704,25 +666,12 @@ export default function ClinicForm({
 
     const handlePlanChange = (e) => {
         const plan = e.target.value;
-        const nextBillingOptions = [
-            ...new Set(
-                activePlans
-                    .filter((item) => item.subscriptionPlan === plan)
-                    .map((item) => item.billingCycle)
-                    .filter(Boolean)
-            ),
-        ];
-        const billing = nextBillingOptions[0] || "";
-        const trialMax = getTrialLimit(
-            activePlans.filter((item) => item.subscriptionPlan === plan)
-        );
 
         setForm((prev) => ({
             ...prev,
             plan,
-            billing,
-            trialDays: clampTrialDays(prev.trialDays, trialMax),
-            endDate: prev.startDate && billing ? getPlanEndDate(prev.startDate, billing) : "",
+            trialDays: getTrialDaysForPlanCycle(activePlans, plan, prev.billing),
+            endDate: prev.startDate && prev.billing ? getPlanEndDate(prev.startDate, prev.billing) : "",
         }));
     };
 
@@ -732,6 +681,7 @@ export default function ClinicForm({
         setForm((prev) => ({
             ...prev,
             billing,
+            trialDays: getTrialDaysForPlanCycle(activePlans, prev.plan, billing),
             endDate: prev.startDate && billing ? getPlanEndDate(prev.startDate, billing) : "",
         }));
     };
@@ -743,15 +693,6 @@ export default function ClinicForm({
             ...prev,
             startDate,
             endDate: startDate && prev.billing ? getPlanEndDate(startDate, prev.billing) : "",
-        }));
-    };
-
-    const handleTrialDaysChange = (e) => {
-        const trialDays = clampTrialDays(e.target.value, maxTrialDays);
-
-        setForm((prev) => ({
-            ...prev,
-            trialDays,
         }));
     };
 
@@ -1073,7 +1014,7 @@ export default function ClinicForm({
         if (!normalizeText(form.billing)) {
             nextErrors.billing = "Billing cycle is required.";
         } else if (!billingOptions.includes(form.billing)) {
-            nextErrors.billing = "Please select a billing cycle configured for this plan.";
+            nextErrors.billing = "Please select Monthly, Quarterly, Half-Yearly, or Annual.";
         }
 
         const tomorrow = getTomorrowDate();
@@ -1187,22 +1128,6 @@ export default function ClinicForm({
         goToAdjacentTab(1);
     };
 
-    const handleSkip = () => {
-        if (!isOptionalTab || readOnly || skipTabValidation) return;
-
-        const defaults = SKIPPABLE_TAB_DEFAULTS[activeTab];
-
-        if (defaults) {
-            setForm((prev) => ({
-                ...prev,
-                ...defaults,
-            }));
-        }
-
-        clearErrorsForFields(Object.keys(defaults || {}));
-        goToAdjacentTab(1);
-    };
-
     const handlePrevious = () => {
         goToAdjacentTab(-1);
     };
@@ -1225,14 +1150,14 @@ export default function ClinicForm({
             if (onSubmitClinic) {
                 await onSubmitClinic({
                     ...form,
-                    trialDays: clampTrialDays(form.trialDays, maxTrialDays),
+                    trialDays: maxTrialDays,
                 });
                 return;
             }
 
             const data = await createClinic({
                 ...form,
-                trialDays: clampTrialDays(form.trialDays, maxTrialDays),
+                trialDays: maxTrialDays,
             });
 
             if (data.emailWarning?.length) {
@@ -1800,7 +1725,7 @@ export default function ClinicForm({
                                     error={errors.endDate}
                                     disabled
                                 />
-                                <Input requiredField={false} type="number" name="trialDays" label="Trial Period (Days)" value={clampTrialDays(form.trialDays, maxTrialDays)} error={errors.trialDays} min={0} max={maxTrialDays} onChange={handleTrialDaysChange} />
+                                <Input requiredField={false} type="number" name="trialDays" label="Trial Period (Days)" value={maxTrialDays} error={errors.trialDays} disabled />
 
                                 <Input requiredField={false} name="discountCode" label="Discount / Promo Code" value={form.discountCode} onChange={handleChange} />
 
@@ -1911,16 +1836,6 @@ export default function ClinicForm({
                             </button>
                         ) : (
                             <div />
-                        )}
-
-                        {isOptionalTab && !readOnly && !skipTabValidation && (
-                            <button
-                                type="button"
-                                onClick={handleSkip}
-                                className="px-6 py-3 rounded-xl border border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
-                            >
-                                Skip
-                            </button>
                         )}
 
                         {activeTab !== "plan" ? (

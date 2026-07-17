@@ -79,12 +79,19 @@ const clinicSchema = new mongoose.Schema({
   
   legalDocuments: {
     clinicLogoUrl: String,
+    clinicLogoName: String,
     vetCouncilCertificateUrl: String,
+    vetCouncilCertificateName: String,
     tradeLicenseUrl: String,
+    tradeLicenseName: String,
     drugLicenseUrl: String,
+    drugLicenseName: String,
     cancelledChequeUrl: String,
+    cancelledChequeName: String,
     adminProfileUrl: String,
-    idDocumentUrl: String
+    adminProfileName: String,
+    idDocumentUrl: String,
+    idDocumentName: String
   },
   
   verificationStatus: {
