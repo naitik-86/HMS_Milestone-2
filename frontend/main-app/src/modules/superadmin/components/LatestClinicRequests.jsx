@@ -1,15 +1,16 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
     ClipboardCheck,
     Eye,
     Mail,
     MapPin,
     Pencil,
+    Trash2,
     X,
 } from "lucide-react";
 import { showToast } from "../../../shared/components/toast";
 import { calculateEndDate, getTodayDate } from "../../../shared/utils/calculateEndDate ";
-import { getClinics, updateClinic } from "../api/clinicApi";
+import { deleteClinic, getClinics, updateClinic } from "../api/clinicApi";
 import ClinicForm from "./forms/clinicForm/ClinicForm";
 import Stepper from "./forms/Stepper";
 
@@ -34,163 +35,277 @@ const statusStyles = {
 };
 
 const tableGrid =
-    "md:grid-cols-[minmax(0,1.2fr)_minmax(72px,.65fr)_minmax(0,1.35fr)_minmax(0,1.25fr)_minmax(74px,.65fr)_minmax(100px,.8fr)_minmax(132px,.85fr)]";
+    "md:grid-cols-[minmax(0,1.2fr)_minmax(72px,.65fr)_minmax(0,1.35fr)_minmax(0,1.25fr)_minmax(74px,.65fr)_minmax(100px,.8fr)_minmax(140px,.85fr)]";
 
 const getClinicType = (clinic) =>
     clinic.facilityType ||
     clinic.type ||
     clinic.clinicType ||
     clinic.facility_type ||
+    clinic.clinicDetails?.facilityType ||
     "";
 
 const getContactEmail = (clinic) =>
-    clinic.contactEmail || clinic.email || clinic.adminEmail || "N/A";
+    clinic.contactEmail || clinic.email || clinic.adminEmail || clinic.adminDetails?.emailAddress || "N/A";
 
 const getDisplayStatus = (clinic) =>
     clinic.verificationStatus || clinic.subscriptionStatus || "Unknown";
 
-const filePlaceholder = (name) => name ? { name, type: "application/pdf" } : null;
+// Safely format files and URLs for display
+const filePlaceholder = (name) => {
+    if (!name) return null;
+    if (typeof name === "string") {
+        const fileName = name.split('/').pop();
+        return { name: fileName, type: "application/pdf", url: name };
+    }
+    return name;
+};
 
-const getAddressDetails = (clinic) => clinic.addressDetails || clinic.address_details || {};
+const formatDate = (value) => {
+    if (!value) return "-";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "-";
+    return date.toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+    });
+};
+
+const valueOrDash = (value) => {
+    if (Array.isArray(value)) {
+        return value.length ? value.join(", ") : "-";
+    }
+    if (typeof value === "boolean") {
+        return value ? "Yes" : "No";
+    }
+    if (value && typeof value === "object" && value.name) {
+        return value.name;
+    }
+    if (value === undefined || value === null || String(value).trim() === "") {
+        return "-";
+    }
+    return value;
+};
+
+const DetailSection = ({ title, children }) => (
+    <section className="rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:p-5">
+        <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+            {title}
+        </h3>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            {children}
+        </div>
+    </section>
+);
+
+const DetailField = ({ label, value, wide = false }) => {
+    const isFile = value && typeof value === 'object' && value.name;
+    const displayValue = isFile ? value.name : valueOrDash(value);
+    const url = isFile ? value.url : null;
+
+    return (
+        <div className={wide ? "sm:col-span-2" : ""}>
+            <p className="text-xs uppercase tracking-wide text-slate-500">
+                {label}
+            </p>
+            {url && (url.startsWith('http') || url.startsWith('/')) ? (
+                <a href={url} target="_blank" rel="noreferrer" className="mt-1 text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline break-words block">
+                    {displayValue}
+                </a>
+            ) : (
+                <p className="mt-1 text-sm font-medium text-slate-800 break-words">
+                    {displayValue}
+                </p>
+            )}
+        </div>
+    );
+};
 
 const getPlanValue = (clinic) =>
-    clinic.plan || clinic.subscriptionPlan || clinic.subscriptionType || "Basic";
+    clinic.plan || clinic.subscriptionPlan || clinic.subscriptionType || clinic.subscriptionDetails?.planType || "Basic";
 
 const getBillingValue = (clinic) =>
-    clinic.billing || clinic.billingCycle || (clinic.subscriptionType === "12_MONTHS" ? "Annual" : "Monthly");
+    clinic.billing || clinic.billingCycle || clinic.subscriptionDetails?.billingCycle || (getPlanValue(clinic) === "12_MONTHS" ? "Annual" : "Monthly");
 
 const getClinicForm = (clinic = {}) => {
     const today = getTodayDate();
     const billing = getBillingValue(clinic);
-    const addressDetails = getAddressDetails(clinic);
-    const docs = clinic.documents || clinic.documentDetails || {};
+
+    const address = clinic.addressDetails || clinic.address || {};
+    const reg = clinic.registrationDetails || clinic.registrations || clinic.licenses || {};
+    const tax = clinic.taxDetails || clinic.tax || clinic.financials || {};
+    const admin = clinic.adminDetails || clinic.adminInfo || clinic.admin || {};
+    const plan = clinic.subscriptionDetails || clinic.planDetails || clinic.plan || {};
+    const limits = clinic.licenseLimits || clinic.limits || clinic.subscriptionDetails?.licenseLimits || {};
+    const features = clinic.features || clinic.modules || clinic.subscriptionDetails?.features || {};
+    const docs = clinic.documentDetails || clinic.documents || clinic.legalDocuments || {};
+    const details = clinic.clinicDetails || clinic.details || {};
 
     return {
-        clinicName: clinic.clinicName || clinic.name || "",
-        facilityType: getClinicType(clinic),
-        year: clinic.year || clinic.establishedYear || clinic.yearOfEstablishment || "",
-        email: clinic.email || clinic.contactEmail || "",
-        phone: clinic.phone || clinic.contactPhone || clinic.primaryContact || "",
-        altPhone: clinic.altPhone || clinic.alternateContact || "",
-        website: clinic.website || "",
-        address1: addressDetails.addressLine1 || clinic.address1 || clinic.address || "",
-        address2: addressDetails.addressLine2 || clinic.address2 || "",
-        city: addressDetails.city || clinic.city || "",
-        district: addressDetails.district || clinic.district || "",
-        state: addressDetails.state || clinic.state || "",
-        pincode: addressDetails.pincode || clinic.pincode || "",
-        latitude: clinic.latitude || addressDetails.latitude || "",
-        longitude: clinic.longitude || addressDetails.longitude || "",
-        gst: clinic.gst || clinic.gstNumber || "",
-        pan: clinic.pan || clinic.panNumber || "",
-        bankName: clinic.bankName || "",
-        accountNumber: clinic.accountNumber || "",
-        ifsc: clinic.ifsc || clinic.ifscCode || "",
-        adminName: clinic.adminName || "",
-        adminPhone: clinic.adminPhone || "",
-        adminEmail: clinic.adminEmail || "",
-        plan: getPlanValue(clinic),
+        clinicName: clinic.name || clinic.clinicName || details.clinicName || details.name || "",
+        facilityType: getClinicType(clinic) || details.facilityType || "",
+        year: clinic.year || clinic.establishedYear || clinic.yearOfEstablishment || details.establishedYear || details.yearOfEstablishment || "",
+        email: clinic.email || clinic.contactEmail || details.contactEmail || details.email || "",
+        phone: clinic.phone || clinic.contactPhone || clinic.primaryContact || details.phone || details.contactPhone || "",
+        altPhone: clinic.altPhone || clinic.alternateContact || clinic.alternatePhone || details.alternateContact || details.altPhone || "",
+        website: clinic.website || details.website || "",
+
+        address1: address.addressLine1 || address.line1 || clinic.address1 || clinic.address || "",
+        address2: address.addressLine2 || address.line2 || clinic.address2 || "",
+        city: address.city || clinic.city || "",
+        district: address.district || clinic.district || "",
+        state: address.state || clinic.state || "",
+        pincode: address.pincode || address.zipcode || clinic.pincode || "",
+        latitude: clinic.latitude || address.latitude || "",
+        longitude: clinic.longitude || address.longitude || "",
+        serviceAreas: address.serviceAreas || clinic.serviceAreas || [address.serviceArea || ""],
+
+        vetReg: clinic.vetReg || clinic.vetRegistrationNumber || reg.vetRegistrationNumber || reg.vetCouncilRegistration || reg.registrationNumber || "",
+        stateCouncil: clinic.stateCouncil || clinic.vetCouncil || reg.stateVeterinaryCouncil || reg.stateCouncil || reg.vetCouncil || "",
+        expiry: clinic.expiry || reg.registrationExpiryDate || reg.expiryDate || "",
+        vetExpiry: clinic.vetExpiry || reg.vetExpiry || reg.registrationExpiryDate || "",
+
+        tradeLicense: clinic.tradeLicense || clinic.tradeLicenseNumber || reg.tradeLicenseNumber || reg.tradeLicense || "",
+        tradeExpiry: clinic.tradeExpiry || reg.tradeLicenseExpiryDate || reg.tradeExpiry || "",
+        drugLicense: clinic.drugLicense || clinic.drugLicenseNumber || reg.drugLicenseNumber || reg.drugLicense || "",
+        drugExpiry: clinic.drugExpiry || reg.drugLicenseExpiryDate || reg.drugExpiry || "",
+
+        gst: clinic.gst || clinic.gstNumber || tax.gstNumber || tax.gst || "",
+        pan: clinic.pan || clinic.panNumber || tax.panNumber || tax.pan || "",
+        bankName: clinic.bankName || tax.bankName || "",
+        accountNumber: clinic.accountNumber || tax.accountNumber || "",
+        ifsc: clinic.ifsc || clinic.ifscCode || tax.ifscCode || tax.ifsc || "",
+
+        adminName: clinic.adminName || admin.fullName || admin.name || admin.adminName || "",
+        designation: clinic.designation || clinic.adminDesignation || admin.designation || admin.role || "",
+        adminPhone: clinic.adminPhone || admin.mobileNumber || admin.phone || admin.adminPhone || "",
+        adminEmail: clinic.adminEmail || admin.emailAddress || admin.email || admin.adminEmail || clinic.contactEmail || "",
+        govtIdType: clinic.govtIdType || admin.governmentIdType || admin.govtIdType || "Aadhar",
+        govtIdNumber: clinic.govtIdNumber || admin.governmentIdNumber || admin.govtIdNumber || "",
+
+        plan: getPlanValue(clinic) || plan.planType || "Basic",
         billing,
-        startDate: clinic.startDate || clinic.planStartDate || today,
-        endDate: clinic.endDate || clinic.planEndDate || calculateEndDate(today, billing),
-        trialDays: clinic.trialDays || clinic.trialPeriodDays || 0,
-        discountCode: clinic.discountCode || "",
-        notes: clinic.notes || "",
-        maxStaff: clinic.maxStaff || "",
-        maxDoctors: clinic.maxDoctors || "",
-        maxPets: clinic.maxPets || "",
-        storageLimit: clinic.storageLimit || "",
-        labModule: Boolean(clinic.labModule),
-        groomingModule: Boolean(clinic.groomingModule),
-        kennelModule: Boolean(clinic.kennelModule),
-        pharmacyModule: Boolean(clinic.pharmacyModule),
-        inventoryModule: Boolean(clinic.inventoryModule),
-        telemedicineModule: Boolean(clinic.telemedicineModule),
-        apiAccess: Boolean(clinic.apiAccess),
-        whiteLabel: Boolean(clinic.whiteLabel),
-        serviceAreas: addressDetails.serviceAreas || clinic.serviceAreas || [addressDetails.serviceArea || ""],
-        vetReg: clinic.vetReg || clinic.vetRegistrationNumber || "",
-        stateCouncil: clinic.stateCouncil || clinic.vetCouncil || "",
-        expiry: clinic.expiry || "",
-        vetExpiry: clinic.vetExpiry || "",
-        tradeLicense: clinic.tradeLicense || clinic.tradeLicenseNumber || "",
-        tradeExpiry: clinic.tradeExpiry || "",
-        drugLicense: clinic.drugLicense || clinic.drugLicenseNumber || "",
-        drugExpiry: clinic.drugExpiry || "",
-        designation: clinic.designation || clinic.adminDesignation || "",
-        govtIdType: clinic.govtIdType || "Aadhar",
-        govtIdNumber: clinic.govtIdNumber || "",
-        logo: filePlaceholder(docs.clinicLogo || clinic.logoName),
-        vetCert: filePlaceholder(docs.vetCouncilCertificate || clinic.vetCertName),
-        tradeDoc: filePlaceholder(docs.tradeLicense || clinic.tradeDocName),
-        drugDoc: filePlaceholder(docs.drugLicense || clinic.drugDocName),
-        cheque: filePlaceholder(docs.cancelledCheque || clinic.chequeName),
-        idDoc: filePlaceholder(docs.idDocument || clinic.idDocName),
-        profile: filePlaceholder(docs.adminProfile || clinic.profileName),
+        startDate: clinic.startDate || clinic.planStartDate || plan.startDate || today,
+        endDate: clinic.endDate || clinic.planEndDate || clinic.expiryDate || plan.endDate || calculateEndDate(today, billing),
+        trialDays: clinic.trialDays || clinic.trialPeriodDays || plan.trialDays || 0,
+        discountCode: clinic.discountCode || plan.discountCode || "",
+        notes: clinic.notes || plan.notes || "",
+        
+        maxStaff: clinic.maxStaff || limits.maxStaff || "",
+        maxDoctors: clinic.maxDoctors || limits.maxDoctors || "",
+        maxPets: clinic.maxPets || limits.maxPets || "",
+        storageLimit: clinic.storageLimit || limits.storageLimit || limits.storageLimitGB || "",
+
+        labModule: Boolean(clinic.labModule ?? features.labModule ?? false),
+        groomingModule: Boolean(clinic.groomingModule ?? features.groomingModule ?? false),
+        kennelModule: Boolean(clinic.kennelModule ?? features.kennelModule ?? false),
+        pharmacyModule: Boolean(clinic.pharmacyModule ?? features.pharmacyModule ?? false),
+        inventoryModule: Boolean(clinic.inventoryModule ?? features.inventoryModule ?? false),
+        telemedicineModule: Boolean(clinic.telemedicineModule ?? features.telemedicineModule ?? false),
+        apiAccess: Boolean(clinic.apiAccess ?? features.apiAccess ?? false),
+        whiteLabel: Boolean(clinic.whiteLabel ?? features.whiteLabel ?? false),
+
+        logo: filePlaceholder(docs.clinicLogo || docs.clinicLogoUrl || clinic.logoName),
+        vetCert: filePlaceholder(docs.vetCouncilCertificate || docs.vetCouncilCertificateUrl || clinic.vetCertName),
+        tradeDoc: filePlaceholder(docs.tradeLicense || docs.tradeLicenseUrl || clinic.tradeDocName),
+        drugDoc: filePlaceholder(docs.drugLicense || docs.drugLicenseUrl || clinic.drugDocName),
+        cheque: filePlaceholder(docs.cancelledCheque || docs.cancelledChequeUrl || clinic.chequeName),
+        idDoc: filePlaceholder(docs.idDocument || docs.idDocumentUrl || clinic.idDocName || docs.governmentId || docs.governmentIdUrl),
+        profile: filePlaceholder(docs.adminProfile || docs.adminProfileUrl || clinic.profileName),
     };
 };
 
-const getUpdatePayload = (form) => ({
-    name: form.clinicName,
-    facilityType: form.facilityType,
-    address: [form.address1, form.city, form.state].filter(Boolean).join(", "),
-    email: form.email,
-    phone: form.phone,
-    altPhone: form.altPhone,
-    website: form.website,
-    adminName: form.adminName,
-    adminEmail: form.adminEmail,
-    adminPhone: form.adminPhone,
-    adminDesignation: form.designation,
-    latitude: form.latitude,
-    longitude: form.longitude,
-    subscriptionType: form.plan,
-    billingCycle: form.billing,
-    startDate: form.startDate,
-    endDate: form.endDate,
-    trialDays: form.trialDays,
-    discountCode: form.discountCode,
-    notes: form.notes,
-    maxDoctors: form.maxDoctors,
-    maxStaff: form.maxStaff,
-    maxPets: form.maxPets,
-    storageLimit: form.storageLimit,
-    gst: form.gst,
-    pan: form.pan,
-    bankName: form.bankName,
-    accountNumber: form.accountNumber,
-    ifsc: form.ifsc,
-    vetRegistrationNumber: form.vetReg,
-    stateCouncil: form.stateCouncil,
-    vetExpiry: form.vetExpiry,
-    tradeLicenseNumber: form.tradeLicense,
-    tradeExpiry: form.tradeExpiry,
-    drugLicenseNumber: form.drugLicense,
-    drugExpiry: form.drugExpiry,
-    govtIdType: form.govtIdType,
-    govtIdNumber: form.govtIdNumber,
-    labModule: form.labModule,
-    groomingModule: form.groomingModule,
-    kennelModule: form.kennelModule,
-    pharmacyModule: form.pharmacyModule,
-    inventoryModule: form.inventoryModule,
-    telemedicineModule: form.telemedicineModule,
-    apiAccess: form.apiAccess,
-    whiteLabel: form.whiteLabel,
-    addressDetails: {
-        addressLine1: form.address1,
-        addressLine2: form.address2,
-        city: form.city,
-        district: form.district,
-        state: form.state,
-        pincode: form.pincode,
-        serviceAreas: form.serviceAreas,
-    },
-});
+const getUpdatePayload = (form) => {
+    // FIX: Safely map UI plan names (Standard/Professional) to strict Backend Enums
+    let mappedSubscriptionType = "FREE_TIER";
+    const planStr = String(form.plan).toUpperCase();
+    const billingStr = String(form.billing).toUpperCase();
 
+    if (planStr.includes("STANDARD") || billingStr === "MONTHLY" || planStr === "6_MONTHS") {
+        mappedSubscriptionType = "6_MONTHS";
+    }
+    if (planStr.includes("PROFESSIONAL") || planStr.includes("ENTERPRISE") || billingStr === "ANNUAL" || planStr === "12_MONTHS") {
+        mappedSubscriptionType = "12_MONTHS";
+    }
 
+    return {
+        name: form.clinicName,
+        facilityType: form.facilityType,
+        yearOfEstablishment: form.year,
+        address: [form.address1, form.city, form.state].filter(Boolean).join(", "),
+        email: form.email,
+        contactEmail: form.email,
+        phone: form.phone,
+        altPhone: form.altPhone,
+        website: form.website,
+        adminName: form.adminName,
+        adminEmail: form.adminEmail,
+        adminPhone: form.adminPhone,
+        adminDesignation: form.designation,
+        latitude: form.latitude,
+        longitude: form.longitude,
 
-
+        // Apply mapped enum value instead of raw text
+        subscriptionType: mappedSubscriptionType, 
+        billingCycle: form.billing,
+        planStartDate: form.startDate,
+        planEndDate: form.endDate,
+        trialDays: form.trialDays,
+        discountCode: form.discountCode,
+        notes: form.notes,
+        
+        licenseLimits: {
+            maxDoctors: form.maxDoctors,
+            maxStaff: form.maxStaff,
+            maxPets: form.maxPets,
+            storageLimit: form.storageLimit,
+        },
+        taxDetails: {
+            gstNumber: form.gst,
+            panNumber: form.pan,
+            bankName: form.bankName,
+            accountNumber: form.accountNumber,
+            ifscCode: form.ifsc,
+        },
+        registrationDetails: {
+            vetRegistrationNumber: form.vetReg,
+            stateCouncil: form.stateCouncil,
+            vetExpiry: form.vetExpiry,
+            tradeLicenseNumber: form.tradeLicense,
+            tradeExpiry: form.tradeExpiry,
+            drugLicenseNumber: form.drugLicense,
+            drugExpiry: form.drugExpiry,
+        },
+        adminDetails: {
+            adminName: form.adminName,
+            adminEmail: form.adminEmail,
+            adminPhone: form.adminPhone,
+            designation: form.designation,
+            govtIdType: form.govtIdType,
+            govtIdNumber: form.govtIdNumber,
+        },
+        addressDetails: {
+            addressLine1: form.address1,
+            addressLine2: form.address2,
+            city: form.city,
+            district: form.district,
+            state: form.state,
+            pincode: form.pincode,
+            serviceAreas: form.serviceAreas,
+        },
+        features: {
+            labModule: form.labModule,
+            groomingModule: form.groomingModule,
+            kennelModule: form.kennelModule,
+            pharmacyModule: form.pharmacyModule,
+            inventoryModule: form.inventoryModule,
+            telemedicineModule: form.telemedicineModule,
+            apiAccess: form.apiAccess,
+            whiteLabel: form.whiteLabel,
+        }
+    };
+};
 
 export default function LatestClinicApprovals() {
     const [clinics, setClinics] = useState([]);
@@ -200,13 +315,13 @@ export default function LatestClinicApprovals() {
     const [activeTab, setActiveTab] = useState("identity");
     const [form, setForm] = useState(getClinicForm());
     const [saving, setSaving] = useState(false);
+    const [deletingId, setDeletingId] = useState("");
 
-    const fetchClinics = async () => {
+    const fetchClinics = useCallback(async () => {
+        setLoading(true);
         try {
             const response = await getClinics();
-            console.log(response.data);
             if (response.success) {
-                console.log(response.data[0]);
                 setClinics(response.data || []);
             }
         } catch (error) {
@@ -219,41 +334,11 @@ export default function LatestClinicApprovals() {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
     useEffect(() => {
-        let active = true;
-
-        const loadClinics = async () => {
-            try {
-                const response = await getClinics();
-
-                if (active && response.success) {
-                    setClinics(response.data || []);
-                }
-            } catch (error) {
-                console.error("Failed to fetch clinics", error);
-
-                if (active) {
-                    showToast({
-                        type: "error",
-                        title: "Clinics Unavailable",
-                        description: error.response?.data?.message || "Unable to load clinics.",
-                    });
-                }
-            } finally {
-                if (active) {
-                    setLoading(false);
-                }
-            }
-        };
-
-        loadClinics();
-
-        return () => {
-            active = false;
-        };
-    }, []);
+        fetchClinics();
+    }, [fetchClinics]);
 
     const openClinicModal = (mode, clinic) => {
         setSelectedClinic(clinic);
@@ -272,7 +357,6 @@ export default function LatestClinicApprovals() {
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
-
         setForm((prev) => {
             const updated = {
                 ...prev,
@@ -285,7 +369,6 @@ export default function LatestClinicApprovals() {
                     name === "billing" ? value : updated.billing
                 );
             }
-
             return updated;
         });
     };
@@ -294,16 +377,13 @@ export default function LatestClinicApprovals() {
         if (!selectedClinic?._id) return;
 
         setSaving(true);
-
         try {
             const response = await updateClinic(selectedClinic._id, getUpdatePayload(updatedForm));
-
             showToast({
                 type: "success",
                 title: "Clinic Updated",
                 description: response.message || "Clinic details updated successfully.",
             });
-
             closeModal();
             fetchClinics();
         } catch (error) {
@@ -318,6 +398,35 @@ export default function LatestClinicApprovals() {
         }
     };
 
+    const handleDeleteClinic = async (clinic) => {
+        if (!clinic?._id) return;
+
+        const confirmed = window.confirm(
+            `Delete ${clinic.name || "this clinic"}? This action cannot be undone.`
+        );
+        if (!confirmed) return;
+
+        setDeletingId(clinic._id);
+        try {
+            const response = await deleteClinic(clinic._id);
+            showToast({
+                type: "success",
+                title: "Clinic Deleted",
+                description: response.message || "Clinic record removed successfully.",
+            });
+            await fetchClinics();
+        } catch (error) {
+            console.error("Failed to delete clinic", error);
+            showToast({
+                type: "error",
+                title: "Delete Failed",
+                description: error.response?.data?.message || "Unable to delete clinic.",
+            });
+        } finally {
+            setDeletingId("");
+        }
+    };
+
     return (
         <>
             <div className="overflow-hidden rounded-2xl border bg-white shadow">
@@ -326,7 +435,6 @@ export default function LatestClinicApprovals() {
                         <div className="rounded-xl bg-orange-100 p-2 text-orange-500">
                             <ClipboardCheck size={20} />
                         </div>
-
                         <div>
                             <h2 className="text-base font-semibold text-gray-800 md:text-lg">
                                 Latest Clinic Approvals
@@ -393,9 +501,7 @@ export default function LatestClinicApprovals() {
 
                                     <span className="truncate text-xs font-medium text-blue-600">
                                         <span className="mr-2 font-semibold text-gray-400 md:hidden">Plan:</span>
-                                        {clinic.subscriptionType
-                                            ? clinic.subscriptionType.replace("_", " ")
-                                            : "-"}
+                                        {getPlanValue(clinic).replace("_", " ")}
                                     </span>
 
                                     <span
@@ -408,23 +514,31 @@ export default function LatestClinicApprovals() {
                                         {status}
                                     </span>
 
-                                    <div className="flex gap-2 md:justify-end">
+                                    <div className="flex flex-wrap gap-2 md:justify-end">
                                         <button
                                             type="button"
                                             onClick={() => openClinicModal("view", clinic)}
-                                            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-600 transition hover:bg-blue-100 md:flex-none"
+                                            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 text-blue-600 transition hover:bg-blue-100"
+                                            title="View clinic"
                                         >
-                                            <Eye size={15} />
-                                            View
+                                            <Eye size={16} />
                                         </button>
-
                                         <button
                                             type="button"
                                             onClick={() => openClinicModal("edit", clinic)}
-                                            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-orange-200 bg-orange-50 px-3 py-2 text-xs font-semibold text-orange-600 transition hover:bg-orange-100 md:flex-none"
+                                            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-orange-200 bg-orange-50 text-orange-600 transition hover:bg-orange-100"
+                                            title="Edit clinic"
                                         >
-                                            <Pencil size={15} />
-                                            Edit
+                                            <Pencil size={16} />
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleDeleteClinic(clinic)}
+                                            disabled={deletingId === clinic._id}
+                                            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-red-200 bg-red-50 text-red-600 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+                                            title="Delete clinic"
+                                        >
+                                            <Trash2 size={16} />
                                         </button>
                                     </div>
                                 </div>
@@ -434,7 +548,16 @@ export default function LatestClinicApprovals() {
                 </div>
             </div>
 
-            {modalMode && selectedClinic && (
+            {modalMode === "view" && selectedClinic && (
+                <ClinicDetailsModal
+                    clinic={selectedClinic}
+                    onClose={closeModal}
+                    onEdit={(clinic) => openClinicModal("edit", clinic)}
+                    onDelete={handleDeleteClinic}
+                />
+            )}
+
+            {modalMode === "edit" && selectedClinic && (
                 <FullClinicModal
                     mode={modalMode}
                     clinic={selectedClinic}
@@ -452,9 +575,139 @@ export default function LatestClinicApprovals() {
     );
 }
 
+function ClinicDetailsModal({ clinic, onClose, onEdit, onDelete }) {
+    if (!clinic) return null;
+
+    const form = getClinicForm(clinic);
+    const status = getDisplayStatus(clinic);
+
+    return (
+        <div className="fixed inset-0 z-[60] bg-black/50 px-4 py-6 sm:px-6 sm:py-10 flex items-center justify-center">
+            <div className="w-full max-w-5xl max-h-[92vh] overflow-hidden rounded-3xl bg-white shadow-2xl flex flex-col">
+                <div className="flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-5 sm:px-6">
+                    <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.25em] text-orange-500">
+                            Clinic Profile
+                        </p>
+                        <h2 className="mt-1 text-2xl font-bold text-slate-900">
+                            {form.clinicName || "Unnamed Clinic"}
+                        </h2>
+                        <p className="mt-1 text-sm text-slate-500">
+                            {clinic._id ? `CLINIC-${clinic._id.slice(-6).toUpperCase()}` : "-"}
+                        </p>
+                    </div>
+                    <button onClick={onClose} className="rounded-full border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50">
+                        <X size={16} />
+                    </button>
+                </div>
+
+                <div className="flex-1 overflow-y-auto px-5 py-5 sm:px-6">
+                    <div className="grid gap-4">
+                        <DetailSection title="Overview">
+                            <DetailField label="Status" value={status} />
+                            <DetailField label="Facility Type" value={form.facilityType} />
+                            <DetailField label="Contact Email" value={form.email} />
+                            <DetailField label="Phone" value={form.phone} />
+                            <DetailField label="Subscription Plan" value={form.plan} />
+                            <DetailField label="Expiry / Renewal Date" value={formatDate(form.endDate)} />
+                        </DetailSection>
+
+                        <DetailSection title="Clinic Identity">
+                            <DetailField label="Clinic Name" value={form.clinicName} />
+                            <DetailField label="Year of Establishment" value={form.year} />
+                            <DetailField label="Alternate Contact" value={form.altPhone} />
+                            <DetailField label="Website" value={form.website} />
+                            <DetailField label="Logo / Document" value={form.logo} wide />
+                        </DetailSection>
+
+                        <DetailSection title="Address & Location">
+                            <DetailField label="Address Line 1" value={form.address1} wide />
+                            <DetailField label="Address Line 2" value={form.address2} wide />
+                            <DetailField label="City" value={form.city} />
+                            <DetailField label="District" value={form.district} />
+                            <DetailField label="State" value={form.state} />
+                            <DetailField label="PIN Code" value={form.pincode} />
+                            <DetailField label="Latitude" value={form.latitude} />
+                            <DetailField label="Longitude" value={form.longitude} />
+                            <DetailField label="Service Areas" value={form.serviceAreas} wide />
+                        </DetailSection>
+
+                        <DetailSection title="Registrations & Licenses">
+                            <DetailField label="State Vet Council" value={form.stateCouncil} />
+                            <DetailField label="Registration Number" value={form.vetReg} />
+                            <DetailField label="Registration Expiry" value={formatDate(form.vetExpiry)} />
+                            <DetailField label="Registration Certificate" value={form.vetCert} wide />
+                            <DetailField label="Drug License Number" value={form.drugLicense} />
+                            <DetailField label="Drug License Expiry" value={formatDate(form.drugExpiry)} />
+                            <DetailField label="Drug License Document" value={form.drugDoc} wide />
+                            <DetailField label="Trade License Number" value={form.tradeLicense} />
+                            <DetailField label="Trade License Expiry" value={formatDate(form.tradeExpiry)} />
+                            <DetailField label="Trade License Document" value={form.tradeDoc} wide />
+                        </DetailSection>
+
+                        <DetailSection title="Tax & Banking">
+                            <DetailField label="GST Number" value={form.gst} />
+                            <DetailField label="PAN Number" value={form.pan} />
+                            <DetailField label="Bank Name" value={form.bankName} />
+                            <DetailField label="Account Number" value={form.accountNumber} />
+                            <DetailField label="IFSC Code" value={form.ifsc} />
+                            <DetailField label="Cancelled Cheque" value={form.cheque} wide />
+                        </DetailSection>
+
+                        <DetailSection title="Admin Info">
+                            <DetailField label="Admin Name" value={form.adminName} />
+                            <DetailField label="Designation" value={form.designation} />
+                            <DetailField label="Admin Mobile" value={form.adminPhone} />
+                            <DetailField label="Admin Email" value={form.adminEmail} />
+                            <DetailField label="Government ID Type" value={form.govtIdType} />
+                            <DetailField label="Government ID Number" value={form.govtIdNumber} />
+                            <DetailField label="Government ID Document" value={form.idDoc} wide />
+                            <DetailField label="Profile Photo / PDF" value={form.profile} wide />
+                        </DetailSection>
+
+                        <DetailSection title="Plan & Features">
+                            <DetailField label="Plan" value={form.plan} />
+                            <DetailField label="Billing Cycle" value={form.billing} />
+                            <DetailField label="Start Date" value={formatDate(form.startDate)} />
+                            <DetailField label="Trial Days" value={form.trialDays} />
+                            <DetailField label="Discount Code" value={form.discountCode} />
+                            <DetailField label="Storage Limit (GB)" value={form.storageLimit} />
+                            <DetailField label="Max Doctors" value={form.maxDoctors} />
+                            <DetailField label="Max Staff" value={form.maxStaff} />
+                            <DetailField label="Max Pets" value={form.maxPets} />
+                            <DetailField label="Lab Module" value={form.labModule} />
+                            <DetailField label="Grooming Module" value={form.groomingModule} />
+                            <DetailField label="Kennel Module" value={form.kennelModule} />
+                            <DetailField label="Pharmacy Module" value={form.pharmacyModule} />
+                            <DetailField label="API Access" value={form.apiAccess} />
+                            <DetailField label="White Label" value={form.whiteLabel} />
+                            <DetailField label="Notes" value={form.notes} wide />
+                        </DetailSection>
+                    </div>
+                </div>
+
+                <div className="flex flex-col gap-3 border-t border-slate-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-end sm:px-6">
+                    {onDelete && (
+                        <button onClick={() => onDelete(clinic)} className="w-full rounded-xl border border-rose-200 bg-rose-50 px-5 py-3 text-sm font-semibold text-rose-700 transition hover:bg-rose-100 sm:w-auto">
+                            Delete
+                        </button>
+                    )}
+                    {onEdit && (
+                        <button onClick={() => onEdit(clinic)} className="w-full rounded-xl border border-orange-200 bg-orange-50 px-5 py-3 text-sm font-semibold text-orange-700 transition hover:bg-orange-100 sm:w-auto">
+                            Edit
+                        </button>
+                    )}
+                    <button onClick={onClose} className="w-full rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 sm:w-auto">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 function FullClinicModal({
     mode,
-    clinic,
     activeTab,
     form,
     saving,
@@ -478,13 +731,7 @@ function FullClinicModal({
                             {isView ? "Complete clinic details in read-only mode." : "Update complete clinic details."}
                         </p>
                     </div>
-
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className="w-10 h-10 rounded-full hover:bg-orange-50 text-slate-500 hover:text-orange-500 inline-flex items-center justify-center"
-                        aria-label="Close"
-                    >
+                    <button onClick={onClose} className="w-10 h-10 rounded-full hover:bg-orange-50 text-slate-500 hover:text-orange-500 inline-flex items-center justify-center">
                         <X size={18} />
                     </button>
                 </div>
@@ -511,8 +758,6 @@ function FullClinicModal({
                         submitLabel={saving ? "Saving..." : "Save Changes"}
                         onSubmitClinic={onSubmitClinic}
                     />
-
-                   
                 </div>
             </div>
         </div>

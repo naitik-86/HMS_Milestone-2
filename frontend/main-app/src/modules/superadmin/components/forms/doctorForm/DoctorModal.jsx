@@ -1,5 +1,4 @@
-import { useEffect, useState } from "react";
-import { showToast } from "../../../../../shared/components/toast";
+import { useEffect, useMemo, useState } from "react";
 
 import DoctorForm from "./DoctorForm";
 import Stepper from "../Stepper";
@@ -22,10 +21,90 @@ const tabs = [
     ["bank", "Banking & Plan"],
 ];
 
-export default function DoctorModal({ onClose }) {
+const toDateInputValue = (value) => {
+    if (!value) return "";
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+
+    return date.toISOString().slice(0, 10);
+};
+
+const buildQualifications = (doctor) => {
+    const qualifications = Array.isArray(doctor?.qualifications) ? doctor.qualifications : [];
+
+    if (!qualifications.length) {
+        return [{ degree: "", institution: "", year: "" }];
+    }
+
+    return qualifications.map((qualification) => ({
+        degree: qualification?.degree || "",
+        institution: qualification?.institution || "",
+        year: String(qualification?.year || ""),
+    }));
+};
+
+const buildFormState = (doctor) => ({
+    fullName: doctor?.fullName || doctor?.name || "",
+    gender: doctor?.gender || "",
+    dob: toDateInputValue(doctor?.dob || doctor?.dateOfBirth),
+    mobile: doctor?.mobile || "",
+    email: doctor?.email || "",
+    languages: Array.isArray(doctor?.languages) ? doctor.languages : [],
+    address: doctor?.address || "",
+    city: doctor?.city || "",
+    state: doctor?.state || "",
+    pincode: doctor?.pincode || "",
+    govtIdType: doctor?.govtIdType || "",
+    govtIdNumber: doctor?.govtIdNumber || "",
+    govtIdDocument: doctor?.govtIdDocument || null,
+    degreeCertificates: Array.isArray(doctor?.degreeCertificates) ? doctor.degreeCertificates[0] || null : doctor?.degreeCertificates || null,
+    registrationCertificate: doctor?.registrationCertificate || null,
+    profilePhoto: doctor?.profilePhoto || null,
+    experience: doctor?.experienceValue || doctor?.experience || "",
+    specializations: Array.isArray(doctor?.specializations)
+        ? doctor.specializations
+        : doctor?.specialization
+            ? [doctor.specialization]
+            : [],
+    vetCouncilRegistrationNumber: doctor?.vetCouncilRegistrationNumber || "",
+    stateVetCouncil: doctor?.stateVetCouncil || "",
+    certificateValidityDate: toDateInputValue(doctor?.certificateValidityDate || doctor?.certificateValidityRaw),
+    isRenewable: Boolean(doctor?.isRenewable),
+    practiceType: doctor?.practiceType || "",
+    consultationFee: doctor?.consultationFee || "",
+    emergencyAvailable: Boolean(doctor?.emergencyAvailable),
+    serviceAreas: Array.isArray(doctor?.serviceAreas) ? doctor.serviceAreas.join(", ") : doctor?.serviceAreasText || "",
+    gstPan: doctor?.gstPan || "",
+    accountName: doctor?.accountName || doctor?.bankDetails?.accountName || "",
+    accountNumber: doctor?.accountNumber || doctor?.bankDetails?.accountNumber || "",
+    ifsc: doctor?.ifsc || doctor?.bankDetails?.ifsc || "",
+    bankName: doctor?.bankName || doctor?.bankDetails?.bankName || "",
+    branch: doctor?.branch || doctor?.bankDetails?.branch || "",
+    plan: doctor?.plan || "",
+});
+
+export default function DoctorModal({ onClose, onCreated, onSaved, mode = "create", doctor = null }) {
     const [activeTab, setActiveTab] = useState("personal");
     const [planOptions, setPlanOptions] = useState([]);
     const [plansLoaded, setPlansLoaded] = useState(false);
+
+    const [form, setForm] = useState(() => buildFormState(doctor));
+
+    const [qualifications, setQualifications] = useState([
+        { degree: "", institution: "", year: "" },
+    ]);
+
+    const availablePlanOptions = planOptions.length
+        ? planOptions
+        : DEFAULT_SOLO_DOCTOR_PLAN_OPTIONS;
+    const planChoices = useMemo(() => {
+        if (doctor?.plan && !availablePlanOptions.includes(doctor.plan)) {
+            return [doctor.plan, ...availablePlanOptions];
+        }
+
+        return availablePlanOptions;
+    }, [availablePlanOptions, doctor?.plan]);
 
     useEffect(() => {
         let active = true;
@@ -59,59 +138,12 @@ export default function DoctorModal({ onClose }) {
         };
     }, []);
 
-    const [form, setForm] = useState({
-        fullName: "",
-        gender: "",
-        dob: "",
-        mobile: "",
-        email: "",
-        languages: [],
-        address: "",
-        city: "",
-        state: "",
-        pincode: "",
-        govtIdType: "",
-        govtIdNumber: "",
-
-
-        govtIdDocument: null,
-        degreeCertificates: null,
-        registrationCertificate: null,
-        profilePhoto: null,
-
-        experience: "",
-        specializations: [],
-        vetCouncilRegistrationNumber: "",
-        stateVetCouncil: "",
-        certificateValidityDate: "",
-        isRenewable: false,
-        practiceType: "",
-        consultationFee: "",
-        emergencyAvailable: false,
-        serviceAreas: "",
-        gstPan: "",
-        accountName: "",
-        accountNumber: "",
-        ifsc: "",
-        bankName: "",
-        branch: "",
-        plan: "",
-    });
-
-
-
-    const [qualifications, setQualifications] = useState([
-        { degree: "", institution: "", year: "" },
-    ]);
-
-    const availablePlanOptions = planOptions.length ? planOptions : DEFAULT_SOLO_DOCTOR_PLAN_OPTIONS;
-
     useEffect(() => {
         if (!plansLoaded) return;
 
-        const nextPlan = availablePlanOptions.includes(form.plan)
+        const nextPlan = planChoices.includes(form.plan)
             ? form.plan
-            : availablePlanOptions[0];
+            : planChoices[0];
 
         if (nextPlan && nextPlan !== form.plan) {
             setForm((previous) => ({
@@ -119,159 +151,63 @@ export default function DoctorModal({ onClose }) {
                 plan: nextPlan,
             }));
         }
-    }, [availablePlanOptions, form.plan, plansLoaded]);
+    }, [form.plan, planChoices, plansLoaded]);
 
-    const validateTab = () => {
-        switch (activeTab) {
+    useEffect(() => {
+        setActiveTab("personal");
+        setForm(buildFormState(doctor));
+        setQualifications(buildQualifications(doctor));
+    }, [doctor, mode]);
 
-            case "personal":
-                return (
-                    form.fullName &&
-                    form.gender &&
-                    form.dob &&
-                    form.mobile &&
-                    form.email &&
-                    form.languages.length > 0 &&
-                    form.address &&
-                    form.city &&
-                    form.state &&
-                    form.pincode &&
-                    form.govtIdType &&
-                    form.govtIdNumber &&
-                    form.govtIdDocument
-                );
-
-            case "qualification":
-                // console.log("Before validation:", form.degreeCertificates);
-                return (
-                    form.degreeCertificates != null &&
-                    qualifications.length > 0 &&
-                    qualifications.every(q =>
-                        q.degree &&
-                        q.institution &&
-                        q.year
-                    )
-                );
-
-            case "vet":
-                return (
-                    form.vetCouncilRegistrationNumber &&
-                    form.stateVetCouncil &&
-                    form.certificateValidityDate &&
-                    form.registrationCertificate
-                );
-
-            case "practice":
-                return (
-                    form.practiceType &&
-                    form.consultationFee &&
-                    form.serviceAreas &&
-                    form.gstPan
-                );
-
-            case "bank":
-                return (
-                    form.accountName &&
-                    form.accountNumber &&
-                    form.ifsc &&
-                    form.bankName &&
-                    form.branch &&
-                    form.plan
-                );
-
-            default:
-                return true;
-        }
-    };
-
-    const currentStep =
-        tabs.findIndex(([key]) => key === activeTab) + 1;
+    const title = mode === "edit" ? "Edit Veterinarian" : "Add Veterinarian";
+    const description = mode === "edit"
+        ? "Update the veterinarian profile and save the changes."
+        : "Complete the details to register a new veterinarian.";
 
     return (
-       <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-0 sm:p-4">
-    <div className="bg-white w-full sm:w-[95%] h-screen sm:h-[95vh] rounded-none sm:rounded-3xl shadow-xl flex flex-col overflow-hidden">
-
-                {/* HEADER */}
-
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-0 sm:p-4">
+            <div className="bg-white w-full sm:w-[95%] h-screen sm:h-[95vh] rounded-none sm:rounded-3xl shadow-xl flex flex-col overflow-hidden">
                 <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center px-4 sm:px-8 py-4 bg-white">
                     <div>
                         <h2 className="text-2xl sm:text-3xl font-bold bg-linear-to-r from-orange-500 to-orange-700 bg-clip-text text-transparent">
-                            Add Veterinarian
+                            {title}
                         </h2>
 
                         <p className="text-slate-500 text-sm mt-1">
-                            Complete the details to register a new veterinarian.
+                            {description}
                         </p>
                     </div>
 
                     <button
+                        type="button"
                         onClick={onClose}
-                        className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-orange-50 text-slate-500 hover:text-orange-500 transition"
+                        className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-orange-50 text-slate-500 hover:text-orange-500 transition border-none bg-transparent"
+                        aria-label="Close veterinarian onboarding"
                     >
-                        ✕
+                        X
                     </button>
                 </div>
-
 
                 <Stepper
                     tabs={tabs}
                     activeTab={activeTab}
-                    setActiveTab={setActiveTab}
                 />
 
-                {/* TABS */}
-                <div className="bg-slate-100 py-3">
-                    <div className="flex gap-2 px-3 sm:px-6 overflow-x-auto whitespace-nowrap">
-                        {tabs.map(([key, label]) => (
-                            <button
-                                key={key}
-                                onClick={() => {
-                                    if (!validateTab()) {
-                                        showToast({
-                                            type: "error",
-                                            title: "Validation Error",
-                                            description: "Please fill all required fields.",
-                                        });
-                                        console.log("Fill all fields to continue");
-                                        console.log(activeTab + " this is from tabs from doctor form");
-
-                                        return;
-                                    }
-
-                                    setActiveTab(key);
-                                }}
-className={`
-shrink-0
-px-4 sm:px-5
-py-2 sm:py-2.5
-rounded-xl sm:rounded-2xl
-text-xs sm:text-sm
-font-medium
-transition-all duration-200
-${activeTab === key
-    ? "bg-orange-500 text-white shadow-md"
-    : "bg-white text-slate-600 hover:bg-orange-50 hover:text-orange-500"
-}
-`}
-                            >
-                                {label}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-
-                {/* FORM */}
-               <div className="flex-1 overflow-y-auto px-3 sm:px-6 pb-6">
+                <div className="flex-1 overflow-y-auto px-3 sm:px-6 pb-6">
                     <DoctorForm
                         activeTab={activeTab}
+                        tabs={tabs}
+                        setActiveTab={setActiveTab}
                         form={form}
                         setForm={setForm}
                         qualifications={qualifications}
                         setQualifications={setQualifications}
-                        planOptions={availablePlanOptions}
-
-
+                        planOptions={planChoices}
+                        onClose={onClose}
+                        onCreated={onCreated}
+                        onSaved={onSaved}
+                        mode={mode}
+                        doctorId={doctor?.id}
                     />
                 </div>
             </div>

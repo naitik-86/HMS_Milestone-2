@@ -191,9 +191,6 @@ export default function ActivePlans({ refreshKey = 0, onEditPlan, onChanged }) {
                 <table className="min-w-[1350px] w-full">
                     <thead>
                         <tr className="border-b border-gray-100">
-                            <th className="py-3 px-3 text-left w-8">
-                                <input type="checkbox" className="accent-orange-500" />
-                            </th>
                             <Header>Plan ID</Header>
                             <Header>Type</Header>
                             <Header>Subscription Plan</Header>
@@ -214,7 +211,8 @@ export default function ActivePlans({ refreshKey = 0, onEditPlan, onChanged }) {
                     <tbody>
                         {loading && (
                             <tr>
-                                <td colSpan={15} className="py-8 px-3 text-center text-gray-500">
+                                {/* colSpan updated to 14 because checkbox column is removed */}
+                                <td colSpan={14} className="py-8 px-3 text-center text-gray-500">
                                     Loading plans...
                                 </td>
                             </tr>
@@ -222,7 +220,8 @@ export default function ActivePlans({ refreshKey = 0, onEditPlan, onChanged }) {
 
                         {!loading && visiblePlans.length === 0 && (
                             <tr>
-                                <td colSpan={15} className="py-8 px-3 text-center text-gray-500">
+                                {/* colSpan updated to 14 because checkbox column is removed */}
+                                <td colSpan={14} className="py-8 px-3 text-center text-gray-500">
                                     No {selectedFilter === "All" ? "" : `${selectedFilter.toLowerCase()} `}plans found.
                                 </td>
                             </tr>
@@ -234,10 +233,6 @@ export default function ActivePlans({ refreshKey = 0, onEditPlan, onChanged }) {
 
                             return (
                                 <tr key={plan._id} className="border-b border-gray-50 hover:bg-gray-50 transition">
-                                    <td className="py-3 px-3">
-                                        <input type="checkbox" className="accent-orange-500" />
-                                    </td>
-
                                     <td className="py-3 px-3 text-orange-500 font-semibold">
                                         #{plan.planCode || plan._id?.slice(-6)}
                                     </td>

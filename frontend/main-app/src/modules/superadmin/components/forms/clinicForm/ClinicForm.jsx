@@ -27,6 +27,33 @@ const BILLING_MONTHS = {
     Annual: 12,
 };
 
+const OPTIONAL_CLINIC_TABS = new Set(["licenses", "tax"]);
+
+const SKIPPABLE_TAB_DEFAULTS = {
+    licenses: {
+        stateCouncil: "",
+        vetReg: "",
+        vetExpiry: "",
+        vetCert: null,
+        tradeLicense: "",
+        tradeExpiry: "",
+        tradeDoc: null,
+        drugLicense: "",
+        drugExpiry: "",
+        drugDoc: null,
+    },
+    tax: {
+        gst: "",
+        pan: "",
+        bankName: "",
+        accountNumber: "",
+        ifsc: "",
+        cheque: null,
+    },
+};
+
+const GOVT_ID_TYPES = ["Aadhar", "PAN", "Passport"];
+
 const getDateValue = (date) => date.toISOString().slice(0, 10);
 
 const getTomorrowDate = () => {
@@ -110,12 +137,11 @@ export default function ClinicForm({
     form,
     setForm,
     handleChange,
-    validateTab,
     setActiveTab,
     tabs,
     onClose,
     readOnly = false,
-    submitLabel = "Submit",
+    submitLabel = "Save",
     onSubmitClinic,
     skipSubmitValidation = false,
     skipTabValidation = false,
@@ -125,9 +151,11 @@ export default function ClinicForm({
     const [plans, setPlans] = useState([]);
     const [plansLoading, setPlansLoading] = useState(false);
     const [plansError, setPlansError] = useState("");
+    const [errors, setErrors] = useState({});
     const navigate = useNavigate();
     const stateOptions = INDIAN_STATE_OPTIONS;
-    const idType = form.govtIdType || "Aadhar";
+    const idType = form.govtIdType || "";
+    const isOptionalTab = OPTIONAL_CLINIC_TABS.has(activeTab);
 
     const idNumberLabel =
         idType === "PAN"
@@ -135,6 +163,13 @@ export default function ClinicForm({
             : idType === "Passport"
                 ? "Passport Number"
                 : "Aadhar Number";
+
+    const idNumberPlaceholder =
+        idType === "PAN"
+            ? "Enter PAN number"
+            : idType === "Passport"
+                ? "Enter passport number"
+                : "Enter Aadhar number";
 
     const idDocumentLabel =
         idType === "PAN"
@@ -740,380 +775,481 @@ export default function ClinicForm({
         }
     };
 
+    const normalizeText = (value) => String(value ?? "").trim();
+
+    const isFileLike = (value) =>
+        Boolean(value) && typeof value === "object" && Boolean(value.name || value.type);
+
+    const hasAnyValue = (values) =>
+        values.some((value) => isFileLike(value) || normalizeText(value).length > 0);
+
+    const clearErrorsForFields = (fields = []) => {
+        setErrors((prev) => {
+            const next = { ...prev };
+
+            fields.forEach((field) => {
+                delete next[field];
+            });
+
+            return next;
+        });
+    };
+
+    const firstErrorMessage = (nextErrors) => Object.values(nextErrors)[0] || "";
+
+    const applyValidationErrors = (nextErrors) => {
+        setErrors(nextErrors);
+
+        const message = firstErrorMessage(nextErrors);
+
+        if (message) {
+            showToast({
+                type: "error",
+                title: "Validation Error",
+                description: message,
+            });
+        }
+    };
+
+    const isValidPassport = (value) =>
+        /^[A-Z][0-9]{7}$/.test(normalizeText(value).toUpperCase());
+
     const validateIdentityFields = () => {
-        const yearValue = String(form.year || "").trim();
+        const nextErrors = {};
         const currentYear = new Date().getFullYear();
         const earliestFoundingYear = 1800;
+        const yearValue = normalizeText(form.year);
+        const primaryContact = getPhoneDigits(form.phone);
+        const alternateContact = getPhoneDigits(form.altPhone);
+        const website = normalizeText(form.website);
+
+        if (!normalizeText(form.clinicName)) {
+            nextErrors.clinicName = "Clinic name is required.";
+        } else if (normalizeText(form.clinicName).length < 3) {
+            nextErrors.clinicName = "Clinic name must be at least 3 characters.";
+        }
+
+        if (!normalizeText(form.facilityType)) {
+            nextErrors.facilityType = "Type of facility is required.";
+        }
 
         if (yearValue) {
             if (!/^\d{4}$/.test(yearValue)) {
-                showToast({
-                    type: "error",
-                    title: "Invalid Year",
-                    description: "Year of Establishment must be a 4-digit year.",
-                });
+                nextErrors.year = "Year of establishment must be a 4-digit year.";
+            } else {
+                const year = Number(yearValue);
 
-                return false;
-            }
-
-            const year = Number(yearValue);
-
-            if (year < earliestFoundingYear || year > currentYear) {
-                showToast({
-                    type: "error",
-                    title: "Invalid Year",
-                    description: `Year of Establishment must be between ${earliestFoundingYear} and ${currentYear}.`,
-                });
-
-                return false;
+                if (year < earliestFoundingYear || year > currentYear) {
+                    nextErrors.year = `Year of establishment must be between ${earliestFoundingYear} and ${currentYear}.`;
+                }
             }
         }
 
-        const primaryContact = getPhoneDigits(form.phone);
-        const alternateContact = getPhoneDigits(form.altPhone);
-
-        if (primaryContact && !isValidMobileNumber(primaryContact)) {
-            showToast({
-                type: "error",
-                title: "Invalid Contact",
-                description: "Primary Contact must be a valid 10-digit mobile number.",
-            });
-
-            return false;
+        if (!primaryContact) {
+            nextErrors.phone = "Primary contact is required.";
+        } else if (!isValidMobileNumber(primaryContact)) {
+            nextErrors.phone = "Primary contact must be a valid 10-digit mobile number.";
         }
 
         if (alternateContact && !isValidMobileNumber(alternateContact)) {
-            showToast({
-                type: "error",
-                title: "Invalid Contact",
-                description: "Alternate Contact must be a valid 10-digit mobile number.",
-            });
-
-            return false;
+            nextErrors.altPhone = "Alternate contact must be a valid 10-digit mobile number.";
         }
 
         if (primaryContact && alternateContact && primaryContact === alternateContact) {
-            showToast({
-                type: "error",
-                title: "Duplicate Contact",
-                description: "Primary Contact and Alternate Contact cannot be the same.",
-            });
-
-            return false;
+            nextErrors.altPhone = "Alternate contact must be different from primary contact.";
         }
 
-        if (!isValidWebsiteUrl(form.website)) {
-            showToast({
-                type: "error",
-                title: "Invalid Website URL",
-                description: "Website URL must be a valid http/https URL or domain.",
-            });
-
-            return false;
+        if (!normalizeText(form.email)) {
+            nextErrors.email = "Official email is required.";
+        } else if (!isValidEmail(form.email)) {
+            nextErrors.email = "Please enter a valid email address.";
         }
 
-        return true;
+        if (website && !isValidWebsiteUrl(website)) {
+            nextErrors.website = "Please enter a valid website URL.";
+        }
+
+        if (!isFileLike(form.logo)) {
+            nextErrors.logo = "Clinic logo or PDF is required.";
+        }
+
+        return nextErrors;
     };
 
     const validateAddressFields = () => {
-        const pincode = String(form.pincode || "").trim();
+        const nextErrors = {};
+        const pincode = normalizeText(form.pincode);
+
+        if (!normalizeText(form.address1)) {
+            nextErrors.address1 = "Address line 1 is required.";
+        }
+
+        if (!normalizeText(form.state)) {
+            nextErrors.state = "State is required.";
+        }
+
+        if (!normalizeText(form.city)) {
+            nextErrors.city = "City is required.";
+        }
+
+        if (!normalizeText(form.district)) {
+            nextErrors.district = "District is required.";
+        }
 
         if (!pincode) {
-            showToast({
-                type: "error",
-                title: "PIN Code Required",
-                description: "Please enter the clinic PIN Code before continuing.",
-            });
-
-            return false;
+            nextErrors.pincode = "PIN code is required.";
+        } else if (!/^\d{6}$/.test(pincode)) {
+            nextErrors.pincode = "PIN code must be exactly 6 digits.";
         }
 
-        if (!/^\d{6}$/.test(pincode)) {
-            showToast({
-                type: "error",
-                title: "Invalid PIN Code",
-                description: "PIN Code must be exactly 6 digits.",
-            });
-
-            return false;
-        }
-
-        return true;
+        return nextErrors;
     };
 
-    const validateTaxFields = () => {
-        if (!isValidGst(form.gst)) {
-            showToast({
-                type: "error",
-                title: "Invalid GST Number",
-                description: "GST Number must follow the standard 15-character GST format.",
-            });
+    const validateLicensesFields = (allowEmptySection = false) => {
+        const nextErrors = {};
+        const sectionHasData = hasAnyValue([
+            form.stateCouncil,
+            form.vetReg,
+            form.vetExpiry,
+            form.vetCert,
+            form.tradeLicense,
+            form.tradeExpiry,
+            form.tradeDoc,
+            form.drugLicense,
+            form.drugExpiry,
+            form.drugDoc,
+        ]);
 
-            return false;
+        if (allowEmptySection && !sectionHasData) {
+            return nextErrors;
         }
 
-        if (!isValidPan(form.pan)) {
-            showToast({
-                type: "error",
-                title: "Invalid PAN Number",
-                description: "PAN Number must follow the format AAAAA9999A.",
-            });
-
-            return false;
+        if (!normalizeText(form.stateCouncil)) {
+            nextErrors.stateCouncil = "State Vet Council is required.";
         }
 
-        if (!isAlphabeticText(form.bankName)) {
-            showToast({
-                type: "error",
-                title: "Invalid Bank Name",
-                description: "Bank Name should contain only alphabetic text and spaces.",
-            });
-
-            return false;
+        if (!normalizeText(form.vetReg)) {
+            nextErrors.vetReg = "Registration number is required.";
         }
 
-        if (!isValidAccountNumber(form.accountNumber)) {
-            showToast({
-                type: "error",
-                title: "Invalid Account Number",
-                description: "Account Number must be numeric and 9 to 18 digits long.",
-            });
-
-            return false;
+        if (!normalizeText(form.vetExpiry)) {
+            nextErrors.vetExpiry = "Registration expiry date is required.";
         }
 
-        if (!isValidIfsc(form.ifsc)) {
-            showToast({
-                type: "error",
-                title: "Invalid IFSC Code",
-                description: "IFSC Code must follow the format ABCD0XXXXXX.",
-            });
-
-            return false;
+        if (!isFileLike(form.vetCert)) {
+            nextErrors.vetCert = "Registration certificate is required.";
         }
 
-        return true;
+        if (!normalizeText(form.tradeLicense)) {
+            nextErrors.tradeLicense = "Trade license number is required.";
+        }
+
+        if (!normalizeText(form.tradeExpiry)) {
+            nextErrors.tradeExpiry = "Trade license expiry date is required.";
+        }
+
+        if (!isFileLike(form.tradeDoc)) {
+            nextErrors.tradeDoc = "Trade license document is required.";
+        }
+
+        if (!normalizeText(form.drugLicense)) {
+            nextErrors.drugLicense = "Drug license number is required.";
+        }
+
+        if (!normalizeText(form.drugExpiry)) {
+            nextErrors.drugExpiry = "Drug license expiry date is required.";
+        }
+
+        if (!isFileLike(form.drugDoc)) {
+            nextErrors.drugDoc = "Drug license document is required.";
+        }
+
+        return nextErrors;
+    };
+
+    const validateTaxFields = (allowEmptySection = false) => {
+        const nextErrors = {};
+        const sectionHasData = hasAnyValue([
+            form.gst,
+            form.pan,
+            form.bankName,
+            form.accountNumber,
+            form.ifsc,
+            form.cheque,
+        ]);
+
+        if (allowEmptySection && !sectionHasData) {
+            return nextErrors;
+        }
+
+        if (!normalizeText(form.gst)) {
+            nextErrors.gst = "GST number is required.";
+        } else if (!isValidGst(form.gst)) {
+            nextErrors.gst = "GST number must follow the standard 15-character format.";
+        }
+
+        if (!normalizeText(form.pan)) {
+            nextErrors.pan = "PAN number is required.";
+        } else if (!isValidPan(form.pan)) {
+            nextErrors.pan = "PAN number must follow the format AAAAA9999A.";
+        }
+
+        if (!normalizeText(form.bankName)) {
+            nextErrors.bankName = "Bank name is required.";
+        } else if (!isAlphabeticText(form.bankName)) {
+            nextErrors.bankName = "Bank name should contain only letters and spaces.";
+        }
+
+        if (!normalizeText(form.accountNumber)) {
+            nextErrors.accountNumber = "Account number is required.";
+        } else if (!isValidAccountNumber(form.accountNumber)) {
+            nextErrors.accountNumber = "Account number must be 9 to 18 digits long.";
+        }
+
+        if (!normalizeText(form.ifsc)) {
+            nextErrors.ifsc = "IFSC code is required.";
+        } else if (!isValidIfsc(form.ifsc)) {
+            nextErrors.ifsc = "IFSC code must follow the format ABCD0XXXXXX.";
+        }
+
+        if (!isFileLike(form.cheque)) {
+            nextErrors.cheque = "Cancelled cheque is required.";
+        }
+
+        return nextErrors;
+    };
+
+    const validateGovtIdFields = () => {
+        const nextErrors = {};
+        const selectedType = normalizeText(form.govtIdType);
+        const idValue = normalizeText(form.govtIdNumber).toUpperCase();
+
+        if (!selectedType) {
+            nextErrors.govtIdType = "Government ID type is required.";
+            return nextErrors;
+        }
+
+        if (!idValue) {
+            nextErrors.govtIdNumber = `${idNumberLabel} is required.`;
+            return nextErrors;
+        }
+
+        if (selectedType === "PAN" && !isValidPan(idValue)) {
+            nextErrors.govtIdNumber = "PAN number must follow the format AAAAA9999A.";
+        } else if (selectedType === "Passport" && !isValidPassport(idValue)) {
+            nextErrors.govtIdNumber = "Passport number must follow the format A1234567.";
+        } else if (selectedType !== "PAN" && selectedType !== "Passport" && !/^\d{12}$/.test(idValue)) {
+            nextErrors.govtIdNumber = "Aadhar number must be exactly 12 digits.";
+        }
+
+        return nextErrors;
     };
 
     const validateAdminFields = () => {
-        if (!isAlphabeticText(form.adminName)) {
-            showToast({
-                type: "error",
-                title: "Invalid Full Name",
-                description: "Full Name should contain only alphabetic text and spaces.",
-            });
+        const nextErrors = {};
 
-            return false;
+        if (!normalizeText(form.adminName)) {
+            nextErrors.adminName = "Full name is required.";
+        } else if (!isAlphabeticText(form.adminName)) {
+            nextErrors.adminName = "Full name should contain only letters and spaces.";
         }
 
-        if (!isAlphabeticText(form.designation)) {
-            showToast({
-                type: "error",
-                title: "Invalid Designation",
-                description: "Designation should contain only alphabetic text and spaces.",
-            });
-
-            return false;
+        if (!normalizeText(form.designation)) {
+            nextErrors.designation = "Designation is required.";
+        } else if (!isAlphabeticText(form.designation)) {
+            nextErrors.designation = "Designation should contain only letters and spaces.";
         }
 
-        if (form.adminPhone && !isValidMobileNumber(form.adminPhone)) {
-            showToast({
-                type: "error",
-                title: "Invalid Mobile",
-                description: "Admin Mobile must be a valid 10-digit mobile number.",
-            });
-
-            return false;
+        if (!normalizeText(form.adminPhone)) {
+            nextErrors.adminPhone = "Mobile number is required.";
+        } else if (!isValidMobileNumber(form.adminPhone)) {
+            nextErrors.adminPhone = "Mobile number must be a valid 10-digit number.";
         }
 
-        if (!isValidEmail(form.adminEmail)) {
-            showToast({
-                type: "error",
-                title: "Invalid Email",
-                description: "Admin Email must be a valid email address.",
-            });
-
-            return false;
+        if (!normalizeText(form.adminEmail)) {
+            nextErrors.adminEmail = "Email is required.";
+        } else if (!isValidEmail(form.adminEmail)) {
+            nextErrors.adminEmail = "Please enter a valid email address.";
         }
 
-        if ((form.govtIdType || idType) === "PAN" && !isValidPan(form.govtIdNumber)) {
-            showToast({
-                type: "error",
-                title: "Invalid PAN Number",
-                description: "PAN Number must follow the format AAAAA9999A.",
-            });
+        const govtIdErrors = validateGovtIdFields();
+        Object.assign(nextErrors, govtIdErrors);
 
-            return false;
+        if (!isFileLike(form.idDoc)) {
+            nextErrors.idDoc = `${idDocumentLabel} is required.`;
         }
 
-        return true;
+        if (!isFileLike(form.profile)) {
+            nextErrors.profile = "Profile photo or PDF is required.";
+        }
+
+        return nextErrors;
     };
 
     const validatePlanFields = () => {
+        const nextErrors = {};
+
         if (!planOptions.length) {
-            showToast({
-                type: "error",
-                title: "No Plans Available",
-                description: "Please create an active clinic subscription plan before assigning one.",
-            });
-
-            return false;
+            nextErrors.plan = "Please create an active clinic subscription plan before assigning one.";
+            return nextErrors;
         }
 
-        if (!planOptions.includes(form.plan)) {
-            showToast({
-                type: "error",
-                title: "Invalid Plan",
-                description: "Please select a configured subscription plan.",
-            });
-
-            return false;
+        if (!normalizeText(form.plan)) {
+            nextErrors.plan = "Subscription plan is required.";
+        } else if (!planOptions.includes(form.plan)) {
+            nextErrors.plan = "Please select a configured subscription plan.";
         }
 
-        if (!billingOptions.includes(form.billing)) {
-            showToast({
-                type: "error",
-                title: "Invalid Billing Cycle",
-                description: "Please select a billing cycle configured for this plan.",
-            });
-
-            return false;
+        if (!normalizeText(form.billing)) {
+            nextErrors.billing = "Billing cycle is required.";
+        } else if (!billingOptions.includes(form.billing)) {
+            nextErrors.billing = "Please select a billing cycle configured for this plan.";
         }
 
         const tomorrow = getTomorrowDate();
 
-        if (!form.startDate || form.startDate < tomorrow) {
-            showToast({
-                type: "error",
-                title: "Invalid Start Date",
-                description: "Plan Start Date must be a future date.",
-            });
-
-            return false;
+        if (!normalizeText(form.startDate)) {
+            nextErrors.startDate = "Plan start date is required.";
+        } else if (form.startDate < tomorrow) {
+            nextErrors.startDate = "Plan start date must be a future date.";
         }
 
-        const expectedEndDate = getPlanEndDate(form.startDate, form.billing);
+        const expectedEndDate =
+            form.startDate && form.billing
+                ? getPlanEndDate(form.startDate, form.billing)
+                : "";
 
-        if (!form.endDate || form.endDate !== expectedEndDate) {
+        if (expectedEndDate && form.endDate !== expectedEndDate) {
+            nextErrors.endDate = "Plan end / renewal date does not match the selected billing cycle.";
             setForm((prev) => ({
                 ...prev,
                 endDate: expectedEndDate,
             }));
-
-            showToast({
-                type: "error",
-                title: "Invalid Renewal Date",
-                description: "Plan End / Renewal Date must be calculated from the selected billing cycle.",
-            });
-
-            return false;
         }
 
-        const trialDays = getNonNegativeNumber(form.trialDays);
+        const trialDays = Number(form.trialDays ?? 0);
 
-        if (trialDays < 0 || trialDays > maxTrialDays) {
-            showToast({
-                type: "error",
-                title: "Invalid Trial Period",
-                description: `Trial Period must be between 0 and ${maxTrialDays} days for this plan.`,
-            });
-
-            return false;
+        if (Number.isNaN(trialDays) || trialDays < 0 || trialDays > maxTrialDays) {
+            nextErrors.trialDays = `Trial period must be between 0 and ${maxTrialDays} days.`;
         }
 
-        return true;
+        if (form.plan === "Custom") {
+            if (!normalizeText(form.maxStaff)) {
+                nextErrors.maxStaff = "Max staff accounts are required.";
+            } else if (!/^\d+$/.test(normalizeText(form.maxStaff))) {
+                nextErrors.maxStaff = "Max staff accounts must be a valid number.";
+            }
+
+            if (!normalizeText(form.maxDoctors)) {
+                nextErrors.maxDoctors = "Max doctors are required.";
+            } else if (!/^\d+$/.test(normalizeText(form.maxDoctors))) {
+                nextErrors.maxDoctors = "Max doctors must be a valid number.";
+            }
+
+            const maxPetsValue = normalizeText(form.maxPets);
+            if (!maxPetsValue) {
+                nextErrors.maxPets = "Max pet records are required.";
+            } else if (!/^\d+$/.test(maxPetsValue) && maxPetsValue.toLowerCase() !== "unlimited") {
+                nextErrors.maxPets = "Max pet records must be a number or Unlimited.";
+            }
+
+            if (!normalizeText(form.storageLimit)) {
+                nextErrors.storageLimit = "Storage limit is required.";
+            } else if (!/^\d+$/.test(normalizeText(form.storageLimit))) {
+                nextErrors.storageLimit = "Storage limit must be a valid number.";
+            }
+        }
+
+        return nextErrors;
+    };
+
+    const validateCurrentTab = (tabKey = activeTab, allowEmptyOptional = false) => {
+        switch (tabKey) {
+            case "identity":
+                return validateIdentityFields();
+            case "address":
+                return validateAddressFields();
+            case "licenses":
+                return validateLicensesFields(allowEmptyOptional);
+            case "tax":
+                return validateTaxFields(allowEmptyOptional);
+            case "admin":
+                return validateAdminFields();
+            case "plan":
+                return validatePlanFields();
+            default:
+                return {};
+        }
+    };
+
+    const validateEntireForm = () => ({
+        ...validateIdentityFields(),
+        ...validateAddressFields(),
+        ...validateLicensesFields(true),
+        ...validateTaxFields(true),
+        ...validateAdminFields(),
+        ...validatePlanFields(),
+    });
+
+    const goToAdjacentTab = (direction) => {
+        const currentIndex = tabs.findIndex(([key]) => key === activeTab);
+        const nextIndex = currentIndex + direction;
+
+        if (nextIndex >= 0 && nextIndex < tabs.length) {
+            setActiveTab(tabs[nextIndex][0]);
+        }
     };
 
     const handleNext = () => {
         if (readOnly || skipTabValidation) {
-            const currentIndex = tabs.findIndex(
-                ([key]) => key === activeTab
-            );
-
-            if (currentIndex < tabs.length - 1) {
-                setActiveTab(tabs[currentIndex + 1][0]);
-            }
-
+            goToAdjacentTab(1);
             return;
         }
 
-        if (activeTab === "identity" && !validateIdentityFields()) {
+        const nextErrors = validateCurrentTab(activeTab, true);
+
+        if (Object.keys(nextErrors).length) {
+            applyValidationErrors(nextErrors);
             return;
         }
 
-        if (activeTab === "address" && !validateAddressFields()) {
-            return;
+        setErrors({});
+        goToAdjacentTab(1);
+    };
+
+    const handleSkip = () => {
+        if (!isOptionalTab || readOnly || skipTabValidation) return;
+
+        const defaults = SKIPPABLE_TAB_DEFAULTS[activeTab];
+
+        if (defaults) {
+            setForm((prev) => ({
+                ...prev,
+                ...defaults,
+            }));
         }
 
-        if (activeTab === "tax" && !validateTaxFields()) {
-            return;
-        }
-
-        if (activeTab === "admin" && !validateAdminFields()) {
-            return;
-        }
-
-        if (activeTab === "plan" && !validatePlanFields()) {
-            return;
-        }
-
-        if (!validateTab()) {
-            showToast({
-                type: "error",
-                title: "Validation Error",
-                description: "Please fill all required fields.",
-            });
-
-            return;
-        }
-
-        const currentIndex = tabs.findIndex(
-            ([key]) => key === activeTab
-        );
-
-        if (currentIndex < tabs.length - 1) {
-            setActiveTab(tabs[currentIndex + 1][0]);
-        }
+        clearErrorsForFields(Object.keys(defaults || {}));
+        goToAdjacentTab(1);
     };
 
     const handlePrevious = () => {
-        const currentIndex = tabs.findIndex(
-            ([key]) => key === activeTab
-        );
-
-        if (currentIndex > 0) {
-            setActiveTab(tabs[currentIndex - 1][0]);
-        }
+        goToAdjacentTab(-1);
     };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
 
         if (readOnly) return;
 
         if (!skipSubmitValidation) {
-            if (!validateIdentityFields()) {
-                return;
-            }
+            const nextErrors = validateEntireForm();
 
-            if (!validateAddressFields()) {
-                return;
-            }
-
-            if (!validateTaxFields()) {
-                return;
-            }
-
-            if (!validateAdminFields()) {
-                return;
-            }
-
-            if (!validatePlanFields()) {
+            if (Object.keys(nextErrors).length) {
+                applyValidationErrors(nextErrors);
                 return;
             }
         }
-
-        console.log("FORM SUBMITTED");
-        console.log("SUBMIT FIRED", activeTab);
 
         try {
             if (onSubmitClinic) {
@@ -1135,10 +1271,8 @@ export default function ClinicForm({
                 description: data.message,
             });
 
-            console.log(data);
             onClose();
             navigate("/superadmin/clinics");
-
         } catch (error) {
             showToast({
                 type: "error",
@@ -1167,6 +1301,7 @@ export default function ClinicForm({
                                     requiredField={true}
                                     label="Clinic Name"
                                     value={form.clinicName}
+                                    error={errors.clinicName}
                                     onChange={handleChange}
                                 />
 
@@ -1175,6 +1310,7 @@ export default function ClinicForm({
                                     name="facilityType"
                                     label="Type of Facility"
                                     value={form.facilityType}
+                                    error={errors.facilityType}
                                     options={[
                                         "Govt Vet Hospital",
                                         "Private Clinic",
@@ -1190,6 +1326,7 @@ export default function ClinicForm({
                                     name="year"
                                     label="Year of Establishment"
                                     value={form.year}
+                                    error={errors.year}
                                     maxLength={4}
                                     onChange={(e) => {
                                         if (/^\d*$/.test(e.target.value)) {
@@ -1197,15 +1334,16 @@ export default function ClinicForm({
                                         }
                                     }}
                                 />
-                                <Input requiredField={true} name="email" label="Official Email" value={form.email} onChange={handleChange} />
-                                <Input requiredField={true} name="phone" label="Primary Contact" value={form.phone} maxLength={10} inputMode="numeric" onChange={handlePhoneChange} />
-                                <Input name="altPhone" label="Alternate Contact" value={form.altPhone} maxLength={10} inputMode="numeric" onChange={handlePhoneChange} />
-                                <Input name="website" label="Website URL" value={form.website} onChange={handleChange} />
+                                <Input requiredField={true} name="email" label="Official Email" value={form.email} error={errors.email} onChange={handleChange} />
+                                <Input requiredField={true} name="phone" label="Primary Contact" value={form.phone} error={errors.phone} maxLength={10} inputMode="numeric" onChange={handlePhoneChange} />
+                                <Input name="altPhone" label="Alternate Contact" value={form.altPhone} error={errors.altPhone} maxLength={10} inputMode="numeric" onChange={handlePhoneChange} />
+                                <Input name="website" label="Website URL" value={form.website} error={errors.website} onChange={handleChange} />
 
                                 <Upload
                                     requiredField={true}
                                     label="Clinic Logo / PDF"
                                     value={form.logo}
+                                    error={errors.logo}
                                     onChange={handleFileUpload("logo")}
                                     onRemove={() => setForm((p) => ({ ...p, logo: null }))}
                                     accept=".pdf,application/pdf,image/png,image/jpeg,image/jpg"
@@ -1227,7 +1365,7 @@ export default function ClinicForm({
                                     />
                                 </Full>
 
-                                <Input requiredField={true} name="address1" label="Address Line 1" value={form.address1} onChange={handleAddressChange} />
+                                <Input requiredField={true} name="address1" label="Address Line 1" value={form.address1} error={errors.address1} onChange={handleAddressChange} />
                                 <Input name="address2" label="Address Line 2" value={form.address2} onChange={handleAddressChange} />
 
 
@@ -1236,6 +1374,7 @@ export default function ClinicForm({
                                     name="state"
                                     label="State"
                                     value={form.state}
+                                    error={errors.state}
                                     options={stateOptions}
                                     onChange={handleAddressSelectChange}
                                 />
@@ -1244,14 +1383,16 @@ export default function ClinicForm({
                                     name="city"
                                     label="City"
                                     value={form.city}
+                                    error={errors.city}
                                     onChange={handleAddressSelectChange}
                                 />
-                                <Input requiredField name="district" label="District" value={form.district} onChange={handleAddressChange} />
+                                <Input requiredField name="district" label="District" value={form.district} error={errors.district} onChange={handleAddressChange} />
                                 <Input
                                     requiredField
                                     name="pincode"
                                     label="PIN Code"
                                     value={form.pincode}
+                                    error={errors.pincode}
                                     maxLength={6}
                                     inputMode="numeric"
                                     onChange={handlePincodeChange}
@@ -1327,14 +1468,15 @@ export default function ClinicForm({
 
                                 <div className="mb-10">
 
-                                    <Select
-                                        requiredField
-                                        name="stateCouncil"
-                                        label="State Vet Council"
-                                        value={form.stateCouncil}
-                                        options={stateOptions}
-                                        onChange={handleChange}
-                                    />
+                                <Select
+                                    requiredField
+                                    name="stateCouncil"
+                                    label="State Vet Council"
+                                    value={form.stateCouncil}
+                                    error={errors.stateCouncil}
+                                    options={stateOptions}
+                                    onChange={handleChange}
+                                />
 
                                 </div>
 
@@ -1361,6 +1503,7 @@ export default function ClinicForm({
                                             name="vetReg"
                                             label="Registration Number"
                                             value={form.vetReg}
+                                            error={errors.vetReg}
                                             onChange={handleChange}
                                             className="rounded-lg h-12"
                                         />
@@ -1371,6 +1514,7 @@ export default function ClinicForm({
                                             requiredField
                                             label="Registration Certificate"
                                             value={form.vetCert}
+                                            error={errors.vetCert}
                                             onChange={handleFileUpload("vetCert")}
                                             onRemove={() =>
                                                 setForm((p) => ({
@@ -1388,6 +1532,7 @@ export default function ClinicForm({
                                             name="vetExpiry"
                                             label="Expiry Date"
                                             value={form.vetExpiry}
+                                            error={errors.vetExpiry}
                                             onChange={handleChange}
                                             className="rounded-lg h-12"
                                         />
@@ -1415,6 +1560,7 @@ export default function ClinicForm({
                                             name="drugLicense"
                                             label="Drug License Number"
                                             value={form.drugLicense}
+                                            error={errors.drugLicense}
                                             onChange={handleChange}
                                             className="rounded-lg h-12"
                                         />
@@ -1423,6 +1569,7 @@ export default function ClinicForm({
                                             requiredField
                                             label="Drug License Document"
                                             value={form.drugDoc}
+                                            error={errors.drugDoc}
                                             onChange={handleFileUpload("drugDoc")}
                                             onRemove={() =>
                                                 setForm((p) => ({
@@ -1438,6 +1585,7 @@ export default function ClinicForm({
                                             name="drugExpiry"
                                             label="Expiry Date"
                                             value={form.drugExpiry}
+                                            error={errors.drugExpiry}
                                             onChange={handleChange}
                                             className="rounded-lg h-12"
                                         />
@@ -1465,6 +1613,7 @@ export default function ClinicForm({
                                             name="tradeLicense"
                                             label="Trade License Number"
                                             value={form.tradeLicense}
+                                            error={errors.tradeLicense}
                                             onChange={handleChange}
                                             className="rounded-lg h-12"
                                         />
@@ -1473,6 +1622,7 @@ export default function ClinicForm({
                                             requiredField
                                             label="Trade License Document"
                                             value={form.tradeDoc}
+                                            error={errors.tradeDoc}
                                             onChange={handleFileUpload("tradeDoc")}
                                             onRemove={() =>
                                                 setForm((p) => ({
@@ -1488,6 +1638,7 @@ export default function ClinicForm({
                                             name="tradeExpiry"
                                             label="Expiry Date"
                                             value={form.tradeExpiry}
+                                            error={errors.tradeExpiry}
                                             onChange={handleChange}
                                             className="rounded-lg h-12"
                                         />
@@ -1506,16 +1657,17 @@ export default function ClinicForm({
                         <Card title="Tax & Banking">
                             <Grid>
 
-                                <Input requiredField={true} name="gst" label="GST Number" value={form.gst} maxLength={15} onChange={handleUppercaseChange(15)} />
-                                <Input requiredField={true} name="pan" label="PAN Number" value={form.pan} maxLength={10} onChange={handleUppercaseChange(10)} />
-                                <Input requiredField={true} name="bankName" label="Bank Name" value={form.bankName} onChange={handleAlphaSpaceChange} />
-                                <Input requiredField={true} name="accountNumber" label="Account Number" value={form.accountNumber} maxLength={18} inputMode="numeric" onChange={handleDigitsChange(18)} />
-                                <Input requiredField={true} name="ifsc" label="IFSC Code" value={form.ifsc} maxLength={11} onChange={handleUppercaseChange(11)} />
+                                <Input requiredField={true} name="gst" label="GST Number" value={form.gst} error={errors.gst} maxLength={15} onChange={handleUppercaseChange(15)} />
+                                <Input requiredField={true} name="pan" label="PAN Number" value={form.pan} error={errors.pan} maxLength={10} onChange={handleUppercaseChange(10)} />
+                                <Input requiredField={true} name="bankName" label="Bank Name" value={form.bankName} error={errors.bankName} onChange={handleAlphaSpaceChange} />
+                                <Input requiredField={true} name="accountNumber" label="Account Number" value={form.accountNumber} error={errors.accountNumber} maxLength={18} inputMode="numeric" onChange={handleDigitsChange(18)} />
+                                <Input requiredField={true} name="ifsc" label="IFSC Code" value={form.ifsc} error={errors.ifsc} maxLength={11} onChange={handleUppercaseChange(11)} />
 
                                 <Upload
                                     requiredField={true}
                                     label="Cancelled Cheque"
                                     value={form.cheque}
+                                    error={errors.cheque}
                                     onChange={handleFileUpload("cheque")}
                                     onRemove={() => setForm((p) => ({ ...p, cheque: null }))}
                                     accept=".pdf,application/pdf,image/png,image/jpeg,image/jpg"
@@ -1529,32 +1681,81 @@ export default function ClinicForm({
                         <Card title="Admin Info">
                             <Grid>
 
-                                <Input requiredField={true} name="adminName" label="Full Name" value={form.adminName} onChange={handleAlphaSpaceChange} />
-                                <Input requiredField={true} name="designation" label="Designation" value={form.designation} onChange={handleAlphaSpaceChange} />
-                                <Input requiredField={true} name="adminPhone" label="Mobile" value={form.adminPhone} maxLength={10} inputMode="numeric" onChange={handlePhoneChange} />
-                                <Input requiredField={true} name="adminEmail" label="Email" value={form.adminEmail} onChange={handleChange} />
+                                <Input requiredField={true} name="adminName" label="Full Name" value={form.adminName} error={errors.adminName} onChange={handleAlphaSpaceChange} />
+                                <Input requiredField={true} name="designation" label="Designation" value={form.designation} error={errors.designation} onChange={handleAlphaSpaceChange} />
+                                <Input requiredField={true} name="adminPhone" label="Mobile" value={form.adminPhone} error={errors.adminPhone} maxLength={10} inputMode="numeric" onChange={handlePhoneChange} />
+                                <Input requiredField={true} name="adminEmail" label="Email" value={form.adminEmail} error={errors.adminEmail} onChange={handleChange} />
 
                                 <Select
+                                    requiredField={true}
                                     name="govtIdType"
-                                    label="Govt ID"
+                                    label="Govt ID Type"
                                     value={form.govtIdType}
-                                    options={["Aadhar", "PAN", "Passport"]}
-                                    onChange={handleChange}
+                                    error={errors.govtIdType}
+                                    options={GOVT_ID_TYPES}
+                                    onChange={(e) => {
+                                        const { value } = e.target;
+
+                                        handleChange(e);
+                                        setForm((prev) => ({
+                                            ...prev,
+                                            govtIdType: value,
+                                            govtIdNumber: "",
+                                            idDoc: null,
+                                        }));
+                                        clearErrorsForFields(["govtIdType", "govtIdNumber", "idDoc"]);
+                                    }}
                                 />
 
-                                <Input
-                                    requiredField
-                                    name="govtIdNumber"
-                                    label={idNumberLabel}
-                                    value={form.govtIdNumber}
-                                    maxLength={idType === "PAN" ? 10 : undefined}
-                                    onChange={idType === "PAN" ? handleUppercaseChange(10) : handleChange}
-                                />
+                                {idType ? (
+                                    <Input
+                                        requiredField
+                                        name="govtIdNumber"
+                                        label={idNumberLabel}
+                                        value={form.govtIdNumber}
+                                        error={errors.govtIdNumber}
+                                        placeholder={idNumberPlaceholder}
+                                        maxLength={idType === "Aadhar" ? 12 : idType === "PAN" ? 10 : 8}
+                                        onChange={(e) => {
+                                            const { value } = e.target;
+
+                                            if (idType === "Aadhar") {
+                                                const nextValue = getPhoneDigits(value).slice(0, 12);
+                                                handleChange({
+                                                    target: {
+                                                        name: "govtIdNumber",
+                                                        value: nextValue,
+                                                        type: "text",
+                                                    },
+                                                });
+                                                return;
+                                            }
+
+                                            const nextValue = value
+                                                .toUpperCase()
+                                                .replace(/[^A-Z0-9]/g, "")
+                                                .slice(0, idType === "PAN" ? 10 : 8);
+
+                                            handleChange({
+                                                target: {
+                                                    name: "govtIdNumber",
+                                                    value: nextValue,
+                                                    type: "text",
+                                                },
+                                            });
+                                        }}
+                                    />
+                                ) : (
+                                    <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-500">
+                                        Select a Government ID type to reveal the ID number field.
+                                    </div>
+                                )}
 
                                 <Upload
                                     requiredField
                                     label={idDocumentLabel}
                                     value={form.idDoc}
+                                    error={errors.idDoc}
                                     onChange={handleFileUpload("idDoc")}
                                     onRemove={() =>
                                         setForm((p) => ({
@@ -1569,6 +1770,7 @@ export default function ClinicForm({
                                     requiredField={true}
                                     label="Profile Photo / PDF"
                                     value={form.profile}
+                                    error={errors.profile}
                                     onChange={handleFileUpload("profile")}
                                     onRemove={() => setForm((p) => ({ ...p, profile: null }))}
                                     accept=".pdf,application/pdf,image/png,image/jpeg,image/jpg"
@@ -1593,6 +1795,7 @@ export default function ClinicForm({
                                     name="plan"
                                     label="Subscription Plan"
                                     value={form.plan}
+                                    error={errors.plan}
                                     options={planOptions}
                                     onChange={handlePlanChange}
                                     disabled={plansLoading || !planOptions.length}
@@ -1603,6 +1806,7 @@ export default function ClinicForm({
                                     name="billing"
                                     label="Billing Cycle"
                                     value={form.billing}
+                                    error={errors.billing}
                                     options={billingOptions}
                                     onChange={handleBillingChange}
                                     disabled={!billingOptions.length}
@@ -1614,6 +1818,7 @@ export default function ClinicForm({
                                     name="startDate"
                                     label="Plan Start Date"
                                     value={form.startDate}
+                                    error={errors.startDate}
                                     min={getTomorrowDate()}
                                     onChange={handleStartDateChange}
                                 />
@@ -1624,9 +1829,10 @@ export default function ClinicForm({
                                     name="endDate"
                                     label="Plan End / Renewal Date"
                                     value={form.endDate}
+                                    error={errors.endDate}
                                     disabled
                                 />
-                                <Input requiredField={false} type="number" name="trialDays" label="Trial Period (Days)" value={clampTrialDays(form.trialDays, maxTrialDays)} min={0} max={maxTrialDays} onChange={handleTrialDaysChange} />
+                                <Input requiredField={false} type="number" name="trialDays" label="Trial Period (Days)" value={clampTrialDays(form.trialDays, maxTrialDays)} error={errors.trialDays} min={0} max={maxTrialDays} onChange={handleTrialDaysChange} />
 
                                 <Input requiredField={false} name="discountCode" label="Discount / Promo Code" value={form.discountCode} onChange={handleChange} />
 
@@ -1655,6 +1861,7 @@ export default function ClinicForm({
                                             name="maxStaff"
                                             label="Max Staff Accounts"
                                             value={form.maxStaff}
+                                            error={errors.maxStaff}
                                             onChange={handleChange}
                                         />
 
@@ -1663,6 +1870,7 @@ export default function ClinicForm({
                                             name="maxDoctors"
                                             label="Max Doctors"
                                             value={form.maxDoctors}
+                                            error={errors.maxDoctors}
                                             onChange={handleChange}
                                         />
 
@@ -1671,6 +1879,7 @@ export default function ClinicForm({
                                             name="maxPets"
                                             label="Max Pet Records / Unlimited"
                                             value={form.maxPets}
+                                            error={errors.maxPets}
                                             onChange={handleChange}
                                         />
 
@@ -1679,6 +1888,7 @@ export default function ClinicForm({
                                             name="storageLimit"
                                             label="Storage Limit (GB)"
                                             value={form.storageLimit}
+                                            error={errors.storageLimit}
                                             onChange={handleChange}
                                         />
                                     </div>
@@ -1721,7 +1931,7 @@ export default function ClinicForm({
                     </fieldset>
 
                     {/* SAVE */}
-                    <div className="flex justify-between items-center">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 
                         {activeTab !== "identity" ? (
                             <button
@@ -1729,10 +1939,20 @@ export default function ClinicForm({
                                 onClick={handlePrevious}
                                 className="px-6 py-3 rounded-xl border border-gray-300 hover:bg-gray-100"
                             >
-                                ← Previous
+                                Previous
                             </button>
                         ) : (
                             <div />
+                        )}
+
+                        {isOptionalTab && !readOnly && !skipTabValidation && (
+                            <button
+                                type="button"
+                                onClick={handleSkip}
+                                className="px-6 py-3 rounded-xl border border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+                            >
+                                Skip
+                            </button>
                         )}
 
                         {activeTab !== "plan" ? (
@@ -1741,7 +1961,7 @@ export default function ClinicForm({
                                 onClick={handleNext}
                                 className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-xl"
                             >
-                                Next →
+                                Next
                             </button>
                         ) : (
                             <button
@@ -1749,7 +1969,7 @@ export default function ClinicForm({
                                 onClick={handleSubmit}
                                 className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-xl"
                             >
-                                Submit
+                                {submitLabel}
                             </button>
                         )}
 

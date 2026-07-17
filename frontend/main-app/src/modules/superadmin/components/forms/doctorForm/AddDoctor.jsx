@@ -3,7 +3,7 @@ import { useState } from "react";
 import VeterinarianHeader from "../VeterinarianHeader";
 import DoctorModal from "./DoctorModal";
 
-export default function AddDoctorModal() {
+export default function AddDoctorModal({ onCreated }) {
     const [open, setOpen] = useState(false);
 
     return (
@@ -13,7 +13,12 @@ export default function AddDoctorModal() {
             <VeterinarianHeader onAdd={() => setOpen(true)} />
 
             {/* MODAL */}
-            {open && <DoctorModal onClose={() => setOpen(false)} />}
+            {open && (
+                <DoctorModal
+                    onClose={() => setOpen(false)}
+                    onCreated={onCreated}
+                />
+            )}
 
         </div>
     );

@@ -757,6 +757,13 @@ exports.login = async (req, res) => {
       });
     }
 
+    if (user.isActive === false) {
+      return res.status(403).json({
+        success: false,
+        message: "Account is inactive",
+      });
+    }
+
     const isMatch = await bcrypt.compare(password, user.password);
 
     if (!isMatch) {
@@ -766,7 +773,7 @@ exports.login = async (req, res) => {
       });
     }
 
-    const requiresPasswordReset = false;
+    const requiresPasswordReset = Boolean(user.forcePasswordReset);
 
     const token = jwt.sign(
       {
@@ -904,6 +911,33 @@ exports.changePassword = async (req, res) => {
       staff.accountInfo.temporaryPassword = "";
 
       await staff.save();
+
+      return res.status(200).json({
+        success: true,
+        message: "Password updated successfully",
+      });
+    }
+
+    const userAccount = await User.findOne({
+      _id: userId,
+    }).select("+password");
+
+    if (userAccount) {
+      const storedPassword = userAccount.password;
+      const isMatch = await comparePasswordWithWhitespaceFallback(currentPassword, storedPassword);
+
+      if (!isMatch) {
+        return res.status(401).json({
+          success: false,
+          message: "Current password is incorrect",
+        });
+      }
+
+      userAccount.password = hashedNewPassword;
+      userAccount.forcePasswordReset = false;
+      userAccount.temporaryPassword = "";
+
+      await userAccount.save();
 
       return res.status(200).json({
         success: true,

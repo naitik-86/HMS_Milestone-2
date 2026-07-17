@@ -7,9 +7,12 @@ export default function Upload({
     onChange,
     onRemove,
     accept = ".pdf,application/pdf",
+    error = "",
 }) {
+    const hasError = Boolean(error);
+    const fileName = typeof value === "string" ? value : value?.name || "";
     const previewUrl = useMemo(() => {
-        if (!value || !value.type?.startsWith("image/")) return "";
+        if (!value || typeof value === "string" || !value.type?.startsWith("image/")) return "";
         return URL.createObjectURL(value);
     }, [value]);
     const isImage = Boolean(previewUrl);
@@ -22,25 +25,21 @@ export default function Upload({
 
     return (
         <div className="w-full">
-            {/* Label */}
-            <label className="block mb-2 text-sm font-medium text-slate-700">
+            <label className={`block mb-2 text-sm font-medium ${hasError ? "text-red-600" : "text-slate-700"}`}>
                 {label}
                 {requiredField && (
                     <span className="text-red-500"> *</span>
                 )}
             </label>
 
-            {/* Upload Box */}
             <label
-                className="
+                className={`
                     w-full
                     h-12
                     border
                     border-dashed
-                    border-slate-300
                     rounded-lg
                     bg-white
-                    hover:border-orange-500
                     transition-all
                     duration-200
                     cursor-pointer
@@ -48,7 +47,8 @@ export default function Upload({
                     items-center
                     justify-center
                     px-4
-                "
+                    ${hasError ? "border-red-400" : "border-slate-300 hover:border-orange-500"}
+                `}
             >
                 {!value ? (
                     <div className="flex items-center gap-2 text-slate-500">
@@ -84,7 +84,7 @@ export default function Upload({
 
                             <div className="min-w-0">
                                 <p className="truncate text-sm font-medium text-green-600">
-                                    {value.name}
+                                    {fileName}
                                 </p>
                             </div>
                         </div>
@@ -101,8 +101,9 @@ export default function Upload({
                                 text-base
                                 font-semibold
                             "
+                            aria-label={`Remove ${label}`}
                         >
-                            ✕
+                            X
                         </button>
                     </div>
                 )}
@@ -114,6 +115,12 @@ export default function Upload({
                     onChange={onChange}
                 />
             </label>
+
+            {hasError && (
+                <p className="mt-1 text-xs text-red-600">
+                    {error}
+                </p>
+            )}
         </div>
     );
 }
