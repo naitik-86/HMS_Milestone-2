@@ -27,25 +27,25 @@ const seedClinic = async () => {
     try {
         await connectDB();
 
-        // Check if admin already exists
-        const existingAdmin = await ClinicAdmin.findOne({
-            email: "ankitt16kr@gmail.com",
-        });
+        // const deletedAdmin = await ClinicAdmin.findOneAndDelete({
+        //     email: "karan2609.dev@gmail.com",
+        // });
 
-        if (existingAdmin) {
-            console.log("⚠️ Clinic Admin already exists.");
-            process.exit(0);
-        }
+        // if (deletedAdmin) {
+        //     console.log("🗑️ Existing Clinic Admin deleted.");
+        // } else {
+        //     console.log("ℹ️ No existing Clinic Admin found.");
+        // }
 
         // Create Clinic
         const clinic = await Clinic.create({
-            name: "PetCare Veterinary Clinic",
-            address: "Ranchi",
-            contactEmail: "ankitt16kr@gmail.com",
+            name: " Veterinary Clinic",
+            address: "wefrefefs",
+            contactEmail: "ankitkumar10728@gmail.com",
             // contactPhone: "6299742423", // Add this field in schema if required
 
             subscriptionType: "6_MONTHS",
-            subscriptionStatus: "EXPIRED",
+
 
             licenseLimits: {
                 maxDoctors: 5,
@@ -85,7 +85,7 @@ const seedClinic = async () => {
         // Create Clinic Admin
         await ClinicAdmin.create({
             clinicId: clinic._id,
-            email: "ankitt16kr@gmail.com",
+            email: "ankitkumar10728@gmail.com",
             password: hashedPassword,
             role: "CLINIC_ADMIN",
             forcePasswordReset: false,
@@ -94,7 +94,7 @@ const seedClinic = async () => {
         console.log("🎉 Clinic & Clinic Admin Seeded Successfully!");
         console.log("------------------------------------------");
         console.log("Clinic ID :", clinic._id);
-        console.log("Email     : ankitt16kr@gmail.com");
+        console.log("Email     :ankitkumar10728@gmail.com");
         console.log("Password  : Admin@123");
         console.log("------------------------------------------");
 

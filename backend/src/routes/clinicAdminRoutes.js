@@ -15,7 +15,7 @@ const subscriptionRoutes = require("./subscriptionRoutes")
 const subscriptionController = require("../controllers/subscriptionPlanController")
 const DoctorModuleRoutes = require("./DoctorModuleRoutes")
 const clinicDashboardController = require("../controllers/clinicDashboardController");
-
+const clinicSubscriptionRoutes = require("./clinicSubscriptionRoutes")
 router.use(protect);
 
 
@@ -28,6 +28,7 @@ router.use("/kennel", KennelRoutes);
 router.use("/reception", ReceptionRoutes);
 router.use("/pre-consultation", preConsultationRoutes);
 router.get("/subscription/status", subscriptionController.getSubscriptionStatus);
+router.use("/subscription", clinicSubscriptionRoutes);
 
 
 

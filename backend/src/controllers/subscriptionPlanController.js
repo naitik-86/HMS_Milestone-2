@@ -1,5 +1,6 @@
 const SubscriptionPlan = require('../models/SubscriptionPlan');
 const Clinic = require("../models/Clinic");
+const clinincSubscriptionTracker = require("../models/ClinicSubscriptionTracker")
 const crypto = require("crypto");
 const { log } = require('console');
 
@@ -23,6 +24,97 @@ const normalizePlanType = (planType, subscriptionPlan) => {
   }
 
   return 'Clinic';
+};
+
+
+exports.getCurrentSubscription = async (req, res) => {
+  try {
+    const clinicId = req.user.clinicId;
+
+    const subscription = await clinincSubscriptionTracker
+      .findOne({ clinicId })
+      .populate("planId");
+
+    if (!subscription) {
+      return res.status(404).json({
+        success: false,
+        message: "No subscription found.",
+      });
+    }
+
+    let remainingDays = 0;
+
+    if (subscription.status === "TRIAL") {
+      if (subscription.trialEndDate) {
+        remainingDays = Math.max(
+          0,
+          Math.ceil(
+            (subscription.trialEndDate - new Date()) /
+            (1000 * 60 * 60 * 24)
+          )
+        );
+      }
+    } else if (subscription.status === "ACTIVE") {
+      if (subscription.planEndRenewalDate) {
+        remainingDays = Math.max(
+          0,
+          Math.ceil(
+            (subscription.planEndRenewalDate - new Date()) /
+            (1000 * 60 * 60 * 24)
+          )
+        );
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        status: subscription.status,
+        paymentStatus: subscription.paymentStatus,
+        paymentDate: subscription.paymentDate,
+        planStartDate: subscription.planStartDate,
+        planEndRenewalDate: subscription.planEndRenewalDate,
+        trialStartDate: subscription.trialStartDate,
+        trialEndDate: subscription.trialEndDate,
+        amountPaid: subscription.amountPaid,
+        transactionId: subscription.transactionId,
+        remainingDays,
+        plan: subscription.planId,
+      },
+    });
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch current subscription.",
+    });
+  }
+};
+
+
+exports.getAllPlans = async (req, res) => {
+  try {
+    const plans = await SubscriptionPlan.find({
+      planType: "Clinic",
+      status: "Active",
+    }).sort({
+      price: 1,
+    });
+
+    return res.status(200).json({
+      success: true,
+      totalPlans: plans.length,
+      data: plans,
+    });
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch subscription plans.",
+    });
+  }
 };
 
 const normalizePlanName = (planName) =>
@@ -192,20 +284,83 @@ exports.getSubscriptionDetails = async (req, res) => {
 exports.paymentSuccess = async (req, res) => {
   try {
     const clinicId = req.body.udf1;
+    const transactionId = req.body.txnid;
+    const amountPaid = Number(req.body.amount);
 
+    // Update Clinic
     const clinic = await Clinic.findByIdAndUpdate(
       clinicId,
       {
         subscriptionStatus: "ACTIVE",
       },
-      {
-        new: true,
-      }
+      { new: true }
     );
 
     if (!clinic) {
       return res.status(404).send("Clinic not found");
     }
+
+    // Find Subscription
+    const subscription = await clinincSubscriptionTracker.findOne({
+      clinicId,
+    }).populate("planId");
+
+    if (!subscription) {
+      return res.status(404).send("Subscription not found");
+    }
+
+    const planStartDate = new Date();
+    const planEndRenewalDate = new Date(planStartDate);
+
+    // Calculate remaining trial days
+    let remainingTrialDays = 0;
+
+    if (
+      subscription.trialEndDate &&
+      subscription.trialEndDate > planStartDate
+    ) {
+      const diff =
+        subscription.trialEndDate.getTime() - planStartDate.getTime();
+
+      remainingTrialDays = Math.ceil(
+        diff / (1000 * 60 * 60 * 24)
+      );
+    }
+
+    // Add subscription duration
+    switch (subscription.planId.billingCycle) {
+      case "6_MONTHS":
+        planEndRenewalDate.setMonth(planEndRenewalDate.getMonth() + 6);
+        break;
+
+      case "12_MONTHS":
+        planEndRenewalDate.setFullYear(
+          planEndRenewalDate.getFullYear() + 1
+        );
+        break;
+    }
+
+    // Add remaining trial days
+    planEndRenewalDate.setDate(
+      planEndRenewalDate.getDate() + remainingTrialDays
+    );
+
+    subscription.status = "ACTIVE";
+    subscription.paymentStatus = "PAID";
+
+    subscription.paymentDate = new Date();
+    subscription.amountPaid = amountPaid;
+    subscription.transactionId = transactionId;
+    subscription.paymentGateway = "PAYU";
+
+    subscription.planStartDate = planStartDate;
+    subscription.planEndRenewalDate = planEndRenewalDate;
+
+    // Trial is finished
+    subscription.trialStartDate = null;
+    subscription.trialEndDate = null;
+
+    await subscription.save();
 
     console.log("Clinic:", clinic.name);
 
@@ -251,17 +406,100 @@ exports.paymentFailure = async (req, res) => {
   );
 };
 
+
 exports.getSubscriptionStatus = async (req, res) => {
   try {
-    const clinic = await Clinic.findById(req.user.clinicId).select(
-      "_id subscriptionStatus subscriptionType expiryDate"
-    );
+    const clinic = await Clinic.findById(req.user.clinicId);
 
     if (!clinic) {
       return res.status(404).json({
         success: false,
         message: "Clinic not found",
       });
+    }
+
+    // Find subscription
+    let subscription = await clinincSubscriptionTracker.findOne({
+      clinicId: clinic._id,
+    }).populate("planId");
+
+    // Create subscription on first login
+    if (!subscription) {
+      const defaultPlan = await SubscriptionPlan.findOne({
+        billingCycle: clinic.subscriptionType,
+      });
+
+      if (!defaultPlan) {
+        return res.status(400).json({
+          success: false,
+          message: "Subscription plan not found",
+        });
+      }
+
+      const trialStartDate = new Date();
+
+      const trialEndDate = new Date(trialStartDate);
+      trialEndDate.setDate(
+        trialEndDate.getDate() + defaultPlan.trialPeriodDays
+      );
+
+      subscription = await clinincSubscriptionTracker.create({
+        clinicId: clinic._id,
+        planId: defaultPlan._id,
+
+        status: "TRIAL",
+
+        trialStartDate,
+        trialEndDate,
+
+        paymentStatus: "PENDING",
+      });
+
+      subscription = await clinincSubscriptionTracker.findById(
+        subscription._id
+      ).populate("planId");
+    }
+
+    // ===============================
+    // Trial Expiry Check
+    // ===============================
+    if (
+      subscription.status === "TRIAL" &&
+      subscription.trialEndDate &&
+      new Date() > subscription.trialEndDate
+    ) {
+      subscription.status = "PAYMENT_REQUIRED";
+      await subscription.save();
+    }
+
+    // ===============================
+    // Active Plan Expiry Check
+    // ===============================
+    if (
+      subscription.status === "ACTIVE" &&
+      subscription.planEndRenewalDate &&
+      new Date() > subscription.planEndRenewalDate
+    ) {
+      subscription.status = "EXPIRED";
+      await subscription.save();
+    }
+
+    // ===============================
+    // Remaining Trial Days
+    // ===============================
+    let remainingTrialDays = 0;
+
+    if (
+      subscription.status === "TRIAL" &&
+      subscription.trialEndDate
+    ) {
+      const diff =
+        subscription.trialEndDate.getTime() - Date.now();
+
+      remainingTrialDays = Math.max(
+        0,
+        Math.ceil(diff / (1000 * 60 * 60 * 24))
+      );
     }
 
     return res.status(200).json({
@@ -274,6 +512,9 @@ exports.getSubscriptionStatus = async (req, res) => {
         subscriptionType: clinic.subscriptionType,
         expiryDate: clinic.expiryDate,
       },
+      subscription,
+      remainingTrialDays,
+
     });
   } catch (error) {
     console.error(error);
