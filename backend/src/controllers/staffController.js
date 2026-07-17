@@ -304,7 +304,19 @@ const getStaffById = async (
 const updateStaff = async (req, res) => {
     try {
 
+
         console.log("Form data - >>>>", req.body);
+        const existingStaff = await Staff.findOne({
+            _id: req.params.id,
+            clinicId: req.user.clinicId,
+        });
+
+        if (!existingStaff) {
+            return res.status(404).json({
+                success: false,
+                message: "Staff not found",
+            });
+        }
 
         const personalInfo = req.body.personalInfo
             ? JSON.parse(req.body.personalInfo)
@@ -340,11 +352,30 @@ const updateStaff = async (req, res) => {
         }
 
         const updateData = {
-            personalInfo,
-            employmentInfo,
-            accountInfo,
-            bankDetails,
-            moduleAccess,
+            personalInfo: {
+                ...existingStaff.personalInfo.toObject(),
+                ...personalInfo,
+            },
+
+            employmentInfo: {
+                ...existingStaff.employmentInfo.toObject(),
+                ...employmentInfo,
+            },
+
+            accountInfo: {
+                ...existingStaff.accountInfo.toObject(),
+                ...accountInfo,
+            },
+
+            bankDetails: {
+                ...existingStaff.bankDetails.toObject(),
+                ...bankDetails,
+            },
+
+            moduleAccess: {
+                ...existingStaff.moduleAccess.toObject(),
+                ...moduleAccess,
+            },
         };
 
         // Profile photo update (optional)
@@ -353,18 +384,17 @@ const updateStaff = async (req, res) => {
                 req.file.path;
         }
 
-        const updatedStaff =
-            await Staff.findOneAndUpdate(
-                {
-                    _id: req.params.id,
-                    clinicId: req.user.clinicId,
-                },
-                updateData,
-                {
-                    new: true,
-                    runValidators: true,
-                }
-            );
+        const updatedStaff = await Staff.findOneAndUpdate(
+            {
+                _id: req.params.id,
+                clinicId: req.user.clinicId,
+            },
+            updateData,
+            {
+                new: true,
+                runValidators: true,
+            }
+        );
 
         if (!updatedStaff) {
             return res.status(404).json({

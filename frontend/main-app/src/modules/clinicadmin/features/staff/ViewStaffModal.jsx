@@ -3,6 +3,7 @@ import React from "react";
 export default function ViewStaffModal({
     staff,
     onClose,
+    onDelete,
 }) {
     if (!staff) return null;
 
@@ -203,56 +204,52 @@ export default function ViewStaffModal({
                         </div>
                     </div>
 
-                    {/* Module Access */}
+                    {/* Module Access */}                    {/* Module Access */}
                     <div className="bg-gray-50 rounded-2xl p-6">
                         <h3 className="font-bold text-lg mb-5">
                             Module Access
                         </h3>
 
                         <div className="flex flex-wrap gap-3">
-                            {Object.entries(
-                                staff.moduleAccess ||
-                                {}
-                            )
-                                .filter(
-                                    (
-                                        [
-                                            _,
-                                            value,
-                                        ]
-                                    ) =>
-                                        value
-                                )
-                                .map(
-                                    (
-                                        [
-                                            module,
-                                        ]
-                                    ) => (
-                                        <span
-                                            key={
-                                                module
-                                            }
-                                            className="px-4 py-2 rounded-xl bg-[#FEF3EB] text-[#E8630A] font-semibold"
-                                        >
-                                            {
-                                                module
-                                            }
-                                        </span>
-                                    )
-                                )}
+                            {Object.entries(staff.moduleAccess || {})
+                                .filter(([_, value]) => value)
+                                .map(([module]) => (
+                                    <span
+                                        key={module}
+                                        className="px-4 py-2 rounded-xl bg-[#FEF3EB] text-[#E8630A] font-semibold"
+                                    >
+                                        {module}
+                                    </span>
+                                ))}
                         </div>
                     </div>
+
+                    {/* Footer */}
+                    <div className="mt-8 border-t border-gray-200 pt-6 flex items-center justify-end gap-4">
+
+                        <button
+                            onClick={() => onDelete(staff._id)}
+                            className="px-6 py-3 rounded-xl bg-[#FEF3EB] text-[#E8630A] border border-[#F8C7A8] font-semibold hover:bg-[#FDE7D8] transition-all duration-200"
+                        >
+                            Delete Staff
+                        </button>
+
+                        <button
+                            onClick={onClose}
+                            className="px-6 py-3 rounded-xl bg-[#E8630A] text-white font-semibold hover:bg-[#d35400] transition-all duration-200"
+                        >
+                            Close
+                        </button>
+
+                    </div>
+
                 </div>
             </div>
         </div>
     );
 }
 
-function Info({
-    label,
-    value,
-}) {
+function Info({ label, value }) {
     return (
         <div>
             <p className="text-xs text-gray-500 uppercase mb-1">
