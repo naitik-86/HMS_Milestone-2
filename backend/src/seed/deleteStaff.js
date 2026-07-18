@@ -23,18 +23,20 @@ const deleteStaff = async () => {
     try {
         await connectDB();
 
-        const staff = await Staff.findById(STAFF_ID);
+        // const staff = await Staff.findById(STAFF_ID);
 
-        if (!staff) {
-            console.log("❌ Staff not found.");
-            process.exit(0);
-        }
+        // if (!staff) {
+        //     console.log("❌ Staff not found.");
+        //     process.exit(0);
+        // }
 
-        await Staff.findByIdAndDelete(STAFF_ID);
+        const staff = await Staff.findOneAndDelete({
+            'personalInfo.email': "a95105147@gmail.com",
+        });
 
-        console.log(
-            `✅ Staff "${staff.personalInfo.fullName}" deleted successfully.`
-        );
+        // console.log(
+        //     `✅ Staff "${staff.personalInfo.fullName}" deleted successfully.`
+        // );
 
         process.exit(0);
     } catch (err) {

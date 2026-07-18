@@ -1,13 +1,12 @@
 // seedClinic.js
 
-
 const path = require("path");
-
 const mongoose = require("mongoose");
 
 require("dotenv").config({
     path: path.resolve(__dirname, "../../.env"),
 });
+
 const bcrypt = require("bcryptjs");
 
 const Clinic = require("../models/Clinic");
@@ -27,25 +26,30 @@ const seedClinic = async () => {
     try {
         await connectDB();
 
-        // const deletedAdmin = await ClinicAdmin.findOneAndDelete({
-        //     email: "karan2609.dev@gmail.com",
+        // Fixed Clinic ID
+        // const clinicId = new mongoose.Types.ObjectId(
+        //     "6a563353f8b2d9067b35bd28"
+        // );
+
+        // // Optional: Delete existing records
+        // await ClinicAdmin.deleteMany({
+        //     $or: [
+        //         { email: "ankitt16kr@gmail.com" },
+        //         { clinicId: clinicId },
+        //     ],
         // });
 
-        // if (deletedAdmin) {
-        //     console.log("🗑️ Existing Clinic Admin deleted.");
-        // } else {
-        //     console.log("ℹ️ No existing Clinic Admin found.");
-        // }
+        // await Clinic.findByIdAndDelete(clinicId);
 
         // Create Clinic
         const clinic = await Clinic.create({
-            name: " Veterinary Clinic",
+
+
+            name: "Veterinary Clinic",
             address: "wefrefefs",
             contactEmail: "ankitkumar10728@gmail.com",
-            // contactPhone: "6299742423", // Add this field in schema if required
 
             subscriptionType: "6_MONTHS",
-
 
             licenseLimits: {
                 maxDoctors: 5,
@@ -57,7 +61,7 @@ const seedClinic = async () => {
                 addressLine2: "",
                 city: "Ranchi",
                 district: "Ranchi",
-                state: "sgnw",
+                state: "Jharkhand",
                 pincode: "834001",
                 serviceArea: "Ranchi",
             },
@@ -80,6 +84,7 @@ const seedClinic = async () => {
             verificationStatus: "APPROVED",
         });
 
+        // Hash Password
         const hashedPassword = await bcrypt.hash("Admin@123", 10);
 
         // Create Clinic Admin
@@ -91,16 +96,16 @@ const seedClinic = async () => {
             forcePasswordReset: false,
         });
 
-        console.log("🎉 Clinic & Clinic Admin Seeded Successfully!");
+        console.log("\n🎉 Clinic & Clinic Admin Seeded Successfully!");
         console.log("------------------------------------------");
         console.log("Clinic ID :", clinic._id);
-        console.log("Email     :ankitkumar10728@gmail.com");
+        console.log("Email     : ankitt16kr@gmail.com");
         console.log("Password  : Admin@123");
         console.log("------------------------------------------");
 
         process.exit(0);
     } catch (error) {
-        console.error(error);
+        console.error("❌ Error:", error);
         process.exit(1);
     }
 };

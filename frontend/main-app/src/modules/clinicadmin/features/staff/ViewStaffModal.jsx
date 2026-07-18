@@ -7,6 +7,14 @@ export default function ViewStaffModal({
 }) {
     if (!staff) return null;
 
+    console.log(staff);
+
+    let reportTo = staff.employmentInfo.reportTo
+
+    if (!reportTo) {
+        reportTo = "Clinic Admin"
+    }
+
     return (
         <div
             className="fixed inset-0 z-[1000] flex items-center justify-center"
@@ -190,15 +198,7 @@ export default function ViewStaffModal({
                             <Info
                                 label="Reporting To"
                                 value={
-                                    staff
-                                        .employmentInfo
-                                        ?.reportingTo
-                                        ?.personalInfo
-                                        ?.fullName ||
-                                    staff
-                                        .employmentInfo
-                                        ?.reportingTo ||
-                                    "-"
+                                    reportTo
                                 }
                             />
                         </div>
