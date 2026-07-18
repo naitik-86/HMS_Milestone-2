@@ -6,6 +6,11 @@
 #   S3_FRONTEND_BUCKET      - `terraform output frontend_bucket_name`
 #   VITE_BACKEND_URL        - e.g. http://<EC2_HOST>/api/v1 - MUST include /api/v1,
 #                             see docs/10-application-notes.md
+#   VITE_PAYU_BASE_URL      - PayU payment page URL, e.g. https://test.payu.in/_payment
+#                             for sandbox/test, https://secure.payu.in/_payment for
+#                             production. Used by PaymentPage.jsx to set the payment
+#                             form's target - if unset, the form posts to the
+#                             frontend's own origin as literal path "/undefined".
 #   EC2_HOST, EC2_USER, EC2_SSH_KEY - same as deploy-backend.yml, reused here
 #                             to also deploy the frontend to EC2:8080 as a
 #                             fallback for networks that block S3 website
@@ -50,6 +55,7 @@ jobs:
       - name: Build
         env:
           VITE_BACKEND_URL: ${{ secrets.VITE_BACKEND_URL }}
+          VITE_PAYU_BASE_URL: ${{ secrets.VITE_PAYU_BASE_URL }}
         run: npm run build
 
       - name: Configure AWS credentials
