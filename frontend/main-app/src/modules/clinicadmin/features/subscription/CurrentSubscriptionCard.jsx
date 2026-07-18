@@ -17,112 +17,123 @@ export default function CurrentSubscriptionCard({ subscription }) {
         cycle.replace("_", " ").toLowerCase();
 
     return (
-        <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition-all duration-300 hover:shadow-lg">
+        <div className="flex flex-col overflow-hidden rounded-2xl border border-orange-200 bg-white shadow-sm lg:flex-row">
+            {/* Left Section */}
+            <div className="flex-1 p-8">
+                <span className="inline-flex rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
+                    Current Subscription
+                </span>
 
-            {/* Header */}
-            <div className="border-b border-gray-200 px-6 py-5">
-                <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
+                <h2 className="mt-4 text-3xl font-bold text-gray-900">
+                    {plan.subscriptionPlan}
+                </h2>
 
-                    <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.25em] text-orange-600">
-                            Current Subscription
-                        </p>
+                <p className="mt-2 flex items-center gap-2 text-lg font-medium text-gray-600">
+                    <IndianRupee className="h-5 w-5 text-orange-500" />
+                    ₹{plan.price.toLocaleString()} / {formatBillingCycle(plan.billingCycle)}
+                </p>
 
-                        <h2 className="mt-2 text-2xl font-bold text-slate-900">
-                            {plan.subscriptionPlan}
-                        </h2>
+                <div className="mt-8 grid gap-6 sm:grid-cols-2">
+                    <div className="flex items-start gap-3">
+                        <div className="rounded-xl bg-orange-100 p-3">
+                            <CalendarDays className="h-6 w-6 text-orange-600" />
+                        </div>
 
-                        <p className="mt-2 flex items-center gap-1 text-gray-500">
-                            <IndianRupee size={16} />
-                            {plan.price.toLocaleString()} /{" "}
-                            {formatBillingCycle(plan.billingCycle)}
-                        </p>
+                        <div>
+                            <p className="text-sm text-gray-500">
+                                Subscription Started
+                            </p>
+
+                            <p className="text-lg font-bold text-gray-900">
+                                {new Date(sub.planStartDate).toLocaleDateString()}
+                            </p>
+                        </div>
                     </div>
 
-                    <div className="inline-flex items-center gap-2 rounded-full border border-orange-200 bg-orange-50 px-4 py-2 text-sm font-semibold text-orange-700">
-                        <BadgeCheck size={17} />
-                        {sub.status}
+                    <div className="flex items-start gap-3">
+                        <div className="rounded-xl bg-green-100 p-3">
+                            <CalendarDays className="h-6 w-6 text-green-600" />
+                        </div>
+
+                        <div>
+                            <p className="text-sm text-gray-500">
+                                Remaining Days
+                            </p>
+
+                            <p className="text-3xl font-bold text-green-600">
+                                {sub.remainingDays}
+                            </p>
+                        </div>
                     </div>
 
+                    <div className="flex items-start gap-3">
+                        <div className="rounded-xl bg-blue-100 p-3">
+                            <CreditCard className="h-6 w-6 text-blue-600" />
+                        </div>
+
+                        <div>
+                            <p className="text-sm text-gray-500">
+                                Plan Status
+                            </p>
+
+                            <p className="text-lg font-bold text-gray-900">
+                                {sub.status
+                                    .toLowerCase()
+                                    .replace(/_/g, " ")
+                                    .replace(/\b\w/g, (char) => char.toUpperCase())}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="flex items-start gap-3">
+                        <div className="rounded-xl bg-orange-100 p-3">
+                            <IndianRupee className="h-6 w-6 text-orange-600" />
+                        </div>
+
+                        <div>
+                            <p className="text-sm text-gray-500">
+                                Amount Paid
+                            </p>
+
+                            <p className="text-lg font-bold text-gray-900">
+                                ₹{sub.amountPaid?.toLocaleString()}
+                            </p>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            {/* Details */}
-            <div className="grid gap-5 p-6 md:grid-cols-2">
-
-                <div className="rounded-xl border border-gray-200 bg-gray-50 p-5">
-                    <div className="mb-3 flex items-center gap-2">
-                        <CalendarDays
-                            size={18}
-                            className="text-orange-500"
-                        />
-                        <span className="text-sm font-medium text-gray-600">
-                            Subscription Started
-                        </span>
+            {/* Right Section */}
+            <div className="flex w-full flex-col justify-center border-t border-orange-100 bg-gradient-to-br from-orange-50 via-white to-blue-50 p-8 lg:w-80 lg:border-l lg:border-t-0">
+                <div className="rounded-2xl border border-green-200 bg-white p-6 shadow-sm">
+                    <div className="flex justify-center">
+                        <div className="rounded-full bg-green-100 p-4">
+                            <BadgeCheck className="h-8 w-8 text-green-600" />
+                        </div>
                     </div>
 
-                    <p className="text-lg font-semibold text-slate-900">
-                        {new Date(
-                            sub.planStartDate
-                        ).toLocaleDateString()}
+                    <h3 className="mt-5 text-center text-xl font-bold text-gray-900">
+                        Subscription Active
+                    </h3>
+
+                    <p className="mt-2 text-center text-sm text-gray-500">
+                        Your clinic is currently subscribed to this plan.
                     </p>
-                </div>
 
-                <div className="rounded-xl border border-gray-200 bg-gray-50 p-5">
-                    <div className="mb-3 flex items-center gap-2">
-                        <CalendarDays
-                            size={18}
-                            className="text-orange-500"
-                        />
-                        <span className="text-sm font-medium text-gray-600">
-                            Remaining Days
-                        </span>
-                    </div>
-
-                    <p className="text-lg font-semibold text-slate-900">
-                        {sub.remainingDays}
-                    </p>
-                </div>
-
-                <div className="rounded-xl border border-gray-200 bg-gray-50 p-5">
-                    <div className="mb-3 flex items-center gap-2">
-                        <CreditCard
-                            size={18}
-                            className="text-orange-500"
-                        />
-                        <span className="text-sm font-medium text-gray-600">
-                            Plan Status
-                        </span>
-                    </div>
-
-                    <p className="text-lg font-semibold text-slate-900">
-                        {
-                            sub.status
+                    <div className="mt-6 rounded-xl bg-green-50 px-4 py-3 text-center">
+                        <span className="text-sm font-semibold text-green-700">
+                            {sub.status
                                 .toLowerCase()
                                 .replace(/_/g, " ")
-                                .replace(/\b\w/g, (char) => char.toUpperCase()) || "Expired"
-                        }
-                    </p>
-                </div>
-
-                <div className="rounded-xl border border-gray-200 bg-gray-50 p-5">
-                    <div className="mb-3 flex items-center gap-2">
-                        <IndianRupee
-                            size={18}
-                            className="text-orange-500"
-                        />
-                        <span className="text-sm font-medium text-gray-600">
-                            Amount Paid
+                                .replace(/\b\w/g, (char) => char.toUpperCase())}
                         </span>
                     </div>
 
-                    <p className="text-lg font-semibold text-slate-900">
-                        ₹{sub.amountPaid?.toLocaleString()}
+                    <p className="mt-5 text-center text-xs text-gray-500">
+                        Enjoy uninterrupted access to all subscribed HMS features.
                     </p>
                 </div>
-
             </div>
-
         </div>
     );
 }

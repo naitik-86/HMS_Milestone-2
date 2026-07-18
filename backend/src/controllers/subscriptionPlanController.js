@@ -31,9 +31,12 @@ exports.getCurrentSubscription = async (req, res) => {
   try {
     const clinicId = req.user.clinicId;
 
-    const subscription = await clinincSubscriptionTracker
-      .findOne({ clinicId })
-      .populate("planId");
+    const [subscription, clinic] = await Promise.all([
+      clinincSubscriptionTracker
+        .findOne({ clinicId })
+        .populate("planId"),
+      Clinic.findById(clinicId).select("contactEmail"),
+    ]);
 
     if (!subscription) {
       return res.status(404).json({
@@ -69,6 +72,8 @@ exports.getCurrentSubscription = async (req, res) => {
     return res.status(200).json({
       success: true,
       data: {
+        clinicId,
+        email: clinic?.contactEmail || null,
         status: subscription.status,
         paymentStatus: subscription.paymentStatus,
         paymentDate: subscription.paymentDate,
