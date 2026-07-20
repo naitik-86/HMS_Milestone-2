@@ -1084,11 +1084,42 @@ export default function DoctorDetails() {
       {/* Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         {doctors.length === 0 ? (
+          <div className="col-span-full flex justify-center items-center py-20">
+            <div className="max-w-lg w-full bg-gradient-to-br from-[#FFF8F3] to-[#FEF3EB] border border-[#F6D2B7] rounded-3xl p-10 text-center shadow-sm">
 
-          <div className="col-span-full text-center py-10 text-gray-500">
-            No doctors found
+              {/* Icon */}
+              <div className="mx-auto w-20 h-20 rounded-full bg-[#E8630A]/10 flex items-center justify-center mb-6">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="w-10 h-10 text-[#E8630A]"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M17 20h5V4H2v16h5m10 0v-4a3 3 0 00-3-3H10a3 3 0 00-3 3v4m10 0H7m8-12a3 3 0 11-6 0 3 3 0 016 0z"
+                  />
+                </svg>
+              </div>
+
+              {/* Heading */}
+              <h3 className="text-2xl font-bold text-[#1A1D2E] mb-3">
+                No Doctors Added Yet
+              </h3>
+
+              {/* Description */}
+              <p className="text-gray-500 text-sm leading-7 max-w-md mx-auto">
+                Your clinic doesn't have any registered doctors yet.
+                Start by adding your first doctor's professional profile,
+                qualifications, and consultation details.
+              </p>
+
+
+            </div>
           </div>
-
         ) : (
           doctors.map(d => (
             <div key={d._id} className="bg-white border border-[#EAE5DC] rounded-2xl p-5 hover:shadow-lg transition-all duration-200 group">

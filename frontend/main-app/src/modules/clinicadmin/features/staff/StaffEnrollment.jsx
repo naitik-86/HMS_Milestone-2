@@ -147,6 +147,11 @@ function EnrollForm({ onClose, onSave, editData, mode, staff, isSubmitting, }) {
         return false;
       }
 
+      if (!/^[A-Za-z\s]+$/.test(form.accountHolderName.trim())) {
+        alert("Account holder name must contain only letters and spaces.");
+        return false;
+      }
+
       if (!/^\d{9,18}$/.test(form.accountNumber.trim())) {
         alert("Account number must be 9 to 18 digits");
         return false;
@@ -318,6 +323,8 @@ function EnrollForm({ onClose, onSave, editData, mode, staff, isSubmitting, }) {
     { label: "Bank Account Details", short: "Bank Details" },
     { label: 'Security & Credentials', short: 'Security' },
   ];
+
+  const lettersOnly = (value) => value.replace(/[^A-Za-z\s]/g, "");
 
   const inputBase = "w-full border border-[#E5E7EB] rounded-xl px-4 py-3 text-sm text-[#1A1D2E] outline-none focus:border-[#E8630A] focus:ring-2 focus:ring-[#E8630A]/20 transition-all bg-white placeholder-gray-300";
   const inputDisabled = "w-full border border-[#E5E7EB] rounded-xl px-4 py-3 text-sm text-[#6B7280] bg-[#F9FAFB] cursor-not-allowed outline-none";
@@ -778,7 +785,10 @@ function EnrollForm({ onClose, onSave, editData, mode, staff, isSubmitting, }) {
                       disabled={isView}
                       value={form.accountHolderName}
                       onChange={(e) =>
-                        update("accountHolderName", e.target.value)
+                        update(
+                          "accountHolderName",
+                          lettersOnly(e.target.value)
+                        )
                       }
                       placeholder="Enter Account Holder Name"
                     />
