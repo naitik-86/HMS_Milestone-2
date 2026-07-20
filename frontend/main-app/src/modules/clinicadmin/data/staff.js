@@ -1,6 +1,6 @@
 // Mock data + constants for the staff feature.
 
-export const roles = ['Clinic Admin', 'Receptionist', 'Pre-consultation Staff', 'Doctor', 'Lab Technician', 'Groomer', 'Kennel Staff', 'Pharmacist'];
+export const roles = ['Receptionist', 'Pre-consultation Staff', 'Doctor', 'Lab Technician', 'Groomer', 'Kennel Staff', 'Pharmacist'];
 export const departments = ['OPD', 'Surgery', 'Lab', 'ICU', 'Grooming', 'Kennel'];
 export const employmentTypes = ['Full-time', 'Part-time', 'Contract', 'Visiting', 'Locum'];
 
