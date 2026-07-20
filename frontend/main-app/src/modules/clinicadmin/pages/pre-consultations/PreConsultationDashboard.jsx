@@ -1,4 +1,4 @@
-git add .import { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { getDashboard, getPendingPets, getCompletedPets } from "../../api/preConsultationApi";
 import PetRegistrationWizard from "./PetRegistrationWizard";
