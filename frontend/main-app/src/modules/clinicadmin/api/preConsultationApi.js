@@ -33,6 +33,11 @@ export const getHistoryPets = async () => {
     return res.data;
 };
 
+export const getDashboard = async () => {
+    const res = await API.get(`${BASE_URL}/dashboard`);
+    return res.data;
+};
+
 // /* GET SINGLE PENDING PET */
 // export const getPendingPetById = async (id) => {
 //     const res = await API.get(`${BASE_URL}/${id}`);
@@ -44,4 +49,5 @@ export const getHistoryPets = async () => {
 //     const res = await API.put(`${BASE_URL}/${id}`, data);
 //     return res.data;
 // };
+
 

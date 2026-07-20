@@ -40,7 +40,7 @@ export default function ExistingCustomerPet() {
         </p>
       </div>
 
-      <div className="overflow-hidden rounded-2xl bg-white shadow-lg border border-slate-200 sm:rounded-4xl">
+      <div className="overflow-hidden rounded-2xl bg-white shadow-2xl shadow-slate-200/80 border border-slate-200/70 sm:rounded-4xl">
         <div className="bg-linear-to-r from-orange-500 to-orange-600 px-5 py-5 sm:px-8 sm:py-6">
           <h2 className="text-xl sm:text-2xl font-bold text-white">
             Existing Customer Records
@@ -53,17 +53,18 @@ export default function ExistingCustomerPet() {
         <div className="p-4 sm:p-8">
           {/* Search */}
           <div className="relative mb-6 sm:mb-8">
-            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-semibold">
-              Search
-            </div>
-
             <input
               type="text"
-              placeholder="Owner, Pet Name or Pet ID..."
+              placeholder="Search by Owner Name, Pet Name or Pet ID..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full rounded-2xl border border-slate-300 bg-white py-3.5 pl-20 pr-4 transition focus:border-orange-500 focus:outline-none focus:ring-4 focus:ring-orange-100 sm:rounded-3xl sm:py-4 sm:pl-24 sm:pr-5"
+              className="w-full border border-slate-200 rounded-xl p-3.5 pl-12 bg-white text-slate-700 font-medium focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition outline-none"
             />
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
           </div>
 
           {/* Mobile View */}

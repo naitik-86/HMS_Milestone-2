@@ -16,7 +16,7 @@ router.get(
 
 router.get(
     "/doctor-list",
-    authorize("CLINIC_ADMIN"),
+    authorize("CLINIC_ADMIN", "RECEPTION", "RECEPTIONIST"),
     staffController.getDoctorStaff
 );
 

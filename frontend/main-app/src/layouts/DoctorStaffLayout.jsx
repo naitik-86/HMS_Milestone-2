@@ -1,16 +1,30 @@
+import { useState } from "react";
 import { DoctorSidebar } from "../modules/clinicadmin/components";
 import { Outlet } from "react-router-dom";
 
 function DoctorLayout() {
-    return (
-        <div className="min-h-screen bg-slate-100 lg:flex">
-            <DoctorSidebar />
+    const [isCollapsed, setIsCollapsed] = useState(false);
 
-            <main className="min-w-0 flex-1 px-4 pb-4 pt-20 sm:px-6 sm:pb-6 lg:h-screen lg:overflow-y-auto lg:p-6">
-                <Outlet />
+    return (
+        <div className="min-h-screen bg-slate-100 flex overflow-hidden">
+            <DoctorSidebar
+                isCollapsed={isCollapsed}
+                toggleCollapse={() => setIsCollapsed((prev) => !prev)}
+            />
+
+            <main
+                className={`flex-1 min-h-screen transition-all duration-300 ease-in-out bg-slate-100 overflow-y-auto ${
+                    isCollapsed ? "lg:pl-20" : "lg:pl-72"
+                }`}
+            >
+                <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
+                    <Outlet />
+                </div>
             </main>
         </div>
     );
 }
 
 export default DoctorLayout;
+
+

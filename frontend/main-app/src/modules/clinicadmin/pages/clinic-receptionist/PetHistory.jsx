@@ -96,7 +96,7 @@ export default function PetHistory() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
         {stats.map((item, index) => (
-          <div key={index} className="bg-white rounded-2xl p-6 shadow-sm">
+          <div key={index} className="bg-white rounded-2xl p-6 shadow-md shadow-slate-100/70 border border-slate-200/50 hover:shadow-xl hover:shadow-slate-200/60 hover:-translate-y-0.5 transition-all duration-300">
             <p className="text-slate-500">{item.label}</p>
 
             <h2 className={`text-4xl font-bold mt-2 ${item.color}`}>
@@ -106,7 +106,7 @@ export default function PetHistory() {
         ))}
       </div>
 
-      <div className="bg-white rounded-3xl shadow-lg overflow-hidden">
+      <div className="bg-white rounded-3xl shadow-2xl shadow-slate-200/80 border border-slate-200/70 overflow-hidden">
         <div className="bg-gradient-to-r from-orange-500 to-orange-600 p-6">
           <h2 className="text-2xl font-bold text-white">
             Visit History Records
@@ -118,22 +118,20 @@ export default function PetHistory() {
         </div>
 
         <div className="p-5 sm:p-8">
-          <input
-            type="text"
-            placeholder="Search pet name or owner..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="
-            w-full
-            px-5
-            py-4
-            border
-            rounded-2xl
-            focus:outline-none
-            focus:ring-4
-            focus:ring-orange-100
-            "
-          />
+          <div className="relative mb-6">
+            <input
+              type="text"
+              placeholder="Search by pet name or owner name..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full border border-slate-200 rounded-xl p-3.5 pl-12 bg-white text-slate-700 font-medium focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition outline-none"
+            />
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+          </div>
 
           <div className="overflow-x-auto mt-8">
             <table className="w-full min-w-[900px]">
@@ -220,7 +218,7 @@ export default function PetHistory() {
 
       {/* RECENT ACTIVITY */}
 
-      <div className="bg-white rounded-3xl shadow-lg p-6 mt-8">
+      <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/70 border border-slate-200/60 p-6 mt-8">
         <h2 className="text-2xl font-bold mb-6">Recent Activity</h2>
 
         <div className="space-y-6">

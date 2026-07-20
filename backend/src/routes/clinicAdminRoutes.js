@@ -93,6 +93,7 @@ router.get("/reports/top-doctors", reportsController.getTopDoctors);
 //reception routes
 console.log("Reception routes loaded");
 
+router.post("/reception/new-registration/send-otp", petRegistrationController.sendRegistrationOtp);
 router.post("/reception/new-registration", upload.single("petPhoto"), petRegistrationController.createRegistration);
 router.get("/reception/new-registration/mobile/:mobileNumber", petRegistrationController.searchCustomer);
 router.get("/reception/new-registration/owner/:ownerId", petRegistrationController.getOwnerDetails);
