@@ -9,7 +9,7 @@ export default function ViewStaffModal({
 
     console.log(staff);
 
-    let reportTo = staff.employmentInfo.reportTo
+    let reportTo = staff.employmentInfo.reportingTo?.personalInfo?.fullName
 
     if (!reportTo) {
         reportTo = "Clinic Admin"

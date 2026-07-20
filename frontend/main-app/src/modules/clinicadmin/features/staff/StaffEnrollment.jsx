@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { showToast } from '../../../../shared/components/toast';
 import ViewStaffModal from "./ViewStaffModal";
 import { roles, departments, employmentTypes, staffData } from '../../data/staff';
+import Loader from '../../../../shared/components/Loader';
 
 import {
   createStaff,
@@ -1056,6 +1057,7 @@ function EnrollForm({ onClose, onSave, editData, mode, staff, isSubmitting, }) {
 // --- Main Page ---
 export default function StaffEnrollment() {
   const [showModal, setShowModal] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [modalMode, setModalMode] = useState('create');
   const [selectedStaff, setSelectedStaff] = useState(null);
   const [staff, setStaff] = useState([]);
@@ -1074,11 +1076,14 @@ export default function StaffEnrollment() {
   );
   useEffect(() => {
     const fetchStaff = async () => {
+      setLoading(true);
       const response = await getStaff();
 
       console.log("API Response:", response);
 
       setStaff(response.data || []);
+
+      setLoading(false);
     };
 
     fetchStaff();
@@ -1118,6 +1123,8 @@ export default function StaffEnrollment() {
 
   const handleOpenEdit = (item) => {
     setSelectedStaff(item);
+
+
     setModalMode('edit');
     setShowModal(true);
   };
@@ -1170,6 +1177,17 @@ export default function StaffEnrollment() {
   };
 
   const filterSelectClass = "w-full border border-[#EAE5DC] rounded-xl px-4 py-3 text-sm text-[#1A1D2E] bg-white outline-none focus:border-[#E8630A] focus:ring-1 focus:ring-[#E8630A] transition-colors";
+
+  if (loading) {
+    <div className="min-h-screen flex items-center justify-center p-6">
+
+      <Loader />
+
+
+
+    </div>
+  }
+
 
   return (
     <div className="px-0 sm:px-4 lg:px-10 xl:px-16 py-4 sm:py-8 lg:py-10 bg-white min-h-screen">

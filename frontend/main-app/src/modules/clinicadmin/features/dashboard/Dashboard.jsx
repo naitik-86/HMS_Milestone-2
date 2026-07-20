@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import Loader from "../../../../shared/components/Loader";
 import {
   BarChart,
   Bar,
@@ -121,10 +122,10 @@ const normalizeDashboard = (payload = {}) => {
     recentEnrollments: Array.isArray(data?.recentEnrollments) ? data.recentEnrollments : [],
     roleDistribution: Array.isArray(data?.roleDistribution)
       ? data.roleDistribution.map((item) => ({
-          ...item,
-          count: Number(item.count || 0),
-          total: Number(item.total || 0),
-        }))
+        ...item,
+        count: Number(item.count || 0),
+        total: Number(item.total || 0),
+      }))
       : [],
     todayAppointments: Array.isArray(data?.todayAppointments) ? data.todayAppointments : [],
   };
@@ -151,8 +152,8 @@ export default function Dashboard() {
 
       setError(
         err?.response?.data?.message ||
-          err?.message ||
-          "Failed to load clinic dashboard"
+        err?.message ||
+        "Failed to load clinic dashboard"
       );
     } finally {
       if (mountedRef.current) {
@@ -172,9 +173,19 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="p-0 sm:p-2 lg:p-6">
-        <div className="rounded-2xl border border-[#EAE5DC] bg-white p-6 shadow-sm">
-          Loading clinic dashboard...
+      <div className="min-h-screen flex items-center justify-center p-6">
+        <div className="w-full max-w-md rounded-2xl border border-[#EAE5DC] bg-white shadow-sm px-8 py-10 flex flex-col items-center">
+          <Loader />
+
+
+          <h3 className="mt-6 text-lg font-semibold text-[#1A1D2E]">
+            Loading Clinic Dashboard
+          </h3>
+
+          <p className="mt-2 text-sm text-gray-500 text-center">
+            Please wait while we prepare your dashboard...
+          </p>
+
         </div>
       </div>
     );

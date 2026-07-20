@@ -180,6 +180,9 @@ const createDoctor = async (req, res) => {
             prescriptionLanguages,
         });
 
+
+
+
         return res.status(201).json({
             success: true,
             message: "Doctor created successfully",

@@ -1,5 +1,6 @@
 import React from 'react';
 import { showToast } from '../../../../shared/components/toast';
+import Loader from '../../../../shared/components/Loader';
 // import { useEffect } from 'react';
 import { createDoctor, getDoctors, updateDoctor, deleteDoctor } from '../../api/doctorApi';
 import { useEffect, useState } from "react";
@@ -50,14 +51,22 @@ function UploadBox({ id, accept, label }) {
 function DoctorForm({ onClose, onSave, existingData, isEdit, isSubmitting }) {
   const [doctorStaff, setDoctorStaff] = useState([]);
   const [activeStep, setActiveStep] = useState(0);
-  const [degrees, setDegrees] =
-    useState(
-      existingData?.degrees ||
-      [{
-        degree: '',
-        certificate: null
-      }]
-    );
+
+  console.log(existingData);
+
+  const [degrees, setDegrees] = useState(
+    existingData?.degrees?.map((d) => ({
+      degree: d.degreeName,
+      certificate: null,
+      existingCertificate: d.degreeCertificate,
+    })) || [
+      {
+        degree: "",
+        certificate: null,
+        existingCertificate: null,
+      },
+    ]
+  );
   const [doctorLetterhead,
     setDoctorLetterhead] =
     useState(null);
@@ -386,23 +395,37 @@ function DoctorForm({ onClose, onSave, existingData, isEdit, isSubmitting }) {
                               accept="application/pdf,.pdf"
                               onChange={(e) => {
                                 const file = e.target.files[0];
+
                                 const valid = requirePdf(file, (pdf) =>
                                   setDegrees(
                                     degrees.map((deg, j) =>
                                       j === i
                                         ? {
                                           ...deg,
-                                          certificate:
-                                            pdf
+                                          certificate: pdf,
                                         }
                                         : deg
                                     )
                                   )
                                 );
+
                                 if (valid === false) e.target.value = "";
                               }}
                               className={inputCls}
                             />
+
+                            {(d.degreeCertificate || d.existingCertificate) && (
+                              <div className="mt-2 text-sm">
+                                <a
+                                  href={d.degreeCertificate || d.existingCertificate}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-[#E8630A] hover:underline"
+                                >
+                                  📄 View uploaded certificate
+                                </a>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -462,24 +485,45 @@ function DoctorForm({ onClose, onSave, existingData, isEdit, isSubmitting }) {
                     {errors.reminderDays && <p className="text-red-500 text-xs mt-1.5">{errors.reminderDays}</p>}
                   </div>
                   <div className="col-span-2">
-                    <div>
-                      <label className={labelCls}>
-                        Registration Certificate
-                      </label>
+                    <label className={labelCls}>
+                      Registration Certificate
+                    </label>
 
-                      <input
-                        type="file"
-                        accept="application/pdf,.pdf"
-                        className={inputCls}
-                        onChange={(e) => {
-                          const valid = requirePdf(
-                            e.target.files[0],
-                            setRegistrationCertificate
-                          );
-                          if (valid === false) e.target.value = "";
-                        }}
-                      />
-                    </div>                </div>
+                    <input
+                      type="file"
+                      accept="application/pdf,.pdf"
+                      className={inputCls}
+                      onChange={(e) => {
+                        const valid = requirePdf(
+                          e.target.files[0],
+                          setRegistrationCertificate
+                        );
+                        if (valid === false) e.target.value = "";
+                      }}
+                    />
+
+                    {/* Show existing file only in edit mode */}
+                    {!registrationCertificate &&
+                      existingData?.registrationCertificate && (
+                        <div className="mt-2">
+                          <a
+                            href={existingData.registrationCertificate}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-[#E8630A] hover:underline"
+                          >
+                            📄 View current registration certificate
+                          </a>
+                        </div>
+                      )}
+
+                    {/* Show newly selected file */}
+                    {registrationCertificate instanceof File && (
+                      <p className="mt-2 text-sm text-gray-600">
+                        Selected: {registrationCertificate.name}
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
@@ -529,13 +573,44 @@ function DoctorForm({ onClose, onSave, existingData, isEdit, isSubmitting }) {
                         accept="image/*"
                         className={inputCls}
                         onChange={(e) => {
+                          const file = e.target.files[0];
+
                           const valid = requireImage(
-                            e.target.files[0],
+                            file,
                             setDigitalSignature
                           );
+
                           if (valid === false) e.target.value = "";
                         }}
                       />
+
+                      {/* Existing uploaded signature */}
+                      {!digitalSignature && existingData?.digitalSignature && (
+                        <div className="mt-2">
+                          <a
+                            href={existingData.digitalSignature}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm font-medium text-[#E8630A] hover:underline"
+                          >
+                            🖊 View current signature
+                          </a>
+                        </div>
+                      )}
+
+                      {/* Newly selected image */}
+                      {digitalSignature instanceof File && (
+                        <div className="mt-2 flex items-center gap-3">
+                          <img
+                            src={URL.createObjectURL(digitalSignature)}
+                            alt="Signature Preview"
+                            className="h-12 rounded border border-[#EAE5DC]"
+                          />
+                          <span className="text-sm text-green-600">
+                            ✓ {digitalSignature.name}
+                          </span>
+                        </div>
+                      )}
                     </div>
                     <div>
                       <label className={labelCls}>
@@ -547,13 +622,34 @@ function DoctorForm({ onClose, onSave, existingData, isEdit, isSubmitting }) {
                         accept="application/pdf,.pdf"
                         className={inputCls}
                         onChange={(e) => {
-                          const valid = requirePdf(
-                            e.target.files[0],
-                            setDoctorLetterhead
-                          );
+                          const file = e.target.files[0];
+
+                          const valid = requirePdf(file, setDoctorLetterhead);
+
                           if (valid === false) e.target.value = "";
                         }}
                       />
+
+                      {/* Existing uploaded file */}
+                      {!doctorLetterhead && existingData?.doctorLetterhead && (
+                        <div className="mt-2">
+                          <a
+                            href={existingData.doctorLetterhead}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm font-medium text-[#E8630A] hover:underline"
+                          >
+                            📄 View current letterhead
+                          </a>
+                        </div>
+                      )}
+
+                      {/* Newly selected file */}
+                      {doctorLetterhead instanceof File && (
+                        <p className="mt-2 text-sm text-green-600">
+                          ✓ {doctorLetterhead.name}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -784,6 +880,8 @@ export default function DoctorDetails() {
 
   useEffect(() => {
     fetchDoctors();
+
+
   }, []);
 
   const fetchDoctors = async () => {
@@ -859,7 +957,7 @@ export default function DoctorDetails() {
       setLoading(false);
     }
   };
-
+  console.log(doctors);
 
   const closeModal = () => setModal(null);
 
@@ -934,11 +1032,9 @@ export default function DoctorDetails() {
   };
 
   if (loading) {
-    return (
-      <div className="flex justify-center items-center h-100">
-        Loading doctors...
-      </div>
-    );
+    <div className="min-h-screen flex items-center justify-center p-6">
+      <Loader />
+    </div>
   }
 
   return (

@@ -31,7 +31,7 @@ const deleteStaff = async () => {
         // }
 
         const staff = await Staff.findOneAndDelete({
-            'personalInfo.email': "a95105147@gmail.com",
+            'personalInfo.email': "kumarkaraan.dev@gmail.com",
         });
 
         // console.log(
