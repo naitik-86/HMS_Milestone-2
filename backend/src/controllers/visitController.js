@@ -21,25 +21,25 @@ exports.createVisit = async (req, res) => {
         // ✅ Stage logic
         let nextStage = "PRE_CONSULTATION";
 
-        if (req.body.visitType === "GROOMING") nextStage = "GROOMER";
-        if (req.body.visitType === "KENNEL") nextStage = "KENNEL";
-        if (req.body.visitType === "EMERGENCY") nextStage = "DOCTOR";
+       
 
         // ✅ Create visit
-        const visit = await Visit.create({
-            
-            ...req.body,
-            clinicId: req.user.clinicId,
-            receptionistId: req.user._id,
+     const visit = await Visit.create({
+    ...req.body,
+    clinicId: req.user.clinicId,
+    receptionistId: req.user._id,
 
-            tokenNumber,
-            currentStage: nextStage,
-            status: "WAITING",
+    tokenNumber,
+    currentStage: nextStage,   // ✅ PRE_CONSULTATION
+    status: "WAITING",
 
-            workflow: {
-                receptionCompleted: true
-            }
-        });
+    workflow: {
+        receptionCompleted: true,
+        preConsultationCompleted: false,
+        doctorCompleted: false,
+        labCompleted: false
+    }
+});
 console.log("===== VISIT CREATED =====");
 console.log(visit);
         res.status(201).json({
