@@ -2,17 +2,9 @@ const mongoose = require("mongoose");
 
 const preConsultationSchema = new mongoose.Schema(
   {
-
     // ======================================================
     // APPOINTMENT INFORMATION
     // ======================================================
-
-    // appointmentId: {
-    //   type: String,
-    //   required: true,
-    //   trim: true,
-    // },
-
     visitId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Visit",
@@ -22,83 +14,70 @@ const preConsultationSchema = new mongoose.Schema(
     petId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Pet",
-      required: true,
     },
-
 
     clinicId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Clinic",
-      required: true
+      required: true,
     },
+
     // ======================================================
     // PET INFORMATION
     // ======================================================
-
     ownerId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "PetRegistration",
-
     },
+
     uniquePetId: {
       type: String,
-
       trim: true,
     },
 
     tokenNumber: {
       type: String,
-
       trim: true,
     },
 
     // ======================================================
     // STEP 1 : VITALS & INITIAL ASSESSMENT
     // ======================================================
-
     bodyTemperature: {
       type: Number,
-      required: true,
     },
 
     heartRate: {
       type: Number,
-      required: true,
     },
 
     respiratoryRate: {
       type: Number,
-      required: true,
     },
 
     bloodPressure: {
       type: String,
-      enum: ["Low", "Normal", "High"],
-      required: true,
+      trim: true,
     },
 
     spo2: {
       type: Number,
       min: 0,
       max: 100,
-      required: true,
     },
 
     bodyWeight: {
       type: Number,
-      required: true,
     },
 
     bcs: {
       type: Number,
       min: 1,
       max: 5,
-
     },
 
     recordedBy: {
       type: String,
-
       trim: true,
     },
 
@@ -110,30 +89,24 @@ const preConsultationSchema = new mongoose.Schema(
     // ======================================================
     // STEP 2 : BRIEF HISTORY OF PROBLEM
     // ======================================================
-
     durationOfIllness: {
       value: {
         type: Number,
-
       },
-
       unit: {
         type: String,
         enum: ["Days", "Weeks", "Months", "Years"],
-
       },
     },
 
     onset: {
       type: String,
       enum: ["Sudden", "Gradual"],
-
     },
 
     progression: {
       type: String,
       enum: ["Improving", "Worsening", "Stable"],
-      required: true,
     },
 
     previousEpisodes: {
@@ -141,7 +114,6 @@ const preConsultationSchema = new mongoose.Schema(
         type: Boolean,
         default: false,
       },
-
       description: {
         type: String,
         trim: true,
@@ -162,10 +134,8 @@ const preConsultationSchema = new mongoose.Schema(
     // ======================================================
     // STEP 3 : PROBLEM DESCRIPTION
     // ======================================================
-
     primaryComplaint: {
       type: String,
-
       trim: true,
     },
 
@@ -189,13 +159,11 @@ const preConsultationSchema = new mongoose.Schema(
     severity: {
       type: String,
       enum: ["Mild", "Moderate", "Severe"],
-
     },
 
     // ======================================================
     // STEP 4 : OBSERVATION
     // ======================================================
-
     generalDemeanour: {
       type: String,
       enum: [
@@ -204,7 +172,6 @@ const preConsultationSchema = new mongoose.Schema(
         "Anxious",
         "Unconscious",
       ],
-
     },
 
     gaitAndPosture: {
@@ -252,7 +219,6 @@ const preConsultationSchema = new mongoose.Schema(
     // ======================================================
     // WORKFLOW STATUS
     // ======================================================
-
     status: {
       type: String,
       enum: ["PENDING", "COMPLETED"],

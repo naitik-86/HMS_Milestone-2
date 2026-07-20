@@ -1,3 +1,17 @@
+import { Check } from "lucide-react";
+
+const symptomOptions = [
+  "Vomiting",
+  "Diarrhea",
+  "Lethargy",
+  "Coughing",
+  "Sneezing",
+  "Discharge",
+  "Skin Lesion",
+  "Lameness",
+  "Other",
+];
+
 export default function ProblemDescriptionForm({ formData, setFormData }) {
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -8,6 +22,21 @@ export default function ProblemDescriptionForm({ formData, setFormData }) {
     }));
   };
 
+  const toggleSymptom = (symptom) => {
+    setFormData((prev) => {
+      const current = Array.isArray(prev.associatedSymptoms)
+        ? prev.associatedSymptoms
+        : [];
+      const exists = current.includes(symptom);
+      return {
+        ...prev,
+        associatedSymptoms: exists
+          ? current.filter((s) => s !== symptom)
+          : [...current, symptom],
+      };
+    });
+  };
+
   return (
     <div>
       <h2 className="text-xl md:text-3xl font-bold text-slate-800 mb-6 md:mb-8">
@@ -15,79 +44,64 @@ export default function ProblemDescriptionForm({ formData, setFormData }) {
       </h2>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
-
         {/* Primary Complaint */}
         <div className="lg:col-span-2">
-          <label className="block mb-2 font-medium">
-            Primary Complaint
+          <label className="block mb-2 font-medium text-slate-700">
+            Primary Complaint *
           </label>
 
           <textarea
-            rows={5}
+            rows={4}
             name="primaryComplaint"
             value={formData.primaryComplaint}
             onChange={handleChange}
             placeholder="Enter primary complaint..."
-            className="
-              w-full
-              border border-slate-200
-              rounded-2xl
-              px-4 py-3
-              text-sm md:text-base
-              outline-none
-              resize-none
-              focus:border-orange-500
-              focus:ring-4
-              focus:ring-orange-100
-            "
+            className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm md:text-base outline-none resize-none focus:border-orange-500 focus:ring-4 focus:ring-orange-100"
           />
         </div>
 
-        {/* Associated Symptoms */}
-        <div>
-          <label className="block mb-2 font-medium">
-            Associated Symptoms
+        {/* Associated Symptoms Multi-Select */}
+        <div className="lg:col-span-2">
+          <label className="block mb-2 font-medium text-slate-700 flex items-center justify-between">
+            <span>Associated Symptoms (Multi Select)</span>
+            <span className="text-xs text-slate-400 font-normal">
+              Select all symptoms that apply
+            </span>
           </label>
 
-          <select
-            name="associatedSymptoms"
-            value={formData.associatedSymptoms[0] || ""}
-            onChange={(e) =>
-              setFormData((prev) => ({
-                ...prev,
-                associatedSymptoms: e.target.value
-                  ? [e.target.value]
-                  : [],
-              }))
-            }
-            className="
-              w-full
-              border border-slate-200
-              rounded-2xl
-              px-4 py-3
-              text-sm md:text-base
-              outline-none
-              focus:border-orange-500
-              focus:ring-4
-              focus:ring-orange-100
-            "
-          >
-            <option value="">Select Symptom</option>
-            <option value="Vomiting">Vomiting</option>
-            <option value="Diarrhea">Diarrhea</option>
-            <option value="Lethargy">Lethargy</option>
-            <option value="Coughing">Coughing</option>
-            <option value="Sneezing">Sneezing</option>
-            <option value="Discharge">Discharge</option>
-            <option value="Skin Lesion">Skin Lesion</option>
-            <option value="Lameness">Lameness</option>
-            <option value="Other">Other</option>
-          </select>
+          <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+            <div className="flex flex-wrap gap-2.5">
+              {symptomOptions.map((symptom) => {
+                const isSelected = (formData.associatedSymptoms || []).includes(symptom);
+                return (
+                  <button
+                    key={symptom}
+                    type="button"
+                    onClick={() => toggleSymptom(symptom)}
+                    className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs md:text-sm font-semibold transition-all cursor-pointer border select-none ${
+                      isSelected
+                        ? "bg-orange-500 border-orange-500 text-white shadow-sm shadow-orange-200 scale-105"
+                        : "bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-100"
+                    }`}
+                  >
+                    {isSelected && <Check className="w-4 h-4 stroke-[3]" />}
+                    <span>{symptom}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {(formData.associatedSymptoms || []).length > 0 && (
+              <p className="mt-3 text-xs text-orange-600 font-medium">
+                Selected: {(formData.associatedSymptoms || []).join(", ")}
+              </p>
+            )}
+          </div>
         </div>
 
         {/* Severity */}
-        <div>
-          <label className="block mb-2 font-medium">
+        <div className="lg:col-span-2">
+          <label className="block mb-2 font-medium text-slate-700">
             Severity
           </label>
 
@@ -95,17 +109,7 @@ export default function ProblemDescriptionForm({ formData, setFormData }) {
             name="severity"
             value={formData.severity}
             onChange={handleChange}
-            className="
-              w-full
-              border border-slate-200
-              rounded-2xl
-              px-4 py-3
-              text-sm md:text-base
-              outline-none
-              focus:border-orange-500
-              focus:ring-4
-              focus:ring-orange-100
-            "
+            className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm md:text-base outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-100"
           >
             <option value="">Select Severity</option>
             <option value="Mild">Mild</option>
@@ -113,7 +117,6 @@ export default function ProblemDescriptionForm({ formData, setFormData }) {
             <option value="Severe">Severe</option>
           </select>
         </div>
-
       </div>
     </div>
   );

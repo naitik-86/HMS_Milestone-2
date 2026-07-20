@@ -1,4 +1,27 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { City, State } from "country-state-city";
+import { useNavigate } from "react-router-dom";
+import {
+  Search,
+  User,
+  PawPrint,
+  FileText,
+  Stethoscope,
+  Plus,
+  CheckCircle2,
+  Save,
+  Loader2,
+  MapPin,
+  AlertCircle,
+  Calendar,
+  Clock,
+  Sparkles,
+  ShieldCheck,
+  X,
+  ArrowRight,
+  Check,
+} from "lucide-react";
+import { showToast } from "../../../../shared/components/toast";
 import {
   addPet,
   createVisit,
@@ -6,10 +29,12 @@ import {
   updateOwner,
   updatePet,
 } from "../../api/receptionApi";
+import { getDoctors } from "../../api/doctorApi";
+import { getDoctorStaff } from "../../api/staffApi";
 
 const today = new Date().toISOString().split("T")[0];
 
-const emptyPetForm = {
+const initialPetForm = {
   petName: "",
   species: "Dog",
   breed: "",
@@ -19,17 +44,46 @@ const emptyPetForm = {
   color: "",
   rfid: "",
   identificationArea: "",
+  petPhoto: null,
   sterilized: "No",
+  // History fields
+  vaccineName: "",
+  vaccinationDate: "",
+  batchNumber: "",
+  clinicName: "",
+  dewormingProduct: "",
+  dewormingDate: "",
+  dose: "",
+  surgicalProcedure: "",
+  surgeryDate: "",
+  hospital: "",
+  condition: "",
+  treatment: "",
+  treatmentDate: "",
+  allergies: "",
+  medications: "",
+  // Visit fields for pet modal
+  primaryReason: "",
+  complaint: "",
+  appointmentDate: "",
+  appointmentTime: "",
+  assignedDoctor: "",
 };
 
-const emptyVisitForm = {
+const initialVisitForm = {
   petId: "",
   ownerId: "",
+  primaryReason: "",
+  complaint: "",
+  appointmentDate: "",
+  appointmentTime: "",
+  assignedDoctor: "",
   visitType: "CONSULTATION",
   priority: "NORMAL",
-  chiefComplaint: "",
   notes: "",
 };
+
+const reasonOptions = ["Treatment", "Vaccination", "Checkup", "Certificate"];
 
 const calculateAge = (dob) => {
   if (!dob) return "";
@@ -50,11 +104,59 @@ const calculateAge = (dob) => {
 };
 
 const formatDate = (date) => (date ? new Date(date).toISOString().split("T")[0] : "");
+
 const normalizeSpecies = (species) =>
   species ? species.charAt(0).toUpperCase() + species.slice(1).toLowerCase() : "Dog";
 
+const normalizeDoctorList = (response) => {
+  const doctors =
+    response?.doctors || response?.data?.doctors || response?.data || response || [];
+  return Array.isArray(doctors) ? doctors : [];
+};
+
+const getDoctorName = (doctor) =>
+  doctor.name ||
+  doctor.fullName ||
+  doctor.personalInfo?.fullName ||
+  doctor.staff?.personalInfo?.fullName ||
+  doctor.email ||
+  "";
+
+const getDoctorOptionValue = (doctor) =>
+  doctor._id || doctor.id || doctor.doctorId || getDoctorName(doctor);
+
+const cleanStr = (s) =>
+  String(s || "")
+    .toLowerCase()
+    .replace(/&/g, "and")
+    .replace(/[^a-z0-9]/g, "");
+
+const matchStateFromList = (postalStateName, statesList) => {
+  if (!postalStateName) return null;
+  const target = cleanStr(postalStateName);
+
+  let found = statesList.find((s) => cleanStr(s.name) === target);
+  if (found) return found;
+
+  found = statesList.find(
+    (s) => cleanStr(s.name).includes(target) || target.includes(cleanStr(s.name))
+  );
+  if (found) return found;
+
+  const aliases = {
+    orissa: "odisha",
+    pondicherry: "puducherry",
+    uttaranchal: "uttarakhand",
+    "nct of delhi": "delhi",
+    "delhi nct": "delhi",
+  };
+
+  const aliasTarget = aliases[target] || target;
+  return statesList.find((s) => cleanStr(s.name) === aliasTarget);
+};
+
 function ErrorText({ errors, name }) {
-  return errors[name] ? <p className="mt-1 text-sm text-red-500">{errors[name]}</p> : null;
+  return errors[name] ? <p className="mt-1 text-xs text-red-500 font-medium">{errors[name]}</p> : null;
 }
 
 export default function CreateVisitForm() {
@@ -62,17 +164,149 @@ export default function CreateVisitForm() {
   const [owner, setOwner] = useState(null);
   const [pets, setPets] = useState([]);
   const [ownerForm, setOwnerForm] = useState({});
-  const [petForm, setPetForm] = useState(emptyPetForm);
-  const [visitForm, setVisitForm] = useState(emptyVisitForm);
-  const [mode, setMode] = useState("edit");
+  const [petForm, setPetForm] = useState(initialPetForm);
+  const [visitForm, setVisitForm] = useState(initialVisitForm);
+
+  // Modal State for Adding New Pet
+  const [isAddPetModalOpen, setIsAddPetModalOpen] = useState(false);
+  const [modalTab, setModalTab] = useState("registration"); // "registration" | "history" | "visit"
+
   const [searching, setSearching] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const [savingOwner, setSavingOwner] = useState(false);
+  const [savingPet, setSavingPet] = useState(false);
+  const [savingVisit, setSavingVisit] = useState(false);
   const [errors, setErrors] = useState({});
+  const [doctors, setDoctors] = useState([]);
+
+  // Pincode validation states
+  const [pincodeLoading, setPincodeLoading] = useState(false);
+  const [pincodeValid, setPincodeValid] = useState(null);
+  const [pincodeDetails, setPincodeDetails] = useState("");
+
+  const navigate = useNavigate();
+
+  const states = useMemo(() => State.getStatesOfCountry("IN"), []);
+
+  const cities = useMemo(() => {
+    if (!ownerForm.state) return [];
+    const list = City.getCitiesOfState("IN", ownerForm.state) || [];
+    if (ownerForm.city && !list.some((c) => c.name === ownerForm.city)) {
+      return [{ name: ownerForm.city, latitude: "0", longitude: "0" }, ...list];
+    }
+    return list;
+  }, [ownerForm.state, ownerForm.city]);
+
+  useEffect(() => {
+    const fetchDoctors = async () => {
+      try {
+        const [doctorDetailsResponse, doctorStaffResponse] = await Promise.allSettled([
+          getDoctors(),
+          getDoctorStaff(),
+        ]);
+
+        const doctorDetails =
+          doctorDetailsResponse.status === "fulfilled"
+            ? normalizeDoctorList(doctorDetailsResponse.value)
+            : [];
+        const doctorStaff =
+          doctorStaffResponse.status === "fulfilled"
+            ? normalizeDoctorList(doctorStaffResponse.value)
+            : [];
+        const doctorMap = new Map();
+
+        [...doctorDetails, ...doctorStaff].forEach((doctor) => {
+          const optionValue = getDoctorOptionValue(doctor);
+          if (optionValue) doctorMap.set(optionValue, doctor);
+        });
+
+        setDoctors(Array.from(doctorMap.values()));
+      } catch (error) {
+        console.error("Doctors fetch failed:", error);
+      }
+    };
+
+    fetchDoctors();
+  }, []);
 
   const selectedPet = pets.find((pet) => pet._id === visitForm.petId);
 
   const setError = (name, message) => {
     setErrors((prev) => ({ ...prev, [name]: message }));
+  };
+
+  const validatePincode = async (pin) => {
+    if (!pin || pin.length !== 6 || !/^\d{6}$/.test(pin)) {
+      setPincodeValid(null);
+      setPincodeLoading(false);
+      setPincodeDetails("");
+      return;
+    }
+
+    setPincodeLoading(true);
+    setPincodeValid(null);
+    setPincodeDetails("Verifying PIN Code...");
+
+    try {
+      const res = await fetch(`https://api.postalpincode.in/pincode/${pin}`);
+      const data = await res.json();
+
+      if (Array.isArray(data) && data[0]?.Status === "Success" && data[0]?.PostOffice?.length > 0) {
+        const poList = data[0].PostOffice;
+        const po = poList[0];
+
+        const districtName = po.District || po.Block || po.Circle || po.Division || "";
+        const stateName = po.State || "";
+        const postOfficeName = po.Name || "";
+
+        const matchedState = matchStateFromList(stateName, states);
+
+        if (matchedState) {
+          const stateIso = matchedState.isoCode;
+          const stateCities = City.getCitiesOfState("IN", stateIso) || [];
+
+          let selectedCityName = "";
+          const candidates = [po.District, po.Block, po.Circle, po.Division, po.Name].filter(Boolean);
+
+          for (const cand of candidates) {
+            const candClean = cleanStr(cand);
+            const foundCity = stateCities.find((c) => cleanStr(c.name) === candClean);
+            if (foundCity) {
+              selectedCityName = foundCity.name;
+              break;
+            }
+          }
+
+          if (!selectedCityName) {
+            selectedCityName = districtName || (stateCities[0] ? stateCities[0].name : "");
+          }
+
+          setOwnerForm((prev) => ({
+            ...prev,
+            pincode: pin,
+            state: stateIso,
+            city: selectedCityName,
+            district: districtName || selectedCityName,
+          }));
+
+          setErrors((prev) => ({ ...prev, pincode: "", state: "", city: "", district: "" }));
+          setPincodeValid(true);
+          setPincodeLoading(false);
+          setPincodeDetails(
+            `${postOfficeName ? postOfficeName + ", " : ""}${districtName ? districtName + ", " : ""}${matchedState.name}`
+          );
+          return;
+        }
+      }
+
+      setPincodeValid(false);
+      setPincodeLoading(false);
+      setPincodeDetails("Invalid PIN Code.");
+    } catch (err) {
+      console.error("Pincode lookup error:", err);
+      setPincodeLoading(false);
+      setPincodeValid(null);
+      setPincodeDetails("");
+    }
   };
 
   const fillOwner = (customer) => {
@@ -96,51 +330,89 @@ export default function CreateVisitForm() {
       ownerId: customer._id,
       petId: firstPet?._id || "",
     }));
+  };
 
-    if (firstPet) {
-      setPetForm({
-        petName: firstPet.petName || firstPet.name || "",
-        species: normalizeSpecies(firstPet.species),
-        breed: firstPet.breed || "",
-        gender: firstPet.gender || "Male",
-        dob: formatDate(firstPet.dob),
-        age: firstPet.age || "",
-        color: firstPet.color || "",
-        rfid: firstPet.rfid || firstPet.rfidTag || "",
-        identificationArea: firstPet.identificationArea || firstPet.identificationMarks || "",
-        sterilized: firstPet.sterilized || firstPet.isSterilised ? "Yes" : "No",
-      });
+  const handleMobileInput = (event) => {
+    const digits = event.target.value.replace(/\D/g, "").slice(0, 10);
+    setMobileNumber(digits);
+
+    if (!digits) {
+      setError("mobileNumber", "");
+    } else if (!/^[6-9]/.test(digits)) {
+      setError("mobileNumber", "Mobile number must start with 6, 7, 8, or 9.");
+    } else if (digits.length < 10) {
+      setError("mobileNumber", `Mobile number must be 10 digits (${digits.length}/10).`);
     } else {
-      setMode("add");
-      setPetForm(emptyPetForm);
+      setError("mobileNumber", "");
     }
   };
 
   const handleSearch = async () => {
-    if (!/^[6-9]\d{9}$/.test(mobileNumber.trim())) {
-      setError("mobileNumber", "Enter a valid registered mobile number.");
+    const cleanMobile = mobileNumber.trim();
+    if (!cleanMobile) {
+      setError("mobileNumber", "Please enter a mobile number to search.");
+      showToast({
+        type: "error",
+        title: "Mobile Required",
+        description: "Enter a mobile number to search registered customer.",
+      });
+      return;
+    }
+
+    if (cleanMobile.length !== 10) {
+      setError("mobileNumber", "Mobile number must be exactly 10 digits.");
+      showToast({
+        type: "error",
+        title: "Invalid Length",
+        description: "Mobile number must be exactly 10 digits.",
+      });
+      return;
+    }
+
+    if (!/^[6-9]\d{9}$/.test(cleanMobile)) {
+      setError("mobileNumber", "Invalid Indian mobile number. Must start with 6, 7, 8, or 9.");
+      showToast({
+        type: "error",
+        title: "Invalid Mobile",
+        description: "Must be a valid 10-digit Indian mobile number starting with 6-9.",
+      });
       return;
     }
 
     try {
       setSearching(true);
       setErrors({});
-      const response = await searchCustomer(mobileNumber.trim());
+      const response = await searchCustomer(cleanMobile);
       const customer = response?.data;
 
       if (!customer) {
         setOwner(null);
         setPets([]);
-        setPetForm(emptyPetForm);
-        setVisitForm(emptyVisitForm);
-        setError("mobileNumber", "No registered owner found with this number.");
+        setPetForm(initialPetForm);
+        setVisitForm(initialVisitForm);
+        setError("mobileNumber", "No registered owner found with this mobile number.");
+        showToast({
+          type: "error",
+          title: "Not Found",
+          description: "No customer found with this mobile number.",
+        });
         return;
       }
 
       fillOwner(customer);
+      showToast({
+        type: "success",
+        title: "Customer Found",
+        description: `Loaded customer: ${customer.ownerName}`,
+      });
     } catch (error) {
       console.error(error);
-      setError("mobileNumber", "Error searching mobile number.");
+      setError("mobileNumber", "Error searching customer mobile number.");
+      showToast({
+        type: "error",
+        title: "Search Error",
+        description: "Failed to search customer records.",
+      });
     } finally {
       setSearching(false);
     }
@@ -148,17 +420,45 @@ export default function CreateVisitForm() {
 
   const handleOwnerChange = (event) => {
     const { name, value } = event.target;
+
+    if (name === "pincode") {
+      const digits = value.replace(/\D/g, "").slice(0, 6);
+      setOwnerForm((prev) => ({ ...prev, pincode: digits }));
+      setError("pincode", "");
+
+      if (digits.length === 6) {
+        validatePincode(digits);
+      } else {
+        setPincodeValid(null);
+        setPincodeLoading(false);
+        setPincodeDetails("");
+      }
+      return;
+    }
+
+    if (name === "state") {
+      setOwnerForm((prev) => ({ ...prev, state: value, city: "", district: "" }));
+      setError("state", "");
+      return;
+    }
+
+    if (name === "city") {
+      setOwnerForm((prev) => ({ ...prev, city: value, district: value }));
+      setError("city", "");
+      return;
+    }
+
     setOwnerForm((prev) => ({ ...prev, [name]: value }));
     setError(name, "");
   };
 
   const handlePetChange = (event) => {
-    const { name, value } = event.target;
+    const { name, value, files } = event.target;
 
     if (name === "dob") {
       if (value && value > today) {
         setPetForm((prev) => ({ ...prev, dob: value, age: "" }));
-        setError("dob", "DOB cannot be in future.");
+        setError("dob", "DOB cannot be in the future.");
         return;
       }
 
@@ -167,7 +467,7 @@ export default function CreateVisitForm() {
       return;
     }
 
-    setPetForm((prev) => ({ ...prev, [name]: value }));
+    setPetForm((prev) => ({ ...prev, [name]: files ? files[0] : value }));
     setError(name, "");
   };
 
@@ -177,345 +477,728 @@ export default function CreateVisitForm() {
     setError(name, "");
   };
 
-  const handlePetSelect = (event) => {
-    const pet = pets.find((item) => item._id === event.target.value);
-
-    setMode("edit");
-    setVisitForm((prev) => ({
-      ...prev,
-      petId: event.target.value,
-      ownerId: owner?._id || "",
-    }));
-
-    if (pet) {
-      setPetForm({
-        petName: pet.petName || pet.name || "",
-        species: normalizeSpecies(pet.species),
-        breed: pet.breed || "",
-        gender: pet.gender || "Male",
-        dob: formatDate(pet.dob),
-        age: pet.age || "",
-        color: pet.color || "",
-        rfid: pet.rfid || pet.rfidTag || "",
-        identificationArea: pet.identificationArea || pet.identificationMarks || "",
-        sterilized: pet.sterilized || pet.isSterilised ? "Yes" : "No",
-      });
-    }
-  };
-
-  const validate = (includeVisit = true) => {
-    const nextErrors = {};
-    const required = (name, value, message) => {
-      if (!String(value || "").trim()) nextErrors[name] = message;
-    };
-
-    required("ownerName", ownerForm.ownerName, "Owner name is required.");
-    required("address", ownerForm.address, "Address is required.");
-    required("petName", petForm.petName, "Pet name is required.");
-    required("breed", petForm.breed, "Breed is required.");
-    if (includeVisit) {
-      required("chiefComplaint", visitForm.chiefComplaint, "Chief complaint is required.");
-    }
-
-    if (!owner?._id) nextErrors.mobileNumber = "Search registered owner first.";
-    if (mode === "edit" && !visitForm.petId) nextErrors.petId = "Select pet.";
-    if (petForm.dob && petForm.dob > today) nextErrors.dob = "DOB cannot be in future.";
-
-    setErrors(nextErrors);
-    return Object.keys(nextErrors).length === 0;
-  };
-
-  const refreshOwner = (updatedOwner) => {
-    fillOwner(updatedOwner);
-  };
-
   const handleSaveOwner = async () => {
     if (!owner?._id) return;
 
-    const response = await updateOwner(owner._id, ownerForm);
-    refreshOwner(response.data);
-    alert("Owner updated successfully");
+    try {
+      setSavingOwner(true);
+      const response = await updateOwner(owner._id, ownerForm);
+      fillOwner(response.data);
+      showToast({
+        type: "success",
+        title: "Owner Updated",
+        description: "Owner details updated successfully.",
+      });
+    } catch (err) {
+      console.error(err);
+      showToast({
+        type: "error",
+        title: "Update Failed",
+        description: "Failed to update owner details.",
+      });
+    } finally {
+      setSavingOwner(false);
+    }
   };
 
-  const handleSavePet = async () => {
-    if (!validate(false)) return null;
+  // Open Modal to Add New Pet
+  const handleOpenAddPetModal = () => {
+    setPetForm(initialPetForm);
+    setModalTab("registration");
+    setIsAddPetModalOpen(true);
+  };
+
+  // Submit New Pet Modal
+  const handleSaveNewPetModal = async () => {
+    if (!petForm.petName || !petForm.breed) {
+      showToast({
+        type: "error",
+        title: "Validation Error",
+        description: "Pet Name and Breed are required.",
+      });
+      return;
+    }
 
     const payload = {
       ...petForm,
       sterilized: petForm.sterilized === "Yes",
     };
 
-    if (mode === "add") {
+    try {
+      setSavingPet(true);
       const response = await addPet(owner._id, payload);
       const addedPet = response.data?.pets?.[response.data.pets.length - 1];
-      refreshOwner(response.data);
-      setMode("edit");
+      fillOwner(response.data);
+
       setVisitForm((prev) => ({
         ...prev,
         ownerId: owner._id,
         petId: addedPet?._id || prev.petId,
+        primaryReason: petForm.primaryReason || prev.primaryReason,
+        complaint: petForm.complaint || prev.complaint,
+        appointmentDate: petForm.appointmentDate || prev.appointmentDate,
+        appointmentTime: petForm.appointmentTime || prev.appointmentTime,
+        assignedDoctor: petForm.assignedDoctor || prev.assignedDoctor,
       }));
-      alert("New pet added successfully");
-      return addedPet?._id;
-    }
 
-    const response = await updatePet(owner._id, visitForm.petId, payload);
-    refreshOwner(response.data);
-    alert("Pet updated successfully");
-    return visitForm.petId;
+      setIsAddPetModalOpen(false);
+      showToast({
+        type: "success",
+        title: "New Pet Registered",
+        description: `${petForm.petName} has been added and selected.`,
+      });
+    } catch (err) {
+      console.error(err);
+      showToast({
+        type: "error",
+        title: "Pet Registration Failed",
+        description: "Unable to add new pet.",
+      });
+    } finally {
+      setSavingPet(false);
+    }
   };
 
-  const handleSubmit = async (event) => {
+  const handleSubmitVisit = async (event) => {
     event.preventDefault();
 
-    if (!validate(true)) return;
+    if (!owner?._id) {
+      showToast({ type: "error", title: "Error", description: "Search customer first." });
+      return;
+    }
+
+    if (!visitForm.petId) {
+      showToast({ type: "error", title: "Error", description: "Select a pet for the visit." });
+      return;
+    }
+
+    if (!visitForm.chiefComplaint && !visitForm.primaryReason) {
+      showToast({ type: "error", title: "Validation Error", description: "Chief complaint is required." });
+      return;
+    }
 
     try {
-      setSaving(true);
+      setSavingVisit(true);
       await updateOwner(owner._id, ownerForm);
-      const petId = mode === "add" ? await handleSavePet() : visitForm.petId;
 
       await createVisit({
         ...visitForm,
+        chiefComplaint: visitForm.chiefComplaint || visitForm.complaint,
         ownerId: owner._id,
-        petId,
+        petId: visitForm.petId,
       });
 
-      setVisitForm({
-        ...emptyVisitForm,
-        ownerId: owner._id,
-        petId,
+      showToast({
+        type: "success",
+        title: "Visit Scheduled",
+        description: "Patient visit created successfully.",
       });
-      alert("Visit created successfully");
+
+      navigate("/clinic/reception");
     } catch (error) {
       console.error(error);
-      alert(error?.response?.data?.message || "Error creating visit");
+      showToast({
+        type: "error",
+        title: "Visit Failed",
+        description: error?.response?.data?.message || "Failed to create visit.",
+      });
     } finally {
-      setSaving(false);
+      setSavingVisit(false);
     }
   };
 
-  return (
-    <div className="min-h-screen bg-slate-100 p-4 sm:p-6 lg:p-8">
-      <div className="mx-auto w-full max-w-5xl rounded-3xl bg-white p-6 sm:p-8 shadow-2xl shadow-slate-200/80 border border-slate-200/70">
-        <h2 className="text-2xl sm:text-3xl font-bold text-slate-800">Create Visit</h2>
-        <p className="mt-2 text-sm text-slate-400">
-          Search an already registered owner, edit details if needed, add/edit pet, then create visit.
-        </p>
+  const inputCls =
+    "w-full border border-slate-200 rounded-xl p-3 bg-white text-slate-700 font-medium focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition outline-none";
 
-        <div className="mt-6 mb-8 p-6 bg-slate-50/50 rounded-2xl border border-slate-100">
-          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Search Registered Mobile Number</label>
-          <div className="mt-1 flex gap-3">
-            <input
-              type="text"
-              value={mobileNumber}
-              onChange={(event) => setMobileNumber(event.target.value)}
-              maxLength="10"
-              placeholder="Enter 10-digit mobile number"
-              className="w-full border border-slate-200 rounded-xl p-3 focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition outline-none text-slate-700 font-medium bg-white"
-            />
-            <button
-              type="button"
-              onClick={handleSearch}
-              disabled={searching}
-              className="rounded-xl bg-slate-800 hover:bg-slate-900 px-6 py-2.5 font-semibold text-white transition cursor-pointer disabled:opacity-60 shrink-0"
-            >
-              {searching ? "Searching..." : "Search"}
-            </button>
+  return (
+    <div className="min-h-screen bg-slate-100 p-4 sm:p-6 lg:p-8 flex justify-center">
+      <div className="w-full max-w-5xl bg-white rounded-3xl shadow-2xl shadow-slate-200/80 border border-slate-200/70 overflow-hidden flex flex-col">
+        {/* Sleek Dark Header Hero Section */}
+        <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 p-6 sm:p-8 text-white flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-800">
+          <div>
+            <div className="flex items-center gap-2.5">
+              <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">Create Patient Visit</h1>
+              <Sparkles className="w-6 h-6 text-orange-400" />
+            </div>
+            <p className="text-slate-300 text-xs sm:text-sm mt-1 font-medium">
+              Search registered owner, manage pets & history, and assign visit appointment
+            </p>
           </div>
-          <ErrorText errors={errors} name="mobileNumber" />
+          <div className="bg-white/10 backdrop-blur-md border border-white/20 px-4 py-2 rounded-2xl text-xs font-bold tracking-wider uppercase flex items-center gap-2 shrink-0">
+            <ShieldCheck className="w-4 h-4 text-emerald-400" />
+            <span>Reception Desk Intake</span>
+          </div>
         </div>
 
-        {owner && (
-          <form onSubmit={handleSubmit} className="space-y-8">
-            <section className="rounded-3xl border border-slate-200/50 bg-slate-50/30 p-6 shadow-md shadow-slate-100/80">
-              <div className="mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
-                <div>
-                  <h3 className="text-lg font-bold text-slate-800">Owner Details</h3>
-                  <p className="text-xs text-slate-400 font-medium mt-1">Owner ID: {owner._id}</p>
-                </div>
-                <button 
-                  type="button" 
-                  onClick={handleSaveOwner} 
-                  className="rounded-xl bg-orange-500 hover:bg-orange-600 px-5 py-2.5 font-semibold text-white transition hover:shadow-md cursor-pointer border-none text-sm"
-                >
-                  Save Owner Edit
-                </button>
-              </div>
-
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                {[
-                  ["ownerName", "Owner Name *"],
-                  ["email", "Email"],
-                  ["address", "Address *"],
-                  ["state", "State"],
-                  ["city", "City"],
-                  ["district", "District"],
-                  ["pincode", "Pincode"],
-                ].map(([name, label]) => (
-                  <div key={name} className={name === "address" ? "md:col-span-2" : ""}>
-                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">{label}</label>
-                    <input
-                      name={name}
-                      value={ownerForm[name] || ""}
-                      onChange={handleOwnerChange}
-                      className="w-full border border-slate-200 rounded-xl p-3 text-slate-700 font-medium focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition outline-none bg-white"
-                    />
-                    <ErrorText errors={errors} name={name} />
-                  </div>
-                ))}
-              </div>
-            </section>
-
-            <section className="rounded-3xl border border-slate-200/50 p-6 bg-white shadow-md shadow-slate-100/80">
-              <div className="mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
-                <div>
-                  <h3 className="text-lg font-bold text-slate-800">Pet Details</h3>
-                  <p className="text-xs text-slate-400 font-medium mt-1">
-                    {mode === "add" ? "Adding new pet for this owner" : "Editing selected pet"}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMode("add");
-                    setPetForm(emptyPetForm);
-                    setVisitForm((prev) => ({ ...prev, petId: "" }));
-                  }}
-                  className="rounded-xl bg-emerald-500 hover:bg-emerald-600 px-5 py-2.5 font-semibold text-white transition hover:shadow-md cursor-pointer border-none text-sm"
-                >
-                  + Add New Pet
-                </button>
-              </div>
-
-              {pets.length > 0 && mode === "edit" && (
-                <div className="mb-6">
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Select Existing Pet</label>
-                  <select 
-                    value={visitForm.petId} 
-                    onChange={handlePetSelect} 
-                    className="w-full border border-slate-200 rounded-xl p-3 text-slate-700 font-medium focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition outline-none bg-white cursor-pointer"
-                  >
-                    {pets.map((pet) => (
-                      <option key={pet._id} value={pet._id}>
-                        {pet.petName || pet.name || "Unnamed Pet"} ({pet.uniquePetId || pet._id})
-                      </option>
-                    ))}
-                  </select>
-                  <ErrorText errors={errors} name="petId" />
-                </div>
-              )}
-
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Pet Name *</label>
-                  <input name="petName" value={petForm.petName} onChange={handlePetChange} className="w-full border border-slate-200 rounded-xl p-3 text-slate-700 font-medium focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition outline-none bg-white" />
-                  <ErrorText errors={errors} name="petName" />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Species *</label>
-                  <select name="species" value={petForm.species} onChange={handlePetChange} className="w-full border border-slate-200 rounded-xl p-3 text-slate-700 font-medium focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition outline-none bg-white cursor-pointer">
-                    <option>Dog</option>
-                    <option>Cat</option>
-                    <option>Rabbit</option>
-                    <option>Bird</option>
-                    <option>Other</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Breed *</label>
-                  <input name="breed" value={petForm.breed} onChange={handlePetChange} className="w-full border border-slate-200 rounded-xl p-3 text-slate-700 font-medium focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition outline-none bg-white" />
-                  <ErrorText errors={errors} name="breed" />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Gender</label>
-                  <select name="gender" value={petForm.gender} onChange={handlePetChange} className="w-full border border-slate-200 rounded-xl p-3 text-slate-700 font-medium focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition outline-none bg-white cursor-pointer">
-                    <option>Male</option>
-                    <option>Female</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">DOB</label>
-                  <input name="dob" type="date" max={today} value={petForm.dob} onChange={handlePetChange} className="w-full border border-slate-200 rounded-xl p-3 text-slate-700 font-medium focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition outline-none bg-white" />
-                  <ErrorText errors={errors} name="dob" />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Age</label>
-                  <input name="age" value={petForm.age} readOnly className="w-full border border-slate-200 rounded-xl p-3 text-slate-500 font-mono font-medium outline-none bg-slate-50" />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Color</label>
-                  <input name="color" value={petForm.color} onChange={handlePetChange} className="w-full border border-slate-200 rounded-xl p-3 text-slate-700 font-medium focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition outline-none bg-white" />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">RFID / Microchip</label>
-                  <input name="rfid" value={petForm.rfid} onChange={handlePetChange} className="w-full border border-slate-200 rounded-xl p-3 text-slate-700 font-medium focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition outline-none bg-white" />
-                </div>
-                <div className="md:col-span-2">
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Identification Area</label>
-                  <textarea name="identificationArea" value={petForm.identificationArea} onChange={handlePetChange} rows="2" className="w-full border border-slate-200 rounded-xl p-3 text-slate-700 font-medium focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition outline-none bg-white" />
-                </div>
-              </div>
-
-              <button 
-                type="button" 
-                onClick={handleSavePet} 
-                className="mt-6 rounded-xl bg-orange-500 hover:bg-orange-600 px-6 py-3 font-semibold text-white transition hover:shadow-md cursor-pointer border-none text-sm"
+        <div className="p-6 sm:p-8 space-y-8 flex-1">
+          {/* Step 1: Search Registered Owner */}
+          <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-5 sm:p-6 shadow-xs">
+            <label className="block text-xs font-extrabold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-2">
+              <Search className="w-4 h-4 text-orange-500" />
+              <span>Search Registered Mobile Number *</span>
+            </label>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <input
+                type="text"
+                value={mobileNumber}
+                onChange={handleMobileInput}
+                maxLength="10"
+                placeholder="Enter 10-digit registered mobile number (e.g. 9876543210)"
+                className={`flex-1 border rounded-xl p-3.5 focus:ring-2 transition outline-none text-slate-700 font-semibold bg-white shadow-xs ${
+                  errors.mobileNumber
+                    ? "border-red-400 focus:border-red-500 focus:ring-red-100"
+                    : "border-slate-200 focus:border-orange-500 focus:ring-orange-100"
+                }`}
+              />
+              <button
+                type="button"
+                onClick={handleSearch}
+                disabled={searching}
+                className="bg-slate-900 hover:bg-black text-white px-7 py-3.5 rounded-xl font-bold transition cursor-pointer disabled:opacity-60 shrink-0 flex items-center justify-center gap-2 border-none shadow-md"
               >
-                {mode === "add" ? "Save New Pet" : "Save Pet Edit"}
+                {searching ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin text-orange-400" />
+                    <span>Searching...</span>
+                  </>
+                ) : (
+                  <>
+                    <Search className="w-4 h-4" />
+                    <span>Search Customer</span>
+                  </>
+                )}
               </button>
-            </section>
+            </div>
+            <ErrorText errors={errors} name="mobileNumber" />
+          </div>
 
-            <section className="rounded-3xl border border-slate-200/50 p-6 bg-slate-50/30 shadow-md shadow-slate-100/80">
-              <h3 className="mb-6 text-lg font-bold text-slate-800">Visit Details</h3>
-              {selectedPet && (
-                <div className="mb-4 rounded-xl bg-slate-50 border border-slate-100 p-4 text-sm text-slate-600">
-                  Creating visit for: <strong className="text-slate-800">{selectedPet.petName || selectedPet.name}</strong>
+          {/* Customer & Visit Management Form */}
+          {owner && (
+            <form onSubmit={handleSubmitVisit} className="space-y-8 animate-in fade-in duration-300">
+              {/* Owner Details Card */}
+              <div className="rounded-3xl border border-slate-200/80 bg-white p-6 sm:p-7 shadow-sm">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4 mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-orange-100 text-orange-600 flex items-center justify-center font-bold">
+                      <User className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-slate-800">Owner Verification</h3>
+                      <p className="text-xs text-slate-400 font-medium">Owner ID: {owner._id}</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleSaveOwner}
+                    disabled={savingOwner}
+                    className="bg-orange-500 hover:bg-orange-600 text-white px-5 py-2.5 rounded-xl font-bold transition cursor-pointer border-none text-xs flex items-center gap-2 shrink-0 self-start sm:self-auto shadow-sm"
+                  >
+                    {savingOwner ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                    <span>Save Owner Edit</span>
+                  </button>
                 </div>
-              )}
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Visit Type</label>
-                  <select name="visitType" value={visitForm.visitType} onChange={handleVisitChange} className="w-full border border-slate-200 rounded-xl p-3 text-slate-700 font-medium focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition outline-none bg-white cursor-pointer">
-                    <option value="CONSULTATION">Consultation</option>
-                    <option value="VACCINATION">Vaccination</option>
-                    <option value="GROOMING">Grooming</option>
-                    <option value="SURGERY">Surgery</option>
-                    <option value="KENNEL">Kennel</option>
-                    <option value="FOLLOW_UP">Follow Up</option>
-                    <option value="EMERGENCY">Emergency</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Priority</label>
-                  <select name="priority" value={visitForm.priority} onChange={handleVisitChange} className="w-full border border-slate-200 rounded-xl p-3 text-slate-700 font-medium focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition outline-none bg-white cursor-pointer">
-                    <option value="NORMAL">Normal</option>
-                    <option value="URGENT">Urgent</option>
-                    <option value="EMERGENCY">Emergency</option>
-                  </select>
-                </div>
-                <div className="md:col-span-2">
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Chief Complaint *</label>
-                  <textarea name="chiefComplaint" value={visitForm.chiefComplaint} onChange={handleVisitChange} rows="3" className="w-full border border-slate-200 rounded-xl p-3 text-slate-700 font-medium focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition outline-none bg-white" />
-                  <ErrorText errors={errors} name="chiefComplaint" />
-                </div>
-                <div className="md:col-span-2">
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Notes</label>
-                  <textarea name="notes" value={visitForm.notes} onChange={handleVisitChange} rows="3" className="w-full border border-slate-200 rounded-xl p-3 text-slate-700 font-medium focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition outline-none bg-white" />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Owner Name *</label>
+                    <input name="ownerName" value={ownerForm.ownerName || ""} onChange={handleOwnerChange} className={inputCls} />
+                    <ErrorText errors={errors} name="ownerName" />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Owner ID Type *</label>
+                    <select name="ownerIdType" value={ownerForm.ownerIdType || "Aadhaar Card"} onChange={handleOwnerChange} className={inputCls}>
+                      <option>Aadhaar Card</option>
+                      <option>PAN Card</option>
+                      <option>Other Govt ID</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Visit Type *</label>
+                    <select name="visitType" value={ownerForm.visitType || "New"} onChange={handleOwnerChange} className={inputCls}>
+                      <option value="New">New</option>
+                      <option value="Follow-up">Follow-up</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Email Address</label>
+                    <input name="email" value={ownerForm.email || ""} onChange={handleOwnerChange} type="email" className={inputCls} />
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Full Address *</label>
+                    <textarea name="address" value={ownerForm.address || ""} onChange={handleOwnerChange} rows="2" className={inputCls} />
+                    <ErrorText errors={errors} name="address" />
+                  </div>
+
+                  {/* Pincode Field with Verification */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                      <span>Pincode *</span>
+                      {pincodeLoading && <span className="text-[11px] text-orange-500 font-semibold flex items-center gap-1"><Loader2 className="w-3 h-3 animate-spin" /> Verifying...</span>}
+                      {pincodeValid === true && <span className="text-[11px] text-emerald-600 font-bold flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5" /> Verified</span>}
+                      {pincodeValid === false && <span className="text-[11px] text-red-500 font-bold flex items-center gap-1"><AlertCircle className="w-3.5 h-3.5" /> Invalid</span>}
+                    </label>
+                    <div className="relative">
+                      <input name="pincode" value={ownerForm.pincode || ""} onChange={handleOwnerChange} maxLength="6" placeholder="6 Digit PIN Code" className={inputCls} />
+                    </div>
+                    {pincodeDetails && pincodeValid === true && (
+                      <p className="mt-1 text-xs text-emerald-700 font-medium flex items-center gap-1">
+                        <MapPin className="w-3 h-3 text-emerald-500 shrink-0" /> {pincodeDetails}
+                      </p>
+                    )}
+                    <ErrorText errors={errors} name="pincode" />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">State *</label>
+                    <select name="state" value={ownerForm.state || ""} onChange={handleOwnerChange} className={inputCls}>
+                      <option value="">Select State</option>
+                      {states.map((item) => (
+                        <option key={item.isoCode} value={item.isoCode}>{item.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">City *</label>
+                    <select name="city" value={ownerForm.city || ""} onChange={handleOwnerChange} disabled={!ownerForm.state} className={inputCls}>
+                      <option value="">Select City</option>
+                      {cities.map((item) => (
+                        <option key={`${item.name}-${item.latitude || "0"}`} value={item.name}>{item.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">District *</label>
+                    <select name="district" value={ownerForm.district || ""} onChange={handleOwnerChange} disabled={!ownerForm.state} className={inputCls}>
+                      <option value="">Select District</option>
+                      {ownerForm.city && <option value={ownerForm.city}>{ownerForm.city}</option>}
+                      {ownerForm.district && ownerForm.district !== ownerForm.city && (
+                        <option value={ownerForm.district}>{ownerForm.district}</option>
+                      )}
+                    </select>
+                  </div>
                 </div>
               </div>
-            </section>
 
-            <button 
-              type="submit" 
-              disabled={saving} 
-              className="w-full rounded-xl bg-linear-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 py-3.5 font-semibold text-white transition hover:shadow-lg cursor-pointer border-none text-base disabled:opacity-60"
-            >
-              {saving ? "Creating Visit..." : "Create Visit"}
-            </button>
-          </form>
-        )}
+              {/* Pet Selection & Add New Pet Modal Trigger Card */}
+              <div className="rounded-3xl border border-slate-200/80 bg-white p-6 sm:p-7 shadow-sm space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold">
+                      <PawPrint className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-slate-800">Pet Selection</h3>
+                      <p className="text-xs text-slate-400 font-medium">Select pet for this visit or register a new pet</p>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleOpenAddPetModal}
+                    className="bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-2.5 rounded-xl font-bold transition cursor-pointer border-none text-xs flex items-center gap-2 shadow-sm shrink-0 self-start sm:self-auto"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>+ Add New Pet</span>
+                  </button>
+                </div>
+
+                {/* Select Pet Dropdown */}
+                {pets.length > 0 ? (
+                  <div>
+                    <label className="block text-xs font-extrabold text-slate-500 uppercase tracking-wider mb-1.5">Select Patient Pet *</label>
+                    <select
+                      value={visitForm.petId}
+                      onChange={(e) => setVisitForm((prev) => ({ ...prev, petId: e.target.value }))}
+                      className="w-full border border-slate-200 rounded-xl p-3.5 text-slate-700 font-bold focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition outline-none bg-white cursor-pointer"
+                    >
+                      <option value="">Select Pet</option>
+                      {pets.map((pet) => (
+                        <option key={pet._id} value={pet._id}>
+                          {pet.petName || pet.name || "Unnamed Pet"} ({pet.species || "Pet"}) - ID: {pet.uniquePetId || pet._id}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ) : (
+                  <div className="p-4 bg-orange-50/60 border border-orange-200/60 rounded-2xl text-center">
+                    <p className="text-sm text-orange-700 font-bold">No pets registered under this owner yet.</p>
+                    <button
+                      type="button"
+                      onClick={handleOpenAddPetModal}
+                      className="mt-2 inline-flex items-center gap-1.5 text-xs font-bold text-orange-600 underline cursor-pointer"
+                    >
+                      <Plus className="w-3.5 h-3.5" /> Click here to add a new pet
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Visit Details Card */}
+              <div className="rounded-3xl border border-slate-200/80 bg-white p-6 sm:p-7 shadow-sm space-y-6">
+                <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
+                  <div className="w-10 h-10 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center font-bold">
+                    <Stethoscope className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-800">Visit Appointment Details</h3>
+                    <p className="text-xs text-slate-400 font-medium">Assign doctor, date, and visit reason</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Primary Reason *</label>
+                    <select name="primaryReason" value={visitForm.primaryReason} onChange={handleVisitChange} className={inputCls}>
+                      <option value="">Select Reason</option>
+                      {reasonOptions.map((item) => (
+                        <option key={item} value={item}>{item}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Assigned Doctor *</label>
+                    <select name="assignedDoctor" value={visitForm.assignedDoctor} onChange={handleVisitChange} className={inputCls}>
+                      <option value="">Select Doctor</option>
+                      {doctors.map((doctor) => (
+                        <option key={getDoctorOptionValue(doctor)} value={getDoctorName(doctor)}>
+                          {getDoctorName(doctor) || "Doctor"}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Appointment Date *</label>
+                    <input name="appointmentDate" value={visitForm.appointmentDate} onChange={handleVisitChange} type="date" className={inputCls} />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Appointment Time *</label>
+                    <input name="appointmentTime" value={visitForm.appointmentTime} onChange={handleVisitChange} type="time" className={inputCls} />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Visit Category</label>
+                    <select name="visitType" value={visitForm.visitType} onChange={handleVisitChange} className={inputCls}>
+                      <option value="CONSULTATION">Consultation</option>
+                      <option value="VACCINATION">Vaccination</option>
+                      <option value="GROOMING">Grooming</option>
+                      <option value="SURGERY">Surgery</option>
+                      <option value="KENNEL">Kennel</option>
+                      <option value="FOLLOW_UP">Follow Up</option>
+                      <option value="EMERGENCY">Emergency</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Priority</label>
+                    <select name="priority" value={visitForm.priority} onChange={handleVisitChange} className={inputCls}>
+                      <option value="NORMAL">Normal</option>
+                      <option value="URGENT">Urgent</option>
+                      <option value="EMERGENCY">Emergency</option>
+                    </select>
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Chief Complaint / Notes *</label>
+                    <textarea name="chiefComplaint" value={visitForm.chiefComplaint} onChange={handleVisitChange} rows="3" placeholder="Enter chief complaint details" className={inputCls} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Submit Final Visit Button */}
+              <button
+                type="submit"
+                disabled={savingVisit}
+                className="w-full rounded-2xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 py-4 font-bold text-white transition shadow-lg shadow-orange-100 cursor-pointer border-none text-base disabled:opacity-60 flex items-center justify-center gap-2"
+              >
+                {savingVisit ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>Creating Visit...</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="w-5 h-5" />
+                    <span>Create & Schedule Visit</span>
+                  </>
+                )}
+              </button>
+            </form>
+          )}
+        </div>
       </div>
+
+      {/* ADD NEW PET MODAL OVERLAY */}
+      {isAddPetModalOpen && (
+        <div className="fixed inset-0 z-[9999] bg-slate-900/70 backdrop-blur-xs p-4 overflow-y-auto flex items-center justify-center">
+          <div className="bg-white rounded-3xl w-full max-w-4xl shadow-2xl flex flex-col overflow-hidden border border-slate-200 animate-in fade-in zoom-in-95 duration-200 my-8">
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 text-white px-6 py-5 flex items-center justify-between border-b border-slate-800">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-orange-500/20 border border-orange-500/30 flex items-center justify-center text-orange-400 font-bold">
+                  <PawPrint className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold tracking-tight">Register New Pet & History</h2>
+                  <p className="text-xs text-slate-300">Adding new pet for {owner?.ownerName || "Owner"}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsAddPetModalOpen(false)}
+                className="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition border-none cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Navigation Tabs */}
+            <div className="bg-slate-50 border-b border-slate-200 px-6 pt-3 flex gap-2 overflow-x-auto">
+              <button
+                type="button"
+                onClick={() => setModalTab("registration")}
+                className={`flex items-center gap-2 px-5 py-3 rounded-t-2xl font-bold text-xs sm:text-sm border-b-2 transition-all cursor-pointer border-t-0 border-x-0 ${
+                  modalTab === "registration"
+                    ? "border-orange-500 text-orange-600 bg-white shadow-xs"
+                    : "border-transparent text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                <PawPrint className="w-4 h-4" />
+                <span>1. Pet Registration</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setModalTab("history")}
+                className={`flex items-center gap-2 px-5 py-3 rounded-t-2xl font-bold text-xs sm:text-sm border-b-2 transition-all cursor-pointer border-t-0 border-x-0 ${
+                  modalTab === "history"
+                    ? "border-orange-500 text-orange-600 bg-white shadow-xs"
+                    : "border-transparent text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                <FileText className="w-4 h-4" />
+                <span>2. Pet History</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setModalTab("visit")}
+                className={`flex items-center gap-2 px-5 py-3 rounded-t-2xl font-bold text-xs sm:text-sm border-b-2 transition-all cursor-pointer border-t-0 border-x-0 ${
+                  modalTab === "visit"
+                    ? "border-orange-500 text-orange-600 bg-white shadow-xs"
+                    : "border-transparent text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                <Stethoscope className="w-4 h-4" />
+                <span>3. Reason For Visit</span>
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 sm:p-8 max-h-[60vh] overflow-y-auto">
+              {/* TAB 1: PET REGISTRATION */}
+              {modalTab === "registration" && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Pet Name *</label>
+                    <input name="petName" value={petForm.petName} onChange={handlePetChange} placeholder="Enter Pet Name" className={inputCls} />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Species *</label>
+                    <select name="species" value={petForm.species} onChange={handlePetChange} className={inputCls}>
+                      <option>Dog</option>
+                      <option>Cat</option>
+                      <option>Rabbit</option>
+                      <option>Bird</option>
+                      <option>Other</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Breed *</label>
+                    <input name="breed" value={petForm.breed} onChange={handlePetChange} placeholder="Breed" className={inputCls} />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Gender *</label>
+                    <select name="gender" value={petForm.gender} onChange={handlePetChange} className={inputCls}>
+                      <option>Male</option>
+                      <option>Female</option>
+                    </select>
+                  </div>
+
+                  {["dob", "age", "color", "rfid"].map((name) => (
+                    <div key={name}>
+                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                        {name === "dob"
+                          ? "Date Of Birth"
+                          : name === "rfid"
+                          ? "RFID / Microchip Tag No"
+                          : name.charAt(0).toUpperCase() + name.slice(1)}
+                      </label>
+                      <input
+                        name={name}
+                        value={petForm[name]}
+                        onChange={handlePetChange}
+                        type={name === "dob" ? "date" : name === "age" ? "number" : "text"}
+                        max={name === "dob" ? today : undefined}
+                        readOnly={name === "age"}
+                        placeholder={name === "rfid" ? "RFID Number" : undefined}
+                        className={`${inputCls} ${name === "age" ? "bg-slate-100" : ""}`}
+                      />
+                    </div>
+                  ))}
+
+                  <div className="md:col-span-2">
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Identification Area</label>
+                    <textarea name="identificationArea" value={petForm.identificationArea} onChange={handlePetChange} rows="2" placeholder="Enter Identification Marks" className={inputCls} />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Pet Photo</label>
+                    <input name="petPhoto" onChange={handlePetChange} type="file" accept="image/*" className={inputCls} />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Is Sterilized?</label>
+                    <select name="sterilized" value={petForm.sterilized} onChange={handlePetChange} className={inputCls}>
+                      <option>No</option>
+                      <option>Yes</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Unique Pet ID</label>
+                    <input value="Auto generated by backend" readOnly className="w-full border rounded-xl p-3 bg-slate-100 text-slate-500 font-medium" />
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 2: PET HISTORY */}
+              {modalTab === "history" && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
+                  {[
+                    ["vaccineName", "Vaccine Name", "text"],
+                    ["vaccinationDate", "Vaccination Date", "date"],
+                    ["batchNumber", "Batch Number", "text"],
+                    ["clinicName", "Clinic Name", "text"],
+                    ["dewormingProduct", "Deworming Product", "text"],
+                    ["dewormingDate", "Deworming Date", "date"],
+                    ["dose", "Dose", "text"],
+                    ["surgicalProcedure", "Surgical Procedure", "text"],
+                    ["surgeryDate", "Surgery Date", "date"],
+                    ["hospital", "Hospital", "text"],
+                    ["condition", "Condition", "text"],
+                    ["treatment", "Treatment", "text"],
+                    ["treatmentDate", "Treatment Date", "date"],
+                  ].map(([name, label, type]) => (
+                    <div key={name}>
+                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">{label}</label>
+                      <input name={name} value={petForm[name] || ""} onChange={handlePetChange} type={type} placeholder={type === "text" ? label : undefined} className={inputCls} />
+                    </div>
+                  ))}
+
+                  <div className="md:col-span-2">
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Known Allergies</label>
+                    <textarea name="allergies" value={petForm.allergies || ""} onChange={handlePetChange} rows="2" placeholder="Known Allergies" className={inputCls} />
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Current Medications</label>
+                    <textarea name="medications" value={petForm.medications || ""} onChange={handlePetChange} rows="2" placeholder="Current Medications" className={inputCls} />
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 3: REASON FOR VISIT */}
+              {modalTab === "visit" && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Primary Reason</label>
+                    <select name="primaryReason" value={petForm.primaryReason || ""} onChange={handlePetChange} className={inputCls}>
+                      <option value="">Select Reason</option>
+                      {reasonOptions.map((item) => (
+                        <option key={item} value={item}>{item}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Token / Queue Number</label>
+                    <input value="Auto generated by backend" readOnly className="w-full border rounded-xl p-3 bg-slate-100 text-slate-500 font-medium" />
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Specific Complaint In Brief</label>
+                    <textarea name="complaint" value={petForm.complaint || ""} onChange={handlePetChange} rows="3" placeholder="Enter complaint details" className={inputCls} />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Appointment Date</label>
+                    <input name="appointmentDate" value={petForm.appointmentDate || ""} onChange={handlePetChange} type="date" className={inputCls} />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Appointment Time</label>
+                    <input name="appointmentTime" value={petForm.appointmentTime || ""} onChange={handlePetChange} type="time" className={inputCls} />
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Assigned Doctor</label>
+                    <select name="assignedDoctor" value={petForm.assignedDoctor || ""} onChange={handlePetChange} className={inputCls}>
+                      <option value="">Select Doctor</option>
+                      {doctors.map((doctor) => (
+                        <option key={getDoctorOptionValue(doctor)} value={getDoctorName(doctor)}>
+                          {getDoctorName(doctor) || "Doctor"}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="bg-slate-50 border-t border-slate-200 px-6 py-4 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setIsAddPetModalOpen(false)}
+                className="px-5 py-2.5 rounded-xl font-bold text-xs text-slate-600 hover:bg-slate-200 border border-slate-300 transition-all cursor-pointer"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={handleSaveNewPetModal}
+                disabled={savingPet}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-xl font-bold text-xs shadow-md transition-all cursor-pointer border-none flex items-center gap-2"
+              >
+                {savingPet ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Saving...</span>
+                  </>
+                ) : (
+                  <>
+                    <Check className="w-4 h-4" />
+                    <span>Save & Add Pet</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

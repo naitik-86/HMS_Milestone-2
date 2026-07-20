@@ -20,6 +20,85 @@ const uploadToCloudinary = async (file, folder) => {
 };
 
 
+exports.getLabDashboard = async (req, res) => {
+    try {
+        const clinicId = req.user.clinicId;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const totalReports = await LabReport.countDocuments({ clinicId });
+        const pendingUploads = await Visit.countDocuments({
+            clinicId,
+            currentStage: "LAB",
+            status: "WAITING"
+        });
+        const criticalCases = await LabReport.countDocuments({
+            clinicId,
+            status: "Critical"
+        });
+        const todayReports = await LabReport.countDocuments({
+            clinicId,
+            createdAt: { $gte: today }
+        });
+
+        const recentReports = await LabReport.find({ clinicId })
+            .sort({ createdAt: -1 })
+            .limit(5);
+
+        const pendingVisits = await Visit.find({
+            clinicId,
+            currentStage: "LAB",
+            status: "WAITING"
+        }).limit(5);
+
+        const owners = await PetRegistration.find({
+            clinicId,
+            "pets._id": {
+                $in: pendingVisits.map(v => v.petId)
+            }
+        });
+
+        const ownerPetMap = {};
+        owners.forEach(owner => {
+            owner.pets.forEach(pet => {
+                ownerPetMap[pet._id.toString()] = { owner, pet };
+            });
+        });
+
+        const pendingSummary = pendingVisits.map(v => {
+            const details = ownerPetMap[v.petId?.toString()];
+            return {
+                _id: v._id,
+                tokenNumber: v.tokenNumber,
+                chiefComplaint: v.chiefComplaint,
+                ownerName: details?.owner?.ownerName || "Owner",
+                petName: details?.pet?.petName || details?.pet?.name || "Pet",
+                species: details?.pet?.species || "Pet",
+                breed: details?.pet?.breed || "",
+                createdAt: v.createdAt
+            };
+        });
+
+        return res.status(200).json({
+            success: true,
+            data: {
+                totalReports,
+                pendingUploads,
+                criticalCases,
+                todayReports,
+                recentActivities: recentReports,
+                pendingSummary
+            }
+        });
+    } catch (error) {
+        console.error("Lab Dashboard Error:", error);
+        return res.status(500).json({
+            success: false,
+            message: error.message || "Failed to fetch lab dashboard."
+        });
+    }
+};
+
 exports.getAllPatientReports = async (req, res) => {
     try {
         const clinicId = req.user.clinicId;

@@ -205,27 +205,20 @@ export default function ReceptionDashboard() {
 
       <div className="bg-white rounded-3xl p-6 shadow-lg shadow-slate-200/50 border border-slate-200/60 mb-6 sm:mb-8">
         <h2 className="text-lg sm:text-xl font-bold text-slate-800 mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <button
             onClick={() => navigate("new-registration")}
             className="group h-16 bg-linear-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white rounded-2xl font-semibold transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 flex items-center justify-center gap-3 cursor-pointer border-none"
           >
             <Plus className="h-5 w-5 transition-transform group-hover:rotate-90" />
-            New Registration
-          </button>
-          <button
-            onClick={() => navigate("create-visit")}
-            className="group h-16 bg-linear-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white rounded-2xl font-semibold transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 flex items-center justify-center gap-3 cursor-pointer border-none"
-          >
-            <ClipboardList className="h-5 w-5 transition-transform group-hover:scale-110" />
-            Create Visit
+            Patient Registration & Intake
           </button>
           <button
             onClick={() => navigate("existing-customer")}
             className="group h-16 bg-linear-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white rounded-2xl font-semibold transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 flex items-center justify-center gap-3 cursor-pointer border-none"
           >
             <UserCheck className="h-5 w-5 transition-transform group-hover:scale-110" />
-            Existing Customer
+            Existing Customer Records
           </button>
         </div>
       </div>

@@ -1,4 +1,5 @@
 const PetRegistration = require("../models/PetRegistration");
+const Visit = require("../models/visitModel");
 const { generateOTP } = require("../utils/otpService");
 
 const normalizeSpecies = (species = "") => {
@@ -12,16 +13,17 @@ const normalizeSpecies = (species = "") => {
 const sendRegistrationOtp = async (req, res) => {
     try {
         const { mobileNumber } = req.body;
+        const cleanMobile = String(mobileNumber || "").replace(/\D/g, "").slice(-10);
 
-        if (!/^[6-9]\d{9}$/.test(mobileNumber || "")) {
+        if (!cleanMobile || cleanMobile.length !== 10 || !/^[6-9]\d{9}$/.test(cleanMobile)) {
             return res.status(400).json({
                 success: false,
-                message: "Valid 10 digit mobile number is required",
+                message: "Valid 10 digit Indian mobile number starting with 6-9 is required",
             });
         }
 
         const otp = generateOTP();
-        console.log(`[New Registration OTP] Mobile: ${mobileNumber}, OTP: ${otp}`);
+        console.log(`[New Registration OTP] Mobile: ${cleanMobile}, OTP: ${otp}`);
 
         return res.status(200).json({
             success: true,
@@ -29,9 +31,10 @@ const sendRegistrationOtp = async (req, res) => {
             data: { otp },
         });
     } catch (error) {
+        console.error("sendRegistrationOtp Error:", error);
         return res.status(500).json({
             success: false,
-            message: error.message,
+            message: error.message || "Failed to send OTP",
         });
     }
 };
@@ -74,35 +77,9 @@ const createRegistration = async (req, res) => {
             });
         }
 
-        const uniquePetId = `PET-${Date.now()}`;
-
-        const tokenNumber = `TK-${Date.now()}`;
-
-        const petData = {
-            ...pet,
-            name: pet?.name || pet?.petName,
-            petName: pet?.petName || pet?.name,
-            species: normalizeSpecies(pet?.species),
-            isSterilised: pet?.sterilized === true,
-            uniquePetId,
-
-            history: {
-                vaccinations: history?.vaccinations || [],
-                dewormings: history?.dewormings || [],
-                surgeries: history?.surgeries || [],
-                treatments: history?.treatments || [],
-                allergies: history?.allergies || "",
-                currentMedications:
-                    history?.currentMedications || "",
-            },
-
-            visits: [
-                {
-                    ...visit,
-                    tokenNumber,
-                },
-            ],
-        };
+        const petsInput = Array.isArray(req.body.pets) && req.body.pets.length > 0
+            ? req.body.pets
+            : pet ? [pet] : [];
 
         // New Owner
         owner = new PetRegistration({
@@ -120,20 +97,76 @@ const createRegistration = async (req, res) => {
             pets: [],
         });
 
-        petData.ownerId = owner._id;
-        owner.pets.push(petData);
+        for (let i = 0; i < petsInput.length; i++) {
+            const currentPet = petsInput[i];
+            const uniquePetId = `PET-${Date.now()}-${i}`;
+            const tokenNumber = `TK-${Date.now()}-${i}`;
+
+            const petData = {
+                ...currentPet,
+                name: currentPet?.name || currentPet?.petName || "Unnamed Pet",
+                petName: currentPet?.petName || currentPet?.name || "Unnamed Pet",
+                species: normalizeSpecies(currentPet?.species),
+                isSterilised: currentPet?.sterilized === true || currentPet?.sterilized === "Yes",
+                sterilized: currentPet?.sterilized === true || currentPet?.sterilized === "Yes",
+                uniquePetId,
+                ownerId: owner._id,
+                history: {
+                    vaccinations: currentPet?.history?.vaccinations || history?.vaccinations || [],
+                    dewormings: currentPet?.history?.dewormings || history?.dewormings || [],
+                    surgeries: currentPet?.history?.surgeries || history?.surgeries || [],
+                    treatments: currentPet?.history?.treatments || history?.treatments || [],
+                    allergies: currentPet?.history?.allergies || history?.allergies || "",
+                    currentMedications: currentPet?.history?.currentMedications || history?.currentMedications || "",
+                },
+                visits: [
+                    {
+                        ...(currentPet?.visit || visit),
+                        tokenNumber,
+                    },
+                ],
+            };
+            owner.pets.push(petData);
+        }
+
         await owner.save();
 
-        console.log("submitted");
+        // Automatically create a Visit entry for each registered pet
+        for (let i = 0; i < owner.pets.length; i++) {
+            const createdPet = owner.pets[i];
+            const petVisitInfo = petsInput[i]?.visit || visit || {};
+            try {
+                const lastVisit = await Visit.findOne({ clinicId }).sort({ createdAt: -1 });
+                const tokenNum = lastVisit && typeof lastVisit.tokenNumber === "number" ? lastVisit.tokenNumber + 1 : (i + 1);
 
-        console.log(owner);
-
+                await Visit.create({
+                    clinicId,
+                    ownerId: owner._id,
+                    petId: createdPet._id,
+                    receptionistId: req.user?._id,
+                    tokenNumber: tokenNum,
+                    chiefComplaint: petVisitInfo?.complaint || petVisitInfo?.primaryReason || "New Patient Intake Assessment",
+                    notes: petVisitInfo?.notes || "",
+                    currentStage: "PRE_CONSULTATION",
+                    status: "WAITING",
+                    workflow: {
+                        receptionCompleted: true,
+                        preConsultationCompleted: false,
+                        doctorCompleted: false,
+                        labCompleted: false
+                    }
+                });
+            } catch (visitErr) {
+                console.error("Failed to auto-create visit for new registration pet:", visitErr);
+            }
+        }
 
         return res.status(201).json({
             success: true,
             message: "Registration Created Successfully",
             data: owner,
         });
+        
     } catch (error) {
         console.error(error);
 
@@ -146,27 +179,42 @@ const createRegistration = async (req, res) => {
 const searchCustomer = async (req, res) => {
     try {
         const { mobileNumber } = req.params;
-        const clinicId = req.user.clinicId;
+        const clinicId = req.user?.clinicId || req.user?.clinic;
 
-        const customer = await PetRegistration.findOne({
-            clinicId,
-            mobileNumber
-        });
+        const cleanDigits = String(mobileNumber || "").replace(/\D/g, "").slice(-10);
+
+        if (!cleanDigits || cleanDigits.length !== 10) {
+            return res.status(200).json({
+                success: true,
+                data: null,
+                message: "Please enter a valid 10-digit mobile number."
+            });
+        }
+
+        const filter = {
+            mobileNumber: { $regex: cleanDigits + "$" }
+        };
+
+        if (clinicId) {
+            filter.clinicId = clinicId;
+        }
+
+        const customer = await PetRegistration.findOne(filter);
 
         if (customer) {
             customer.isMobileVerified = true;
             await customer.save();
         }
 
-
         return res.status(200).json({
             success: true,
             data: customer,
         });
     } catch (error) {
+        console.error("searchCustomer Error:", error);
         return res.status(500).json({
             success: false,
-            message: error.message,
+            message: error.message || "Error searching customer mobile number.",
         });
     }
 };
@@ -398,6 +446,32 @@ const addVisit = async (req, res) => {
         });
 
         await owner.save();
+
+        // Create Visit document for Pre-Consultation / Doctor workflow
+        try {
+            const lastVisit = await Visit.findOne({ clinicId }).sort({ createdAt: -1 });
+            const tokenNum = lastVisit && typeof lastVisit.tokenNumber === "number" ? lastVisit.tokenNumber + 1 : 1;
+
+            await Visit.create({
+                clinicId,
+                ownerId: owner._id,
+                petId: pet._id,
+                receptionistId: req.user?._id,
+                tokenNumber: tokenNum,
+                chiefComplaint: req.body.complaint || req.body.primaryReason || "Patient Intake Assessment",
+                notes: req.body.notes || "",
+                currentStage: "PRE_CONSULTATION",
+                status: "WAITING",
+                workflow: {
+                    receptionCompleted: true,
+                    preConsultationCompleted: false,
+                    doctorCompleted: false,
+                    labCompleted: false
+                }
+            });
+        } catch (vErr) {
+            console.error("Error creating Visit model entry in addVisit:", vErr);
+        }
 
         return res.status(200).json({
             success: true,

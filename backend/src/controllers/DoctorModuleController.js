@@ -165,22 +165,42 @@ exports.getCompletedPets = async (req, res) => {
             "workflow.doctorCompleted": true
         })
             .populate({
-                path: "petId",
-                select:
-                    "name species breed gender dob age color uniquePetId photoUrl rfidTag identificationMarks isSterilised"
-            })
-            .populate({
-                path: "ownerId",
-                select:
-                    "ownerName mobileNumber email address city district state pincode"
-            })
-            .populate({
                 path: "doctorId",
                 select: "name doctorId"
             })
             .sort({
                 updatedAt: -1
             });
+
+        // Lookup owners containing these pets
+        const owners = await PetRegistration.find({
+            "pets._id": {
+                $in: visits.map((visit) => visit.petId),
+            },
+        });
+
+        const ownerPetMap = {};
+        owners.forEach((owner) => {
+            owner.pets.forEach((pet) => {
+                ownerPetMap[pet._id.toString()] = {
+                    owner,
+                    pet,
+                };
+            });
+        });
+
+        const completedVisitsWithDetails = visits.map((visit) => {
+            const details = ownerPetMap[visit.petId?.toString()];
+            const rawObj = visit.toObject();
+
+            return {
+                ...rawObj,
+                owner: details?.owner || null,
+                pet: details?.pet || null,
+                ownerId: details?.owner || rawObj.ownerId || null,
+                petId: details?.pet || rawObj.petId || null,
+            };
+        });
 
         return res.status(200).json({
             success: true,
@@ -190,7 +210,7 @@ exports.getCompletedPets = async (req, res) => {
                     completedThisWeek,
                     totalCompleted
                 },
-                pets: visits
+                pets: completedVisitsWithDetails
             }
         });
 
@@ -424,18 +444,15 @@ exports.updatePatient = async (req, res) => {
         // Update Visit Workflow
         // ==========================================
 
-        visit.workflow.doctorCompleted = true;
-
         if (raiseLab) {
-
             visit.currentStage = "LAB";
             visit.status = "WAITING";
-
+            visit.workflow.doctorCompleted = false;
+            visit.workflow.labCompleted = false;
         } else {
-
             visit.currentStage = "COMPLETED";
             visit.status = "COMPLETED";
-
+            visit.workflow.doctorCompleted = true;
         }
 
         await visit.save();
