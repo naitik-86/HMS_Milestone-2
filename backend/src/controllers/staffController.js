@@ -312,6 +312,7 @@ const updateStaff = async (req, res) => {
 
 
         console.log("Form data - >>>>", req.body);
+
         const existingStaff = await Staff.findOne({
             _id: req.params.id,
             clinicId: req.user.clinicId,
@@ -331,6 +332,20 @@ const updateStaff = async (req, res) => {
         const employmentInfo = req.body.employmentInfo
             ? JSON.parse(req.body.employmentInfo)
             : {};
+
+
+        if (!employmentInfo.reportingTo || employmentInfo.reportingTo.trim() === "") {
+            employmentInfo.reportingTo = null;
+        } else {
+            const reportingStaff = await Staff.findOne({
+                _id: employmentInfo.reportingTo,
+                clinicId: req.user.clinicId,
+            });
+
+            if (!reportingStaff) {
+                employmentInfo.reportingTo = null;
+            }
+        }
 
         const accountInfo = req.body.accountInfo
             ? JSON.parse(req.body.accountInfo)

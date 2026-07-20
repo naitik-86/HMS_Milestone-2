@@ -33,18 +33,15 @@ export const createDoctor = async (doctorData) => {
 
 /* UPDATE DOCTOR */
 export const updateDoctor = async (id, doctorData) => {
-    console.log("this is from doctor api -> update docotr");
-    console.log(id);
-    console.log(doctorData);
+    const formData = buildDoctorFormData(doctorData);
 
     const res = await API.put(
         `${BASE_URL}/${id}`,
-        doctorData
+        formData
     );
 
     return res.data;
 };
-
 /* DELETE DOCTOR */
 export const deleteDoctor = async (id) => {
     const res = await API.delete(`${BASE_URL}/${id}`);

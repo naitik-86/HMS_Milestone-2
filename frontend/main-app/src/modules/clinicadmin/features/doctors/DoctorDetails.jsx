@@ -1,5 +1,6 @@
 import React from 'react';
 import { showToast } from '../../../../shared/components/toast';
+import Loader from '../../../../shared/components/Loader';
 // import { useEffect } from 'react';
 import { createDoctor, getDoctors, updateDoctor, deleteDoctor } from '../../api/doctorApi';
 import { useEffect, useState } from "react";
@@ -47,17 +48,25 @@ function UploadBox({ id, accept, label }) {
 }
 
 // ── DoctorForm ───────────────────────────────────────────────────────────────
-function DoctorForm({ onClose, onSave, existingData, isEdit }) {
+function DoctorForm({ onClose, onSave, existingData, isEdit, isSubmitting }) {
   const [doctorStaff, setDoctorStaff] = useState([]);
   const [activeStep, setActiveStep] = useState(0);
-  const [degrees, setDegrees] =
-    useState(
-      existingData?.degrees ||
-      [{
-        degree: '',
-        certificate: null
-      }]
-    );
+
+  console.log(existingData);
+
+  const [degrees, setDegrees] = useState(
+    existingData?.degrees?.map((d) => ({
+      degree: d.degreeName,
+      certificate: null,
+      existingCertificate: d.degreeCertificate,
+    })) || [
+      {
+        degree: "",
+        certificate: null,
+        existingCertificate: null,
+      },
+    ]
+  );
   const [doctorLetterhead,
     setDoctorLetterhead] =
     useState(null);
@@ -67,6 +76,8 @@ function DoctorForm({ onClose, onSave, existingData, isEdit }) {
   const [digitalSignature,
     setDigitalSignature] =
     useState(null);
+
+  // const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedSpecs, setSelectedSpecs] = useState(existingData?.selectedSpecs || []);
   const [selectedLangs, setSelectedLangs] = useState(existingData?.selectedLangs || []);
   const [errors, setErrors] = useState({});
@@ -191,275 +202,289 @@ function DoctorForm({ onClose, onSave, existingData, isEdit }) {
     }
   };
   return (
-    <div
-      className="fixed inset-0 z-1000 flex items-center justify-center p-3 sm:p-5"
-      style={{ backgroundColor: 'rgba(17,24,39,0.55)', backdropFilter: 'blur(4px)' }}
-      onClick={onClose}
-    >
+    <>
       <div
-        className="bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden w-full max-w-375"
-        style={{ height: 'min(88vh, 900px)' }}
-        onClick={e => e.stopPropagation()}
+        className="fixed inset-0 z-1000 flex items-center justify-center p-3 sm:p-5"
+        style={{ backgroundColor: 'rgba(17,24,39,0.55)', backdropFilter: 'blur(4px)' }}
+        onClick={onClose}
       >
+        <div
+          className="bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden w-full max-w-375"
+          style={{ height: 'min(88vh, 900px)' }}
+          onClick={e => e.stopPropagation()}
+        >
 
-        {/* ── HEADER ── */}
-        <div className="px-5 sm:px-8 lg:px-10 pt-6 sm:pt-8 pb-0 shrink-0 border-b border-[#F3F4F6]">
-          <div className="flex items-start justify-between gap-4 mb-6">
-            <div>
-              <h2 className="font-['Syne'] text-2xl font-bold text-[#1A1D2E] leading-tight">
-                {isEdit ? 'Edit Doctor Details' : 'Add Doctor Details'}
-              </h2>
-              <p className="text-gray-400 text-sm mt-1">
-                {isEdit
-                  ? `Update qualifications & practice settings for ${formData.name || '—'}`
-                  : 'Register a new doctor — qualifications, registration & practice details.'}
-              </p>
+          {/* ── HEADER ── */}
+          <div className="px-5 sm:px-8 lg:px-10 pt-6 sm:pt-8 pb-0 shrink-0 border-b border-[#F3F4F6]">
+            <div className="flex items-start justify-between gap-4 mb-6">
+              <div>
+                <h2 className="font-['Syne'] text-2xl font-bold text-[#1A1D2E] leading-tight">
+                  {isEdit ? 'Edit Doctor Details' : 'Add Doctor Details'}
+                </h2>
+                <p className="text-gray-400 text-sm mt-1">
+                  {isEdit
+                    ? `Update qualifications & practice settings for ${formData.name || '—'}`
+                    : 'Register a new doctor — qualifications, registration & practice details.'}
+                </p>
+              </div>
+              <button onClick={onClose} className="text-gray-400 hover:text-gray-600 w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 cursor-pointer text-lg mt-0.5 bg-transparent border-none">
+                ✕
+              </button>
             </div>
-            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 cursor-pointer text-lg mt-0.5 bg-transparent border-none">
-              ✕
-            </button>
-          </div>
 
-          {/* Stepper */}
-          <div className="hidden md:flex items-center">
-            {steps.map((s, i) => {
-              const isActive = activeStep === i;
-              const isDone = activeStep > i;
-              return (
-                <React.Fragment key={i}>
-                  <div className="flex items-center gap-2.5 shrink-0">
-                    <div
-                      className="w-8 h-8 flex items-center justify-center rounded-full text-sm font-bold shrink-0sition-all"
-                      style={{
-                        backgroundColor: isDone || isActive ? '#E8630A' : '#FEF3EB',
-                        color: isDone || isActive ? '#fff' : '#E8630A',
-                        border: `2px solid ${isDone || isActive ? '#E8630A' : '#FDDAB5'}`,
-                      }}
-                    >
-                      {isDone ? '✓' : i + 1}
+            {/* Stepper */}
+            <div className="hidden md:flex items-center">
+              {steps.map((s, i) => {
+                const isActive = activeStep === i;
+                const isDone = activeStep > i;
+                return (
+                  <React.Fragment key={i}>
+                    <div className="flex items-center gap-2.5 shrink-0">
+                      <div
+                        className="w-8 h-8 flex items-center justify-center rounded-full text-sm font-bold shrink-0sition-all"
+                        style={{
+                          backgroundColor: isDone || isActive ? '#E8630A' : '#FEF3EB',
+                          color: isDone || isActive ? '#fff' : '#E8630A',
+                          border: `2px solid ${isDone || isActive ? '#E8630A' : '#FDDAB5'}`,
+                        }}
+                      >
+                        {isDone ? '✓' : i + 1}
+                      </div>
+                      <span
+                        className="text-sm whitespace-nowrap"
+                        style={{ color: isActive ? '#1A1D2E' : isDone ? '#E8630A' : '#9CA3AF', fontWeight: isActive ? 700 : 600 }}
+                      >
+                        {s.label}
+                      </span>
                     </div>
-                    <span
-                      className="text-sm whitespace-nowrap"
-                      style={{ color: isActive ? '#1A1D2E' : isDone ? '#E8630A' : '#9CA3AF', fontWeight: isActive ? 700 : 600 }}
+                    {i < steps.length - 1 && (
+                      <div
+                        className="flex-1 mx-5 rounded-full"
+                        style={{ height: '2px', backgroundColor: activeStep > i ? '#E8630A' : '#E5E7EB', minWidth: '80px' }}
+                      />
+                    )}
+                  </React.Fragment>
+                );
+              })}
+            </div>
+
+            {/* Pill tabs */}
+            <div className="flex gap-2 mt-5 pb-5 overflow-x-auto">
+              {steps.map((s, i) => {
+                const isActive = activeStep === i;
+                const isDone = activeStep > i;
+                return (
+                  <div key={i} className="relative">
+                    <button
+                      onClick={() => setActiveStep(i)}
+                      className="px-5 py-2 rounded-full text-sm font-semibold cursor-pointer border-none transition-all"
+                      style={{
+                        backgroundColor: isActive ? '#E8630A' : isDone ? '#FEF3EB' : '#F3F4F6',
+                        color: isActive ? '#fff' : isDone ? '#E8630A' : '#6B7280',
+                      }}
                     >
                       {s.label}
-                    </span>
+                    </button>
+                    {stepErrors[i] > 0 && (
+                      <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+                        {stepErrors[i]}
+                      </span>
+                    )}
                   </div>
-                  {i < steps.length - 1 && (
-                    <div
-                      className="flex-1 mx-5 rounded-full"
-                      style={{ height: '2px', backgroundColor: activeStep > i ? '#E8630A' : '#E5E7EB', minWidth: '80px' }}
-                    />
-                  )}
-                </React.Fragment>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
 
-          {/* Pill tabs */}
-          <div className="flex gap-2 mt-5 pb-5 overflow-x-auto">
-            {steps.map((s, i) => {
-              const isActive = activeStep === i;
-              const isDone = activeStep > i;
-              return (
-                <div key={i} className="relative">
-                  <button
-                    onClick={() => setActiveStep(i)}
-                    className="px-5 py-2 rounded-full text-sm font-semibold cursor-pointer border-none transition-all"
-                    style={{
-                      backgroundColor: isActive ? '#E8630A' : isDone ? '#FEF3EB' : '#F3F4F6',
-                      color: isActive ? '#fff' : isDone ? '#E8630A' : '#6B7280',
-                    }}
-                  >
-                    {s.label}
-                  </button>
-                  {stepErrors[i] > 0 && (
-                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
-                      {stepErrors[i]}
-                    </span>
-                  )}
+          {/* ── BODY ── */}
+          <div className="flex-1 overflow-y-auto px-5 sm:px-8 lg:px-10 py-6 sm:py-8">
+
+            {/* Step 0: Qualifications */}
+            {activeStep === 0 && (
+              <div className="space-y-6">
+                <div className={cardCls}>
+                  <h3 className="text-base font-bold text-[#1A1D2E] mb-6">Doctor Identity</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className={labelCls}>Doctor Full Name <span className="text-[#E8630A]">*</span></label>
+                      <select
+                        className={errors.name ? inputErrCls : inputCls}
+                        value={formData.staffId || ""}
+                        onChange={(e) => {
+
+                          const doctor = doctorStaff.find(
+                            d => d._id === e.target.value
+                          );
+
+                          if (!doctor) return;
+
+                          setFormData(prev => ({
+                            ...prev,
+
+                            staffId: doctor._id,
+                            staff: doctor._id,
+                            staffCode:
+                              doctor.employmentInfo?.staffId || "",
+
+                            name:
+                              doctor.personalInfo.fullName,
+
+                            mobile:
+                              doctor.personalInfo.mobileNumber,
+
+                            email:
+                              doctor.personalInfo.email,
+                          }));
+                        }}
+                      >
+                        <option value="">
+                          Select Doctor
+                        </option>
+
+                        {doctorStaff.map(doc => (
+                          <option
+                            key={doc._id}
+                            value={doc._id}
+                          >
+                            {doc.employmentInfo.staffId}
+                            {" | "}
+                            {doc.personalInfo.fullName}
+                            {" | "}
+                            {doc.personalInfo.mobileNumber}
+                          </option>
+                        ))}
+                      </select>
+                      {errors.name && <p className="text-red-500 text-xs mt-1.5">{errors.name}</p>}
+                    </div>
+                    <div>
+                      <label className={labelCls}>Years of Experience <span className="text-[#E8630A]">*</span></label>
+                      <input type="number" min="0" placeholder="e.g. 8" value={formData.experience} onChange={e => u('experience', digitsOnly(e.target.value, 2))} className={errors.experience ? inputErrCls : inputCls} />
+                      {errors.experience && <p className="text-red-500 text-xs mt-1.5">{errors.experience}</p>}
+                    </div>
+                  </div>
                 </div>
-              );
-            })}
-          </div>
-        </div>
 
-        {/* ── BODY ── */}
-        <div className="flex-1 overflow-y-auto px-5 sm:px-8 lg:px-10 py-6 sm:py-8">
+                <div className={cardCls}>
+                  <h3 className="text-base font-bold text-[#1A1D2E] mb-6">Academic Degrees</h3>
+                  <div className="space-y-4">
+                    {degrees.map((d, i) => (
+                      <div key={i} className="bg-[#FAFAFA] border border-[#F3F4F6] rounded-2xl p-5">
+                        <div className="flex justify-between items-center mb-4">
+                          <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Degree {i + 1}</span>
+                          {i > 0 && (
+                            <button onClick={() => setDegrees(degrees.filter((_, j) => j !== i))} className="text-xs text-red-500 hover:text-red-700 font-semibold cursor-pointer bg-transparent border-none">
+                              Remove
+                            </button>
+                          )}
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                          <div>
+                            <label className={labelCls}>Degree Type</label>
+                            <select className={inputCls} value={d.degree || d.degreeName || ""} onChange={e => setDegrees(degrees.map((deg, j) => j === i ? { ...deg, degree: e.target.value, degreeName: e.target.value } : deg))}>
+                              <option value="">Select</option>
+                              {degreeTypes.map(t => <option key={t}>{t}</option>)}
+                            </select>
+                          </div>
+                          <div>
+                            <label className={labelCls}>
+                              Certificate (PDF)
+                            </label>
 
-          {/* Step 0: Qualifications */}
-          {activeStep === 0 && (
-            <div className="space-y-6">
+                            <input
+                              type="file"
+                              accept="application/pdf,.pdf"
+                              onChange={(e) => {
+                                const file = e.target.files[0];
+
+                                const valid = requirePdf(file, (pdf) =>
+                                  setDegrees(
+                                    degrees.map((deg, j) =>
+                                      j === i
+                                        ? {
+                                          ...deg,
+                                          certificate: pdf,
+                                        }
+                                        : deg
+                                    )
+                                  )
+                                );
+
+                                if (valid === false) e.target.value = "";
+                              }}
+                              className={inputCls}
+                            />
+
+                            {(d.degreeCertificate || d.existingCertificate) && (
+                              <div className="mt-2 text-sm">
+                                <a
+                                  href={d.degreeCertificate || d.existingCertificate}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-[#E8630A] hover:underline"
+                                >
+                                  📄 View uploaded certificate
+                                </a>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    <button
+                      onClick={() => setDegrees([...degrees, { degree: '' }])}
+                      className="text-xs font-semibold px-4 py-2 rounded-xl cursor-pointer border border-[#E8630A]/40 text-[#E8630A] bg-[#E8630A]/5 hover:bg-[#E8630A]/10 transition-colors"
+                    >
+                      + Add Degree
+                    </button>
+                    {errors.degrees && <p className="text-red-500 text-xs mt-1.5">{errors.degrees}</p>}
+                  </div>
+                </div>
+
+                <div className={cardCls}>
+                  <h3 className="text-base font-bold text-[#1A1D2E] mb-1">Specialization <span className="text-[#E8630A]">*</span></h3>
+                  <p className="text-sm text-gray-400 mb-5">Select all areas that apply.</p>
+                  <div className="flex flex-wrap gap-2.5">
+                    {specializations.map(s => (
+                      <div key={s} onClick={() => toggleSpec(s)} className={chipCls(selectedSpecs.includes(s))}>
+                        <input type="checkbox" checked={selectedSpecs.includes(s)} readOnly className="accent-[#E8630A]" />
+                        {s}
+                      </div>
+                    ))}
+                  </div>
+                  {errors.selectedSpecs && <p className="text-red-500 text-xs mt-3">{errors.selectedSpecs}</p>}
+                </div>
+              </div>
+            )}
+
+            {/* Step 1: Vet Council */}
+            {activeStep === 1 && (
               <div className={cardCls}>
-                <h3 className="text-base font-bold text-[#1A1D2E] mb-6">Doctor Identity</h3>
+                <h3 className="text-base font-bold text-[#1A1D2E] mb-6">Vet Council Registration</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className={labelCls}>Doctor Full Name <span className="text-[#E8630A]">*</span></label>
-                    <select
-                      className={errors.name ? inputErrCls : inputCls}
-                      value={formData.staffId || ""}
-                      onChange={(e) => {
-
-                        const doctor = doctorStaff.find(
-                          d => d._id === e.target.value
-                        );
-
-                        if (!doctor) return;
-
-                        setFormData(prev => ({
-                          ...prev,
-
-                          staffId: doctor._id,
-                          staff: doctor._id,
-                          staffCode:
-                            doctor.employmentInfo?.staffId || "",
-
-                          name:
-                            doctor.personalInfo.fullName,
-
-                          mobile:
-                            doctor.personalInfo.mobileNumber,
-
-                          email:
-                            doctor.personalInfo.email,
-                        }));
-                      }}
-                    >
-                      <option value="">
-                        Select Doctor
-                      </option>
-
-                      {doctorStaff.map(doc => (
-                        <option
-                          key={doc._id}
-                          value={doc._id}
-                        >
-                          {doc.employmentInfo.staffId}
-                          {" | "}
-                          {doc.personalInfo.fullName}
-                          {" | "}
-                          {doc.personalInfo.mobileNumber}
-                        </option>
-                      ))}
+                    <label className={labelCls}>Registration Number <span className="text-[#E8630A]">*</span></label>
+                    <input placeholder="e.g. VCI/MH/2020/1234" value={formData.regNumber} onChange={e => u('regNumber', e.target.value.toUpperCase().replace(/[^A-Z0-9/-]/g, ""))} className={errors.regNumber ? inputErrCls : inputCls} />
+                    {errors.regNumber && <p className="text-red-500 text-xs mt-1.5">{errors.regNumber}</p>}
+                  </div>
+                  <div>
+                    <label className={labelCls}>State Vet Council <span className="text-[#E8630A]">*</span></label>
+                    <select value={formData.state} onChange={e => u('state', e.target.value)} className={errors.state ? inputErrCls : inputCls}>
+                      <option value="">Select State</option>
+                      {states.map(s => <option key={s}>{s}</option>)}
                     </select>
-                    {errors.name && <p className="text-red-500 text-xs mt-1.5">{errors.name}</p>}
+                    {errors.state && <p className="text-red-500 text-xs mt-1.5">{errors.state}</p>}
                   </div>
                   <div>
-                    <label className={labelCls}>Years of Experience <span className="text-[#E8630A]">*</span></label>
-                    <input type="number" min="0" placeholder="e.g. 8" value={formData.experience} onChange={e => u('experience', digitsOnly(e.target.value, 2))} className={errors.experience ? inputErrCls : inputCls} />
-                    {errors.experience && <p className="text-red-500 text-xs mt-1.5">{errors.experience}</p>}
+                    <label className={labelCls}>Certificate Validity Date</label>
+                    <input type="date" value={formData.certValidity} onChange={e => u('certValidity', e.target.value)} className={errors.certValidity ? inputErrCls : inputCls} />
+                    {errors.certValidity && <p className="text-red-500 text-xs mt-1.5">{errors.certValidity}</p>}
                   </div>
-                </div>
-              </div>
-
-              <div className={cardCls}>
-                <h3 className="text-base font-bold text-[#1A1D2E] mb-6">Academic Degrees</h3>
-                <div className="space-y-4">
-                  {degrees.map((d, i) => (
-                    <div key={i} className="bg-[#FAFAFA] border border-[#F3F4F6] rounded-2xl p-5">
-                      <div className="flex justify-between items-center mb-4">
-                        <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Degree {i + 1}</span>
-                        {i > 0 && (
-                          <button onClick={() => setDegrees(degrees.filter((_, j) => j !== i))} className="text-xs text-red-500 hover:text-red-700 font-semibold cursor-pointer bg-transparent border-none">
-                            Remove
-                          </button>
-                        )}
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                        <div>
-                          <label className={labelCls}>Degree Type</label>
-                          <select className={inputCls} value={d.degree || d.degreeName || ""} onChange={e => setDegrees(degrees.map((deg, j) => j === i ? { ...deg, degree: e.target.value, degreeName: e.target.value } : deg))}>
-                            <option value="">Select</option>
-                            {degreeTypes.map(t => <option key={t}>{t}</option>)}
-                          </select>
-                        </div>
-                        <div>
-                          <label className={labelCls}>
-                            Certificate (PDF)
-                          </label>
-
-                          <input
-                            type="file"
-                            accept="application/pdf,.pdf"
-                            onChange={(e) => {
-                              const file = e.target.files[0];
-                              const valid = requirePdf(file, (pdf) =>
-                                setDegrees(
-                                  degrees.map((deg, j) =>
-                                    j === i
-                                      ? {
-                                        ...deg,
-                                        certificate:
-                                          pdf
-                                      }
-                                      : deg
-                                  )
-                                )
-                              );
-                              if (valid === false) e.target.value = "";
-                            }}
-                            className={inputCls}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                  <button
-                    onClick={() => setDegrees([...degrees, { degree: '' }])}
-                    className="text-xs font-semibold px-4 py-2 rounded-xl cursor-pointer border border-[#E8630A]/40 text-[#E8630A] bg-[#E8630A]/5 hover:bg-[#E8630A]/10 transition-colors"
-                  >
-                    + Add Degree
-                  </button>
-                  {errors.degrees && <p className="text-red-500 text-xs mt-1.5">{errors.degrees}</p>}
-                </div>
-              </div>
-
-              <div className={cardCls}>
-                <h3 className="text-base font-bold text-[#1A1D2E] mb-1">Specialization <span className="text-[#E8630A]">*</span></h3>
-                <p className="text-sm text-gray-400 mb-5">Select all areas that apply.</p>
-                <div className="flex flex-wrap gap-2.5">
-                  {specializations.map(s => (
-                    <div key={s} onClick={() => toggleSpec(s)} className={chipCls(selectedSpecs.includes(s))}>
-                      <input type="checkbox" checked={selectedSpecs.includes(s)} readOnly className="accent-[#E8630A]" />
-                      {s}
-                    </div>
-                  ))}
-                </div>
-                {errors.selectedSpecs && <p className="text-red-500 text-xs mt-3">{errors.selectedSpecs}</p>}
-              </div>
-            </div>
-          )}
-
-          {/* Step 1: Vet Council */}
-          {activeStep === 1 && (
-            <div className={cardCls}>
-              <h3 className="text-base font-bold text-[#1A1D2E] mb-6">Vet Council Registration</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className={labelCls}>Registration Number <span className="text-[#E8630A]">*</span></label>
-                  <input placeholder="e.g. VCI/MH/2020/1234" value={formData.regNumber} onChange={e => u('regNumber', e.target.value.toUpperCase().replace(/[^A-Z0-9/-]/g, ""))} className={errors.regNumber ? inputErrCls : inputCls} />
-                  {errors.regNumber && <p className="text-red-500 text-xs mt-1.5">{errors.regNumber}</p>}
-                </div>
-                <div>
-                  <label className={labelCls}>State Vet Council <span className="text-[#E8630A]">*</span></label>
-                  <select value={formData.state} onChange={e => u('state', e.target.value)} className={errors.state ? inputErrCls : inputCls}>
-                    <option value="">Select State</option>
-                    {states.map(s => <option key={s}>{s}</option>)}
-                  </select>
-                  {errors.state && <p className="text-red-500 text-xs mt-1.5">{errors.state}</p>}
-                </div>
-                <div>
-                  <label className={labelCls}>Certificate Validity Date</label>
-                  <input type="date" value={formData.certValidity} onChange={e => u('certValidity', e.target.value)} className={errors.certValidity ? inputErrCls : inputCls} />
-                  {errors.certValidity && <p className="text-red-500 text-xs mt-1.5">{errors.certValidity}</p>}
-                </div>
-                <div>
-                  <label className={labelCls}>Renewal Reminder <span className="text-gray-400 font-normal">(days before expiry)</span></label>
-                  <input type="number" min="0" max="365" value={formData.reminderDays} onChange={e => u('reminderDays', digitsOnly(e.target.value, 3))} className={errors.reminderDays ? inputErrCls : inputCls} />
-                  {errors.reminderDays && <p className="text-red-500 text-xs mt-1.5">{errors.reminderDays}</p>}
-                </div>
-                <div className="col-span-2">
                   <div>
+                    <label className={labelCls}>Renewal Reminder <span className="text-gray-400 font-normal">(days before expiry)</span></label>
+                    <input type="number" min="0" max="365" value={formData.reminderDays} onChange={e => u('reminderDays', digitsOnly(e.target.value, 3))} className={errors.reminderDays ? inputErrCls : inputCls} />
+                    {errors.reminderDays && <p className="text-red-500 text-xs mt-1.5">{errors.reminderDays}</p>}
+                  </div>
+                  <div className="col-span-2">
                     <label className={labelCls}>
                       Registration Certificate
                     </label>
@@ -476,122 +501,274 @@ function DoctorForm({ onClose, onSave, existingData, isEdit }) {
                         if (valid === false) e.target.value = "";
                       }}
                     />
-                  </div>                </div>
-              </div>
-            </div>
-          )}
 
-          {/* Step 2: Practice Settings */}
-          {activeStep === 2 && (
-            <div className="space-y-6">
-              <div className={cardCls}>
-                <h3 className="text-base font-bold text-[#1A1D2E] mb-6">Practice Settings</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className={labelCls}>Consultation Fees (₹) <span className="text-[#E8630A]">*</span></label>
-                    <input type="number" min="0" placeholder="e.g. 500" value={formData.fees} onChange={e => u('fees', digitsOnly(e.target.value, 6))} className={errors.fees ? inputErrCls : inputCls} />
-                    {errors.fees && <p className="text-red-500 text-xs mt-1.5">{errors.fees}</p>}
-                  </div>
-                  <div>
-                    <label className={labelCls}>Avg Consultation Duration (min)</label>
-                    <input type="number" min="5" max="240" value={formData.avgDuration} onChange={e => u('avgDuration', digitsOnly(e.target.value, 3))} className={errors.avgDuration ? inputErrCls : inputCls} />
-                    {errors.avgDuration && <p className="text-red-500 text-xs mt-1.5">{errors.avgDuration}</p>}
-                  </div>
-                </div>
-                <div className="flex items-center justify-between mt-6 p-5 bg-[#FAFAFA] border border-[#F3F4F6] rounded-2xl">
-                  <div>
-                    <div className="font-semibold text-[#1A1D2E] text-sm">Available for Emergency?</div>
-                    <div className="text-xs text-gray-400 mt-0.5">{formData.emergency ? 'Available for emergencies' : 'Not available for emergencies'}</div>
-                  </div>
-                  <div
-                    onClick={() => u('emergency', !formData.emergency)}
-                    className="relative rounded-full cursor-pointer shrink-0 transition-colors"
-                    style={{ width: '46px', height: '24px', backgroundColor: formData.emergency ? '#E8630A' : '#D1D5DB' }}
-                  >
-                    <div className="absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-all" style={{ left: formData.emergency ? '23px' : '3px' }} />
+                    {/* Show existing file only in edit mode */}
+                    {!registrationCertificate &&
+                      existingData?.registrationCertificate && (
+                        <div className="mt-2">
+                          <a
+                            href={existingData.registrationCertificate}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-[#E8630A] hover:underline"
+                          >
+                            📄 View current registration certificate
+                          </a>
+                        </div>
+                      )}
+
+                    {/* Show newly selected file */}
+                    {registrationCertificate instanceof File && (
+                      <p className="mt-2 text-sm text-gray-600">
+                        Selected: {registrationCertificate.name}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
+            )}
 
-              <div className={cardCls}>
-                <h3 className="text-base font-bold text-[#1A1D2E] mb-6">Documents & Assets</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className={labelCls}>
-                      Digital Signature
-                    </label>
-
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className={inputCls}
-                      onChange={(e) => {
-                        const valid = requireImage(
-                          e.target.files[0],
-                          setDigitalSignature
-                        );
-                        if (valid === false) e.target.value = "";
-                      }}
-                    />
-                  </div>
-                  <div>
-                    <label className={labelCls}>
-                      Doctor Letterhead / Stamp PDF
-                    </label>
-
-                    <input
-                      type="file"
-                      accept="application/pdf,.pdf"
-                      className={inputCls}
-                      onChange={(e) => {
-                        const valid = requirePdf(
-                          e.target.files[0],
-                          setDoctorLetterhead
-                        );
-                        if (valid === false) e.target.value = "";
-                      }}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className={cardCls}>
-                <h3 className="text-base font-bold text-[#1A1D2E] mb-1">Prescription Language(s)</h3>
-                <p className="text-sm text-gray-400 mb-5">Select languages for prescription writing.</p>
-                <div className="flex flex-wrap gap-2.5">
-                  {languages.map(l => (
-                    <div key={l} onClick={() => toggleLang(l)} className={chipCls(selectedLangs.includes(l))}>
-                      <input type="checkbox" checked={selectedLangs.includes(l)} readOnly className="accent-[#E8630A]" />
-                      {l}
+            {/* Step 2: Practice Settings */}
+            {activeStep === 2 && (
+              <div className="space-y-6">
+                <div className={cardCls}>
+                  <h3 className="text-base font-bold text-[#1A1D2E] mb-6">Practice Settings</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className={labelCls}>Consultation Fees (₹) <span className="text-[#E8630A]">*</span></label>
+                      <input type="number" min="0" placeholder="e.g. 500" value={formData.fees} onChange={e => u('fees', digitsOnly(e.target.value, 6))} className={errors.fees ? inputErrCls : inputCls} />
+                      {errors.fees && <p className="text-red-500 text-xs mt-1.5">{errors.fees}</p>}
                     </div>
-                  ))}
+                    <div>
+                      <label className={labelCls}>Avg Consultation Duration (min)</label>
+                      <input type="number" min="5" max="240" value={formData.avgDuration} onChange={e => u('avgDuration', digitsOnly(e.target.value, 3))} className={errors.avgDuration ? inputErrCls : inputCls} />
+                      {errors.avgDuration && <p className="text-red-500 text-xs mt-1.5">{errors.avgDuration}</p>}
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between mt-6 p-5 bg-[#FAFAFA] border border-[#F3F4F6] rounded-2xl">
+                    <div>
+                      <div className="font-semibold text-[#1A1D2E] text-sm">Available for Emergency?</div>
+                      <div className="text-xs text-gray-400 mt-0.5">{formData.emergency ? 'Available for emergencies' : 'Not available for emergencies'}</div>
+                    </div>
+                    <div
+                      onClick={() => u('emergency', !formData.emergency)}
+                      className="relative rounded-full cursor-pointer shrink-0 transition-colors"
+                      style={{ width: '46px', height: '24px', backgroundColor: formData.emergency ? '#E8630A' : '#D1D5DB' }}
+                    >
+                      <div className="absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-all" style={{ left: formData.emergency ? '23px' : '3px' }} />
+                    </div>
+                  </div>
+                </div>
+
+                <div className={cardCls}>
+                  <h3 className="text-base font-bold text-[#1A1D2E] mb-6">Documents & Assets</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className={labelCls}>
+                        Digital Signature
+                      </label>
+
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className={inputCls}
+                        onChange={(e) => {
+                          const file = e.target.files[0];
+
+                          const valid = requireImage(
+                            file,
+                            setDigitalSignature
+                          );
+
+                          if (valid === false) e.target.value = "";
+                        }}
+                      />
+
+                      {/* Existing uploaded signature */}
+                      {!digitalSignature && existingData?.digitalSignature && (
+                        <div className="mt-2">
+                          <a
+                            href={existingData.digitalSignature}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm font-medium text-[#E8630A] hover:underline"
+                          >
+                            🖊 View current signature
+                          </a>
+                        </div>
+                      )}
+
+                      {/* Newly selected image */}
+                      {digitalSignature instanceof File && (
+                        <div className="mt-2 flex items-center gap-3">
+                          <img
+                            src={URL.createObjectURL(digitalSignature)}
+                            alt="Signature Preview"
+                            className="h-12 rounded border border-[#EAE5DC]"
+                          />
+                          <span className="text-sm text-green-600">
+                            ✓ {digitalSignature.name}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <label className={labelCls}>
+                        Doctor Letterhead / Stamp PDF
+                      </label>
+
+                      <input
+                        type="file"
+                        accept="application/pdf,.pdf"
+                        className={inputCls}
+                        onChange={(e) => {
+                          const file = e.target.files[0];
+
+                          const valid = requirePdf(file, setDoctorLetterhead);
+
+                          if (valid === false) e.target.value = "";
+                        }}
+                      />
+
+                      {/* Existing uploaded file */}
+                      {!doctorLetterhead && existingData?.doctorLetterhead && (
+                        <div className="mt-2">
+                          <a
+                            href={existingData.doctorLetterhead}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm font-medium text-[#E8630A] hover:underline"
+                          >
+                            📄 View current letterhead
+                          </a>
+                        </div>
+                      )}
+
+                      {/* Newly selected file */}
+                      {doctorLetterhead instanceof File && (
+                        <p className="mt-2 text-sm text-green-600">
+                          ✓ {doctorLetterhead.name}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className={cardCls}>
+                  <h3 className="text-base font-bold text-[#1A1D2E] mb-1">Prescription Language(s)</h3>
+                  <p className="text-sm text-gray-400 mb-5">Select languages for prescription writing.</p>
+                  <div className="flex flex-wrap gap-2.5">
+                    {languages.map(l => (
+                      <div key={l} onClick={() => toggleLang(l)} className={chipCls(selectedLangs.includes(l))}>
+                        <input type="checkbox" checked={selectedLangs.includes(l)} readOnly className="accent-[#E8630A]" />
+                        {l}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
 
-        {/* ── FOOTER ── */}
-        <div className="px-10 py-5 flex items-center justify-between shrink-0 border-t border-[#F3F4F6]">
-          <button
-            onClick={() => activeStep > 0 ? setActiveStep(activeStep - 1) : onClose()}
-            className="px-7 py-2.5 rounded-xl text-sm font-semibold border border-[#E5E7EB] text-[#374151] bg-white hover:bg-gray-50 cursor-pointer transition-colors"
-          >
-            {activeStep > 0 ? '← Previous' : 'Cancel'}
-          </button>
-          <button
-            onClick={() =>
-              activeStep < steps.length - 1
-                ? setActiveStep(activeStep + 1)
-                : submitForm()
-            }
-            className="px-8 py-2.5 rounded-xl text-sm font-semibold text-white bg-[#E8630A] hover:bg-[#D05A09] cursor-pointer transition-colors border-none"
-          >
-            {activeStep < steps.length - 1 ? 'Next →' : isEdit ? '✓ Update Doctor' : 'Save Doctor Details'}
-          </button>
+          {/* ── FOOTER ── */}
+          <div className="px-10 py-5 flex items-center justify-between shrink-0 border-t border-[#F3F4F6]">
+            <button
+              onClick={() => activeStep > 0 ? setActiveStep(activeStep - 1) : onClose()}
+              className="px-7 py-2.5 rounded-xl text-sm font-semibold border border-[#E5E7EB] text-[#374151] bg-white hover:bg-gray-50 cursor-pointer transition-colors"
+            >
+              {activeStep > 0 ? '← Previous' : 'Cancel'}
+            </button>
+            <button
+              disabled={isSubmitting}
+              onClick={() => {
+                if (isSubmitting) return;
+
+                if (activeStep < steps.length - 1) {
+                  setActiveStep(activeStep + 1);
+                } else {
+                  submitForm();
+                }
+              }}
+              className={`px-8 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors border-none
+    ${isSubmitting ? "opacity-70 cursor-not-allowed" : "cursor-pointer"}`}
+              style={{
+                backgroundColor: isSubmitting ? "#C77B45" : "#E8630A",
+              }}
+              onMouseEnter={(e) => {
+                if (!isSubmitting)
+                  e.currentTarget.style.backgroundColor = "#D05A09";
+              }}
+              onMouseLeave={(e) => {
+                if (!isSubmitting)
+                  e.currentTarget.style.backgroundColor = "#E8630A";
+              }}
+            >
+              {isSubmitting ? (
+                <span className="flex items-center gap-2">
+                  <svg
+                    className="animate-spin h-4 w-4 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                    />
+                  </svg>
+                  Submitting...
+                </span>
+              ) : activeStep < steps.length - 1 ? (
+                "Next →"
+              ) : isEdit ? (
+                "✓ Update Doctor"
+              ) : (
+                "✓ Save Doctor Details"
+              )}
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+      {isSubmitting && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[9999]">
+          <div className="bg-white rounded-xl px-8 py-6 shadow-xl flex items-center gap-3">
+            <svg
+              className="animate-spin h-6 w-6 text-[#E8630A]"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+                className="opacity-25"
+              />
+              <path
+                fill="currentColor"
+                className="opacity-75"
+                d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+              />
+            </svg>
+
+            <span className="font-medium">
+              {isEdit ? "Updating doctor..." : "Creating doctor..."}
+            </span>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -600,10 +777,11 @@ function DoctorForm({ onClose, onSave, existingData, isEdit }) {
 function ViewProfileModal({ doctor, onClose, onEdit, onDelete }) {
   if (!doctor) return null;
 
+  // console.log(doctor);
 
 
   const statItems = [
-    { label: 'Specialization', value: doctor.specialization || '—' },
+
     { label: 'Experience', value: doctor.experience ? `${doctor.experience} years` : '—' },
     { label: 'Consultation Fees', value: doctor.fees ? `₹${doctor.fees}` : '—', cls: 'text-[#E8630A]' },
     { label: 'Avg Duration', value: doctor.avgDuration ? `${doctor.avgDuration} min` : '—' },
@@ -699,9 +877,12 @@ export default function DoctorDetails() {
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState(null);
   const [toast, setToast] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     fetchDoctors();
+
+
   }, []);
 
   const fetchDoctors = async () => {
@@ -777,7 +958,7 @@ export default function DoctorDetails() {
       setLoading(false);
     }
   };
-
+  console.log(doctors);
 
   const closeModal = () => setModal(null);
 
@@ -808,7 +989,7 @@ export default function DoctorDetails() {
 
   const handleSave = async (formData) => {
     try {
-
+      setIsSubmitting(true);
       if (modal.type === "edit") {
 
         await updateDoctor(
@@ -846,15 +1027,15 @@ export default function DoctorDetails() {
         title: "Operation Failed",
         description: "Unable to save Doctor details. Please try again.",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   if (loading) {
-    return (
-      <div className="flex justify-center items-center h-100">
-        Loading doctors...
-      </div>
-    );
+    <div className="min-h-screen flex items-center justify-center p-6">
+      <Loader />
+    </div>
   }
 
   return (
@@ -866,7 +1047,7 @@ export default function DoctorDetails() {
       )}
 
       {(modal?.type === 'add' || modal?.type === 'edit') && (
-        <DoctorForm onClose={closeModal} onSave={handleSave} existingData={modal.doctor} isEdit={modal.type === 'edit'} />
+        <DoctorForm onClose={closeModal} onSave={handleSave} isSubmitting={isSubmitting} existingData={modal.doctor} isEdit={modal.type === 'edit'} />
       )}
 
       {modal?.type === 'view' && (
@@ -903,11 +1084,42 @@ export default function DoctorDetails() {
       {/* Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         {doctors.length === 0 ? (
+          <div className="col-span-full flex justify-center items-center py-20">
+            <div className="max-w-lg w-full bg-gradient-to-br from-[#FFF8F3] to-[#FEF3EB] border border-[#F6D2B7] rounded-3xl p-10 text-center shadow-sm">
 
-          <div className="col-span-full text-center py-10 text-gray-500">
-            No doctors found
+              {/* Icon */}
+              <div className="mx-auto w-20 h-20 rounded-full bg-[#E8630A]/10 flex items-center justify-center mb-6">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="w-10 h-10 text-[#E8630A]"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M17 20h5V4H2v16h5m10 0v-4a3 3 0 00-3-3H10a3 3 0 00-3 3v4m10 0H7m8-12a3 3 0 11-6 0 3 3 0 016 0z"
+                  />
+                </svg>
+              </div>
+
+              {/* Heading */}
+              <h3 className="text-2xl font-bold text-[#1A1D2E] mb-3">
+                No Doctors Added Yet
+              </h3>
+
+              {/* Description */}
+              <p className="text-gray-500 text-sm leading-7 max-w-md mx-auto">
+                Your clinic doesn't have any registered doctors yet.
+                Start by adding your first doctor's professional profile,
+                qualifications, and consultation details.
+              </p>
+
+
+            </div>
           </div>
-
         ) : (
           doctors.map(d => (
             <div key={d._id} className="bg-white border border-[#EAE5DC] rounded-2xl p-5 hover:shadow-lg transition-all duration-200 group">
@@ -927,7 +1139,7 @@ export default function DoctorDetails() {
 
               <div className="grid grid-cols-2 gap-2 mb-4">
                 {[
-                  { label: 'SPECIALIZATION', value: d.specialization, cls: 'text-[#1A1D2E]' },
+
                   { label: 'EXPERIENCE', value: `${d.experience} yrs`, cls: 'text-[#1A1D2E]' },
                   { label: 'CONSULT FEES', value: `₹${d.fees}`, cls: 'text-[#E8630A]' },
                   { label: 'EMERGENCY', value: d.emergency ? 'Available' : 'Not Available', cls: d.emergency ? 'text-green-500' : 'text-red-400' },

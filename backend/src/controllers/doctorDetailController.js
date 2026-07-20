@@ -180,6 +180,9 @@ const createDoctor = async (req, res) => {
             prescriptionLanguages,
         });
 
+
+
+
         return res.status(201).json({
             success: true,
             message: "Doctor created successfully",
@@ -251,24 +254,12 @@ const getDoctorById = async (req, res) => {
 };
 const updateDoctor = async (req, res) => {
     try {
-        console.log("this is from update doctor controller");
-        console.log(req.params);
-        console.log(req.body);
-
-
         const clinicId = req.user.clinicId;
 
-        const doctor = await Doctor.findOneAndUpdate(
-            {
-                _id: req.params.id,
-                clinicId,
-            },
-            req.body,
-            {
-                new: true,
-                runValidators: true,
-            }
-        );
+        const doctor = await Doctor.findOne({
+            _id: req.params.id,
+            clinicId,
+        });
 
         if (!doctor) {
             return res.status(404).json({
@@ -277,6 +268,82 @@ const updateDoctor = async (req, res) => {
             });
         }
 
+        const {
+            staff,
+            staffCode,
+            experience,
+            name,
+            registrationNumber,
+            stateVetCouncil,
+            certificateValidityDate,
+            renewalReminderDays,
+            consultationFees,
+            avgConsultationDuration,
+            emergencyAvailability,
+        } = req.body;
+
+        // ---------- Basic Fields ----------
+        doctor.staff = staff;
+        doctor.staffCode = staffCode;
+        doctor.name = name;
+        doctor.experience = experience;
+        doctor.registrationNumber = registrationNumber;
+        doctor.stateVetCouncil = stateVetCouncil;
+        doctor.certificateValidityDate = certificateValidityDate;
+        doctor.renewalReminderDays = renewalReminderDays;
+        doctor.consultationFees = consultationFees;
+        doctor.avgConsultationDuration = avgConsultationDuration;
+        doctor.emergencyAvailability =
+            emergencyAvailability === "true" || emergencyAvailability === true;
+
+        // ---------- Arrays ----------
+        doctor.specializations = req.body.specializations
+            ? JSON.parse(req.body.specializations)
+            : [];
+
+        doctor.prescriptionLanguages = req.body.prescriptionLanguages
+            ? JSON.parse(req.body.prescriptionLanguages)
+            : [];
+
+        // ---------- Degrees ----------
+        let degrees = [];
+
+        if (req.body.degrees) {
+            degrees = JSON.parse(req.body.degrees);
+        }
+
+        const uploadedDegreeFiles =
+            req.files?.degreeCertificates || [];
+
+        let fileIndex = 0;
+
+        doctor.degrees = degrees.map((degree, index) => ({
+            clinicId,
+            degreeName: degree.degreeName,
+            degreeCertificate:
+                uploadedDegreeFiles[fileIndex]
+                    ? uploadedDegreeFiles[fileIndex++].path
+                    : doctor.degrees[index]?.degreeCertificate || "",
+        }));
+
+        // ---------- Optional Files ----------
+        if (req.files?.registrationCertificate?.length) {
+            doctor.registrationCertificate =
+                req.files.registrationCertificate[0].path;
+        }
+
+        if (req.files?.digitalSignature?.length) {
+            doctor.digitalSignature =
+                req.files.digitalSignature[0].path;
+        }
+
+        if (req.files?.doctorLetterhead?.length) {
+            doctor.doctorLetterhead =
+                req.files.doctorLetterhead[0].path;
+        }
+
+        await doctor.save();
+
         return res.status(200).json({
             success: true,
             message: "Doctor updated successfully",
@@ -284,6 +351,8 @@ const updateDoctor = async (req, res) => {
         });
 
     } catch (error) {
+        console.error(error);
+
         return res.status(500).json({
             success: false,
             message: error.message,
