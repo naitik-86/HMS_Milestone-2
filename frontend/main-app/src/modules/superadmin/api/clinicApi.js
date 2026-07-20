@@ -36,6 +36,10 @@ export const createClinic = async (clinicData) => {
         phone: clinicData.phone,
         altPhone: clinicData.altPhone,
         website: clinicData.website,
+        plan: clinicData.plan,
+        trialDays: clinicData.trialDays,
+        discountCode: clinicData.discountCode,
+        notes: clinicData.notes,
         subscriptionType,
         billingCycle: clinicData.billing,
         planStartDate: clinicData.startDate,
@@ -143,3 +147,4 @@ export const uploadClinicDocuments = async (clinicId, clinicData) => {
     );
     return response.data;
 };
+    

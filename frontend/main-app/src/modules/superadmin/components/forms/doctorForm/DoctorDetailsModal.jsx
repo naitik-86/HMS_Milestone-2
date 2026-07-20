@@ -94,7 +94,6 @@ export default function DoctorDetailsModal({ doctor, onClose, onEdit, onDelete }
                             <Field label="Status" value={doctor.status} />
                             <Field label="Mobile" value={doctor.mobile} />
                             <Field label="Email" value={doctor.email} />
-                            <Field label="Clinic" value={doctor.clinicName || doctor.clinicId?.name} />
                             <Field label="Practice" value={doctor.practiceType || doctor.practice} />
                             <Field label="Experience" value={doctor.experience} />
                         </Section>

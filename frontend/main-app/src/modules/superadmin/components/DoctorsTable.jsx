@@ -15,22 +15,6 @@ export default function DoctorsTable({
     onEdit,
     onDelete,
 }) {
-    const handleDoctorAction = (action, doctor) => {
-        switch (action) {
-            case "View":
-                console.log("View", doctor);
-                break;
-            case "Edit":
-                console.log("Edit", doctor);
-                break;
-            case "Delete":
-                console.log("Delete", doctor);
-                break;
-            default:
-                break;
-        }
-    };
-
     const renderBody = () => {
         if (loading) {
             return (
@@ -131,44 +115,35 @@ export default function DoctorsTable({
                                     </td>
 
                                     <td className="px-4 md:px-6 py-4">
-                                        <div className="flex justify-end gap-2 flex-wrap">
+                                        <div className="flex flex-wrap gap-2 justify-end">
                                             <button
                                                 type="button"
-                                                onClick={() =>
-                                                    onView
-                                                        ? onView(doctor)
-                                                        : handleDoctorAction("View", doctor)
-                                                }
-                                                className="inline-flex items-center gap-1 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 transition hover:bg-blue-100"
+                                                onClick={() => onView?.(doctor)}
+                                                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 text-blue-600 transition hover:bg-blue-100"
+                                                title="View veterinarian"
+                                                aria-label="View veterinarian"
                                             >
-                                                <Eye size={14} />
-                                                View
+                                                <Eye size={16} />
                                             </button>
 
                                             <button
                                                 type="button"
-                                                onClick={() =>
-                                                    onEdit
-                                                        ? onEdit(doctor)
-                                                        : handleDoctorAction("Edit", doctor)
-                                                }
-                                                className="inline-flex items-center gap-1 rounded-lg border border-orange-200 bg-orange-50 px-3 py-2 text-xs font-semibold text-orange-700 transition hover:bg-orange-100"
+                                                onClick={() => onEdit?.(doctor)}
+                                                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-orange-200 bg-orange-50 text-orange-600 transition hover:bg-orange-100"
+                                                title="Edit veterinarian"
+                                                aria-label="Edit veterinarian"
                                             >
-                                                <Pencil size={14} />
-                                                Edit
+                                                <Pencil size={16} />
                                             </button>
 
                                             <button
                                                 type="button"
-                                                onClick={() =>
-                                                    onDelete
-                                                        ? onDelete(doctor)
-                                                        : handleDoctorAction("Delete", doctor)
-                                                }
-                                                className="inline-flex items-center gap-1 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 transition hover:bg-rose-100"
+                                                onClick={() => onDelete?.(doctor)}
+                                                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-red-200 bg-red-50 text-red-600 transition hover:bg-red-100"
+                                                title="Delete veterinarian"
+                                                aria-label="Delete veterinarian"
                                             >
-                                                <Trash2 size={14} />
-                                                Delete
+                                                <Trash2 size={16} />
                                             </button>
                                         </div>
                                     </td>

@@ -74,6 +74,14 @@ const formatDate = (value) => {
     });
 };
 
+const toDateInputValue = (value) => {
+    if (!value) return "";
+    if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? "" : date.toISOString().slice(0, 10);
+};
+
 const valueOrDash = (value) => {
     if (Array.isArray(value)) {
         return value.length ? value.join(", ") : "-";
@@ -187,6 +195,7 @@ const getClinicForm = (clinic = {}) => {
     const features = clinic.features || clinic.modules || clinic.subscriptionDetails?.features || {};
     const docs = clinic.documentDetails || clinic.documents || clinic.legalDocuments || {};
     const details = clinic.clinicDetails || clinic.details || {};
+    const coordinates = clinic.location?.coordinates || [];
 
     return {
         clinicName: clinic.name || clinic.clinicName || details.clinicName || details.name || "",
@@ -203,19 +212,19 @@ const getClinicForm = (clinic = {}) => {
         district: address.district || clinic.district || "",
         state: address.state || clinic.state || "",
         pincode: address.pincode || address.zipcode || clinic.pincode || "",
-        latitude: clinic.latitude || address.latitude || "",
-        longitude: clinic.longitude || address.longitude || "",
+        latitude: clinic.latitude || address.latitude || coordinates[1] || "",
+        longitude: clinic.longitude || address.longitude || coordinates[0] || "",
         serviceAreas: address.serviceAreas || clinic.serviceAreas || [address.serviceArea || ""],
 
         vetReg: clinic.vetReg || clinic.vetRegistrationNumber || reg.vetRegistrationNumber || reg.vetCouncilRegistration || reg.registrationNumber || "",
         stateCouncil: clinic.stateCouncil || clinic.vetCouncil || reg.stateVeterinaryCouncil || reg.stateCouncil || reg.vetCouncil || "",
         expiry: clinic.expiry || reg.registrationExpiryDate || reg.expiryDate || "",
-        vetExpiry: clinic.vetExpiry || reg.vetExpiry || reg.registrationExpiryDate || "",
+        vetExpiry: toDateInputValue(clinic.vetExpiry || reg.vetExpiry || reg.registrationExpiryDate),
 
         tradeLicense: clinic.tradeLicense || clinic.tradeLicenseNumber || reg.tradeLicenseNumber || reg.tradeLicense || "",
-        tradeExpiry: clinic.tradeExpiry || reg.tradeLicenseExpiryDate || reg.tradeExpiry || "",
+        tradeExpiry: toDateInputValue(clinic.tradeExpiry || reg.tradeLicenseExpiryDate || reg.tradeExpiry),
         drugLicense: clinic.drugLicense || clinic.drugLicenseNumber || reg.drugLicenseNumber || reg.drugLicense || "",
-        drugExpiry: clinic.drugExpiry || reg.drugLicenseExpiryDate || reg.drugExpiry || "",
+        drugExpiry: toDateInputValue(clinic.drugExpiry || reg.drugLicenseExpiryDate || reg.drugExpiry),
 
         gst: clinic.gst || clinic.gstNumber || tax.gstNumber || tax.gst || "",
         pan: clinic.pan || clinic.panNumber || tax.panNumber || tax.pan || "",
@@ -232,8 +241,8 @@ const getClinicForm = (clinic = {}) => {
 
         plan: getPlanValue(clinic) || plan.planType || "Basic",
         billing,
-        startDate: clinic.startDate || clinic.planStartDate || plan.startDate || today,
-        endDate: clinic.endDate || clinic.planEndDate || clinic.expiryDate || plan.endDate || calculateEndDate(today, billing),
+        startDate: toDateInputValue(clinic.startDate || clinic.planStartDate || plan.startDate) || today,
+        endDate: toDateInputValue(clinic.endDate || clinic.planEndDate || clinic.expiryDate || plan.endDate) || calculateEndDate(today, billing),
         trialDays: clinic.trialDays || clinic.trialPeriodDays || plan.trialDays || 0,
         discountCode: clinic.discountCode || plan.discountCode || "",
         notes: clinic.notes || plan.notes || "",
@@ -283,7 +292,7 @@ const getUpdatePayload = (form) => {
         email: form.email,
         contactEmail: form.email,
         phone: form.phone,
-        alternateContact: form.altPhone,
+        altPhone: form.altPhone,
         website: form.website,
         adminName: form.adminName,
         adminEmail: form.adminEmail,
@@ -291,9 +300,13 @@ const getUpdatePayload = (form) => {
         adminDesignation: form.designation,
         latitude: form.latitude,
         longitude: form.longitude,
+        location: form.latitude !== "" && form.longitude !== ""
+            ? { type: "Point", coordinates: [Number(form.longitude), Number(form.latitude)] }
+            : undefined,
 
         // Apply mapped enum value instead of raw text
-        subscriptionType: mappedSubscriptionType, 
+        subscriptionType: mappedSubscriptionType,
+        plan: form.plan,
         billingCycle: form.billing,
         planStartDate: form.startDate,
         planEndDate: form.endDate,
