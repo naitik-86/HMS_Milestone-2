@@ -44,7 +44,10 @@ const getPlanEndDate = (startDate, billingCycle) => {
     if (Number.isNaN(date.getTime())) return "";
 
     date.setMonth(date.getMonth() + (BILLING_MONTHS[billingCycle] || 1));
-    return getDateValue(date);
+    const minimumEndDate = new Date(startDate);
+    minimumEndDate.setDate(minimumEndDate.getDate() + 30);
+
+    return getDateValue(date < minimumEndDate ? minimumEndDate : date);
 };
 
 const getNonNegativeNumber = (value) => {
@@ -130,9 +133,11 @@ export default function ClinicForm({
     const [plansLoading, setPlansLoading] = useState(false);
     const [plansError, setPlansError] = useState("");
     const [errors, setErrors] = useState({});
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const navigate = useNavigate();
     const stateOptions = INDIAN_STATE_OPTIONS;
     const idType = form.govtIdType || "";
+    const isOnboarding = !onSubmitClinic;
     const idNumberLabel =
         idType === "PAN"
             ? "PAN Number"
@@ -244,13 +249,17 @@ export default function ClinicForm({
                 nextPlan,
                 nextBilling
             );
-            const nextEndDate = prev.startDate && nextBilling
-                ? getPlanEndDate(prev.startDate, nextBilling)
+            const nextStartDate = isOnboarding && prev.startDate < getTomorrowDate()
+                ? getTomorrowDate()
+                : prev.startDate;
+            const nextEndDate = nextStartDate && nextBilling
+                ? getPlanEndDate(nextStartDate, nextBilling)
                 : "";
 
             if (
                 prev.plan === nextPlan &&
                 prev.billing === nextBilling &&
+                prev.startDate === nextStartDate &&
                 Number(prev.trialDays || 0) === nextTrialDays &&
                 prev.endDate === nextEndDate
             ) {
@@ -261,11 +270,12 @@ export default function ClinicForm({
                 ...prev,
                 plan: nextPlan,
                 billing: nextBilling,
+                startDate: nextStartDate,
                 trialDays: nextTrialDays,
                 endDate: nextEndDate,
             };
         });
-    }, [activePlans, planOptions, setForm]);
+    }, [activePlans, isOnboarding, planOptions, setForm]);
 
     const updateMapCoordinates = (latitude, longitude) => {
         setForm((prev) => ({
@@ -667,12 +677,19 @@ export default function ClinicForm({
     const handlePlanChange = (e) => {
         const plan = e.target.value;
 
-        setForm((prev) => ({
-            ...prev,
-            plan,
-            trialDays: getTrialDaysForPlanCycle(activePlans, plan, prev.billing),
-            endDate: prev.startDate && prev.billing ? getPlanEndDate(prev.startDate, prev.billing) : "",
-        }));
+        setForm((prev) => {
+            const startDate = isOnboarding && prev.startDate < getTomorrowDate()
+                ? getTomorrowDate()
+                : prev.startDate;
+
+            return {
+                ...prev,
+                plan,
+                startDate,
+                trialDays: getTrialDaysForPlanCycle(activePlans, plan, prev.billing),
+                endDate: prev.billing ? getPlanEndDate(startDate, prev.billing) : "",
+            };
+        });
     };
 
     const handleBillingChange = (e) => {
@@ -811,7 +828,7 @@ export default function ClinicForm({
         }
 
         if (!isFileLike(form.logo)) {
-            nextErrors.logo = "Clinic logo or PDF is required.";
+            nextErrors.logo = "Clinic logo image or PDF is required.";
         }
 
         return nextErrors;
@@ -1146,6 +1163,7 @@ export default function ClinicForm({
             }
         }
 
+        setIsSubmitting(true);
         try {
             if (onSubmitClinic) {
                 await onSubmitClinic({
@@ -1183,6 +1201,8 @@ export default function ClinicForm({
                 description:
                     error.response?.data?.message || "Something went wrong",
             });
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -1244,7 +1264,7 @@ export default function ClinicForm({
 
                                 <Upload
                                     requiredField={true}
-                                    label="Clinic Logo / PDF"
+                                    label="Clinic Logo image / PDF"
                                     value={form.logo}
                                     error={errors.logo}
                                     onChange={handleFileUpload("logo")}
@@ -1741,7 +1761,7 @@ export default function ClinicForm({
                             />
 
                             {/* MODULES (UNCHANGED UI) */}
-                            {form.plan === "Custom" && (
+                            {(form.plan === "Custom" || [form.maxStaff, form.maxDoctors, form.maxPets, form.storageLimit].some((value) => value !== "" && value !== null && value !== undefined)) && (
                                 <div className="mt-6 bg-slate-50 p-6 rounded-2xl border">
 
                                     <h3 className="text-sm font-semibold text-slate-600 mb-4">
@@ -1850,9 +1870,13 @@ export default function ClinicForm({
                             <button
                                 type="button"
                                 onClick={handleSubmit}
-                                className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-xl"
+                                disabled={isSubmitting}
+                                className="inline-flex items-center justify-center gap-2 bg-orange-500 px-6 py-3 text-white rounded-xl hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-70"
                             >
-                                {submitLabel}
+                                {isSubmitting && (
+                                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                                )}
+                                {isSubmitting ? "Saving..." : submitLabel}
                             </button>
                         )}
 

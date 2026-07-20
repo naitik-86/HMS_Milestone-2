@@ -10,6 +10,10 @@ const clinicSchema = new mongoose.Schema({
   phone: { type: String },
   altPhone: { type: String },
   website: { type: String },
+  plan: { type: String },
+  trialDays: { type: Number, default: 0 },
+  discountCode: { type: String },
+  notes: { type: String },
   
   subscriptionType: { type: String, required: true },
   subscriptionStatus: { type: String, enum: ['ACTIVE', 'SUSPENDED', 'EXPIRED'], default: 'ACTIVE' },

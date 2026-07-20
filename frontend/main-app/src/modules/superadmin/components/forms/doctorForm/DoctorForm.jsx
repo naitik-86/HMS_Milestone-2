@@ -240,7 +240,11 @@ export default function DoctorForm({
         setFieldValue("pincode", nextValue);
 
         if (nextValue.length === 6) {
-            await validatePincode(nextValue, form.state, form.city, true);
+            const validation = await validatePincode(nextValue, form.state, form.city, true);
+
+            if (!validation.valid) {
+                setErrors((prev) => ({ ...prev, pincode: validation.message }));
+            }
         }
     };
 
