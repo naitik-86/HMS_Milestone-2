@@ -16,7 +16,7 @@ router.get(
 
 router.get(
     "/doctor-list",
-    authorize("CLINIC_ADMIN"),
+    authorize("CLINIC_ADMIN", "RECEPTION", "RECEPTIONIST"),
     staffController.getDoctorStaff
 );
 
@@ -31,7 +31,7 @@ router.get("/", staffController.getAllStaff);
 router.get("/managers", staffController.getManagers);
 router.get("/:id", staffController.getStaffById);
 
-router.put("/:id", staffController.updateStaff);
+router.put("/:id", upload.single("profilePhoto"), staffController.updateStaff);
 
 router.delete("/:id", staffController.deleteStaff);
 

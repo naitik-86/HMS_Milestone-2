@@ -7,10 +7,13 @@ const visitController = require("../controllers/visitController")
 
 router.use(authorize("RECEPTION", "RECEPTIONIST", "CLINIC_ADMIN"));
 router.post("/visits/create", visitController.createVisit);
+router.post("/new-registration/send-otp", petRegistrationController.sendRegistrationOtp);
 router.post("/new-registration", upload.single("petPhoto"), petRegistrationController.createRegistration);
 router.get("/new-registration/mobile/:mobileNumber", petRegistrationController.searchCustomer);
 router.get("/new-registration/owner/:ownerId", petRegistrationController.getOwnerDetails);
+router.put("/new-registration/owner/:ownerId", petRegistrationController.updateOwner);
 router.post("/new-registration/owner/:ownerId/pets", petRegistrationController.addPet);
+router.put("/new-registration/owner/:ownerId/pets/:petId", petRegistrationController.updatePet);
 router.post("/new-registration/owner/:ownerId/pets/:petId/visit", petRegistrationController.addVisit);
 router.get("/petHistory", petRegistrationController.getPetHistory);
 

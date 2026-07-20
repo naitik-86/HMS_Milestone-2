@@ -41,16 +41,17 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
                 setSubscriptionData(data);
                 setRemainingTrialDays(data.remainingTrialDays);
 
+                const shouldShowPopup =
+                    location.state?.forceTrialPopup ||
+                    !sessionStorage.getItem("trial-popup");
+
                 if (
                     data.subscription.status === "TRIAL" &&
-                    !sessionStorage.getItem("trial-popup")
+                    shouldShowPopup
                 ) {
                     setShowTrialPopup(true);
 
-                    sessionStorage.setItem(
-                        "trial-popup",
-                        "true"
-                    );
+                    sessionStorage.setItem("trial-popup", "true");
                 }
 
             } catch (err) {

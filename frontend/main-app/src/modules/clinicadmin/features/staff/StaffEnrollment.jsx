@@ -608,14 +608,14 @@ function EnrollForm({ onClose, onSave, editData, mode, staff }) {
                       {managerOptions
                         .filter(s => s._id !== editData?._id)
                         .map((s, index) => (
-                        <option
-                          key={s._id || s.employmentInfo?.staffId || index}
-                          value={s._id || ""}
-                        >
-                          {s.personalInfo?.fullName || "No Name"}
-                          {s.employmentInfo?.staffId ? ` (${s.employmentInfo.staffId})` : ""}
-                        </option>
-                      ))}                   </select>
+                          <option
+                            key={s._id || s.employmentInfo?.staffId || index}
+                            value={s._id || ""}
+                          >
+                            {s.personalInfo?.fullName || "No Name"}
+                            {s.employmentInfo?.staffId ? ` (${s.employmentInfo.staffId})` : ""}
+                          </option>
+                        ))}                   </select>
                   </div>
                   <div>
                     <label className={labelClass}>Staff ID <span className="text-[#9CA3AF] font-normal">(System Generated)</span></label>
@@ -978,6 +978,32 @@ export default function StaffEnrollment() {
     setShowModal(true);
   };
 
+  const handleDelete = async (id) => {
+    try {
+      await deleteStaff(id);
+
+      showToast({
+        type: "success",
+        title: "Staff Deleted",
+        description: "Staff has been deleted successfully.",
+      });
+
+      const response = await getStaff();
+      setStaff(response.data || []);
+
+      setShowModal(false);
+
+    } catch (err) {
+      console.error(err);
+
+      showToast({
+        type: "error",
+        title: "Delete Failed",
+        description: "Unable to delete staff.",
+      });
+    }
+  };
+
   const handleOpenEdit = (item) => {
     setSelectedStaff(item);
     setModalMode('edit');
@@ -992,6 +1018,7 @@ export default function StaffEnrollment() {
   const handleSave = async (form) => {
     try {
       if (modalMode === "edit") {
+
         await updateStaff(
           selectedStaff._id,
           form
@@ -1036,6 +1063,7 @@ export default function StaffEnrollment() {
             onClose={() =>
               setShowModal(false)
             }
+            onDelete={handleDelete}
           />
         )}
 

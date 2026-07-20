@@ -62,10 +62,20 @@ export const updateStaff = async (
             staffData
         );
 
+    console.log("FormData contents:");
+    for (const [key, value] of formData.entries()) {
+        console.log(key, value);
+    }
+
+
     const res =
         await API.put(
             `${BASE_URL}/${id}`,
-            formData
+            formData, {
+            headers: {
+                "Content-Type": "multipart/form-data",
+            },
+        }
         );
 
     return res.data;

@@ -1,5 +1,6 @@
-/* eslint-disable react-hooks/immutability */
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import toast from "react-hot-toast";
+import { AlertCircle, Stethoscope, Clock, CheckCircle2, ShieldAlert } from "lucide-react";
 import LabReportModal from "./LabReportModal";
 import PreConsultationReportModal from "./PreConsultReportModal";
 import {
@@ -8,14 +9,15 @@ import {
   getPreConsultationByVisit,
   getLabReportByVisit,
 } from "../../../api/doctorModuleApi";
-import { useEffect } from "react";
 
 export default function PendingPets() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [search, setSearch] = useState("");
+  const [speciesFilter, setSpeciesFilter] = useState("ALL");
   const [selectedPet, setSelectedPet] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [step, setStep] = useState(1);
+  const [validationError, setValidationError] = useState("");
 
   const steps = [
     "History",
@@ -194,89 +196,87 @@ export default function PendingPets() {
     }
   };
 
-  const sendToLab = async () => {
-    if (!selectedPet?._id) {
-      alert("Please select a pet");
-      return;
+  const validateStep = (currentStep) => {
+    setValidationError("");
+
+    if (currentStep === 3) {
+      if (!formData.diagnosis.provisionalDiagnosis?.trim() && !formData.diagnosis.confirmedDiagnosis?.trim()) {
+        const msg = "Please provide a Provisional or Confirmed Diagnosis before proceeding.";
+        setValidationError(msg);
+        toast.error(msg);
+        return false;
+      }
     }
+
+    if (currentStep === 4 && formData.diagnosis.raiseLab) {
+      if ((!formData.labRequisition.tests || formData.labRequisition.tests.length === 0) && !formData.labRequisition.instructions?.trim()) {
+        const msg = "Please select at least one Lab Test or enter test instructions.";
+        setValidationError(msg);
+        toast.error(msg);
+        return false;
+      }
+    }
+
+    if (currentStep === 5) {
+      if (!formData.treatment.medicines?.trim() && !formData.treatment.procedures?.trim() && !formData.treatment.treatmentNotes?.trim()) {
+        const msg = "Please enter prescribed medicines, procedures, or treatment notes.";
+        setValidationError(msg);
+        toast.error(msg);
+        return false;
+      }
+    }
+
+    return true;
+  };
+
+  const sendToLab = async () => {
+    if (!selectedPet?._id) return;
+    if (!validateStep(4)) return;
 
     try {
       setShowModal(false);
-      const response = await updatePatient(
-        selectedPet._id,
-        {
-          ...formData,
-          diagnosis: {
-            ...formData.diagnosis,
-            raiseLab: true,
-          },
-          labRequisition: {
-            ...formData.labRequisition,
-            status: "PENDING",
-          },
-        }
-      );
+      const response = await updatePatient(selectedPet._id, {
+        ...formData,
+        status: "LAB_TEST_RAISED",
+      });
 
-      console.log(response);
-
-      if (response.success) {
-        alert("Case Sent To Lab Successfully");
-
+      if (response.success || response.data) {
+        toast.success("Requisition sent to Lab successfully!");
         await fetchPendingPets();
-
         setSelectedPet(null);
         setStep(1);
         setFormData(initialFormData);
+        setValidationError("");
       }
-    } catch (err) {
-      console.log(err);
+    } catch (error) {
+      console.error(error);
+      toast.error(error.response?.data?.message || "Failed to send to Lab");
     }
   };
 
-
-
   const completeCase = async () => {
-
-    if (!selectedPet?._id) {
-      alert("Please select a pet first");
-      return;
-    }
+    if (!selectedPet?._id) return;
+    if (!validateStep(5)) return;
 
     try {
-
       setShowModal(false);
-      const response = await updatePatient(
-        selectedPet._id,
-        {
-          ...formData,
-          status: "COMPLETED",
-        }
-      );
+      const response = await updatePatient(selectedPet._id, {
+        ...formData,
+        status: "COMPLETED",
+      });
 
-
-
-
-      if (response.success) {
-
-
+      if (response.success || response.data) {
+        toast.success("Doctor consultation completed successfully!");
         await fetchPendingPets();
-        // Reset States
         setSelectedPet(null);
         setStep(1);
-        refreshPendingPets();
-        // Reset Form
         setFormData(initialFormData);
+        setValidationError("");
       }
-
     } catch (error) {
-      console.log(error);
-      alert(
-        error.response?.data?.message ||
-        "Something went wrong"
-      );
-
+      console.error(error);
+      toast.error(error.response?.data?.message || "Something went wrong while completing case");
     }
-
   };
 
   if (loading) {
@@ -289,368 +289,387 @@ export default function PendingPets() {
 
   }
 
-  const filteredPets = pendingPets.filter((visit) =>
-    (visit.tokenNumber?.toString() || "").includes(search) ||
-    (visit.owner?.ownerName || "")
-      .toLowerCase()
-      .includes(search.toLowerCase()) ||
-    (visit.owner?.mobileNumber || "").includes(search) ||
-    (visit.pet?.petName || "")
-      .toLowerCase()
-      .includes(search.toLowerCase())
-  );
+  const getSpeciesIcon = (species) => {
+    const s = (species || "").toLowerCase();
+    if (s.includes("cat")) return "🐱";
+    if (s.includes("bird") || s.includes("parrot")) return "🦜";
+    if (s.includes("rabbit")) return "🐇";
+    return "🐶";
+  };
 
+  const filteredPets = pendingPets.filter((visit) => {
+    const query = search.toLowerCase().trim();
+    const token = (visit.tokenNumber?.toString() || "").toLowerCase();
+    const ownerName = (visit.owner?.ownerName || visit.ownerName || "").toLowerCase();
+    const phone = (visit.owner?.mobileNumber || visit.phoneNumber || "").toLowerCase();
+    const petName = (visit.pet?.petName || visit.petName || "").toLowerCase();
+    const species = (visit.pet?.species || visit.species || "").toLowerCase();
 
+    const matchesSearch =
+      !query ||
+      token.includes(query) ||
+      ownerName.includes(query) ||
+      phone.includes(query) ||
+      petName.includes(query);
 
+    const matchesSpecies =
+      speciesFilter === "ALL" ||
+      species.toUpperCase() === speciesFilter.toUpperCase();
+
+    return matchesSearch && matchesSpecies;
+  });
 
   return (
+    <div className="space-y-6">
+      {/* Search & Species Toolbar */}
+      <div className="bg-white rounded-3xl p-4 md:p-6 border border-slate-200/80 shadow-xs">
+        <div className="flex flex-col md:flex-row items-center gap-4">
+          <div className="relative flex-1 w-full">
+            <input
+              type="text"
+              placeholder="Search by Token, Owner Name, Pet Name, or Phone..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-4 pr-4 text-xs font-medium text-slate-800 outline-none focus:border-orange-500 focus:bg-white transition-all"
+            />
+          </div>
 
+          <div className="flex items-center gap-3 w-full md:w-auto">
+            <select
+              value={speciesFilter}
+              onChange={(e) => setSpeciesFilter(e.target.value)}
+              className="h-12 px-4 rounded-2xl border border-slate-200 bg-slate-50 text-xs font-semibold text-slate-700 outline-none focus:border-orange-500 focus:bg-white cursor-pointer w-full md:w-44"
+            >
+              <option value="ALL">All Species 🐾</option>
+              <option value="DOG">Dog 🐶</option>
+              <option value="CAT">Cat 🐱</option>
+              <option value="BIRD">Bird 🦜</option>
+              <option value="RABBIT">Rabbit 🐇</option>
+            </select>
 
-    <div className="space-y-5 sm:space-y-8 pt-16 md:pt-8">
-
-
-
-      {/* Search */}
-      <div className="bg-white rounded-2xl p-4 shadow-sm sm:p-6 lg:rounded-[30px]">
-
-        <input
-          type="text"
-          placeholder="Search by Phone Number, Owner Name or Pet ID..."
-          value={search}
-          onChange={(e) =>
-            setSearch(e.target.value)
-          }
-          className="h-12 w-full rounded-xl border border-slate-300 px-4 text-sm outline-none focus:border-orange-500 sm:h-14 sm:rounded-2xl sm:px-5 sm:text-base"
-        />
-
+            <span className="px-4 py-3 bg-orange-50 text-orange-700 border border-orange-200/80 rounded-2xl text-xs font-bold whitespace-nowrap">
+              {filteredPets.length} Waiting
+            </span>
+          </div>
+        </div>
       </div>
 
-      {/* Table */}
-      <div className="md:hidden space-y-4">
-        {/* Mobile Heading */}
-        <div className="md:hidden">
-          <h2 className="mb-4 text-xl font-bold text-slate-800">
-            Pending Cases
-          </h2>
+      {/* Main Queue Container */}
+      <div className="rounded-3xl border border-slate-200/80 bg-white shadow-xs overflow-hidden">
+        {/* Table Header Banner */}
+        <div className="p-5 md:p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-r from-orange-50/50 to-white">
+          <div>
+            <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+              <Clock className="w-5 h-5 text-orange-500" />
+              Live Pending Cases Queue
+            </h2>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Patients with pre-consultation vitals recorded ready for medical examination
+            </p>
+          </div>
+          <span className="bg-orange-500 text-white font-bold px-4 py-1.5 rounded-2xl text-xs shadow-xs self-start sm:self-center">
+            {filteredPets.length} Active Patients
+          </span>
         </div>
 
-        {filteredPets.map((pet) => (
-          <div
-            key={pet._id}
-            className="bg-slate-50 border rounded-2xl p-4"
-          >
-            <div className="flex justify-between items-start mb-3">
-              <div>
-                <h3 className="font-bold text-lg">
-                  {pet.pet?.petName}
-                </h3>
-
-                <p className="text-sm text-slate-500">
-                  Token #{pet.tokenNumber}
-                </p>
-              </div>
-
-              <span className="bg-orange-100 text-orange-600 px-3 py-1 rounded-full text-xs">
-                {pet.status}
-              </span>
+        {/* Mobile View */}
+        <div className="md:hidden p-4 space-y-4">
+          {filteredPets.length === 0 ? (
+            <div className="py-12 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+              <div className="text-4xl mb-2">🩺</div>
+              <p className="text-xs font-bold text-slate-700">No Pending Patients</p>
             </div>
+          ) : (
+            filteredPets.map((pet) => {
+              const petName = pet.pet?.petName || pet.petName || "Patient";
+              const species = pet.pet?.species || pet.species || "Dog";
+              const ownerName = pet.owner?.ownerName || pet.ownerName || "Owner";
+              const phone = pet.owner?.mobileNumber || pet.phoneNumber || "N/A";
+              const token = pet.tokenNumber || `TK-${pet._id?.slice(-4) || "00"}`;
 
-            <div className="space-y-2 text-sm">
-              <p>
-                <span className="font-semibold">
-                  Owner:
-                </span>{" "}
-                {pet.owner?.ownerName}
-              </p>
+              return (
+                <div key={pet._id} className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 space-y-3 shadow-xs">
+                  <div className="flex justify-between items-start">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-orange-100 border border-orange-200 flex items-center justify-center text-xl shrink-0">
+                        {getSpeciesIcon(species)}
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-slate-900 text-base">{petName}</h3>
+                        <span className="bg-slate-900 text-white text-[10px] font-mono font-bold px-2 py-0.5 rounded-md">
+                          {token}
+                        </span>
+                      </div>
+                    </div>
 
-              <p>
-                <span className="font-semibold">
-                  Phone:
-                </span>{" "}
-                {pet.owner?.mobileNumber}
-              </p>
-            </div>
-
-            <button
-              onClick={() => {
-                setSelectedPet(pet);
-
-                setFormData((prev) => ({
-                  ...prev,
-                  ...pet,
-                  history: {
-                    ...prev.history,
-                    ...(pet.history || {})
-                  },
-                  clinicalObservation: {
-                    ...prev.clinicalObservation,
-                    ...(pet.clinicalObservation || {})
-                  },
-                  diagnosis: {
-                    ...prev.diagnosis,
-                    ...(pet.diagnosis || {})
-                  },
-                  labRequisition: {
-                    ...prev.labRequisition,
-                    ...(pet.labRequisition || {})
-                  },
-                  treatment: {
-                    ...prev.treatment,
-                    ...(pet.treatment || {})
-                  },
-                  suggestion: {
-                    ...prev.suggestion,
-                    ...(pet.suggestion || {})
-                  }
-                }));
-
-                setShowModal(true);
-              }}
-              className="w-full mt-4 bg-orange-500 text-white py-3 rounded-xl"
-            >
-              Edit
-            </button>
-          </div>
-        ))}
-
-      </div>
-      <div className="bg-white rounded-2xl p-4 shadow-sm sm:p-6 lg:rounded-[30px] lg:p-8">
-
-        <h2 className="hidden md:block mb-5 text-xl font-bold sm:mb-6 sm:text-2xl">
-          Pending Cases
-        </h2>
-
-        <div className="hidden md:block overflow-x-auto">
-
-          <table className="min-w-[760px] w-full text-sm sm:text-base">
-
-            <thead>
-              <tr className="border-b">
-                <th className="py-4 pr-4 text-left">
-                  Token
-                </th>
-
-                <th className="py-4 pr-4 text-left">
-                  Pet Name
-                </th>
-
-                <th className="py-4 pr-4 text-left">
-                  Owner
-                </th>
-
-                <th className="py-4 pr-4 text-left">
-                  Phone
-                </th>
-
-                <th className="py-4 pr-4 text-left">
-                  Status
-                </th>
-
-                <th className="py-4 pr-4 text-left">
-                  PC Report
-                </th>
-
-                <th className="py-4 pr-4 text-left">
-                  Lab Report
-                </th>
-
-                <th className="py-4 text-left">
-                  Action
-                </th>
-              </tr>
-            </thead>
-
-            <tbody>
-
-              {filteredPets.map((pet) => (
-
-                <tr
-                  key={pet._id}
-                  className="border-b hover:bg-slate-50"
-                >
-                  <td className="py-4 pr-4">
-                    {pet.tokenNumber}
-                  </td>
-
-                  <td className="pr-4">
-                    {pet.pet?.petName}
-                  </td>
-
-                  <td className="pr-4">
-                    {pet.owner?.ownerName}
-                  </td>
-
-                  <td className="pr-4">
-                    {pet.owner?.mobileNumber}
-                  </td>
-
-                  <td className="pr-4">
-                    <span className="bg-orange-100 text-orange-600 px-4 py-2 rounded-full text-sm">
-                      {pet.status}
+                    <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2.5 py-1 rounded-full border border-emerald-200">
+                      {pet.status || "Vitals Ready"}
                     </span>
-                  </td>
+                  </div>
 
+                  <div className="text-xs text-slate-600 space-y-1 bg-white p-3 rounded-xl border border-slate-100">
+                    <p><span className="font-semibold text-slate-500">Owner:</span> {ownerName}</p>
+                    <p><span className="font-semibold text-slate-500">Phone:</span> <span className="font-mono">{phone}</span></p>
+                  </div>
 
-
-                  <td>
-
+                  <div className="grid grid-cols-2 gap-2 pt-1">
                     <button
                       onClick={() => handleViewPreConsultation(pet._id)}
-                      className="flex items-center gap-2 px-4 py-2 rounded-xl
-                   bg-orange-50 text-orange-600
-                   border border-orange-200
-                   hover:bg-orange-500
-                   hover:text-white
-                   transition-all duration-300"
+                      className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all"
                     >
-                      📋
-                      <span>View Pre-Consultation</span>
+                      📋 Vitals
                     </button>
-                  </td>
-                  <td>
 
-                    {pet?.workflow?.labCompleted ? (
-                      <button
-                        onClick={() => handleViewLabReports(pet._id)}
-                        className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl
-      bg-white border border-orange-400 text-orange-600
-      hover:bg-orange-500 hover:text-white
-      transition-all duration-300"
-                      >
-                        🧪
-                        <span>View Lab Reports</span>
-                      </button>
-                    ) : (
-                      <div
-                        className="flex items-center justify-center px-4 py-2 min-w-[10px] max-w-[200px]
-      rounded-xl border border-gray-200 bg-gray-50
-      text-gray-400 text-sm font-medium"
-                      >
-                        —
-                      </div>
-                    )}
-
-                  </td>
-
-                  <td>
                     <button
                       onClick={() => {
                         setSelectedPet(pet);
-
                         setFormData({
-                          history: {
-                            ...initialFormData.history,
-                            ...(pet.history || {}),
-                          },
-                          clinicalObservation: {
-                            ...initialFormData.clinicalObservation,
-                            ...(pet.clinicalObservation || {}),
-                          },
-                          diagnosis: {
-                            ...initialFormData.diagnosis,
-                            ...(pet.diagnosis || {}),
-                          },
-                          labRequisition: {
-                            ...initialFormData.labRequisition,
-                            ...(pet.labRequisition || {}),
-                          },
-                          treatment: {
-                            ...initialFormData.treatment,
-                            ...(pet.treatment || {}),
-                          },
-                          suggestion: {
-                            ...initialFormData.suggestion,
-                            ...(pet.suggestion || {}),
-                          },
+                          history: { ...initialFormData.history, ...(pet.history || {}) },
+                          clinicalObservation: { ...initialFormData.clinicalObservation, ...(pet.clinicalObservation || {}) },
+                          diagnosis: { ...initialFormData.diagnosis, ...(pet.diagnosis || {}) },
+                          labRequisition: { ...initialFormData.labRequisition, ...(pet.labRequisition || {}) },
+                          treatment: { ...initialFormData.treatment, ...(pet.treatment || {}) },
+                          suggestion: { ...initialFormData.suggestion, ...(pet.suggestion || {}) },
                         });
-
                         setShowModal(true);
                       }}
-                      className="rounded-xl bg-orange-500 px-4 py-2 text-sm text-white hover:bg-orange-600 sm:px-5 sm:text-base"
+                      className="px-3 py-2 bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-xs"
                     >
-                      Edit
+                      🩺 Consult
                     </button>
-                  </td>
-
-                </tr>
-              ))}
-
-            </tbody>
-
-          </table>
-
+                  </div>
+                </div>
+              );
+            })
+          )}
         </div>
 
+        {/* Desktop Table View */}
+        <div className="hidden md:block overflow-x-auto">
+          <table className="w-full text-left text-xs sm:text-sm">
+            <thead>
+              <tr className="border-b border-slate-100 bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                <th className="py-4 px-6">Token</th>
+                <th className="py-4 px-6">Patient Name</th>
+                <th className="py-4 px-6">Owner Name</th>
+                <th className="py-4 px-6">Mobile</th>
+                <th className="py-4 px-6">Triage Status</th>
+                <th className="py-4 px-6">Pre-Consult</th>
+                <th className="py-4 px-6">Lab Report</th>
+                <th className="py-4 px-6 text-center">Clinical Action</th>
+              </tr>
+            </thead>
 
+            <tbody className="divide-y divide-slate-100">
+              {filteredPets.length === 0 ? (
+                <tr>
+                  <td colSpan="8" className="py-16 text-center text-slate-400">
+                    <div className="text-4xl mb-2">🩺</div>
+                    <p className="font-bold text-slate-700">No Pending Patients in Queue</p>
+                    <p className="text-xs text-slate-500 mt-1">All pre-consulted cases have been examined!</p>
+                  </td>
+                </tr>
+              ) : (
+                filteredPets.map((pet) => {
+                  const petName = pet.pet?.petName || pet.petName || "Patient";
+                  const species = pet.pet?.species || pet.species || "Dog";
+                  const ownerName = pet.owner?.ownerName || pet.ownerName || "Owner";
+                  const phone = pet.owner?.mobileNumber || pet.phoneNumber || "N/A";
+                  const token = pet.tokenNumber || `TK-${pet._id?.slice(-4) || "00"}`;
+
+                  return (
+                    <tr key={pet._id} className="hover:bg-slate-50/80 transition-all">
+                      <td className="py-4 px-6 font-mono font-bold text-slate-900">
+                        <span className="bg-slate-900 text-white px-2.5 py-1 rounded-lg text-xs">
+                          {token}
+                        </span>
+                      </td>
+
+                      <td className="py-4 px-6 font-bold text-slate-900">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-2xl bg-orange-100 border border-orange-200 flex items-center justify-center text-xl shrink-0">
+                            {getSpeciesIcon(species)}
+                          </div>
+                          <div>
+                            <span className="font-bold text-slate-900 text-sm">{petName}</span>
+                            <p className="text-xs text-slate-400 font-normal">{species}</p>
+                          </div>
+                        </div>
+                      </td>
+
+                      <td className="py-4 px-6 font-semibold text-slate-800">{ownerName}</td>
+
+                      <td className="py-4 px-6 font-mono text-slate-600 text-xs">{phone}</td>
+
+                      <td className="py-4 px-6">
+                        <span className="bg-emerald-100 text-emerald-800 text-xs font-bold px-3 py-1 rounded-full border border-emerald-200">
+                          {pet.status || "Vitals Ready"}
+                        </span>
+                      </td>
+
+                      <td className="py-4 px-6">
+                        <button
+                          onClick={() => handleViewPreConsultation(pet._id)}
+                          className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-orange-50 text-orange-700 border border-orange-200/80 hover:bg-orange-500 hover:text-white transition-all text-xs font-bold shadow-2xs"
+                        >
+                          📋 <span>View Vitals</span>
+                        </button>
+                      </td>
+
+                      <td className="py-4 px-6">
+                        {pet?.workflow?.labCompleted ? (
+                          <button
+                            onClick={() => handleViewLabReports(pet._id)}
+                            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-blue-50 text-blue-700 border border-blue-200/80 hover:bg-blue-600 hover:text-white transition-all text-xs font-bold shadow-2xs"
+                          >
+                            🧪 <span>Lab Report</span>
+                          </button>
+                        ) : (
+                          <span className="text-slate-400 text-xs italic">No Lab Reports</span>
+                        )}
+                      </td>
+
+                      <td className="py-4 px-6 text-center">
+                        <button
+                          onClick={() => {
+                            setSelectedPet(pet);
+                            setFormData({
+                              history: { ...initialFormData.history, ...(pet.history || {}) },
+                              clinicalObservation: { ...initialFormData.clinicalObservation, ...(pet.clinicalObservation || {}) },
+                              diagnosis: { ...initialFormData.diagnosis, ...(pet.diagnosis || {}) },
+                              labRequisition: { ...initialFormData.labRequisition, ...(pet.labRequisition || {}) },
+                              treatment: { ...initialFormData.treatment, ...(pet.treatment || {}) },
+                              suggestion: { ...initialFormData.suggestion, ...(pet.suggestion || {}) },
+                            });
+                            setShowModal(true);
+                          }}
+                          className="rounded-xl bg-orange-500 hover:bg-orange-600 px-4 py-2.5 text-xs font-bold text-white transition-all shadow-md shadow-orange-500/20 inline-flex items-center gap-1.5"
+                        >
+                          <Stethoscope className="w-3.5 h-3.5" />
+                          <span>Examine & Consult</span>
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 p-3 pt-20 sm:p-5 sm:pt-5">
+        <div className="fixed inset-0 z-[9999] bg-slate-900/70 backdrop-blur-xs p-0 md:p-6 overflow-hidden flex items-center justify-center">
+          <div className="bg-white rounded-none md:rounded-3xl w-full h-screen md:h-[94vh] md:max-w-6xl mx-auto shadow-2xl flex flex-col overflow-hidden border border-slate-200 animate-in fade-in zoom-in-95 duration-200">
 
-          <div className="flex h-[92vh] w-full max-w-7xl flex-col rounded-2xl bg-white shadow-2xl sm:h-[90vh] lg:rounded-[30px]">
-
-            {/* Header */}
-            <div className="flex flex-col gap-4 border-b p-4 sm:flex-row sm:items-center sm:justify-between sm:p-6">
-
-              <div>
-                <h1 className="text-2xl font-bold sm:text-3xl">
-                  {selectedPet?.pet?.petName}
-                </h1>
-
-                <p className="text-slate-500">
-                  {selectedPet?.owner?.ownerName}• {selectedPet?.owner?.mobileNumber}
-                </p>
+            {/* Dark Header with Patient Vitals Context */}
+            <div className="bg-slate-900 text-white p-5 md:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-orange-500 text-white flex items-center justify-center text-2xl font-bold shadow-md">
+                  {getSpeciesIcon(selectedPet?.pet?.species || selectedPet?.species)}
+                </div>
+                <div>
+                  <div className="flex items-center gap-3">
+                    <h1 className="text-xl md:text-2xl font-extrabold tracking-tight text-white">
+                      {selectedPet?.pet?.petName || selectedPet?.petName || "Patient"}
+                    </h1>
+                    <span className="bg-orange-500/30 text-orange-300 border border-orange-500/40 text-xs font-mono font-bold px-2.5 py-0.5 rounded-md">
+                      {selectedPet?.tokenNumber || `TK-${selectedPet?._id?.slice(-4) || "00"}`}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-300 mt-1">
+                    Owner: <span className="text-white font-semibold">{selectedPet?.owner?.ownerName || selectedPet?.ownerName || "Owner"}</span> • Mobile: <span className="text-white font-semibold">{selectedPet?.owner?.mobileNumber || selectedPet?.phoneNumber || "N/A"}</span>
+                  </p>
+                </div>
               </div>
 
-              <button
-                onClick={() => {
-                  setShowModal(false);
-                  setSelectedPet(null);
-                  setStep(1);
-                }}
-                className="w-full rounded-xl bg-red-500 px-5 py-2 text-white sm:w-auto"
-              >
-                Close
-              </button>
+              {/* Vitals Quick Preview & Close */}
+              <div className="flex items-center gap-3">
+                <div className="hidden sm:flex items-center gap-2 bg-slate-800/80 px-3.5 py-2 rounded-2xl border border-slate-700/80 text-xs">
+                  <span className="text-slate-400">Vitals:</span>
+                  <span className="text-emerald-400 font-bold">{selectedPet?.preConsultationId?.bodyTemperature || "101.5 °F"}</span>
+                  <span className="text-slate-600">•</span>
+                  <span className="text-blue-400 font-bold">{selectedPet?.preConsultationId?.bodyWeight || "14 kg"}</span>
+                </div>
 
-
+                <button
+                  onClick={() => {
+                    setShowModal(false);
+                    setSelectedPet(null);
+                    setStep(1);
+                  }}
+                  className="px-4 py-2 bg-white/10 hover:bg-red-600 text-white text-xs font-bold rounded-xl transition-all border border-white/20"
+                >
+                  Close Case
+                </button>
+              </div>
             </div>
 
-            {/* Progress Bar */}
-            <div className="border-b p-4 sm:p-6">
-
-              <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
-
-                {steps.map((item, index) => (
-                  <div
-                    key={index}
-                    className="flex flex-col items-center"
-                  >
-                    <div
-                      className={`flex h-9 w-9 sm:h-12 sm:w-12 items-center justify-center rounded-full font-bold text-sm sm:text-base
-
-                ${step >= index + 1
-                          ? "bg-orange-500 text-white"
-                          : "bg-slate-200 text-slate-500"
-                        }
-                `}
-                    >
-                      {index + 1}
-                    </div>
-
-                    <p className="mt-1 text-center text-[10px] leading-tight sm:text-xs">
-                      {item}
-                    </p>
-
-                  </div>
-                ))}
-
+            {/* Interactive Progress Bar & Stepper */}
+            <div className="bg-slate-50 border-b border-slate-200/80 p-4 shrink-0">
+              <div className="flex items-center justify-between mb-3 px-2">
+                <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                  Step {step} of 6: <span className="text-orange-600">{steps[step - 1]}</span>
+                </span>
+                <span className="text-xs font-mono font-bold text-slate-500">
+                  {Math.round((step / 6) * 100)}% Completed
+                </span>
               </div>
 
+              {/* Progress Line */}
+              <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden mb-4">
+                <div
+                  className="bg-orange-500 h-full transition-all duration-300 ease-out"
+                  style={{ width: `${(step / 6) * 100}%` }}
+                ></div>
+              </div>
+
+              {/* Stepper Buttons */}
+              <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                {steps.map((item, index) => {
+                  const stepNum = index + 1;
+                  const isDone = step > stepNum;
+                  const isCurrent = step === stepNum;
+
+                  return (
+                    <button
+                      key={index}
+                      onClick={() => setStep(stepNum)}
+                      className={`flex items-center gap-2 p-2.5 rounded-xl border text-left transition-all ${
+                        isCurrent
+                          ? "bg-slate-900 text-white border-slate-900 shadow-sm"
+                          : isDone
+                          ? "bg-emerald-50 text-emerald-900 border-emerald-200 hover:bg-emerald-100"
+                          : "bg-white text-slate-600 border-slate-200 hover:bg-slate-100"
+                      }`}
+                    >
+                      <div
+                        className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 ${
+                          isCurrent
+                            ? "bg-orange-500 text-white"
+                            : isDone
+                            ? "bg-emerald-600 text-white"
+                            : "bg-slate-200 text-slate-700"
+                        }`}
+                      >
+                        {isDone ? "✓" : stepNum}
+                      </div>
+                      <span className="text-xs font-bold truncate hidden sm:inline">{item}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             {/* Form Area */}
             <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+              {validationError && (
+                <div className="mb-6 p-4 rounded-2xl bg-red-50 border border-red-200 text-red-800 text-xs font-semibold flex items-center gap-3 shadow-xs">
+                  <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />
+                  <span>{validationError}</span>
+                </div>
+              )}
+
               {step === 1 && (
                 <div>
 
@@ -1784,36 +1803,42 @@ export default function PendingPets() {
             </div>
 
             {/* Footer */}
-            <div className="flex flex-col gap-3 border-t p-4 sm:flex-row sm:justify-between sm:p-6">
-
+            <div className="flex items-center justify-between border-t border-slate-200/80 p-4 md:p-5 bg-slate-50 shrink-0">
               <button
                 disabled={step === 1}
-                onClick={() => setStep(step - 1)}
-                className="w-full rounded-xl bg-slate-200 px-6 py-3 sm:w-auto"
+                onClick={() => setStep((prev) => Math.max(prev - 1, 1))}
+                className={`px-6 py-2.5 rounded-xl font-bold text-xs transition-all ${
+                  step === 1
+                    ? "bg-slate-200 text-slate-400 cursor-not-allowed"
+                    : "bg-white text-slate-700 hover:bg-slate-200 border border-slate-300 shadow-xs"
+                }`}
               >
-                Previous
+                ← Previous Step
               </button>
 
               {step < 6 ? (
                 <button
-                  onClick={() => setStep(step + 1)}
-                  className="w-full rounded-xl bg-orange-500 px-6 py-3 text-white sm:w-auto"
+                  onClick={() => {
+                    if (!validateStep(step)) return;
+                    setStep((prev) => Math.min(prev + 1, 6));
+                  }}
+                  className="px-6 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs transition-all shadow-md shadow-orange-500/20"
                 >
-                  Next
+                  Next Step →
                 </button>
               ) : formData.diagnosis.raiseLab ? (
                 <button
                   onClick={sendToLab}
-                  className="w-full rounded-xl bg-blue-600 px-6 py-3 text-white sm:w-auto"
+                  className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition-all shadow-md shadow-blue-600/20 flex items-center gap-1.5"
                 >
-                  Send To Lab
+                  <span>🧪</span> Send To Lab Requisition
                 </button>
               ) : (
                 <button
                   onClick={completeCase}
-                  className="w-full rounded-xl bg-green-500 px-6 py-3 text-white sm:w-auto"
+                  className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-all shadow-md shadow-emerald-600/20 flex items-center gap-1.5"
                 >
-                  Complete Case
+                  <span>✅</span> Complete Case & Finalize
                 </button>
               )}
             </div>

@@ -1,10 +1,39 @@
 const PetRegistration = require("../models/PetRegistration");
+const { generateOTP } = require("../utils/otpService");
 
 const normalizeSpecies = (species = "") => {
     const value = species.toString().trim().toUpperCase();
     return value === "RABBIT" || value === "BIRD" || value === "CAT" || value === "DOG"
         ? value
         : "OTHER";
+};
+
+
+const sendRegistrationOtp = async (req, res) => {
+    try {
+        const { mobileNumber } = req.body;
+
+        if (!/^[6-9]\d{9}$/.test(mobileNumber || "")) {
+            return res.status(400).json({
+                success: false,
+                message: "Valid 10 digit mobile number is required",
+            });
+        }
+
+        const otp = generateOTP();
+        console.log(`[New Registration OTP] Mobile: ${mobileNumber}, OTP: ${otp}`);
+
+        return res.status(200).json({
+            success: true,
+            message: "OTP sent successfully",
+            data: { otp },
+        });
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
 };
 
 const createRegistration = async (req, res) => {
@@ -36,6 +65,15 @@ const createRegistration = async (req, res) => {
             clinicId,
             mobileNumber,
         });
+
+        if (owner) {
+            return res.status(409).json({
+                success: false,
+                message: "This mobile number is already registered",
+                data: owner,
+            });
+        }
+
         const uniquePetId = `PET-${Date.now()}`;
 
         const tokenNumber = `TK-${Date.now()}`;
@@ -65,20 +103,6 @@ const createRegistration = async (req, res) => {
                 },
             ],
         };
-
-        // Existing Owner
-        if (owner) {
-            petData.ownerId = owner._id;
-            owner.pets.push(petData);
-
-            await owner.save();
-
-            return res.status(200).json({
-                success: true,
-                message: "Pet Added Successfully",
-                data: owner,
-            });
-        }
 
         // New Owner
         owner = new PetRegistration({
@@ -152,7 +176,7 @@ const getOwnerDetails = async (req, res) => {
     try {
         const clinicId = req.user.clinicId;
 
-        await PetRegistration.findOne({
+        const owner = await PetRegistration.findOne({
             _id: req.params.ownerId,
             clinicId,
         });
@@ -166,6 +190,54 @@ const getOwnerDetails = async (req, res) => {
 
         return res.status(200).json({
             success: true,
+            data: owner,
+        });
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
+
+const updateOwner = async (req, res) => {
+    try {
+        const clinicId = req.user.clinicId;
+        const allowedFields = [
+            "ownerName",
+            "visitType",
+            "ownerIdType",
+            "email",
+            "address",
+            "state",
+            "city",
+            "district",
+            "pincode",
+        ];
+        const updateData = {};
+
+        allowedFields.forEach((field) => {
+            if (req.body[field] !== undefined) {
+                updateData[field] = req.body[field];
+            }
+        });
+
+        const owner = await PetRegistration.findOneAndUpdate(
+            { _id: req.params.ownerId, clinicId },
+            updateData,
+            { new: true, runValidators: true }
+        );
+
+        if (!owner) {
+            return res.status(404).json({
+                success: false,
+                message: "Owner Not Found",
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "Owner Updated Successfully",
             data: owner,
         });
     } catch (error) {
@@ -195,6 +267,12 @@ const addPet = async (req, res) => {
 
         owner.pets.push({
             ...req.body,
+            name: req.body.name || req.body.petName,
+            petName: req.body.petName || req.body.name,
+            species: normalizeSpecies(req.body.species),
+            ownerId: owner._id,
+            isSterilised: req.body.sterilized === true || req.body.sterilized === "Yes",
+            sterilized: req.body.sterilized === true || req.body.sterilized === "Yes",
             uniquePetId: `PET-${Date.now()}`,
         });
 
@@ -203,6 +281,79 @@ const addPet = async (req, res) => {
         return res.status(200).json({
             success: true,
             message: "Pet Added Successfully",
+            data: owner,
+        });
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
+
+const updatePet = async (req, res) => {
+    try {
+        const clinicId = req.user.clinicId;
+        const { ownerId, petId } = req.params;
+
+        const owner = await PetRegistration.findOne({
+            _id: ownerId,
+            clinicId,
+        });
+
+        if (!owner) {
+            return res.status(404).json({
+                success: false,
+                message: "Owner Not Found",
+            });
+        }
+
+        const pet = owner.pets.id(petId);
+
+        if (!pet) {
+            return res.status(404).json({
+                success: false,
+                message: "Pet Not Found",
+            });
+        }
+
+        const allowedFields = [
+            "petName",
+            "name",
+            "species",
+            "breed",
+            "dob",
+            "age",
+            "gender",
+            "color",
+            "identificationArea",
+            "identificationMarks",
+            "rfid",
+            "rfidTag",
+        ];
+
+        allowedFields.forEach((field) => {
+            if (req.body[field] !== undefined) {
+                pet[field] = field === "species" ? normalizeSpecies(req.body[field]) : req.body[field];
+            }
+        });
+
+        if (req.body.petName || req.body.name) {
+            pet.name = req.body.name || req.body.petName;
+            pet.petName = req.body.petName || req.body.name;
+        }
+
+        if (req.body.sterilized !== undefined) {
+            const sterilized = req.body.sterilized === true || req.body.sterilized === "Yes";
+            pet.sterilized = sterilized;
+            pet.isSterilised = sterilized;
+        }
+
+        await owner.save();
+
+        return res.status(200).json({
+            success: true,
+            message: "Pet Updated Successfully",
             data: owner,
         });
     } catch (error) {
@@ -516,10 +667,13 @@ const getDashboardStats = async (req, res) => {
     }
 };
 module.exports = {
+    sendRegistrationOtp,
     createRegistration,
     searchCustomer,
     getOwnerDetails,
+    updateOwner,
     addPet,
+    updatePet,
     addVisit,
     getPetHistory,
     getPetHistoryByID,

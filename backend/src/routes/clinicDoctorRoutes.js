@@ -4,7 +4,7 @@ const { authorize } = require('../middlewares/auth');
 const upload = require('../middlewares/uploadMiddleware');
 const doctorController = require('../controllers/doctorDetailController');
 
-router.use(authorize("DOCTOR", "CLINIC_ADMIN"));
+router.use(authorize("DOCTOR", "CLINIC_ADMIN", "RECEPTION", "RECEPTIONIST"));
 
 router.post('/create', upload.fields(
     [

@@ -7,6 +7,14 @@ export const createVisit = async (data) => {
     return res.data;
 };
 
+export const sendRegistrationOtp = async (mobileNumber) => {
+    const response = await API.post(`${BASE_URL}/new-registration/send-otp`, {
+        mobileNumber,
+    });
+
+    return response.data;
+};
+
 // Create Registration
 export const registerOwnerAndPet = async (data) => {
     console.log("RAW FORM DATA:", data);
@@ -29,8 +37,11 @@ export const registerOwnerAndPet = async (data) => {
             species: data.species,
             breed: data.breed,
             gender: data.gender,
+            dob: data.dob,
             age: data.age,
             color: data.color,
+            rfid: data.rfid,
+            identificationArea: data.identificationArea,
             sterilized: data.sterilized === "Yes"
         },
 
@@ -101,6 +112,15 @@ export const searchOwner = async (ownerId) => {
     return response.data;
 };
 
+export const updateOwner = async (ownerId, ownerData) => {
+    const response = await API.put(
+        `${BASE_URL}/new-registration/owner/${ownerId}`,
+        ownerData
+    );
+
+    return response.data;
+};
+
 // Get Customer Details by Mobile Number
 export const searchCustomer = async (mobileNumber) => {
     const response = await API.get(
@@ -114,6 +134,15 @@ export const searchCustomer = async (mobileNumber) => {
 export const addPet = async (ownerId, petData) => {
     const response = await API.post(
         `${BASE_URL}/new-registration/owner/${ownerId}/pets`,
+        petData
+    );
+
+    return response.data;
+};
+
+export const updatePet = async (ownerId, petId, petData) => {
+    const response = await API.put(
+        `${BASE_URL}/new-registration/owner/${ownerId}/pets/${petId}`,
         petData
     );
 
