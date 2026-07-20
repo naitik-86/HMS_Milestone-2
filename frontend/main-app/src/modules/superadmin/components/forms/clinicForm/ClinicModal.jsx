@@ -142,15 +142,11 @@ longitude: "",
                 );
 
             case "licenses":
-             return (
-        form.vetReg &&
-        form.stateCouncil &&
-        (
-            form.vetCert ||
-            form.tradeDoc ||
-            form.drugDoc
-        )
-    )
+                return Boolean(
+                    (form.vetReg && form.vetCert) ||
+                    (form.tradeLicense && form.tradeDoc) ||
+                    (form.drugLicense && form.drugDoc)
+                );
 
             case "tax":
                 return (
@@ -239,18 +235,14 @@ if (
                     break;
 
             case "licenses":
-    if (
-        !form.vetReg ||
-        !form.stateCouncil ||
-        (
-            !form.vetCert &&
-            !form.tradeDoc &&
-            !form.drugDoc
-        )
-    ) {
-        return false;
-    }
-    break;
+                if (
+                    !((form.vetReg && form.vetCert) ||
+                        (form.tradeLicense && form.tradeDoc) ||
+                        (form.drugLicense && form.drugDoc))
+                ) {
+                    return false;
+                }
+                break;
 
                 case "tax":
                     if (

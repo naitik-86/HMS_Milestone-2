@@ -38,6 +38,9 @@ const sendEmail = async (options) => {
         host: smtpHost,
         port: smtpPort,
         secure: smtpPort === 465,
+        connectionTimeout: 10000,
+        greetingTimeout: 10000,
+        socketTimeout: 20000,
         auth: {
           user: smtpEmail,
           pass: smtpPassword,

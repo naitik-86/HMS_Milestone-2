@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from "react";
 import {
     ClipboardCheck,
     Eye,
+    ExternalLink,
+    FileText,
     Mail,
     MapPin,
     Pencil,
@@ -10,7 +12,7 @@ import {
 } from "lucide-react";
 import { showToast } from "../../../shared/components/toast";
 import { calculateEndDate, getTodayDate } from "../../../shared/utils/calculateEndDate ";
-import { deleteClinic, getClinics, updateClinic } from "../api/clinicApi";
+import { deleteClinic, getClinics, updateClinic, uploadClinicDocuments } from "../api/clinicApi";
 import ClinicForm from "./forms/clinicForm/ClinicForm";
 import Stepper from "./forms/Stepper";
 
@@ -52,13 +54,13 @@ const getDisplayStatus = (clinic) =>
     clinic.verificationStatus || clinic.subscriptionStatus || "Unknown";
 
 // Safely format files and URLs for display
-const filePlaceholder = (name) => {
-    if (!name) return null;
-    if (typeof name === "string") {
-        const fileName = name.split('/').pop();
-        return { name: fileName, type: "application/pdf", url: name };
+const filePlaceholder = (file, fileName) => {
+    if (!file) return null;
+    if (typeof file === "string") {
+        const nameFromUrl = file.split('/').pop()?.split('?')[0];
+        return { name: fileName || nameFromUrl || "Uploaded document", type: "application/pdf", url: file };
     }
-    return name;
+    return file;
 };
 
 const formatDate = (value) => {
@@ -119,6 +121,50 @@ const DetailField = ({ label, value, wide = false }) => {
                 </p>
             )}
         </div>
+    );
+};
+
+const ClinicDocuments = ({ form }) => {
+    const documents = [
+        ["Clinic logo", form.logo],
+        ["Veterinary council certificate", form.vetCert],
+        ["Trade license", form.tradeDoc],
+        ["Drug license", form.drugDoc],
+        ["Cancelled cheque", form.cheque],
+        ["Government ID", form.idDoc],
+        ["Admin profile", form.profile],
+    ].filter(([, document]) => document?.url);
+
+    return (
+        <section className="rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:p-5">
+            <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+                Uploaded Documents
+            </h3>
+            {documents.length ? (
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                    {documents.map(([label, document]) => (
+                        <div key={label} className="rounded-xl border border-slate-200 bg-white p-3">
+                            <p className="text-xs uppercase tracking-wide text-slate-500">{label}</p>
+                            <p className="mt-1 truncate text-sm font-medium text-slate-800" title={document.name}>
+                                {document.name}
+                            </p>
+                            <a
+                                href={document.url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="mt-3 inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700 transition hover:bg-blue-100"
+                            >
+                                <FileText size={16} />
+                                View document
+                                <ExternalLink size={14} />
+                            </a>
+                        </div>
+                    ))}
+                </div>
+            ) : (
+                <p className="mt-3 text-sm text-slate-500">No onboarding documents were uploaded.</p>
+            )}
+        </section>
     );
 };
 
@@ -206,13 +252,13 @@ const getClinicForm = (clinic = {}) => {
         apiAccess: Boolean(clinic.apiAccess ?? features.apiAccess ?? false),
         whiteLabel: Boolean(clinic.whiteLabel ?? features.whiteLabel ?? false),
 
-        logo: filePlaceholder(docs.clinicLogo || docs.clinicLogoUrl || clinic.logoName),
-        vetCert: filePlaceholder(docs.vetCouncilCertificate || docs.vetCouncilCertificateUrl || clinic.vetCertName),
-        tradeDoc: filePlaceholder(docs.tradeLicense || docs.tradeLicenseUrl || clinic.tradeDocName),
-        drugDoc: filePlaceholder(docs.drugLicense || docs.drugLicenseUrl || clinic.drugDocName),
-        cheque: filePlaceholder(docs.cancelledCheque || docs.cancelledChequeUrl || clinic.chequeName),
-        idDoc: filePlaceholder(docs.idDocument || docs.idDocumentUrl || clinic.idDocName || docs.governmentId || docs.governmentIdUrl),
-        profile: filePlaceholder(docs.adminProfile || docs.adminProfileUrl || clinic.profileName),
+        logo: filePlaceholder(docs.clinicLogo || docs.clinicLogoUrl || clinic.logoName, docs.clinicLogoName),
+        vetCert: filePlaceholder(docs.vetCouncilCertificate || docs.vetCouncilCertificateUrl || clinic.vetCertName, docs.vetCouncilCertificateName),
+        tradeDoc: filePlaceholder(docs.tradeLicense || docs.tradeLicenseUrl || clinic.tradeDocName, docs.tradeLicenseName),
+        drugDoc: filePlaceholder(docs.drugLicense || docs.drugLicenseUrl || clinic.drugDocName, docs.drugLicenseName),
+        cheque: filePlaceholder(docs.cancelledCheque || docs.cancelledChequeUrl || clinic.chequeName, docs.cancelledChequeName),
+        idDoc: filePlaceholder(docs.idDocument || docs.idDocumentUrl || clinic.idDocName || docs.governmentId || docs.governmentIdUrl, docs.idDocumentName),
+        profile: filePlaceholder(docs.adminProfile || docs.adminProfileUrl || clinic.profileName, docs.adminProfileName),
     };
 };
 
@@ -237,7 +283,7 @@ const getUpdatePayload = (form) => {
         email: form.email,
         contactEmail: form.email,
         phone: form.phone,
-        altPhone: form.altPhone,
+        alternateContact: form.altPhone,
         website: form.website,
         adminName: form.adminName,
         adminEmail: form.adminEmail,
@@ -379,6 +425,7 @@ export default function LatestClinicApprovals() {
         setSaving(true);
         try {
             const response = await updateClinic(selectedClinic._id, getUpdatePayload(updatedForm));
+            await uploadClinicDocuments(selectedClinic._id, updatedForm);
             showToast({
                 type: "success",
                 title: "Clinic Updated",
@@ -617,7 +664,6 @@ function ClinicDetailsModal({ clinic, onClose, onEdit, onDelete }) {
                             <DetailField label="Year of Establishment" value={form.year} />
                             <DetailField label="Alternate Contact" value={form.altPhone} />
                             <DetailField label="Website" value={form.website} />
-                            <DetailField label="Logo / Document" value={form.logo} wide />
                         </DetailSection>
 
                         <DetailSection title="Address & Location">
@@ -636,13 +682,10 @@ function ClinicDetailsModal({ clinic, onClose, onEdit, onDelete }) {
                             <DetailField label="State Vet Council" value={form.stateCouncil} />
                             <DetailField label="Registration Number" value={form.vetReg} />
                             <DetailField label="Registration Expiry" value={formatDate(form.vetExpiry)} />
-                            <DetailField label="Registration Certificate" value={form.vetCert} wide />
                             <DetailField label="Drug License Number" value={form.drugLicense} />
                             <DetailField label="Drug License Expiry" value={formatDate(form.drugExpiry)} />
-                            <DetailField label="Drug License Document" value={form.drugDoc} wide />
                             <DetailField label="Trade License Number" value={form.tradeLicense} />
                             <DetailField label="Trade License Expiry" value={formatDate(form.tradeExpiry)} />
-                            <DetailField label="Trade License Document" value={form.tradeDoc} wide />
                         </DetailSection>
 
                         <DetailSection title="Tax & Banking">
@@ -651,7 +694,6 @@ function ClinicDetailsModal({ clinic, onClose, onEdit, onDelete }) {
                             <DetailField label="Bank Name" value={form.bankName} />
                             <DetailField label="Account Number" value={form.accountNumber} />
                             <DetailField label="IFSC Code" value={form.ifsc} />
-                            <DetailField label="Cancelled Cheque" value={form.cheque} wide />
                         </DetailSection>
 
                         <DetailSection title="Admin Info">
@@ -661,9 +703,9 @@ function ClinicDetailsModal({ clinic, onClose, onEdit, onDelete }) {
                             <DetailField label="Admin Email" value={form.adminEmail} />
                             <DetailField label="Government ID Type" value={form.govtIdType} />
                             <DetailField label="Government ID Number" value={form.govtIdNumber} />
-                            <DetailField label="Government ID Document" value={form.idDoc} wide />
-                            <DetailField label="Profile Photo / PDF" value={form.profile} wide />
                         </DetailSection>
+
+                        <ClinicDocuments form={form} />
 
                         <DetailSection title="Plan & Features">
                             <DetailField label="Plan" value={form.plan} />
@@ -679,6 +721,8 @@ function ClinicDetailsModal({ clinic, onClose, onEdit, onDelete }) {
                             <DetailField label="Grooming Module" value={form.groomingModule} />
                             <DetailField label="Kennel Module" value={form.kennelModule} />
                             <DetailField label="Pharmacy Module" value={form.pharmacyModule} />
+                            <DetailField label="Inventory Module" value={form.inventoryModule} />
+                            <DetailField label="Telemedicine Module" value={form.telemedicineModule} />
                             <DetailField label="API Access" value={form.apiAccess} />
                             <DetailField label="White Label" value={form.whiteLabel} />
                             <DetailField label="Notes" value={form.notes} wide />

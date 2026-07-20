@@ -514,6 +514,10 @@ export default function DoctorForm({
                 nextErrors[`qualification-${index}-degree`] = "Degree name is required.";
             }
 
+            if (row.degree === "Other" && !row.customDegree?.trim()) {
+                nextErrors[`qualification-${index}-customDegree`] = "Please specify the degree.";
+            }
+
             if (!row.institution?.trim()) {
                 nextErrors[`qualification-${index}-institution`] = "Institute name is required.";
             }
@@ -736,7 +740,7 @@ export default function DoctorForm({
     const buildSubmissionPayload = () => {
         const normalizedQualifications = qualifications
             .map((row) => ({
-                degree: String(row.degree || "").trim(),
+                degree: String(row.degree === "Other" ? row.customDegree : row.degree || "").trim(),
                 institution: String(row.institution || "").trim(),
                 year: String(row.year || "").trim(),
             }))
@@ -1078,6 +1082,19 @@ export default function DoctorForm({
                                                 setQualificationValue(index, "degree", e.target.value)
                                             }
                                         />
+
+                                        {qualification.degree === "Other" && (
+                                            <Input
+                                                label="Specify Degree"
+                                                requiredField={false}
+                                                placeholder="Enter degree name"
+                                                value={qualification.customDegree || ""}
+                                                error={errors[`qualification-${index}-customDegree`]}
+                                                onChange={(e) =>
+                                                    setQualificationValue(index, "customDegree", e.target.value)
+                                                }
+                                            />
+                                        )}
 
                                         <Input
                                             label="Institute Name"

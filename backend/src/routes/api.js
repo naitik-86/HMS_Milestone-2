@@ -69,8 +69,10 @@ router.post('/clinics/:id/documents', protect, authorize('SUPER_ADMIN'), upload.
   { name: 'clinicLogo', maxCount: 1 },
   { name: 'vetCouncilCertificate', maxCount: 1 },
   { name: 'tradeLicense', maxCount: 1 },
+  { name: 'drugLicense', maxCount: 1 },
   { name: 'cancelledCheque', maxCount: 1 },
-  { name: 'adminProfile', maxCount: 1 }
+  { name: 'adminProfile', maxCount: 1 },
+  { name: 'idDocument', maxCount: 1 }
 ]), uploadClinicDocuments);
 
 // Clinic Admin
