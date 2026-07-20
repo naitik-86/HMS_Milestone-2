@@ -777,10 +777,11 @@ function DoctorForm({ onClose, onSave, existingData, isEdit, isSubmitting }) {
 function ViewProfileModal({ doctor, onClose, onEdit, onDelete }) {
   if (!doctor) return null;
 
+  // console.log(doctor);
 
 
   const statItems = [
-    { label: 'Specialization', value: doctor.specialization || '—' },
+
     { label: 'Experience', value: doctor.experience ? `${doctor.experience} years` : '—' },
     { label: 'Consultation Fees', value: doctor.fees ? `₹${doctor.fees}` : '—', cls: 'text-[#E8630A]' },
     { label: 'Avg Duration', value: doctor.avgDuration ? `${doctor.avgDuration} min` : '—' },
@@ -1107,7 +1108,7 @@ export default function DoctorDetails() {
 
               <div className="grid grid-cols-2 gap-2 mb-4">
                 {[
-                  { label: 'SPECIALIZATION', value: d.specialization, cls: 'text-[#1A1D2E]' },
+
                   { label: 'EXPERIENCE', value: `${d.experience} yrs`, cls: 'text-[#1A1D2E]' },
                   { label: 'CONSULT FEES', value: `₹${d.fees}`, cls: 'text-[#E8630A]' },
                   { label: 'EMERGENCY', value: d.emergency ? 'Available' : 'Not Available', cls: d.emergency ? 'text-green-500' : 'text-red-400' },

@@ -17,7 +17,16 @@ router.post('/create', upload.fields(
 
 router.get('/', doctorController.getAllDoctors);
 router.get('/:id', doctorController.getDoctorById);
-router.put('/:id', doctorController.updateDoctor);
+router.put(
+    "/:id",
+    upload.fields([
+        { name: "degreeCertificates", maxCount: 10 },
+        { name: "registrationCertificate", maxCount: 1 },
+        { name: "digitalSignature", maxCount: 1 },
+        { name: "doctorLetterhead", maxCount: 1 },
+    ]),
+    doctorController.updateDoctor
+);
 router.delete('/:id', doctorController.deleteDoctor);
 
 module.exports = router;

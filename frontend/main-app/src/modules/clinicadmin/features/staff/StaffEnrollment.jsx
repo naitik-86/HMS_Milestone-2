@@ -25,6 +25,20 @@ function EnrollForm({ onClose, onSave, editData, mode, staff, isSubmitting, }) {
   const isView = mode === 'view';
   const isEdit = mode === 'edit';
 
+  const isFutureDate = (value) => value && new Date(value) > new Date();
+
+  const isPastOrToday = (value) => {
+    if (!value) return false;
+
+    const selected = new Date(value);
+    selected.setHours(0, 0, 0, 0);
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    return selected <= today;
+  };
+
   const [step, setStep] = useState(1);
   const [managerOptions, setManagerOptions] = useState([]);
   const [form, setForm] = useState({
@@ -147,6 +161,11 @@ function EnrollForm({ onClose, onSave, editData, mode, staff, isSubmitting, }) {
     if (step === 4) {
       if (!form.accountExpiryDate) {
         alert("Please select account expiry date");
+        return false;
+      }
+
+      if (isPastOrToday(form.accountExpiryDate)) {
+        alert("Account expiry date must be a future date.");
         return false;
       }
     }
@@ -847,16 +866,22 @@ function EnrollForm({ onClose, onSave, editData, mode, staff, isSubmitting, }) {
                     <label className={labelClass}>Temporary Password</label>
                     <input className={inputReadonly} value="••••••••••••" readOnly />
                   </div>
-                  <div>
-                    <label className={labelClass}>Account Expiry Date</label>
-                    <input
-                      className={isView ? inputDisabled : inputBase}
-                      disabled={isView}
-                      type="date"
-                      value={form.accountExpiryDate}
-                      onChange={e => update('accountExpiryDate', e.target.value)}
-                    />
-                  </div>
+                  <input
+                    className={isView ? inputDisabled : inputBase}
+                    disabled={isView}
+                    type="date"
+                    value={form.accountExpiryDate}
+                    onChange={(e) => {
+                      const value = e.target.value;
+
+                      if (isPastOrToday(value)) {
+                        alert("Account expiry date must be a future date.");
+                        return;
+                      }
+
+                      update("accountExpiryDate", value);
+                    }}
+                  />
                 </div>
 
                 <div className="mt-8 space-y-4 max-w-xl">
