@@ -5,6 +5,7 @@ const generateStaffId = require("../utils/generateStaffId.js");
 const generateUsername = require("../utils/generateUsername.js");
 const generatePassword = require("../utils/generatePassword.js");
 const sendEmail = require("../utils/emailService.js");
+const ClinicAdmin = require("../models/ClinicAdmin.js");
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const phoneRegex = /^\d{10}$/;
@@ -234,11 +235,16 @@ const getAllStaff = async (req, res) => {
             );
 
         const staff = await Staff.find(query)
+            .populate({
+                path: "employmentInfo.reportingTo",
+                select: "personalInfo.fullName employmentInfo.staffId",
+            })
             .skip((page - 1) * limit)
             .limit(limit)
-            .sort({
-                createdAt: -1,
-            });
+            .sort({ createdAt: -1 });
+
+        console.log(staff);
+
 
         res.status(200).json({
             success: true,
@@ -423,58 +429,43 @@ const updateStaff = async (req, res) => {
     }
 };
 
-const deleteStaff = async (
-    req,
-    res
-) => {
+const deleteStaff = async (req, res) => {
     try {
-        const staff = await Staff.findOneAndUpdate(
-
-            {
-                _id: req.params.id,
-                clinicId: req.user.clinicId
-            },
-            {
-                isDeleted: true
-            }
-
-        );
+        const staff = await Staff.findOneAndDelete({
+            _id: req.params.id,
+            clinicId: req.user.clinicId,
+        });
 
         if (!staff) {
             return res.status(404).json({
                 success: false,
-                message: "Staff not found"
+                message: "Staff not found",
             });
-
         }
 
-        res.status(200).json({
+        return res.status(200).json({
             success: true,
-            message:
-                "Staff deleted successfully",
+            message: "Staff deleted permanently",
         });
     } catch (error) {
-        console.error(
-            "DELETE STAFF ERROR:",
-            error.message
-        );
+        console.error("DELETE STAFF ERROR:", error);
 
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             message: "Internal Server Error",
         });
     }
 };
 
-const getManagers = async (
-    req,
-    res
-) => {
+
+const getManagers = async (req, res) => {
     try {
-        const managers =
-            await Staff.find(
+        const clinicId = req.user.clinicId;
+
+        const [managers, clinicAdmin] = await Promise.all([
+            Staff.find(
                 {
-                    clinicId: req.user.clinicId,
+                    clinicId,
                     isDeleted: false,
                 },
                 {
@@ -482,17 +473,31 @@ const getManagers = async (
                     "employmentInfo.staffId": 1,
                     "employmentInfo.role": 1,
                 }
-            );
+            ),
+            ClinicAdmin.findOne({ clinicId }).select("_id"),
+        ]);
+
+        const data = [...managers];
+
+        if (clinicAdmin) {
+            data.unshift({
+                _id: clinicAdmin._id,
+                personalInfo: {
+                    fullName: "Clinic Admin",
+                },
+                employmentInfo: {
+                    staffId: "ADMIN",
+                    role: "CLINIC_ADMIN",
+                },
+            });
+        }
 
         res.status(200).json({
             success: true,
-            data: managers,
+            data,
         });
     } catch (error) {
-        console.error(
-            "GET MANAGERS ERROR:",
-            error.message
-        );
+        console.error("GET MANAGERS ERROR:", error.message);
 
         res.status(500).json({
             success: false,
@@ -500,6 +505,7 @@ const getManagers = async (
         });
     }
 };
+
 exports.getDoctorStaff = async (req, res) => {
     try {
         const clinicId = req.user.clinicId;

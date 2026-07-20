@@ -423,7 +423,7 @@ function EnrollForm({ onClose, onSave, editData, mode, staff }) {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Full Name */}
                 <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
-                  99    <div>
+                  <div>
                     <label className={labelClass}>Full Name <span className="text-[#E8630A]">*</span></label>
                     <input
                       className={isView ? inputDisabled : inputBase}
@@ -501,21 +501,57 @@ function EnrollForm({ onClose, onSave, editData, mode, staff }) {
                     )
                   ) : (
                     <div
-                      className="w-full border border-dashed border-[#E8630A] rounded-xl py-3 px-4 text-sm text-[#E8630A] font-semibold text-center cursor-pointer hover:bg-[#FEF3EB] transition-colors"
-                      onClick={() => document.getElementById('photoUpload').click()}
+                      className="w-full border border-dashed border-[#E8630A] rounded-xl py-3 px-4 text-sm text-[#E8630A] font-semibold cursor-pointer hover:bg-[#FEF3EB] transition-colors"
+                      onClick={() => document.getElementById("photoUpload").click()}
                     >
-                      Upload File
-                      <input id="photoUpload" type="file" accept="image/*" className="hidden"
-                        onChange={e => {
+                      {form.profilePhoto ? (
+                        <div className="flex items-center gap-3">
+                          <img
+                            src={
+                              form.profilePhoto instanceof File
+                                ? URL.createObjectURL(form.profilePhoto)
+                                : form.profilePhoto
+                            }
+                            alt="Preview"
+                            className="h-10 w-10 rounded-lg object-cover border border-[#E8630A]"
+                          />
+
+                          <div className="flex flex-col text-left min-w-0">
+                            <span className="text-sm font-medium text-gray-800 truncate">
+                              {form.profilePhoto instanceof File
+                                ? form.profilePhoto.name
+                                : "Profile Photo"}
+                            </span>
+
+                            <span className="text-xs text-gray-500">
+                              {form.profilePhoto instanceof File
+                                ? form.profilePhoto.type
+                                : "Uploaded"}
+                            </span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-center">Upload File</div>
+                      )}
+
+                      <input
+                        id="photoUpload"
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
                           const file = e.target.files[0];
                           if (!file) return;
+
                           if (!isImageFile(file)) {
                             alert("Profile photo must be an image file");
                             e.target.value = "";
                             return;
                           }
-                          update('profilePhoto', file);
-                        }} />
+
+                          update("profilePhoto", file);
+                        }}
+                      />
                     </div>
                   )}
                 </div>
@@ -1044,9 +1080,11 @@ export default function StaffEnrollment() {
 
     } catch (err) {
       console.error(err);
+      console.log(err);
+
       showToast({
         type: "error",
-        title: "Operation Failed",
+        title: err.response.data.message,
         description: "Unable to save Staff details. Please try again.",
       });
     }

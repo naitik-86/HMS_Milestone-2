@@ -5,14 +5,27 @@ import {
     getCurrentSubscription,
     getAllPlans,
 } from "../../api/subscriptionApi";
-
+import { useNavigate } from "react-router-dom";
 import CurrentSubscriptionCard from "./CurrentSubscriptionCard";
 import SubscriptionStats from "./SubscriptionStats";
 import PlanCarousel from "./PlanCarousel";
+import TrialSubscriptionCard from "./TrialSubscriptionCard";
 
 function PrePaidSubscription() {
     const [currentSubscription, setCurrentSubscription] = useState(null);
     const [plans, setPlans] = useState([]);
+    const navigate = useNavigate();
+
+
+    const handleUpgrade = () => {
+        navigate("/payment", {
+            state: {
+                clinicId: currentSubscription.clinicId,
+                email: currentSubscription.email,
+            },
+            replace: true,
+        });
+    };
 
     useEffect(() => {
         fetchData();
@@ -49,13 +62,15 @@ function PrePaidSubscription() {
             <h1 className="text-3xl font-bold">
                 Subscription & Billing
             </h1>
-            {currentSubscription.status !== "TRIAL" && (
-
+            {currentSubscription.status === "TRIAL" ? (
+                <TrialSubscriptionCard
+                    subscription={currentSubscription}
+                    onUpgrade={handleUpgrade}
+                />
+            ) : (
                 <CurrentSubscriptionCard
                     subscription={currentSubscription}
                 />
-
-
             )}
 
 

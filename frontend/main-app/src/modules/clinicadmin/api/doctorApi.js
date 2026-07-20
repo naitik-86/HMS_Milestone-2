@@ -64,15 +64,15 @@ const buildDoctorFormData = (doctorData) => {
         "name",
         doctorData.name
     );
-formData.append(
-    "staff",
-    doctorData.staff || doctorData.staffId
-);
+    formData.append(
+        "staff",
+        doctorData.staff || doctorData.staffId
+    );
 
-formData.append(
-    "staffCode",
-    doctorData.staffCode
-);
+    formData.append(
+        "staffCode",
+        doctorData.staffCode
+    );
     formData.append(
         "stateVetCouncil",
         doctorData.state

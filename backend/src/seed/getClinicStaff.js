@@ -23,8 +23,7 @@ const getClinicStaff = async () => {
         await connectDB();
 
         const staffs = await Staff.find({
-            clinicId: CLINIC_ID,
-            isDeleted: false,
+
         }).sort({
             "employmentInfo.role": 1,
             "personalInfo.fullName": 1,
@@ -42,6 +41,7 @@ const getClinicStaff = async () => {
                 mobile: staff.personalInfo.mobileNumber,
                 username: staff.accountInfo.username,
                 active: staff.accountInfo.accountActive,
+                reportTo: staff.employmentInfo.reportingTo,
             });
         });
 

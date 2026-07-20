@@ -77,8 +77,9 @@ const staffSchema = new mongoose.Schema(
             },
 
             reportingTo: {
-                type: String,
-                default: ""
+                type: mongoose.Schema.Types.ObjectId,
+                ref: "Staff",
+                default: null,
             },
 
             department: String,

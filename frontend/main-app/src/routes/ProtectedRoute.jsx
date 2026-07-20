@@ -92,21 +92,19 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
             subscription.status === "TRIAL" ||
             subscription.status === "ACTIVE"
         ) {
-            return (
-                <>
-                    {children}
+            if (showTrialPopup) {
+                return (
+                    <TrialPaymentModal
+                        open={true}
+                        onClose={() => setShowTrialPopup(false)}
+                        remainingTrialDays={remainingTrialDays}
+                        clinicId={clinic._id}
+                        email={clinic.contactEmail}
+                    />
+                );
+            }
 
-                    {showTrialPopup && (
-                        <TrialPaymentModal
-                            open={showTrialPopup}
-                            onClose={() => setShowTrialPopup(false)}
-                            remainingTrialDays={remainingTrialDays}
-                            clinicId={clinic._id}
-                            email={clinic.contactEmail}
-                        />
-                    )}
-                </>
-            );
+            return children;
         }
 
         // Redirect when payment is required or subscription expired
