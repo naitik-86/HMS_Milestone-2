@@ -66,7 +66,6 @@ export default function ReceptionSidebar({ isCollapsed = false, toggleCollapse }
   const menus = [
     { name: "Dashboard", path: "", icon: LayoutDashboard },
     { name: "New Registration", path: "new-registration", icon: UserPlus },
-    { name: "Create Visit", path: "create-visit", icon: CalendarCheck },
     { name: "Existing Customer", path: "existing-customer", icon: Users },
   ];
 

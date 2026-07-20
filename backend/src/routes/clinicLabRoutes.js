@@ -5,8 +5,9 @@ const upload = require('../middlewares/uploadMiddleware');
 const labController = require('../controllers/labTechnicianController');
 
 
-router.use(authorize("LAB_TECHNICIAN", "CLINIC_ADMIN"));
+router.use(authorize("LAB_TECHNICIAN", "CLINIC_ADMIN", "STAFF", "RECEPTION", "RECEPTIONIST", "SUPER_ADMIN", "DOCTOR"));
 
+router.get('/dashboard', labController.getLabDashboard);
 router.post('/create', upload.fields([
     { name: "certificate", maxCount: 1 },
     { name: "idProof", maxCount: 1 },

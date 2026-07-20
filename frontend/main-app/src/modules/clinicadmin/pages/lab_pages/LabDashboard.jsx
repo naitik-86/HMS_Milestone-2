@@ -1,495 +1,232 @@
-/* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useState } from "react";
-import axios from "axios";
-
-const BASE_URL = "http://localhost:5000/api/v1/lab";
+import { useNavigate } from "react-router-dom";
+import {
+  FlaskConical,
+  Clock,
+  AlertTriangle,
+  FileText,
+  Sparkles,
+  ShieldCheck,
+  ArrowRight,
+  Loader2,
+  CheckCircle2,
+  PawPrint,
+  User,
+  Calendar,
+  Activity,
+} from "lucide-react";
+import { getLabDashboard } from "../../api/labApi";
 
 export default function LabDashboard() {
-
-  const [stats, setStats] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [statsData, setStatsData] = useState({
+    totalReports: 0,
+    pendingUploads: 0,
+    criticalCases: 0,
+    todayReports: 0,
+  });
   const [recentActivities, setRecentActivities] = useState([]);
   const [pendingSummary, setPendingSummary] = useState([]);
 
-  // ================= Dashboard =================
-
-  const getDashboardStats = async () => {
-    try {
-
-      const res = await axios.get(`${BASE_URL}/dashboard`);
-
-      console.log("Dashboard :", res.data);
-
-      setStats([
-        {
-          title: "Total Reports",
-          value: res.data.data.totalReports,
-          icon: "🧪",
-          color: "blue",
-        },
-        {
-          title: "Pending Uploads",
-          value: res.data.data.pendingUploads,
-          icon: "⏳",
-          color: "orange",
-        },
-        {
-          title: "Critical Cases",
-          value: res.data.data.criticalCases,
-          icon: "🚨",
-          color: "red",
-        },
-        {
-          title: "Today's Reports",
-          value: res.data.data.todayReports,
-          icon: "📄",
-          color: "blue",
-        },
-      ]);
-
-    } catch (error) {
-
-      console.error("Dashboard Error :", error);
-
-    }
-  };
-
-
-
-  // ================= Recent Activity =================
-
-  const getRecentActivities = async () => {
-
-    try {
-
-      const res = await axios.get(`${BASE_URL}/recent`);
-
-      console.log("Recent Activity :", res.data);
-
-      setRecentActivities(res.data.data || []);
-
-    } catch (error) {
-
-      console.error("Recent Activity Error :", error);
-
-    }
-
-  };
-
-
-
-  // ================= Pending Summary =================
-
-  const getPendingSummary = async () => {
-
-    try {
-
-      const res = await axios.get(`${BASE_URL}/pending-summary`);
-
-      console.log("Pending Summary :", res.data);
-
-      setPendingSummary(res.data.data || []);
-
-    } catch (error) {
-
-      console.error("Pending Summary Error :", error);
-
-    }
-
-  };
-
-
-
-  // ================= Initial Load =================
+  const navigate = useNavigate();
 
   useEffect(() => {
-
-    getDashboardStats();
-    getRecentActivities();
-    getPendingSummary();
-
+    fetchDashboardData();
   }, []);
 
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      const res = await getLabDashboard();
+      if (res?.data) {
+        setStatsData({
+          totalReports: res.data.totalReports || 0,
+          pendingUploads: res.data.pendingUploads || 0,
+          criticalCases: res.data.criticalCases || 0,
+          todayReports: res.data.todayReports || 0,
+        });
+        setRecentActivities(res.data.recentActivities || []);
+        setPendingSummary(res.data.pendingSummary || []);
+      }
+    } catch (error) {
+      console.error("Lab Dashboard Error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  // ================= Debug =================
-
-  console.log("Recent Activities State :", recentActivities);
-  console.log("Pending Summary State :", pendingSummary);
-
+  const statCards = [
+    {
+      title: "Total Lab Reports",
+      value: statsData.totalReports,
+      icon: <FlaskConical className="w-6 h-6 text-orange-500" />,
+      bg: "bg-orange-500/10 border-orange-200 text-orange-600",
+    },
+    {
+      title: "Pending Requisitions",
+      value: statsData.pendingUploads,
+      icon: <Clock className="w-6 h-6 text-amber-500" />,
+      bg: "bg-amber-500/10 border-amber-200 text-amber-600",
+    },
+    {
+      title: "Critical Findings",
+      value: statsData.criticalCases,
+      icon: <AlertTriangle className="w-6 h-6 text-red-500" />,
+      bg: "bg-red-500/10 border-red-200 text-red-600",
+    },
+    {
+      title: "Today's Uploads",
+      value: statsData.todayReports,
+      icon: <FileText className="w-6 h-6 text-emerald-500" />,
+      bg: "bg-emerald-500/10 border-emerald-200 text-emerald-600",
+    },
+  ];
 
   return (
-    <div className="min-h-screen bg-slate-100">
-
-
-      <div className="overflow-x-hidden pt-[80px] lg:pt-0">
-        {/* Header */}
-
-
-        <div className="bg-white border-b border-slate-200 px-4 md:px-6 lg:px-8 py-5">
-
-          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-
-            <div>
-
-              <div className="flex items-center gap-3 mb-2">
-
-                <div className="w-3 h-3 rounded-full bg-orange-500"></div>
-
-                <span className="text-orange-500 font-semibold">
-                  Veterinary Clinic System
-                </span>
-
+    <div className="min-h-screen bg-slate-100 p-4 sm:p-6 lg:p-8 flex justify-center">
+      <div className="w-full max-w-7xl bg-white rounded-3xl shadow-2xl shadow-slate-200/80 border border-slate-200/70 overflow-hidden flex flex-col">
+        {/* Sleek Dark Header Hero Section */}
+        <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 p-6 sm:p-8 text-white flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-800">
+          <div>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-orange-500/20 border border-orange-500/30 flex items-center justify-center text-orange-400 font-bold">
+                <FlaskConical className="w-5 h-5" />
               </div>
-
-              <h1 className="text-2xl md:text-3xl font-bold text-slate-900">
-                Lab Dashboard
-              </h1>
-
-              <p className="text-slate-500 mt-2">
-                Veterinary Laboratory Management
-              </p>
-
+              <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">Laboratory Dashboard</h1>
+              <Sparkles className="w-6 h-6 text-orange-400" />
             </div>
+            <p className="text-slate-300 text-xs sm:text-sm mt-1 font-medium">
+              Live diagnostic stats, pending requisitions, and historical report feeds
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => navigate("/clinic/lab/pending-pets")}
+              className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white px-5 py-2.5 rounded-2xl font-bold text-xs shadow-md transition cursor-pointer border-none flex items-center gap-2"
+            >
+              <span>View Pending Queue</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
 
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-
-              <div className="bg-orange-50 border border-orange-100 rounded-3xl px-5 py-3">
-
-                <p className="text-xs text-slate-500">
-                  Active Module
-                </p>
-
-                <p className="font-semibold text-orange-600">
-                  Laboratory Panel
-                </p>
-
+        <div className="p-6 sm:p-8 space-y-8 flex-1">
+          {/* Stat KPI Cards Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
+            {statCards.map((card, index) => (
+              <div
+                key={index}
+                className="bg-white rounded-3xl p-5 border border-slate-200/80 shadow-xs flex items-center justify-between hover:shadow-md transition"
+              >
+                <div>
+                  <p className="text-slate-500 text-xs font-semibold uppercase tracking-wider">{card.title}</p>
+                  <h2 className="text-3xl font-black text-slate-800 mt-1">
+                    {loading ? <Loader2 className="w-6 h-6 animate-spin text-slate-400" /> : card.value}
+                  </h2>
+                </div>
+                <div className={`w-13 h-13 rounded-2xl border flex items-center justify-center font-bold ${card.bg}`}>
+                  {card.icon}
+                </div>
               </div>
-
-              <div className="w-14 h-14 rounded-3xl bg-gradient-to-r from-black via-orange-500 to-blue-600 text-white flex items-center justify-center text-lg font-bold shadow-lg">
-                LB
-              </div>
-
-            </div>
-
+            ))}
           </div>
 
-        </div>
-
-        <div className="p-4 md:p-6 lg:p-8">
-
-
-
-          <>
-
-            {/* Stats Cards */}
-
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
-
-              {stats.map((item, index) => (
-
-                <div
-                  key={index}
-                  className="
-                        group
-                        relative
-                        overflow-hidden
-                        rounded-[32px]
-                        bg-white
-                        p-6
-                        border
-                        border-slate-100
-                        shadow-xl
-                        transition-all
-                        duration-300
-                        hover:-translate-y-2
-                        hover:shadow-2xl
-                        "
+          {/* Main Dashboard Content Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Live Pending Requisitions Queue (2 Columns) */}
+            <div className="lg:col-span-2 space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div className="flex items-center gap-2">
+                  <Clock className="w-5 h-5 text-orange-500" />
+                  <h3 className="text-lg font-bold text-slate-800">Pending Requisitions Queue</h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => navigate("/clinic/lab/pending-pets")}
+                  className="text-xs font-bold text-orange-600 hover:underline cursor-pointer border-none bg-transparent flex items-center gap-1"
                 >
+                  <span>View All</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
 
-                  {/* Top Gradient Line */}
-                  <div
-                    className={`
-                            absolute
-                            top-0
-                            left-0
-                            h-1
-                            w-full
-                            ${item.color === "blue"
-                        ? "bg-gradient-to-r from-blue-500 to-cyan-400"
-                        : item.color === "orange"
-                          ? "bg-gradient-to-r from-orange-500 to-orange-300"
-                          : "bg-gradient-to-r from-red-500 to-pink-400"
-                      }
-                          `}
-                  />
-
-                  {/* Background Glow */}
-                  <div
-                    className={`
-                      absolute
-                      -right-8
-                      -top-8
-                      h-32
-                      w-32
-                      rounded-full
-                      opacity-10
-                      blur-3xl
-                      ${item.color === "blue"
-                        ? "bg-blue-500"
-                        : item.color === "orange"
-                          ? "bg-orange-500"
-                          : "bg-red-500"
-                      }
-                    `}
-                  />
-
-                  <div className="relative z-10">
-
-                    <div className="flex items-start justify-between">
-
-                      <div>
-
-                        <p className="text-sm font-medium text-slate-500 uppercase tracking-wider">
-                          {item.title}
-                        </p>
-
-                        <h2 className="mt-4 text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900">
-                          {item.value}
-                        </h2>
-
-                        <p className="mt-3 text-sm text-green-500 font-medium">
-                          ↑ Updated Today
-                        </p>
-
-                      </div>
-
-                      <div
-                        className={`
-                             flex
-                              h-12
-                              w-12
-                              md:h-16
-                              md:w-16
-                              items-center
-                              justify-center
-                              rounded-3xl
-                              text-3xl
-                              shadow-lg
-                              transition-all
-                              duration-300
-                              group-hover:scale-110
-                              ${item.color === "blue"
-                            ? "bg-blue-100"
-                            : item.color === "orange"
-                              ? "bg-orange-100"
-                              : "bg-red-100"
-                          }
-                          `}
-                      >
-                        {item.icon}
-                      </div>
-
-                    </div>
-
+              <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs">
+                {loading ? (
+                  <div className="p-8 text-center text-slate-400 flex justify-center">
+                    <Loader2 className="w-6 h-6 animate-spin text-orange-500" />
                   </div>
-
-                </div>
-
-              ))}
-
-            </div>
-
-            {/* Revenue Cards */}
-            {/* Hero Section */}
-
-            <div className="
-                      mb-8
-                      overflow-hidden
-                      rounded-[32px]
-                      bg-gradient-to-r
-                      from-slate-950
-                      via-blue-900
-                      to-blue-600
-                      p-5 md:p-8
-                      text-white
-                      shadow-2xl
-                      ">
-
-              <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-
-                <div>
-
-                  <p className="mb-3 text-orange-300 font-semibold">
-                    Laboratory Overview
-                  </p>
-
-                  <h2 className="text-2xl md:text-4xl lg:text-5xl font-bold">
-                    {stats[3]?.value} Reports Uploaded Today
-                  </h2>
-
-                  <p className="mt-4 max-w-xl text-white/70">
-                    Manage laboratory uploads, monitor critical
-                    reports and review pending submissions.
-                  </p>
-
-                  <button
-                    onClick={() => setActiveStep("reports")}
-                    className="
-                          mt-6
-                          rounded-2xl
-                          bg-orange-500
-                          px-6
-                          py-3
-                          font-semibold
-                          text-white
-                          shadow-lg
-        "
-                  >
-                    Upload Reports
-                  </button>
-
-                </div>
-
-                <div className="text-[120px] opacity-10">
-                  🧪
-                </div>
-
-              </div>
-
-            </div>
-
-
-
-
-            {/* Bottom Section */}
-
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-
-              <div className="
-                    bg-white
-                    rounded-[32px]
-                    p-8
-                    shadow-xl
-                    border
-                    border-slate-100
-                    ">
-
-                <div className="flex items-center justify-between mb-6">
-
-                  <div>
-                    <h2 className="text-2xl font-bold text-slate-900">
-                      Recent Activity
-                    </h2>
-
-                    <p className="text-sm text-slate-500 mt-1">
-                      Latest laboratory updates
-                    </p>
-                  </div>
-
-                  <span className="
-                        rounded-2xl
-                        bg-green-100
-                        px-4
-                        py-2
-                        text-sm
-                        font-semibold
-                        text-green-600
-                      ">
-                    Live
-                  </span>
-
-                </div>
-
-                <div className="space-y-4">
-
-                  {/* Activity 1 */}
-                  {recentActivities.map((item) => (
-                    <div
-                      key={item._id}
-                      className="flex items-center justify-between rounded-3xl bg-slate-50 p-5 transition-all hover:bg-slate-100"
-                    >
-                      <div className="flex items-center gap-4">
-
-                        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-green-100 text-2xl">
-                          {item.status === "Completed"
-                            ? "✅"
-                            : item.status === "Pending"
-                              ? "⏳"
-                              : "🚨"}
+                ) : pendingSummary.length > 0 ? (
+                  <div className="divide-y divide-slate-100">
+                    {pendingSummary.map((item) => (
+                      <div key={item._id} className="p-4 sm:p-5 hover:bg-orange-50/40 transition flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-3.5">
+                          <div className="w-10 h-10 rounded-2xl bg-orange-100 text-orange-600 flex items-center justify-center font-bold text-xs shrink-0">
+                            TK-{item.tokenNumber || "N/A"}
+                          </div>
+                          <div>
+                            <p className="font-bold text-slate-800 text-sm">{item.petName || "Pet"} ({item.species})</p>
+                            <p className="text-xs text-slate-400 font-medium">Owner: {item.ownerName || "Owner"}</p>
+                            {item.chiefComplaint && (
+                              <p className="text-xs text-slate-500 mt-1 italic font-medium">" {item.chiefComplaint} "</p>
+                            )}
+                          </div>
                         </div>
-
-                        <div>
-                          <h3 className="font-semibold text-slate-800">
-                            {item.labOrderId}
-                          </h3>
-
-                          <p className="text-sm text-slate-500">
-                            {item.petName} • {item.reportType}
-                          </p>
-                        </div>
-
+                        <button
+                          type="button"
+                          onClick={() => navigate("/clinic/lab/pending-pets")}
+                          className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-xl font-bold text-xs transition cursor-pointer shadow-xs border-none shrink-0"
+                        >
+                          Upload Report
+                        </button>
                       </div>
-
-                      <span
-                        className={`rounded-xl px-3 py-1 text-sm font-bold ${item.status === "Completed"
-                            ? "bg-green-100 text-green-600"
-                            : item.status === "Pending"
-                              ? "bg-orange-100 text-orange-600"
-                              : "bg-red-100 text-red-600"
-                          }`}
-                      >
-                        {item.status}
-                      </span>
-                    </div>
-                  ))}
-
-                </div>
-
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-8 text-center text-slate-400 text-sm font-medium">
+                    No pending requisitions in queue right now.
+                  </div>
+                )}
               </div>
-
-              <div className="
-                    bg-white
-                    rounded-[32px]
-                    p-5 md:p-8
-                    shadow-xl
-                    border
-                    border-slate-100
-                    ">
-
-                <h2 className="text-xl font-bold mb-5">
-                  Pending Reports
-                </h2>
-                <div className="space-y-4">
-
-                  {pendingSummary.map((item) => (
-
-                    <div
-                      key={item.reportType}
-                      className="flex items-center justify-between rounded-2xl bg-slate-50 p-4 transition hover:bg-slate-100"
-                    >
-
-                      <span className="font-medium text-slate-700">
-                        {item.reportType}
-                      </span>
-
-                      <span className="rounded-xl bg-orange-100 px-3 py-1 font-bold text-orange-600">
-                        {item.total}
-                      </span>
-
-                    </div>
-
-                  ))}
-
-                </div>
-
-              </div>
-
             </div>
 
-          </>
+            {/* Recent Lab Activity Feed (1 Column) */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div className="flex items-center gap-2">
+                  <Activity className="w-5 h-5 text-blue-500" />
+                  <h3 className="text-lg font-bold text-slate-800">Recent Activity</h3>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs space-y-4">
+                {loading ? (
+                  <div className="p-6 text-center text-slate-400 flex justify-center">
+                    <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
+                  </div>
+                ) : recentActivities.length > 0 ? (
+                  recentActivities.map((act, idx) => (
+                    <div key={idx} className="flex items-start gap-3 border-b border-slate-100 last:border-0 pb-3 last:pb-0">
+                      <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">
+                        <CheckCircle2 className="w-4 h-4" />
+                      </div>
+                      <div className="overflow-hidden">
+                        <p className="font-bold text-xs text-slate-800 truncate">{act.reports?.[0]?.testName || "Diagnostic Test Uploaded"}</p>
+                        <p className="text-[11px] text-slate-400 font-medium">Status: {act.status || "Completed"}</p>
+                        <p className="text-[10px] text-slate-400 mt-0.5">{new Date(act.createdAt).toLocaleDateString()}</p>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="p-6 text-center text-slate-400 text-xs font-medium">
+                    No recent lab activity recorded today.
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
-
       </div>
-
     </div>
   );
 }

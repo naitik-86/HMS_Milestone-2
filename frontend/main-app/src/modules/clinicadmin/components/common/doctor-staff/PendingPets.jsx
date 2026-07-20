@@ -1853,6 +1853,24 @@ export default function PendingPets() {
         open={showLabReportModal}
         onClose={() => setShowLabReportModal(false)}
         report={selectedLabReport}
+        onCompleteCase={async () => {
+          const visitId = selectedLabReport?.visitId?._id || selectedLabReport?.visitId;
+          if (!visitId) return;
+          try {
+            setShowLabReportModal(false);
+            const response = await updatePatient(visitId, {
+              status: "COMPLETED",
+              workflow: { doctorCompleted: true }
+            });
+            if (response.success || response.data) {
+              toast.success("Case completed successfully and moved to Doctor Completed Pets!");
+              await fetchPendingPets();
+            }
+          } catch (err) {
+            console.error("Complete case from lab modal failed:", err);
+            toast.error(err.response?.data?.message || "Failed to complete case.");
+          }
+        }}
       />
 
       <PreConsultationReportModal

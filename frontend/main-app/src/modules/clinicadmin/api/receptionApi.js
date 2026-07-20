@@ -19,6 +19,39 @@ export const sendRegistrationOtp = async (mobileNumber) => {
 export const registerOwnerAndPet = async (data) => {
     console.log("RAW FORM DATA:", data);
 
+    const petsArray = Array.isArray(data.pets) && data.pets.length > 0
+        ? data.pets.map(p => ({
+            ...p,
+            name: p.name || p.petName,
+            petName: p.petName || p.name,
+            species: p.species,
+            breed: p.breed,
+            gender: p.gender,
+            dob: p.dob,
+            age: p.age,
+            color: p.color,
+            rfid: p.rfid,
+            identificationArea: p.identificationArea,
+            sterilized: p.sterilized === "Yes" || p.sterilized === true,
+            history: p.history || {},
+            visit: p.visit || {}
+        }))
+        : [{
+            name: data.petName || data.name,
+            petName: data.petName || data.name,
+            species: data.species,
+            breed: data.breed,
+            gender: data.gender,
+            dob: data.dob,
+            age: data.age,
+            color: data.color,
+            rfid: data.rfid,
+            identificationArea: data.identificationArea,
+            sterilized: data.sterilized === "Yes" || data.sterilized === true,
+            history: data.history || {},
+            visit: data.visit || {}
+        }];
+
     const formData = {
         mobileNumber: data.mobileNumber,
         ownerName: data.ownerName,
@@ -30,56 +63,10 @@ export const registerOwnerAndPet = async (data) => {
         city: data.city,
         district: data.district,
         pincode: data.pincode,
-
-        // ✅ PET
-        pet: {
-            petName: data.petName,
-            species: data.species,
-            breed: data.breed,
-            gender: data.gender,
-            dob: data.dob,
-            age: data.age,
-            color: data.color,
-            rfid: data.rfid,
-            identificationArea: data.identificationArea,
-            sterilized: data.sterilized === "Yes"
-        },
-
-        // ✅ VISIT
-        visit: {
-            primaryReason: data.primaryReason,
-            complaint: data.complaint,
-            condition: data.condition,
-            treatment: data.treatment,
-            treatmentDate: data.treatmentDate,
-            appointmentDate: data.appointmentDate,
-            appointmentTime: data.appointmentTime,
-            assignedDoctor: data.assignedDoctor,
-            hospital: data.hospital,
-            status: "Pending"
-        },
-
-        // ✅ HISTORY
-        history: {
-            vaccinations: data.vaccinationDate
-                ? [{ date: data.vaccinationDate, name: data.vaccineName }]
-                : [],
-
-            dewormings: data.dewormingDate
-                ? [{ date: data.dewormingDate, product: data.dewormingProduct }]
-                : [],
-
-            surgeries: data.surgeryDate
-                ? [{ date: data.surgeryDate, procedure: data.surgicalProcedure }]
-                : [],
-
-            treatments: data.treatmentDate
-                ? [{ date: data.treatmentDate, details: data.treatment }]
-                : [],
-
-            allergies: data.allergies,
-            currentMedications: data.medications
-        }
+        pets: petsArray,
+        pet: petsArray[0],
+        visit: petsArray[0]?.visit || {},
+        history: petsArray[0]?.history || {}
     };
 
     console.log("FINAL PAYLOAD:", formData);
@@ -132,9 +119,14 @@ export const searchCustomer = async (mobileNumber) => {
 
 // Add New Pet for Existing Owner
 export const addPet = async (ownerId, petData) => {
+    const payload = {
+        ...petData,
+        name: petData.name || petData.petName,
+        petName: petData.petName || petData.name,
+    };
     const response = await API.post(
         `${BASE_URL}/new-registration/owner/${ownerId}/pets`,
-        petData
+        payload
     );
 
     return response.data;

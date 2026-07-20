@@ -8,6 +8,8 @@ export default function BriefHistoryForm({ formData, setFormData }) {
     }));
   };
 
+  const hasPrevious = formData.previousEpisodes?.hasPreviousEpisodes || false;
+
   return (
     <div>
       <h2 className="text-xl md:text-3xl font-bold text-slate-800 mb-6 md:mb-8">
@@ -15,16 +17,15 @@ export default function BriefHistoryForm({ formData, setFormData }) {
       </h2>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
-
         {/* Duration Of Illness Value */}
         <div>
-          <label className="block mb-2 font-medium">
+          <label className="block mb-2 font-medium text-slate-700">
             Duration Of Illness
           </label>
 
           <input
             type="number"
-            value={formData.durationOfIllness.value}
+            value={formData.durationOfIllness?.value || ""}
             onChange={(e) =>
               setFormData((prev) => ({
                 ...prev,
@@ -34,29 +35,19 @@ export default function BriefHistoryForm({ formData, setFormData }) {
                 },
               }))
             }
-            placeholder="Enter Duration"
-            className="
-              w-full
-              border border-slate-200
-              rounded-2xl
-              px-4 py-3
-              text-sm md:text-base
-              outline-none
-              focus:border-orange-500
-              focus:ring-4
-              focus:ring-orange-100
-            "
+            placeholder="Enter Duration Number"
+            className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm md:text-base outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-100"
           />
         </div>
 
         {/* Duration Unit */}
         <div>
-          <label className="block mb-2 font-medium">
+          <label className="block mb-2 font-medium text-slate-700">
             Duration Unit
           </label>
 
           <select
-            value={formData.durationOfIllness.unit}
+            value={formData.durationOfIllness?.unit || "Days"}
             onChange={(e) =>
               setFormData((prev) => ({
                 ...prev,
@@ -66,19 +57,8 @@ export default function BriefHistoryForm({ formData, setFormData }) {
                 },
               }))
             }
-            className="
-              w-full
-              border border-slate-200
-              rounded-2xl
-              px-4 py-3
-              text-sm md:text-base
-              outline-none
-              focus:border-orange-500
-              focus:ring-4
-              focus:ring-orange-100
-            "
+            className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm md:text-base outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-100"
           >
-            <option value="">Select Unit</option>
             <option value="Days">Days</option>
             <option value="Weeks">Weeks</option>
             <option value="Months">Months</option>
@@ -88,7 +68,7 @@ export default function BriefHistoryForm({ formData, setFormData }) {
 
         {/* Onset */}
         <div>
-          <label className="block mb-2 font-medium">
+          <label className="block mb-2 font-medium text-slate-700">
             Onset
           </label>
 
@@ -96,17 +76,7 @@ export default function BriefHistoryForm({ formData, setFormData }) {
             name="onset"
             value={formData.onset}
             onChange={handleChange}
-            className="
-              w-full
-              border border-slate-200
-              rounded-2xl
-              px-4 py-3
-              text-sm md:text-base
-              outline-none
-              focus:border-orange-500
-              focus:ring-4
-              focus:ring-orange-100
-            "
+            className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm md:text-base outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-100"
           >
             <option value="">Select Onset</option>
             <option value="Sudden">Sudden</option>
@@ -116,7 +86,7 @@ export default function BriefHistoryForm({ formData, setFormData }) {
 
         {/* Progression */}
         <div>
-          <label className="block mb-2 font-medium">
+          <label className="block mb-2 font-medium text-slate-700">
             Progression
           </label>
 
@@ -124,17 +94,7 @@ export default function BriefHistoryForm({ formData, setFormData }) {
             name="progression"
             value={formData.progression}
             onChange={handleChange}
-            className="
-              w-full
-              border border-slate-200
-              rounded-2xl
-              px-4 py-3
-              text-sm md:text-base
-              outline-none
-              focus:border-orange-500
-              focus:ring-4
-              focus:ring-orange-100
-            "
+            className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm md:text-base outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-100"
           >
             <option value="">Select Progression</option>
             <option value="Improving">Improving</option>
@@ -145,7 +105,7 @@ export default function BriefHistoryForm({ formData, setFormData }) {
 
         {/* Recent Travel */}
         <div>
-          <label className="block mb-2 font-medium">
+          <label className="block mb-2 font-medium text-slate-700">
             Recent Travel
           </label>
 
@@ -158,17 +118,7 @@ export default function BriefHistoryForm({ formData, setFormData }) {
                 recentTravel: e.target.value === "true",
               }))
             }
-            className="
-              w-full
-              border border-slate-200
-              rounded-2xl
-              px-4 py-3
-              text-sm md:text-base
-              outline-none
-              focus:border-orange-500
-              focus:ring-4
-              focus:ring-orange-100
-            "
+            className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm md:text-base outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-100"
           >
             <option value="false">No</option>
             <option value="true">Yes</option>
@@ -177,7 +127,7 @@ export default function BriefHistoryForm({ formData, setFormData }) {
 
         {/* Animal Contact */}
         <div>
-          <label className="block mb-2 font-medium">
+          <label className="block mb-2 font-medium text-slate-700">
             Any Contact With Animal
           </label>
 
@@ -190,57 +140,89 @@ export default function BriefHistoryForm({ formData, setFormData }) {
                 animalContact: e.target.value === "true",
               }))
             }
-            className="
-              w-full
-              border border-slate-200
-              rounded-2xl
-              px-4 py-3
-              text-sm md:text-base
-              outline-none
-              focus:border-orange-500
-              focus:ring-4
-              focus:ring-orange-100
-            "
+            className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm md:text-base outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-100"
           >
             <option value="false">No</option>
             <option value="true">Yes</option>
           </select>
         </div>
 
-        {/* Previous Similar Episodes */}
-        <div className="lg:col-span-2">
-          <label className="block mb-2 font-medium">
-            Previous Similar Episodes
-          </label>
+        {/* Previous Similar Episodes with Toggle + Textarea */}
+        <div className="lg:col-span-2 bg-slate-50 border border-slate-200 rounded-2xl p-4 md:p-5">
+          <div className="flex items-center justify-between gap-4 mb-2">
+            <div>
+              <label className="block font-semibold text-slate-800 text-sm md:text-base">
+                Previous Similar Episodes
+              </label>
+              <p className="text-xs text-slate-500">
+                Has the pet experienced similar health episodes in the past?
+              </p>
+            </div>
 
-          <textarea
-            rows="4"
-            value={formData.previousEpisodes.description}
-            onChange={(e) =>
-              setFormData((prev) => ({
-                ...prev,
-                previousEpisodes: {
-                  hasPreviousEpisodes: e.target.value.trim() !== "",
-                  description: e.target.value,
-                },
-              }))
-            }
-            placeholder="Describe previous similar episodes..."
-            className="
-              w-full
-              border border-slate-200
-              rounded-2xl
-              px-4 py-3
-              text-sm md:text-base
-              outline-none
-              resize-none
-              focus:border-orange-500
-              focus:ring-4
-              focus:ring-orange-100
-            "
-          />
+            {/* Toggle Switch */}
+            <div className="flex items-center bg-slate-200 p-1 rounded-xl shrink-0">
+              <button
+                type="button"
+                onClick={() =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    previousEpisodes: {
+                      hasPreviousEpisodes: false,
+                      description: "",
+                    },
+                  }))
+                }
+                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  !hasPrevious
+                    ? "bg-white text-slate-800 shadow-xs"
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                No
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    previousEpisodes: {
+                      ...prev.previousEpisodes,
+                      hasPreviousEpisodes: true,
+                    },
+                  }))
+                }
+                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  hasPrevious
+                    ? "bg-orange-500 text-white shadow-xs"
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                Yes
+              </button>
+            </div>
+          </div>
+
+          {hasPrevious && (
+            <div className="mt-3 animate-in fade-in duration-200">
+              <textarea
+                rows="3"
+                value={formData.previousEpisodes?.description || ""}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    previousEpisodes: {
+                      ...prev.previousEpisodes,
+                      hasPreviousEpisodes: true,
+                      description: e.target.value,
+                    },
+                  }))
+                }
+                placeholder="Describe previous similar episodes..."
+                className="w-full border border-slate-200 rounded-xl p-3 text-sm md:text-base outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-100 resize-none bg-white"
+              />
+            </div>
+          )}
         </div>
-
       </div>
     </div>
   );
