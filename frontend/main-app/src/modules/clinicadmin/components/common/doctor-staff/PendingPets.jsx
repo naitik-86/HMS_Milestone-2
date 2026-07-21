@@ -3,6 +3,7 @@ import toast from "react-hot-toast";
 import { AlertCircle, Stethoscope, Clock, CheckCircle2, ShieldAlert } from "lucide-react";
 import LabReportModal from "./LabReportModal";
 import PreConsultationReportModal from "./PreConsultReportModal";
+import CaseCompletionModal from "./CaseCompletionModal";
 import {
   getPendingPets,
   updatePatient,
@@ -18,6 +19,8 @@ export default function PendingPets() {
   const [showModal, setShowModal] = useState(false);
   const [step, setStep] = useState(1);
   const [validationError, setValidationError] = useState("");
+  const [showCompletionModal, setShowCompletionModal] = useState(false);
+  const [completedCaseData, setCompletedCaseData] = useState(null);
 
   const steps = [
     "History",
@@ -259,6 +262,7 @@ export default function PendingPets() {
     if (!validateStep(5)) return;
 
     try {
+      const caseToSave = { ...selectedPet, ...formData };
       setShowModal(false);
       const response = await updatePatient(selectedPet._id, {
         ...formData,
@@ -267,6 +271,8 @@ export default function PendingPets() {
 
       if (response.success || response.data) {
         toast.success("Doctor consultation completed successfully!");
+        setCompletedCaseData(caseToSave);
+        setShowCompletionModal(true);
         await fetchPendingPets();
         setSelectedPet(null);
         setStep(1);
@@ -630,13 +636,23 @@ export default function PendingPets() {
                   const stepNum = index + 1;
                   const isDone = step > stepNum;
                   const isCurrent = step === stepNum;
+                  const isLabDisabled = stepNum === 4 && !formData.diagnosis.raiseLab;
 
                   return (
                     <button
                       key={index}
-                      onClick={() => setStep(stepNum)}
-                      className={`flex items-center gap-2 p-2.5 rounded-xl border text-left transition-all ${
-                        isCurrent
+                      disabled={isLabDisabled}
+                      onClick={() => {
+                        if (isLabDisabled) {
+                          toast.error("Lab requisition is not enabled for this case (Raise Lab is unchecked).");
+                          return;
+                        }
+                        setStep(stepNum);
+                      }}
+                      className={`flex items-center gap-1.5 p-2.5 rounded-xl border text-left transition-all ${
+                        isLabDisabled
+                          ? "bg-red-50 text-red-400 border-red-200 cursor-not-allowed opacity-80"
+                          : isCurrent
                           ? "bg-slate-900 text-white border-slate-900 shadow-sm"
                           : isDone
                           ? "bg-emerald-50 text-emerald-900 border-emerald-200 hover:bg-emerald-100"
@@ -645,16 +661,25 @@ export default function PendingPets() {
                     >
                       <div
                         className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 ${
-                          isCurrent
+                          isLabDisabled
+                            ? "bg-red-100 text-red-600 border border-red-300"
+                            : isCurrent
                             ? "bg-orange-500 text-white"
                             : isDone
                             ? "bg-emerald-600 text-white"
                             : "bg-slate-200 text-slate-700"
                         }`}
                       >
-                        {isDone ? "✓" : stepNum}
+                        {isLabDisabled ? "❌" : isDone ? "✓" : stepNum}
                       </div>
-                      <span className="text-xs font-bold truncate hidden sm:inline">{item}</span>
+                      <span className={`text-xs font-bold truncate hidden sm:inline ${isLabDisabled ? "line-through text-red-500" : ""}`}>
+                        {item}
+                      </span>
+                      {isLabDisabled && (
+                        <span className="text-[10px] text-red-600 font-extrabold hidden md:inline-block ml-auto bg-red-100 px-1 py-0.5 rounded">
+                          Skipped
+                        </span>
+                      )}
                     </button>
                   );
                 })}
@@ -1806,7 +1831,13 @@ export default function PendingPets() {
             <div className="flex items-center justify-between border-t border-slate-200/80 p-4 md:p-5 bg-slate-50 shrink-0">
               <button
                 disabled={step === 1}
-                onClick={() => setStep((prev) => Math.max(prev - 1, 1))}
+                onClick={() => {
+                  if (step === 5 && !formData.diagnosis.raiseLab) {
+                    setStep(3);
+                  } else {
+                    setStep((prev) => Math.max(prev - 1, 1));
+                  }
+                }}
                 className={`px-6 py-2.5 rounded-xl font-bold text-xs transition-all ${
                   step === 1
                     ? "bg-slate-200 text-slate-400 cursor-not-allowed"
@@ -1820,7 +1851,11 @@ export default function PendingPets() {
                 <button
                   onClick={() => {
                     if (!validateStep(step)) return;
-                    setStep((prev) => Math.min(prev + 1, 6));
+                    if (step === 3 && !formData.diagnosis.raiseLab) {
+                      setStep(5);
+                    } else {
+                      setStep((prev) => Math.min(prev + 1, 6));
+                    }
                   }}
                   className="px-6 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs transition-all shadow-md shadow-orange-500/20"
                 >
@@ -1879,6 +1914,18 @@ export default function PendingPets() {
         data={selectedPreConsultation}
       />
 
+      <CaseCompletionModal
+        open={showCompletionModal}
+        onClose={() => setShowCompletionModal(false)}
+        onEdit={() => {
+          setShowCompletionModal(false);
+          if (completedCaseData) {
+            setSelectedPet(completedCaseData);
+            setShowModal(true);
+          }
+        }}
+        caseData={completedCaseData}
+      />
 
     </div>
 

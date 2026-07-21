@@ -1,7 +1,8 @@
 
 import { useEffect, useState } from "react";
-import { Search, Filter, RefreshCw, Eye } from "lucide-react";
+import { Search, Filter, RefreshCw, Eye, Download } from "lucide-react";
 import { getCompletedPets } from "../../../api/doctorModuleApi";
+import { generateCaseReportPDF } from "./generateCaseReportPDF";
 import toast from "react-hot-toast";
 
 export default function CompletedPets() {
@@ -331,10 +332,16 @@ export default function CompletedPets() {
               </div>
             )}
 
-            <div className="flex justify-end pt-2">
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                onClick={() => generateCaseReportPDF(selectedCase)}
+                className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs flex items-center gap-2 transition-all shadow-md shadow-emerald-600/20"
+              >
+                <Download className="w-4 h-4" /> Download PDF
+              </button>
               <button
                 onClick={() => setSelectedCase(null)}
-                className="px-6 py-2.5 bg-slate-900 text-white font-semibold rounded-xl text-xs hover:bg-green-600 transition-all"
+                className="px-6 py-2.5 bg-slate-900 text-white font-semibold rounded-xl text-xs hover:bg-slate-800 transition-all"
               >
                 Close Record
               </button>
