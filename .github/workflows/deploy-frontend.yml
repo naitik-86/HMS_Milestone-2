@@ -15,6 +15,10 @@
 #                             to also deploy the frontend to EC2:8080 as a
 #                             fallback for networks that block S3 website
 #                             endpoints (see docs/06)
+#   CLOUDFRONT_DISTRIBUTION_ID - `terraform output cloudfront_distribution_id`.
+#                             Without invalidation, CloudFront can keep
+#                             serving a cached old index.html/assets after a
+#                             deploy even though S3 has the new files.
 #
 # See docs/06-github-actions-cicd.md for how to add these.
 
@@ -75,6 +79,12 @@ jobs:
           # build reference instead of an old cached bundle hash.
           aws s3 cp dist/index.html "s3://${{ secrets.S3_FRONTEND_BUCKET }}/index.html" \
             --cache-control "no-cache, must-revalidate"
+
+      - name: Invalidate CloudFront cache
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id "${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}" \
+            --paths "/*"
 
       - name: Copy build to EC2
         uses: appleboy/scp-action@v0.1.7
