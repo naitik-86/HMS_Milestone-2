@@ -1002,7 +1002,7 @@ export default function NewRegistrationPet() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
                     <div>
                       <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-                        Mobile Number *
+                        Mobile Number <span className="text-red-500 font-bold ml-1">*</span>
                       </label>
                       <div className="flex flex-col sm:flex-row gap-3">
                         <div className="relative flex-1">
@@ -1034,7 +1034,7 @@ export default function NewRegistrationPet() {
 
                     <div>
                       <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-                        OTP Verification *
+                        OTP Verification <span className="text-red-500 font-bold ml-1">*</span>
                       </label>
                       <input
                         type="text"
@@ -1050,7 +1050,7 @@ export default function NewRegistrationPet() {
 
                     <div>
                       <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-                        Visit Type *
+                        Visit Type <span className="text-red-500 font-bold ml-1">*</span>
                       </label>
                       <select
                         name="visitType"
@@ -1065,7 +1065,7 @@ export default function NewRegistrationPet() {
 
                     <div>
                       <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-                        Owner Name *
+                        Owner Name <span className="text-red-500 font-bold ml-1">*</span>
                       </label>
                       <input
                         type="text"
@@ -1080,7 +1080,7 @@ export default function NewRegistrationPet() {
 
                     <div>
                       <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-                        Owner ID *
+                        Owner ID <span className="text-red-500 font-bold ml-1">*</span>
                       </label>
                       <select
                         name="ownerIdType"
@@ -1111,7 +1111,7 @@ export default function NewRegistrationPet() {
 
                     <div className="md:col-span-2">
                       <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-                        Full Address *
+                        Full Address <span className="text-red-500 font-bold ml-1">*</span>
                       </label>
                       <textarea
                         name="address"
@@ -1126,15 +1126,15 @@ export default function NewRegistrationPet() {
 
                     <div>
                       <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 flex items-center justify-between">
-                        <span>Pincode *</span>
+                        <span>Pincode <span className="text-red-500 font-bold ml-1">*</span></span>
                         {pincodeLoading && (
                           <span className="text-[11px] text-orange-500 font-semibold flex items-center gap-1">
                             <Loader2 className="w-3 h-3 animate-spin" /> Verifying...
                           </span>
                         )}
                         {pincodeValid === true && (
-                          <span className="text-[11px] text-emerald-600 font-bold flex items-center gap-1">
-                            <CheckCircle2 className="w-3.5 h-3.5" /> Verified
+                          <span className="text-[11px] text-emerald-600 font-semibold flex items-center gap-1">
+                            <BadgeCheck className="w-3.5 h-3.5 text-emerald-500" /> Valid Pincode
                           </span>
                         )}
                       </label>
@@ -1159,7 +1159,7 @@ export default function NewRegistrationPet() {
 
                     <div>
                       <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-                        State *
+                        State <span className="text-red-500 font-bold ml-1">*</span>
                       </label>
                       <select
                         name="state"
@@ -1179,7 +1179,7 @@ export default function NewRegistrationPet() {
 
                     <div>
                       <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-                        City *
+                        City <span className="text-red-500 font-bold ml-1">*</span>
                       </label>
                       <select
                         name="city"
@@ -1203,7 +1203,7 @@ export default function NewRegistrationPet() {
 
                     <div>
                       <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-                        District *
+                        District <span className="text-red-500 font-bold ml-1">*</span>
                       </label>
                       <select
                         name="district"
@@ -1416,7 +1416,7 @@ export default function NewRegistrationPet() {
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
                             <div>
                               <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-                                Pet Name *
+                                Pet Name <span className="text-red-500 font-bold ml-1">*</span>
                               </label>
                               <input
                                 type="text"
@@ -1430,7 +1430,7 @@ export default function NewRegistrationPet() {
 
                             <div>
                               <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-                                Species *
+                                Species <span className="text-red-500 font-bold ml-1">*</span>
                               </label>
                               <select
                                 value={petItem.species}
@@ -1445,99 +1445,154 @@ export default function NewRegistrationPet() {
                               </select>
                             </div>
 
-                            <div>
-                              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-                                Breed *
-                              </label>
-                              <input
-                                type="text"
-                                value={petItem.breed}
-                                onChange={(e) => handleNewOwnerPetChange(idx, "breed", e.target.value)}
-                                placeholder="Breed"
-                                className={inputClass}
-                              />
-                              <ErrorText errors={errors} name={`breed_${idx}`} />
-                            </div>
+                             <div>
+                               <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                                 Breed <span className="text-red-500 font-bold ml-1">*</span>
+                               </label>
+                               <input
+                                 type="text"
+                                 value={petItem.breed}
+                                 onChange={(e) => handleNewOwnerPetChange(idx, "breed", e.target.value)}
+                                 placeholder="Enter Breed"
+                                 className={inputClass}
+                               />
+                               <ErrorText errors={errors} name={`breed_${idx}`} />
+                             </div>
 
-                            <div>
-                              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-                                Gender *
-                              </label>
-                              <select
-                                value={petItem.gender}
-                                onChange={(e) => handleNewOwnerPetChange(idx, "gender", e.target.value)}
-                                className={inputClass}
-                              >
-                                <option>Male</option>
-                                <option>Female</option>
-                              </select>
-                            </div>
+                             <div>
+                               <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                                 Gender <span className="text-red-500 font-bold ml-1">*</span>
+                               </label>
+                               <select
+                                 value={petItem.gender}
+                                 onChange={(e) => handleNewOwnerPetChange(idx, "gender", e.target.value)}
+                                 className={inputClass}
+                               >
+                                 <option value="Male">1. Male</option>
+                                 <option value="Female">2. Female</option>
+                               </select>
+                             </div>
 
-                            <div>
-                              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-                                Date Of Birth
-                              </label>
-                              <input
-                                type="date"
-                                value={petItem.dob}
-                                max={today}
-                                onChange={(e) => handleNewOwnerPetChange(idx, "dob", e.target.value)}
-                                className={inputClass}
-                              />
-                            </div>
+                             <div>
+                               <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                                 Date of birth (date)
+                               </label>
+                               <input
+                                 type="date"
+                                 value={petItem.dob}
+                                 max={today}
+                                 onChange={(e) => handleNewOwnerPetChange(idx, "dob", e.target.value)}
+                                 className={inputClass}
+                               />
+                             </div>
 
-                            <div>
-                              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-                                Age (Years)
-                              </label>
-                              <input
-                                type="text"
-                                value={petItem.age}
-                                readOnly
-                                placeholder="Calculated from DOB"
-                                className={`${inputClass} bg-slate-100 text-slate-500`}
-                              />
-                            </div>
+                             <div>
+                               <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                                 Age (number)
+                               </label>
+                               <input
+                                 type="text"
+                                 value={petItem.age}
+                                 readOnly
+                                 placeholder="Calculated from DOB"
+                                 className={`${inputClass} bg-slate-100 text-slate-500`}
+                               />
+                             </div>
 
-                            <div>
-                              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-                                Color / Markings
-                              </label>
-                              <input
-                                type="text"
-                                value={petItem.color}
-                                onChange={(e) => handleNewOwnerPetChange(idx, "color", e.target.value)}
-                                placeholder="Color"
-                                className={inputClass}
-                              />
-                            </div>
+                             <div>
+                               <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                                 Color (text)
+                               </label>
+                               <input
+                                 type="text"
+                                 value={petItem.color}
+                                 onChange={(e) => handleNewOwnerPetChange(idx, "color", e.target.value)}
+                                 placeholder="Color / Coat pattern"
+                                 className={inputClass}
+                               />
+                             </div>
 
-                            <div>
-                              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-                                Microchip / RFID No
-                              </label>
-                              <input
-                                type="text"
-                                value={petItem.rfid}
-                                onChange={(e) => handleNewOwnerPetChange(idx, "rfid", e.target.value)}
-                                placeholder="RFID Number"
-                                className={inputClass}
-                              />
-                            </div>
+                             <div>
+                               <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                                 RFID / Microchip tag no (text)
+                               </label>
+                               <input
+                                 type="text"
+                                 value={petItem.rfid}
+                                 onChange={(e) => handleNewOwnerPetChange(idx, "rfid", e.target.value)}
+                                 placeholder="RFID Tag Number"
+                                 className={inputClass}
+                               />
+                             </div>
 
-                            <div>
-                              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-                                Is Sterilized?
-                              </label>
-                              <select
-                                value={petItem.sterilized}
-                                onChange={(e) => handleNewOwnerPetChange(idx, "sterilized", e.target.value)}
-                                className={inputClass}
-                              >
-                                <option value="No">No</option>
-                                <option value="Yes">Yes</option>
-                              </select>
-                            </div>
+                             <div>
+                               <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                                 Is sterilized (toggle yes or no)
+                               </label>
+                               <select
+                                 value={petItem.sterilized}
+                                 onChange={(e) => handleNewOwnerPetChange(idx, "sterilized", e.target.value)}
+                                 className={inputClass}
+                               >
+                                 <option value="No">No</option>
+                                 <option value="Yes">Yes</option>
+                               </select>
+                             </div>
+
+                             <div>
+                               <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                                 Unique Pet ID (auto generated)
+                               </label>
+                               <input
+                                 type="text"
+                                 value={petItem.uniquePetId || "PET-AUTO"}
+                                 readOnly
+                                 className={`${inputClass} bg-slate-100 text-orange-600 font-mono font-bold`}
+                               />
+                             </div>
+
+                             <div className="md:col-span-2">
+                               <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                                 Identification Area (textarea)
+                               </label>
+                               <textarea
+                                 rows="2"
+                                 value={petItem.identificationArea || ""}
+                                 onChange={(e) => handleNewOwnerPetChange(idx, "identificationArea", e.target.value)}
+                                 placeholder="Physical identification marks, scars, ear notches..."
+                                 className={inputClass}
+                               />
+                             </div>
+
+                             <div className="md:col-span-2">
+                               <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                                 Pet photo (img upload)
+                               </label>
+                               <div className="flex items-center gap-4 p-4 border border-dashed border-slate-300 rounded-2xl bg-slate-50/50">
+                                 <input
+                                   type="file"
+                                   accept="image/*"
+                                   onChange={(e) => {
+                                     const file = e.target.files[0];
+                                     if (file) {
+                                       const reader = new FileReader();
+                                       reader.onloadend = () => {
+                                         handleNewOwnerPetChange(idx, "photo", reader.result);
+                                       };
+                                       reader.readAsDataURL(file);
+                                     }
+                                   }}
+                                   className="text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100 cursor-pointer"
+                                 />
+                                 {petItem.photo && (
+                                   <img
+                                     src={petItem.photo}
+                                     alt="Pet Preview"
+                                     className="w-12 h-12 rounded-xl object-cover border border-slate-200 shadow-xs"
+                                   />
+                                 )}
+                               </div>
+                             </div>
                           </div>
                         </div>
                       ))}
@@ -1615,64 +1670,471 @@ export default function NewRegistrationPet() {
                         </span>
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
-                        {[
-                          ["vaccineName", "Vaccine Name", "text"],
-                          ["vaccinationDate", "Vaccination Date", "date"],
-                          ["batchNumber", "Batch Number", "text"],
-                          ["clinicName", "Clinic Name", "text"],
-                          ["dewormingProduct", "Deworming Product", "text"],
-                          ["dewormingDate", "Deworming Date", "date"],
-                          ["dose", "Dose", "text"],
-                          ["surgicalProcedure", "Surgical Procedure", "text"],
-                          ["surgeryDate", "Surgery Date", "date"],
-                          ["hospital", "Hospital", "text"],
-                          ["condition", "Condition", "text"],
-                          ["treatment", "Treatment", "text"],
-                          ["treatmentDate", "Treatment Date", "date"],
-                        ].map(([name, label, type]) => {
-                          const currentVal = (petHistoriesMap[currentHistoryPet.id] || defaultHistory)[name] || "";
-                          return (
-                            <div key={name}>
-                              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-                                {label}
-                              </label>
-                              <input
-                                name={name}
-                                value={currentVal}
-                                onChange={(e) => handlePetHistoryChange(currentHistoryPet.id, name, e.target.value)}
-                                type={type}
-                                placeholder={type === "text" ? label : undefined}
-                                className={inputClass}
-                              />
-                            </div>
-                          );
-                        })}
-                        <div className="md:col-span-2">
-                          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-                            Known Allergies
-                          </label>
-                          <textarea
-                            name="allergies"
-                            value={(petHistoriesMap[currentHistoryPet.id] || defaultHistory).allergies || ""}
-                            onChange={(e) => handlePetHistoryChange(currentHistoryPet.id, "allergies", e.target.value)}
-                            rows="2"
-                            placeholder={`Known Allergies for ${currentHistoryPet.petName}`}
-                            className={inputClass}
-                          />
+                      <div className="space-y-6">
+                        {/* SECTION 1: Previous Vaccination (multi fields) */}
+                        <div className="bg-slate-50/80 rounded-2xl p-5 border border-slate-200 space-y-4">
+                          <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                            <h3 className="text-sm font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                              <span>💉 Previous Vaccination (multi fields)</span>
+                            </h3>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const currentHistory = petHistoriesMap[currentHistoryPet.id] || defaultHistory;
+                                const currentList = currentHistory.vaccinations && currentHistory.vaccinations.length > 0
+                                  ? currentHistory.vaccinations
+                                  : [{ vaccineName: currentHistory.vaccineName || "", vaccinationDate: currentHistory.vaccinationDate || "", batchNumber: currentHistory.batchNumber || "", clinicName: currentHistory.clinicName || "" }];
+                                const newList = [...currentList, { vaccineName: "", vaccinationDate: "", batchNumber: "", clinicName: "" }];
+                                handlePetHistoryChange(currentHistoryPet.id, "vaccinations", newList);
+                                handlePetHistoryChange(currentHistoryPet.id, "vaccineName", newList[0].vaccineName);
+                              }}
+                              className="px-3 py-1.5 bg-orange-50 hover:bg-orange-100 text-orange-600 border border-orange-200 rounded-xl text-xs font-bold transition flex items-center gap-1 cursor-pointer border-none"
+                            >
+                              <Plus className="w-3.5 h-3.5" />
+                              <span>+ Add Vaccination Record</span>
+                            </button>
+                          </div>
+
+                          {(() => {
+                            const currentHistory = petHistoriesMap[currentHistoryPet.id] || defaultHistory;
+                            const vacList = (currentHistory.vaccinations && currentHistory.vaccinations.length > 0)
+                              ? currentHistory.vaccinations
+                              : [{ vaccineName: currentHistory.vaccineName || "", vaccinationDate: currentHistory.vaccinationDate || "", batchNumber: currentHistory.batchNumber || "", clinicName: currentHistory.clinicName || "" }];
+
+                            return vacList.map((row, rIdx) => (
+                              <div key={rIdx} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 p-3 bg-white rounded-xl border border-slate-100 relative">
+                                <div>
+                                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                                    1. vaccine {vacList.length > 1 ? `#${rIdx + 1}` : ""}
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={row.vaccineName || ""}
+                                    onChange={(e) => {
+                                      const newList = [...vacList];
+                                      newList[rIdx] = { ...newList[rIdx], vaccineName: e.target.value };
+                                      handlePetHistoryChange(currentHistoryPet.id, "vaccinations", newList);
+                                      if (rIdx === 0) handlePetHistoryChange(currentHistoryPet.id, "vaccineName", e.target.value);
+                                    }}
+                                    placeholder="Vaccine Name"
+                                    className={inputClass}
+                                  />
+                                </div>
+
+                                <div>
+                                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                                    2. date
+                                  </label>
+                                  <input
+                                    type="date"
+                                    value={row.vaccinationDate || ""}
+                                    onChange={(e) => {
+                                      const newList = [...vacList];
+                                      newList[rIdx] = { ...newList[rIdx], vaccinationDate: e.target.value };
+                                      handlePetHistoryChange(currentHistoryPet.id, "vaccinations", newList);
+                                      if (rIdx === 0) handlePetHistoryChange(currentHistoryPet.id, "vaccinationDate", e.target.value);
+                                    }}
+                                    className={inputClass}
+                                  />
+                                </div>
+
+                                <div>
+                                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                                    3. Batch.no
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={row.batchNumber || ""}
+                                    onChange={(e) => {
+                                      const newList = [...vacList];
+                                      newList[rIdx] = { ...newList[rIdx], batchNumber: e.target.value };
+                                      handlePetHistoryChange(currentHistoryPet.id, "vaccinations", newList);
+                                      if (rIdx === 0) handlePetHistoryChange(currentHistoryPet.id, "batchNumber", e.target.value);
+                                    }}
+                                    placeholder="Batch Number"
+                                    className={inputClass}
+                                  />
+                                </div>
+
+                                <div className="flex items-end gap-2">
+                                  <div className="flex-1">
+                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                                      4. Clinic
+                                    </label>
+                                    <input
+                                      type="text"
+                                      value={row.clinicName || ""}
+                                      onChange={(e) => {
+                                        const newList = [...vacList];
+                                        newList[rIdx] = { ...newList[rIdx], clinicName: e.target.value };
+                                        handlePetHistoryChange(currentHistoryPet.id, "vaccinations", newList);
+                                        if (rIdx === 0) handlePetHistoryChange(currentHistoryPet.id, "clinicName", e.target.value);
+                                      }}
+                                      placeholder="Clinic Name"
+                                      className={inputClass}
+                                    />
+                                  </div>
+
+                                  {vacList.length > 1 && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const newList = vacList.filter((_, i) => i !== rIdx);
+                                        handlePetHistoryChange(currentHistoryPet.id, "vaccinations", newList);
+                                      }}
+                                      className="p-3 text-rose-500 hover:bg-rose-50 rounded-xl transition cursor-pointer border border-rose-200"
+                                      title="Remove record"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            ));
+                          })()}
                         </div>
-                        <div className="md:col-span-2">
-                          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-                            Current Medications
-                          </label>
-                          <textarea
-                            name="medications"
-                            value={(petHistoriesMap[currentHistoryPet.id] || defaultHistory).medications || ""}
-                            onChange={(e) => handlePetHistoryChange(currentHistoryPet.id, "medications", e.target.value)}
-                            rows="2"
-                            placeholder={`Current Medications for ${currentHistoryPet.petName}`}
-                            className={inputClass}
-                          />
+
+                        {/* SECTION 2: Deworming History (multi fields) */}
+                        <div className="bg-slate-50/80 rounded-2xl p-5 border border-slate-200 space-y-4">
+                          <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                            <h3 className="text-sm font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                              <span>🪱 Deworming History (multi fields)</span>
+                            </h3>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const currentHistory = petHistoriesMap[currentHistoryPet.id] || defaultHistory;
+                                const currentList = currentHistory.dewormings && currentHistory.dewormings.length > 0
+                                  ? currentHistory.dewormings
+                                  : [{ dewormingProduct: currentHistory.dewormingProduct || "", dewormingDate: currentHistory.dewormingDate || "", dose: currentHistory.dose || "" }];
+                                const newList = [...currentList, { dewormingProduct: "", dewormingDate: "", dose: "" }];
+                                handlePetHistoryChange(currentHistoryPet.id, "dewormings", newList);
+                              }}
+                              className="px-3 py-1.5 bg-orange-50 hover:bg-orange-100 text-orange-600 border border-orange-200 rounded-xl text-xs font-bold transition flex items-center gap-1 cursor-pointer border-none"
+                            >
+                              <Plus className="w-3.5 h-3.5" />
+                              <span>+ Add Deworming Record</span>
+                            </button>
+                          </div>
+
+                          {(() => {
+                            const currentHistory = petHistoriesMap[currentHistoryPet.id] || defaultHistory;
+                            const dewList = (currentHistory.dewormings && currentHistory.dewormings.length > 0)
+                              ? currentHistory.dewormings
+                              : [{ dewormingProduct: currentHistory.dewormingProduct || "", dewormingDate: currentHistory.dewormingDate || "", dose: currentHistory.dose || "" }];
+
+                            return dewList.map((row, rIdx) => (
+                              <div key={rIdx} className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-3 bg-white rounded-xl border border-slate-100">
+                                <div>
+                                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                                    1. product {dewList.length > 1 ? `#${rIdx + 1}` : ""}
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={row.dewormingProduct || ""}
+                                    onChange={(e) => {
+                                      const newList = [...dewList];
+                                      newList[rIdx] = { ...newList[rIdx], dewormingProduct: e.target.value };
+                                      handlePetHistoryChange(currentHistoryPet.id, "dewormings", newList);
+                                      if (rIdx === 0) handlePetHistoryChange(currentHistoryPet.id, "dewormingProduct", e.target.value);
+                                    }}
+                                    placeholder="Product Name"
+                                    className={inputClass}
+                                  />
+                                </div>
+
+                                <div>
+                                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                                    2. date
+                                  </label>
+                                  <input
+                                    type="date"
+                                    value={row.dewormingDate || ""}
+                                    onChange={(e) => {
+                                      const newList = [...dewList];
+                                      newList[rIdx] = { ...newList[rIdx], dewormingDate: e.target.value };
+                                      handlePetHistoryChange(currentHistoryPet.id, "dewormings", newList);
+                                      if (rIdx === 0) handlePetHistoryChange(currentHistoryPet.id, "dewormingDate", e.target.value);
+                                    }}
+                                    className={inputClass}
+                                  />
+                                </div>
+
+                                <div className="flex items-end gap-2">
+                                  <div className="flex-1">
+                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                                      3. dose
+                                    </label>
+                                    <input
+                                      type="text"
+                                      value={row.dose || ""}
+                                      onChange={(e) => {
+                                        const newList = [...dewList];
+                                        newList[rIdx] = { ...newList[rIdx], dose: e.target.value };
+                                        handlePetHistoryChange(currentHistoryPet.id, "dewormings", newList);
+                                        if (rIdx === 0) handlePetHistoryChange(currentHistoryPet.id, "dose", e.target.value);
+                                      }}
+                                      placeholder="Dose (e.g. 1 Tab / 2 ml)"
+                                      className={inputClass}
+                                    />
+                                  </div>
+
+                                  {dewList.length > 1 && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const newList = dewList.filter((_, i) => i !== rIdx);
+                                        handlePetHistoryChange(currentHistoryPet.id, "dewormings", newList);
+                                      }}
+                                      className="p-3 text-rose-500 hover:bg-rose-50 rounded-xl transition cursor-pointer border border-rose-200"
+                                      title="Remove record"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            ));
+                          })()}
+                        </div>
+
+                        {/* SECTION 3: Surgical Procedure (multi fields) */}
+                        <div className="bg-slate-50/80 rounded-2xl p-5 border border-slate-200 space-y-4">
+                          <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                            <h3 className="text-sm font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                              <span>🏥 Surgical Procedure (multi fields)</span>
+                            </h3>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const currentHistory = petHistoriesMap[currentHistoryPet.id] || defaultHistory;
+                                const currentList = currentHistory.surgeries && currentHistory.surgeries.length > 0
+                                  ? currentHistory.surgeries
+                                  : [{ surgicalProcedure: currentHistory.surgicalProcedure || "", surgeryDate: currentHistory.surgeryDate || "", hospital: currentHistory.hospital || "" }];
+                                const newList = [...currentList, { surgicalProcedure: "", surgeryDate: "", hospital: "" }];
+                                handlePetHistoryChange(currentHistoryPet.id, "surgeries", newList);
+                              }}
+                              className="px-3 py-1.5 bg-orange-50 hover:bg-orange-100 text-orange-600 border border-orange-200 rounded-xl text-xs font-bold transition flex items-center gap-1 cursor-pointer border-none"
+                            >
+                              <Plus className="w-3.5 h-3.5" />
+                              <span>+ Add Surgery Record</span>
+                            </button>
+                          </div>
+
+                          {(() => {
+                            const currentHistory = petHistoriesMap[currentHistoryPet.id] || defaultHistory;
+                            const surgList = (currentHistory.surgeries && currentHistory.surgeries.length > 0)
+                              ? currentHistory.surgeries
+                              : [{ surgicalProcedure: currentHistory.surgicalProcedure || "", surgeryDate: currentHistory.surgeryDate || "", hospital: currentHistory.hospital || "" }];
+
+                            return surgList.map((row, rIdx) => (
+                              <div key={rIdx} className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-3 bg-white rounded-xl border border-slate-100">
+                                <div>
+                                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                                    1. procedure {surgList.length > 1 ? `#${rIdx + 1}` : ""}
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={row.surgicalProcedure || ""}
+                                    onChange={(e) => {
+                                      const newList = [...surgList];
+                                      newList[rIdx] = { ...newList[rIdx], surgicalProcedure: e.target.value };
+                                      handlePetHistoryChange(currentHistoryPet.id, "surgeries", newList);
+                                      if (rIdx === 0) handlePetHistoryChange(currentHistoryPet.id, "surgicalProcedure", e.target.value);
+                                    }}
+                                    placeholder="Surgical Procedure Name"
+                                    className={inputClass}
+                                  />
+                                </div>
+
+                                <div>
+                                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                                    2. date
+                                  </label>
+                                  <input
+                                    type="date"
+                                    value={row.surgeryDate || ""}
+                                    onChange={(e) => {
+                                      const newList = [...surgList];
+                                      newList[rIdx] = { ...newList[rIdx], surgeryDate: e.target.value };
+                                      handlePetHistoryChange(currentHistoryPet.id, "surgeries", newList);
+                                      if (rIdx === 0) handlePetHistoryChange(currentHistoryPet.id, "surgeryDate", e.target.value);
+                                    }}
+                                    className={inputClass}
+                                  />
+                                </div>
+
+                                <div className="flex items-end gap-2">
+                                  <div className="flex-1">
+                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                                      3. hospital
+                                    </label>
+                                    <input
+                                      type="text"
+                                      value={row.hospital || ""}
+                                      onChange={(e) => {
+                                        const newList = [...surgList];
+                                        newList[rIdx] = { ...newList[rIdx], hospital: e.target.value };
+                                        handlePetHistoryChange(currentHistoryPet.id, "surgeries", newList);
+                                        if (rIdx === 0) handlePetHistoryChange(currentHistoryPet.id, "hospital", e.target.value);
+                                      }}
+                                      placeholder="Hospital / Clinic Name"
+                                      className={inputClass}
+                                    />
+                                  </div>
+
+                                  {surgList.length > 1 && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const newList = surgList.filter((_, i) => i !== rIdx);
+                                        handlePetHistoryChange(currentHistoryPet.id, "surgeries", newList);
+                                      }}
+                                      className="p-3 text-rose-500 hover:bg-rose-50 rounded-xl transition cursor-pointer border border-rose-200"
+                                      title="Remove record"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            ));
+                          })()}
+                        </div>
+
+                        {/* SECTION 4: Past Treatments (Multi fields) */}
+                        <div className="bg-slate-50/80 rounded-2xl p-5 border border-slate-200 space-y-4">
+                          <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                            <h3 className="text-sm font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                              <span>💊 Past Treatments (Multi fields)</span>
+                            </h3>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const currentHistory = petHistoriesMap[currentHistoryPet.id] || defaultHistory;
+                                const currentList = currentHistory.pastTreatments && currentHistory.pastTreatments.length > 0
+                                  ? currentHistory.pastTreatments
+                                  : [{ condition: currentHistory.condition || "", treatment: currentHistory.treatment || "", treatmentDate: currentHistory.treatmentDate || "" }];
+                                const newList = [...currentList, { condition: "", treatment: "", treatmentDate: "" }];
+                                handlePetHistoryChange(currentHistoryPet.id, "pastTreatments", newList);
+                              }}
+                              className="px-3 py-1.5 bg-orange-50 hover:bg-orange-100 text-orange-600 border border-orange-200 rounded-xl text-xs font-bold transition flex items-center gap-1 cursor-pointer border-none"
+                            >
+                              <Plus className="w-3.5 h-3.5" />
+                              <span>+ Add Treatment Record</span>
+                            </button>
+                          </div>
+
+                          {(() => {
+                            const currentHistory = petHistoriesMap[currentHistoryPet.id] || defaultHistory;
+                            const treatList = (currentHistory.pastTreatments && currentHistory.pastTreatments.length > 0)
+                              ? currentHistory.pastTreatments
+                              : [{ condition: currentHistory.condition || "", treatment: currentHistory.treatment || "", treatmentDate: currentHistory.treatmentDate || "" }];
+
+                            return treatList.map((row, rIdx) => (
+                              <div key={rIdx} className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-3 bg-white rounded-xl border border-slate-100">
+                                <div>
+                                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                                    1. Condition {treatList.length > 1 ? `#${rIdx + 1}` : ""}
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={row.condition || ""}
+                                    onChange={(e) => {
+                                      const newList = [...treatList];
+                                      newList[rIdx] = { ...newList[rIdx], condition: e.target.value };
+                                      handlePetHistoryChange(currentHistoryPet.id, "pastTreatments", newList);
+                                      if (rIdx === 0) handlePetHistoryChange(currentHistoryPet.id, "condition", e.target.value);
+                                    }}
+                                    placeholder="Condition Name"
+                                    className={inputClass}
+                                  />
+                                </div>
+
+                                <div>
+                                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                                    2. Treatment
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={row.treatment || ""}
+                                    onChange={(e) => {
+                                      const newList = [...treatList];
+                                      newList[rIdx] = { ...newList[rIdx], treatment: e.target.value };
+                                      handlePetHistoryChange(currentHistoryPet.id, "pastTreatments", newList);
+                                      if (rIdx === 0) handlePetHistoryChange(currentHistoryPet.id, "treatment", e.target.value);
+                                    }}
+                                    placeholder="Treatment details"
+                                    className={inputClass}
+                                  />
+                                </div>
+
+                                <div className="flex items-end gap-2">
+                                  <div className="flex-1">
+                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                                      3. Date
+                                    </label>
+                                    <input
+                                      type="date"
+                                      value={row.treatmentDate || ""}
+                                      onChange={(e) => {
+                                        const newList = [...treatList];
+                                        newList[rIdx] = { ...newList[rIdx], treatmentDate: e.target.value };
+                                        handlePetHistoryChange(currentHistoryPet.id, "pastTreatments", newList);
+                                        if (rIdx === 0) handlePetHistoryChange(currentHistoryPet.id, "treatmentDate", e.target.value);
+                                      }}
+                                      className={inputClass}
+                                    />
+                                  </div>
+
+                                  {treatList.length > 1 && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const newList = treatList.filter((_, i) => i !== rIdx);
+                                        handlePetHistoryChange(currentHistoryPet.id, "pastTreatments", newList);
+                                      }}
+                                      className="p-3 text-rose-500 hover:bg-rose-50 rounded-xl transition cursor-pointer border border-rose-200"
+                                      title="Remove record"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            ));
+                          })()}
+                        </div>
+
+                        {/* SECTION 5 & 6: Known Allergies & Current Medications */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="bg-slate-50/80 rounded-2xl p-5 border border-slate-200">
+                            <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider mb-1.5">
+                              Known Allergies (Text)
+                            </label>
+                            <textarea
+                              name="allergies"
+                              value={(petHistoriesMap[currentHistoryPet.id] || defaultHistory).allergies || ""}
+                              onChange={(e) => handlePetHistoryChange(currentHistoryPet.id, "allergies", e.target.value)}
+                              rows="3"
+                              placeholder="Describe known allergies..."
+                              className={inputClass}
+                            />
+                          </div>
+
+                          <div className="bg-slate-50/80 rounded-2xl p-5 border border-slate-200">
+                            <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider mb-1.5">
+                              Current medications (text areas)
+                            </label>
+                            <textarea
+                              name="medications"
+                              value={(petHistoriesMap[currentHistoryPet.id] || defaultHistory).medications || ""}
+                              onChange={(e) => handlePetHistoryChange(currentHistoryPet.id, "medications", e.target.value)}
+                              rows="3"
+                              placeholder="Describe current medications..."
+                              className={inputClass}
+                            />
+                          </div>
                         </div>
                       </div>
                     </div>

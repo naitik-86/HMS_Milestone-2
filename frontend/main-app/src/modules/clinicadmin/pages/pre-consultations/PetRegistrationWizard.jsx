@@ -9,6 +9,82 @@ import {
 import { Check, AlertCircle, ArrowLeft, ArrowRight, Save, X, Stethoscope, PawPrint } from "lucide-react";
 import toast from "react-hot-toast";
 
+const getLoggedInStaffName = () => {
+  try {
+    const directName =
+      localStorage.getItem("userName") ||
+      localStorage.getItem("staffName") ||
+      localStorage.getItem("name") ||
+      localStorage.getItem("fullName") ||
+      sessionStorage.getItem("userName") ||
+      sessionStorage.getItem("staffName") ||
+      sessionStorage.getItem("name");
+    if (directName && directName.trim()) return directName.trim();
+
+    const userKeys = ["user", "userData", "userInfo", "staff", "staffData", "profile", "auth", "currentUser"];
+    for (const key of userKeys) {
+      const stored = localStorage.getItem(key) || sessionStorage.getItem(key);
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          const name =
+            parsed.name ||
+            parsed.fullName ||
+            parsed.personalInfo?.fullName ||
+            parsed.staffName ||
+            parsed.username ||
+            parsed.nameEn ||
+            parsed.user?.name ||
+            parsed.user?.fullName;
+          if (name && name.trim()) return name.trim();
+        } catch (_) {}
+      }
+    }
+
+    const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+    if (token && token.includes(".")) {
+      const base64Url = token.split(".")[1];
+      if (base64Url) {
+        const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+        const jsonPayload = decodeURIComponent(
+          atob(base64)
+            .split("")
+            .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+            .join("")
+        );
+        const decoded = JSON.parse(jsonPayload);
+        const tokenName =
+          decoded.name ||
+          decoded.fullName ||
+          decoded.staffName ||
+          decoded.userName ||
+          decoded.username ||
+          decoded.user_name ||
+          decoded.sub;
+        if (tokenName && !tokenName.includes("@") && tokenName.length < 50) return tokenName.trim();
+        if (decoded.email) {
+          const nameFromEmail = decoded.email.split("@")[0].replace(/[._-]/g, " ");
+          return nameFromEmail.replace(/\b\w/g, (l) => l.toUpperCase()).trim();
+        }
+      }
+    }
+
+    const email = localStorage.getItem("userEmail") || localStorage.getItem("email") || sessionStorage.getItem("userEmail");
+    if (email) {
+      const nameFromEmail = email.split("@")[0].replace(/[._-]/g, " ");
+      return nameFromEmail.replace(/\b\w/g, (l) => l.toUpperCase()).trim();
+    }
+
+    const role = localStorage.getItem("role") || sessionStorage.getItem("role");
+    if (role) {
+      return role.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (l) => l.toUpperCase()).trim();
+    }
+  } catch (e) {
+    console.warn("Failed to extract staff name:", e);
+  }
+  return "Duty Staff";
+};
+
 export default function PetRegistrationWizard({ onClose, petData, onCompleted }) {
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -31,7 +107,7 @@ export default function PetRegistrationWizard({ onClose, petData, onCompleted })
     spo2: petData?.vitals?.spo2 || petData?.preConsultationId?.spo2 || "",
     bodyWeight: petData?.vitals?.weight || petData?.preConsultationId?.bodyWeight || "",
     bcs: petData?.vitals?.bcs || petData?.preConsultationId?.bcs || "",
-    recordedBy: petData?.recordedBy || "",
+    recordedBy: petData?.recordedBy || getLoggedInStaffName(),
 
     // History
     durationOfIllness: {

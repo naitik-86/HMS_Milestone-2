@@ -1,46 +1,125 @@
 import { useEffect } from "react";
 
+const getLoggedInStaffName = () => {
+  try {
+    // 1. Direct local/session storage name keys
+    const directName =
+      localStorage.getItem("userName") ||
+      localStorage.getItem("staffName") ||
+      localStorage.getItem("name") ||
+      localStorage.getItem("fullName") ||
+      sessionStorage.getItem("userName") ||
+      sessionStorage.getItem("staffName") ||
+      sessionStorage.getItem("name");
+    if (directName && directName.trim()) return directName.trim();
+
+    // 2. Parsed JSON objects in localStorage / sessionStorage
+    const userKeys = ["user", "userData", "userInfo", "staff", "staffData", "profile", "auth", "currentUser"];
+    for (const key of userKeys) {
+      const stored = localStorage.getItem(key) || sessionStorage.getItem(key);
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          const name =
+            parsed.name ||
+            parsed.fullName ||
+            parsed.personalInfo?.fullName ||
+            parsed.staffName ||
+            parsed.username ||
+            parsed.nameEn ||
+            parsed.user?.name ||
+            parsed.user?.fullName;
+          if (name && name.trim()) return name.trim();
+        } catch (_) {}
+      }
+    }
+
+    // 3. JWT Token Payload Decoding
+    const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+    if (token && token.includes(".")) {
+      const base64Url = token.split(".")[1];
+      if (base64Url) {
+        const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+        const jsonPayload = decodeURIComponent(
+          atob(base64)
+            .split("")
+            .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+            .join("")
+        );
+        const decoded = JSON.parse(jsonPayload);
+        const tokenName =
+          decoded.name ||
+          decoded.fullName ||
+          decoded.staffName ||
+          decoded.userName ||
+          decoded.username ||
+          decoded.user_name ||
+          decoded.sub;
+        if (tokenName && !tokenName.includes("@") && tokenName.length < 50) return tokenName.trim();
+        if (decoded.email) {
+          const nameFromEmail = decoded.email.split("@")[0].replace(/[._-]/g, " ");
+          return nameFromEmail.replace(/\b\w/g, (l) => l.toUpperCase()).trim();
+        }
+      }
+    }
+
+    // 4. Stored Email in localStorage or sessionStorage
+    const email = localStorage.getItem("userEmail") || localStorage.getItem("email") || sessionStorage.getItem("userEmail");
+    if (email) {
+      const nameFromEmail = email.split("@")[0].replace(/[._-]/g, " ");
+      return nameFromEmail.replace(/\b\w/g, (l) => l.toUpperCase()).trim();
+    }
+
+    // 5. Role fallback formatted as title
+    const role = localStorage.getItem("role") || sessionStorage.getItem("role");
+    if (role) {
+      return role.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (l) => l.toUpperCase()).trim();
+    }
+  } catch (e) {
+    console.warn("Failed to extract staff name:", e);
+  }
+  return "Duty Staff";
+};
+
 export default function VitalsForm({ formData, setFormData }) {
   useEffect(() => {
-    // Auto fill recordedBy from logged in user if empty
+    // Auto fill recordedBy strictly from logged in staff name if empty
     if (!formData.recordedBy) {
-      try {
-        const storedUser = localStorage.getItem("user") || localStorage.getItem("userData");
-        if (storedUser) {
-          const user = JSON.parse(storedUser);
-          const name = user.name || user.fullName || user.personalInfo?.fullName || user.username || "";
-          if (name) {
-            setFormData((prev) => ({ ...prev, recordedBy: name }));
-          }
-        }
-      } catch (e) {
-        console.warn("Failed to parse user from localStorage:", e);
-      }
+      const staffName = getLoggedInStaffName();
+      setFormData((prev) => ({ ...prev, recordedBy: staffName }));
     }
 
     // Auto set vitalsRecordedAt if empty
     if (!formData.vitalsRecordedAt) {
       setFormData((prev) => ({ ...prev, vitalsRecordedAt: new Date().toISOString() }));
     }
-  }, []);
+  }, [formData.recordedBy]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    setFormData((prev) => ({
-      ...prev,
-      [name]:
-        name === "bcs" ||
-        name === "bodyTemperature" ||
-        name === "heartRate" ||
-        name === "respiratoryRate" ||
-        name === "spo2" ||
-        name === "bodyWeight"
-          ? value === ""
-            ? ""
-            : Number(value)
-          : value,
-    }));
+    setFormData((prev) => {
+      let numVal = value === "" ? "" : Number(value);
+
+      if (typeof numVal === "number") {
+        if (numVal < 0) numVal = 0;
+        if (name === "spo2" && numVal > 100) numVal = 100;
+        if (name === "bcs" && numVal > 5) numVal = 5;
+      }
+
+      return {
+        ...prev,
+        [name]:
+          name === "bcs" ||
+          name === "bodyTemperature" ||
+          name === "heartRate" ||
+          name === "respiratoryRate" ||
+          name === "spo2" ||
+          name === "bodyWeight"
+            ? numVal
+            : value,
+      };
+    });
   };
 
   return (
@@ -173,9 +252,14 @@ export default function VitalsForm({ formData, setFormData }) {
 
         {/* Recorded By */}
         <div>
-          <label className="block mb-2 font-medium text-slate-700">
-            Vitals Recorded By
-          </label>
+          <div className="flex items-center justify-between mb-2">
+            <label className="font-medium text-slate-700">
+              Vitals Recorded By <span className="text-red-500 font-bold ml-1">*</span>
+            </label>
+            <span className="text-[11px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+              Auto filled name of logged in staff
+            </span>
+          </div>
 
           <input
             type="text"
@@ -189,9 +273,14 @@ export default function VitalsForm({ formData, setFormData }) {
 
         {/* Vitals Recorded At */}
         <div className="lg:col-span-2">
-          <label className="block mb-2 font-medium text-slate-700">
-            Vitals Recorded At (Timestamp)
-          </label>
+          <div className="flex items-center justify-between mb-2">
+            <label className="font-medium text-slate-700">
+              Vitals Recorded At
+            </label>
+            <span className="text-[11px] font-semibold text-sky-600 bg-sky-50 px-2 py-0.5 rounded-full border border-sky-200">
+              Auto timestamp
+            </span>
+          </div>
 
           <input
             type="text"
@@ -207,7 +296,7 @@ export default function VitalsForm({ formData, setFormData }) {
                   })
             }
             readOnly
-            className="w-full border border-slate-200 rounded-2xl px-4 py-3 bg-slate-100 text-slate-500 text-sm md:text-base outline-none cursor-not-allowed font-mono"
+            className="w-full border border-slate-200 rounded-2xl px-4 py-3 bg-slate-100 text-slate-600 text-sm md:text-base outline-none cursor-not-allowed font-mono font-medium"
           />
         </div>
       </div>
