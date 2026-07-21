@@ -119,6 +119,11 @@ export const updateClinic = async (id, clinicData) => {
     return res.data;
 };
 
+export const updateClinicVerification = async (id, status) => {
+    const res = await API.put(`/super-admin/clinics/${id}/verification`, { status });
+    return res.data;
+};
+
 export const deleteClinic = async (id) => {
     const res = await API.delete(`/super-admin/clinics/${id}`);
     return res.data;

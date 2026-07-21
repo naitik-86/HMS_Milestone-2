@@ -9,6 +9,13 @@ const loginOtpSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
+    purpose: {
+      type: String,
+      enum: ['LOGIN', 'PASSWORD_RESET'],
+      default: 'LOGIN',
+      required: true,
+      index: true,
+    },
     userId: {
       type: mongoose.Schema.Types.ObjectId,
       required: true,

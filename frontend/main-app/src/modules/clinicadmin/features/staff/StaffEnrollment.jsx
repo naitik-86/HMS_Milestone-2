@@ -3,7 +3,7 @@ import { showToast } from '../../../../shared/components/toast';
 import ViewStaffModal from "./ViewStaffModal";
 import { roles, departments, employmentTypes, staffData } from '../../data/staff';
 import Loader from '../../../../shared/components/Loader';
-
+import { Eye, Pencil, Trash2 } from "lucide-react";
 import {
   createStaff,
   updateStaff,
@@ -1269,7 +1269,7 @@ export default function StaffEnrollment() {
       {/* Filters Bar */}
       <div className="flex flex-col sm:flex-row gap-4 mb-8 p-4 sm:p-6 bg-gray-50 rounded-2xl border border-[#EAE5DC]">
         <div className="flex-1">
-          <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wide mb-2">
+          <label className="block text-[11px] font-bold text-gray-400 tracking-wide mb-2">
             Filter by Role
           </label>
           <select
@@ -1282,7 +1282,7 @@ export default function StaffEnrollment() {
           </select>
         </div>
         <div className="flex-1">
-          <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wide mb-2">
+          <label className="block text-[11px] font-bold text-gray-400 tracking-wide mb-2">
             Filter by Status
           </label>
           <select
@@ -1302,7 +1302,7 @@ export default function StaffEnrollment() {
         <table className="w-full min-w-[920px] border-collapse text-left">
           <thead>
             <tr className="bg-gray-50 border-b border-[#EAE5DC]">
-              {['STAFF MEMBER', 'STAFF ID', 'ROLE / DEPT', 'EMPLOYMENT', 'STATUS', 'JOINED DATE', 'ACTIONS'].map((h, i) => (
+              {['Staff Member', 'Staff ID', 'Role / Dept', 'Employment', 'Status', 'Joined Date', 'Actions'].map((h, i) => (
                 <th
                   key={h}
                   className={`px-5 py-5 text-xs font-semibold text-gray-500 tracking-wide ${i === 6 ? 'text-right' : ''}`}
@@ -1366,18 +1366,29 @@ export default function StaffEnrollment() {
                 </td>
                 <td className="px-5 py-5 text-gray-500 text-sm">{s.employmentInfo?.dateOfJoining?.split("T")[0]}</td>
                 <td className="px-5 py-5 text-right">
-                  <div className="flex gap-2 justify-end">
+                  <div className="flex items-center justify-end gap-2">
                     <button
                       onClick={() => handleOpenView(s)}
-                      className="bg-white border border-[#EAE5DC] px-4 py-2 rounded-xl cursor-pointer text-sm font-semibold text-[#1A1D2E] hover:bg-gray-50 transition-colors"
+                      className="w-9 h-9 flex items-center justify-center rounded-lg bg-blue-50 border border-blue-200 text-blue-600 hover:bg-blue-100 transition-all duration-200"
+                      title="View"
                     >
-                      View
+                      <Eye size={18} strokeWidth={2.2} />
                     </button>
+
                     <button
                       onClick={() => handleOpenEdit(s)}
-                      className="bg-white border border-[#EAE5DC] px-4 py-2 rounded-xl cursor-pointer text-sm font-semibold text-[#E8630A] hover:bg-[#FEF3EB] transition-colors"
+                      className="w-9 h-9 flex items-center justify-center rounded-lg bg-amber-50 border border-amber-200 text-amber-600 hover:bg-amber-100 transition-all duration-200"
+                      title="Edit"
                     >
-                      Edit
+                      <Pencil size={18} strokeWidth={2.2} />
+                    </button>
+
+                    <button
+                      onClick={() => handleDelete(s._id)}
+                      className="w-9 h-9 flex items-center justify-center rounded-lg bg-red-50 border border-red-200 text-red-600 hover:bg-red-100 transition-all duration-200"
+                      title="Delete"
+                    >
+                      <Trash2 size={18} strokeWidth={2.2} />
                     </button>
                   </div>
                 </td>

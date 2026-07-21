@@ -2,6 +2,16 @@ import React from 'react';
 import { showToast } from '../../../../shared/components/toast';
 import Loader from '../../../../shared/components/Loader';
 // import { useEffect } from 'react';
+import {
+  Eye,
+  Pencil,
+  Trash2,
+  Stethoscope,
+  BadgeCheck,
+  IndianRupee,
+  Clock3,
+  ShieldAlert,
+} from "lucide-react";
 import { createDoctor, getDoctors, updateDoctor, deleteDoctor } from '../../api/doctorApi';
 import { useEffect, useState } from "react";
 import { getDoctorStaff } from "../../api/staffApi";
@@ -859,9 +869,6 @@ function ViewProfileModal({ doctor, onClose, onEdit, onDelete }) {
       )}
 
       <div className="flex justify-end gap-3 pt-3 border-t border-[#EAE5DC]">
-        <button onClick={() => onDelete(doctor._id)} className="px-6 py-2.5 bg-[#E8630A] hover:bg-[#D05A09] text-white text-sm font-semibold rounded-xl cursor-pointer border-none transition-colors">
-          Delete
-        </button>
         <button onClick={onClose} className="px-6 py-2.5 bg-gray-100 hover:bg-gray-200 text-[#1A1D2E] text-sm font-semibold rounded-xl cursor-pointer border-none transition-colors">
           Close
         </button>
@@ -878,7 +885,8 @@ export default function DoctorDetails() {
   const [modal, setModal] = useState(null);
   const [toast, setToast] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("All");
   useEffect(() => {
     fetchDoctors();
 
@@ -1031,7 +1039,18 @@ export default function DoctorDetails() {
       setIsSubmitting(false);
     }
   };
+  const filteredDoctors = doctors.filter((doctor) => {
+    const matchesSearch =
+      doctor.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      doctor.regNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      doctor.staffCode?.toLowerCase().includes(searchTerm.toLowerCase());
 
+    const matchesStatus =
+      statusFilter === "All" ||
+      doctor.status === statusFilter;
+
+    return matchesSearch && matchesStatus;
+  });
   if (loading) {
     <div className="min-h-screen flex items-center justify-center p-6">
       <Loader />
@@ -1081,98 +1100,259 @@ export default function DoctorDetails() {
         </button>
       </div>
 
-      {/* Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-        {doctors.length === 0 ? (
-          <div className="col-span-full flex justify-center items-center py-20">
-            <div className="max-w-lg w-full bg-gradient-to-br from-[#FFF8F3] to-[#FEF3EB] border border-[#F6D2B7] rounded-3xl p-10 text-center shadow-sm">
+      {/* ==================== Filter Bar ==================== */}
+      <div className="bg-[#F8F9FA] border border-[#E5E7EB] rounded-2xl shadow-sm p-5 sm:p-6 mt-10 mb-10">
+        <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-5">
 
-              {/* Icon */}
-              <div className="mx-auto w-20 h-20 rounded-full bg-[#E8630A]/10 flex items-center justify-center mb-6">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="w-10 h-10 text-[#E8630A]"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M17 20h5V4H2v16h5m10 0v-4a3 3 0 00-3-3H10a3 3 0 00-3 3v4m10 0H7m8-12a3 3 0 11-6 0 3 3 0 016 0z"
-                  />
-                </svg>
-              </div>
+          {/* Left Side */}
+          <div className="flex flex-col md:flex-row gap-4 flex-1">
 
-              {/* Heading */}
-              <h3 className="text-2xl font-bold text-[#1A1D2E] mb-3">
-                No Doctors Added Yet
-              </h3>
+            {/* Search */}
+            <div className="flex-1">
+              <label className="block text-xs font-semibold text-[#6B7280] mb-2 tracking-wide">
+                Search
+              </label>
 
-              {/* Description */}
-              <p className="text-gray-500 text-sm leading-7 max-w-md mx-auto">
-                Your clinic doesn't have any registered doctors yet.
-                Start by adding your first doctor's professional profile,
-                qualifications, and consultation details.
+              <input
+                type="text"
+                placeholder="Search by doctor name, staff ID or registration..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="
+                  w-full
+                  h-12
+                  rounded-xl
+                  border border-[#E5E7EB]
+                  bg-white
+                  px-4
+                  text-sm
+                  text-[#1A1D2E]
+                  placeholder:text-gray-400
+                  outline-none
+                  transition-all
+                  focus:border-[#E8630A]
+                  focus:ring-2
+                  focus:ring-[#E8630A]/20
+                "
+              />
+            </div>
+
+            {/* Status */}
+            <div className="w-full md:w-56">
+              <label className="block text-xs font-semibold text-[#6B7280] mb-2 tracking-wide">
+                Status
+              </label>
+
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="
+                  w-full
+                  h-12
+                  rounded-xl
+                  border border-[#E5E7EB]
+                  bg-white
+                  px-4
+                  text-sm
+                  text-[#1A1D2E]
+                  outline-none
+                  transition-all
+                  focus:border-[#E8630A]
+                  focus:ring-2
+                  focus:ring-[#E8630A]/20
+                "
+              >
+                <option value="All">All Status</option>
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
+              </select>
+            </div>
+
+          </div>
+
+          {/* Right Side */}
+          <div className="flex items-center self-end">
+            <div className="bg-[#cccac83f] border border-[#f1ece763] rounded-xl px-3 py-2 w-[118px] h-[60px] flex flex-col justify-center">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-[#6B7280]">
+                Total Doctors
               </p>
 
-
+              <h3 className="mt-0.5 text-xl font-bold text-[#E8630A] leading-none">
+                {filteredDoctors.length}
+              </h3>
             </div>
           </div>
-        ) : (
-          doctors.map(d => (
-            <div key={d._id} className="bg-white border border-[#EAE5DC] rounded-2xl p-5 hover:shadow-lg transition-all duration-200 group">
-              <div className="flex items-center gap-3 mb-4">
-                <div
-                  className="w-12 h-12 rounded-xl flex items-center justify-center text-base font-bold shrink-0 group-hover:scale-105 transition-transform"
-                  style={{ background: `${d.color}20`, border: `2px solid ${d.color}40`, color: d.color }}
-                >
-                  {d.initials}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-bold text-[#1A1D2E] truncate">{d.name}</div>
-                  <div className="text-xs text-gray-400 mt-0.5">{d._id}</div>
-                </div>
-                <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-green-100 text-green-600 shrink-0">{d.status}</span>
-              </div>
 
-              <div className="grid grid-cols-2 gap-2 mb-4">
-                {[
-
-                  { label: 'EXPERIENCE', value: `${d.experience} yrs`, cls: 'text-[#1A1D2E]' },
-                  { label: 'CONSULT FEES', value: `₹${d.fees}`, cls: 'text-[#E8630A]' },
-                  { label: 'EMERGENCY', value: d.emergency ? 'Available' : 'Not Available', cls: d.emergency ? 'text-green-500' : 'text-red-400' },
-                ].map(item => (
-                  <div key={item.label} className="bg-gray-50 rounded-xl p-2.5">
-                    <div className="text-[10px] text-gray-400 font-semibold mb-1 tracking-wide">{item.label}</div>
-                    <div className={`text-xs font-bold ${item.cls}`}>{item.value}</div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="text-xs text-gray-400 border-t border-[#EAE5DC] pt-3 mb-3 truncate">
-                Reg: {d.regNo} · {d.state || '—'}
-              </div>
-
-              <div className="flex gap-2">
-                <button
-                  onClick={e => { e.stopPropagation(); setModal({ type: 'edit', doctor: d }); }}
-                  className="flex-1 bg-white border border-[#E8630A]/30 text-[#E8630A] hover:bg-[#E8630A]/5 rounded-xl py-2 text-xs font-semibold cursor-pointer transition-colors"
-                >
-                  ✏️ Edit Details
-                </button>
-                <button
-                  onClick={e => { e.stopPropagation(); setModal({ type: 'view', doctor: d }); }}
-                  className="flex-1 bg-white border border-[#E5E7EB] text-gray-500 hover:bg-gray-50 rounded-xl py-2 text-xs font-semibold cursor-pointer transition-colors"
-                >
-                  👁 View Profile
-                </button>
-              </div>
+        </div>
+      </div>
+      {/* Doctors Table */}
+      <div className="bg-white border border-[#EAE5DC] rounded-2xl overflow-hidden shadow-sm">
+        {doctors.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20">
+            <div className="w-20 h-20 rounded-full bg-[#E8630A]/10 flex items-center justify-center mb-5">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="w-10 h-10 text-[#E8630A]"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M17 20h5V4H2v16h5m10 0v-4a3 3 0 00-3-3H10a3 3 0 00-3 3v4m10 0H7m8-12a3 3 0 11-6 0 3 3 0 016 0z"
+                />
+              </svg>
             </div>
-          ))
-        )}
 
+            <h3 className="text-2xl font-bold text-[#1A1D2E]">
+              No Doctors Added Yet
+            </h3>
+
+            <p className="mt-3 text-sm text-gray-500 max-w-md text-center leading-7">
+              Your clinic doesn't have any registered doctors yet.
+              Start by adding your first doctor's professional profile.
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full">
+              <thead className="bg-[#FAFAFA] border-b border-[#EAE5DC]">
+                <tr>
+                  <th className="px-6 py-4 text-left text-xs font-bold tracking-wider text-gray-500">
+                    <div className="flex items-center gap-2">
+                      Doctor
+                    </div>
+                  </th>
+
+                  <th className="px-6 py-4 text-left text-xs font-bold tracking-wider text-gray-500">
+                    <div className="flex items-center gap-2">
+                      Experience
+                    </div>
+                  </th>
+
+                  <th className="px-6 py-4 text-left text-xs font-bold tracking-wider text-gray-500">
+                    <div className="flex items-center gap-2">
+                      Fees
+                    </div>
+                  </th>
+
+                  <th className="px-6 py-4 text-left text-xs font-bold tracking-wider text-gray-500">
+                    <div className="flex items-center gap-2">
+                      Emergency
+                    </div>
+                  </th>
+
+                
+                  <th className="px-6 py-4 text-left text-xs font-bold tracking-wider text-gray-500">
+                    Status
+                  </th>
+
+                  <th className="px-6 py-4 text-right text-xs font-bold  tracking-wider text-gray-500">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {filteredDoctors.map((d) => (
+                  <tr
+                    key={d._id}
+                    className="border-b border-[#F3F4F6] hover:bg-[#FCFCFC] transition-colors"
+                  >
+                    {/* Doctor */}
+                    <td className="px-6 py-5">
+                      <div className="flex items-center gap-3">
+                        <div
+                          className="w-11 h-11 rounded-xl flex items-center justify-center font-bold"
+                          style={{
+                            background: `${d.color}20`,
+                            border: `2px solid ${d.color}40`,
+                            color: d.color,
+                          }}
+                        >
+                          <Stethoscope size={20} />
+                        </div>
+
+                        <div>
+                          <div className="font-semibold text-[#1A1D2E]">
+                            {d.name}
+                          </div>
+
+                          <div className="text-xs text-gray-400">
+                            {d._id}
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+
+                    {/* Experience */}
+                    <td className="px-6 py-5 text-sm font-medium text-gray-700">
+                      {d.experience} yrs
+                    </td>
+
+                    {/* Fees */}
+                    <td className="px-6 py-5">
+                      <span className="font-semibold text-[#E8630A]">
+                        ₹{d.fees}
+                      </span>
+                    </td>
+
+                    {/* Emergency */}
+                    <td className="px-6 py-5">
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                          d.emergency
+                            ? "bg-green-100 text-green-700"
+                            : "bg-red-100 text-red-600"
+                        }`}
+                      >
+                        {d.emergency ? "Available" : "Unavailable"}
+                      </span>
+                    </td>
+
+                    {/* Status */}
+                    <td className="px-6 py-5">
+                      <span className="px-3 py-1 rounded-full bg-green-100 text-green-700 text-xs font-semibold">
+                        {d.status}
+                      </span>
+                    </td>
+
+                    {/* Actions */}
+                    <td className="px-6 py-5">
+                      <div className="flex justify-end items-center gap-2">
+                        <button
+                          onClick={() => setModal({ type: "view", doctor: d })}
+                          className="w-9 h-9 rounded-lg border border-blue-100 bg-blue-50 text-blue-600 hover:bg-blue-100 transition flex items-center justify-center cursor-pointer"
+                          title="View"
+                        >
+                          <Eye size={18} />
+                        </button>
+
+                        <button
+                          onClick={() => setModal({ type: "edit", doctor: d })}
+                          className="w-9 h-9 rounded-lg border border-amber-100 bg-amber-50 text-amber-600 hover:bg-amber-100 transition flex items-center justify-center cursor-pointer"
+                          title="Edit"
+                        >
+                          <Pencil size={18} />
+                        </button>
+
+                        <button
+                          onClick={() => handleDelete(d._id)}
+                          className="w-9 h-9 rounded-lg border border-red-100 bg-red-50 text-red-600 hover:bg-red-100 transition flex items-center justify-center cursor-pointer"
+                          title="Delete"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );

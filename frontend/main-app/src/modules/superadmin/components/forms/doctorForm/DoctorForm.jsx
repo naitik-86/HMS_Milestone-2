@@ -383,8 +383,8 @@ export default function DoctorForm({
                 message: "Profile photo must be an image file.",
             },
             govtIdDocument: {
-                valid: isImage || isPdf,
-                message: "Government ID document must be an image or PDF file.",
+                valid: isPdf,
+                message: "Government ID document must be a PDF file.",
             },
             degreeCertificates: {
                 valid: isPdf,
@@ -1033,7 +1033,7 @@ export default function DoctorForm({
                                             label={govtIdRule.docLabel}
                                             value={form.govtIdDocument}
                                             error={errors.govtIdDocument}
-                                            accept="image/*,.pdf,application/pdf"
+                                            accept=".pdf,application/pdf"
                                             onChange={handleFileUpload("govtIdDocument")}
                                             onRemove={() => setFieldValue("govtIdDocument", null)}
                                         />

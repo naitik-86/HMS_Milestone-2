@@ -13,6 +13,7 @@ const {
     uploadClinicDocuments,
     getVeterinarians,
     deleteVeterinarian,
+    updateVeterinarianStatus,
     updateVeterinarian,
     createVeterinarian
 } = require('../controllers/adminController');
@@ -35,6 +36,7 @@ router.put('/clinics/:id/subscription', updateSubscription);
 router.get('/dashboard', getAdminDashboard);
 router.get('/veterinarians', getVeterinarians);
 router.delete('/veterinarians/:id', deleteVeterinarian);
+router.put('/veterinarians/:id/status', updateVeterinarianStatus);
 router.put(
     '/veterinarians/:id',
     upload.fields([

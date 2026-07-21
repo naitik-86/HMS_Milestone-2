@@ -7,29 +7,63 @@ const LoginOtp = require('../models/LoginOtp');
 const normalizeEmail = (value) => (typeof value === 'string' ? value.trim().toLowerCase() : '');
 const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
+// Checks one delivery channel without consuming the OTP. Final login still
+// verifies and consumes the OTP through the role-specific endpoints below.
+exports.validateLoginOtp = async (req, res) => {
+  try {
+    const email = normalizeEmail(req.body?.email);
+    const otp = String(req.body?.otp || '').trim();
+    const channel = req.body?.channel;
+    const role = req.body?.role === 'SUPER_ADMIN'
+      ? 'SUPER_ADMIN'
+      : req.body?.role === 'CLINIC_ADMIN' ? 'CLINIC_ADMIN' : 'STAFF';
+
+    if (!email || !/^\d{6}$/.test(otp) || !['email', 'mobile'].includes(channel)) {
+      return res.status(400).json({ success: false, message: 'Enter a valid 6 digit OTP.' });
+    }
+    if (role === 'CLINIC_ADMIN' && channel === 'mobile') {
+      return res.status(400).json({ success: false, message: 'Clinic Admin uses email OTP only.' });
+    }
+
+    const otpRecord = await LoginOtp.findOne({
+      userType: role,
+      purpose: 'LOGIN',
+      email,
+      [channel === 'email' ? 'otpEmail' : 'otpMobile']: otp,
+      isConsumed: false,
+      expiresAt: { $gt: new Date() },
+    }).sort({ createdAt: -1 });
+
+    if (!otpRecord) return res.status(401).json({ success: false, message: 'Invalid or expired OTP.' });
+    return res.json({ success: true, message: 'OTP verified.' });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message || 'Unable to verify OTP.' });
+  }
+};
+
 // ==========================================
 // SUPER_ADMIN OTP VERIFY
 // ==========================================
 exports.verifySuperAdminOtp = async (req, res) => {
   try {
-    const { email, otpEmail } = req.body;
+    const { email, otpEmail, otpMobile } = req.body;
     const normalizedEmail = normalizeEmail(email);
 
-    if (!normalizedEmail || !otpEmail) {
-      return res.status(400).json({ success: false, message: 'email and otpEmail are required' });
+    if (!normalizedEmail || !otpEmail || !otpMobile) {
+      return res.status(400).json({ success: false, message: 'Email, email OTP, and mobile OTP are required' });
     }
 
     const otpRecord = await LoginOtp.findOne({
       userType: 'SUPER_ADMIN',
+      purpose: 'LOGIN',
       email: normalizedEmail,
       otpEmail,
+      otpMobile,
       isConsumed: false,
       expiresAt: { $gt: new Date() },
     }).sort({ createdAt: -1 });
 
-    let isMasterOtp = (otpEmail === "112233");
-
-    if (!otpRecord && !isMasterOtp) {
+    if (!otpRecord) {
         return res.status(401).json({ success: false, message: 'Invalid or expired OTP' });
     }
 
@@ -66,16 +100,14 @@ exports.verifyClinicAdminOtp = async (req, res) => {
 
     const otpRecord = await LoginOtp.findOne({
       userType: 'CLINIC_ADMIN',
+      purpose: 'LOGIN',
       email: normalizedEmail,
       otpEmail,
       isConsumed: false,
       expiresAt: { $gt: new Date() },
     }).sort({ createdAt: -1 });
 
-    let isMasterOtp = (otpEmail === "112233");
-    let isDeveloperTesting = (normalizedEmail === 'admin@clinic.com' && otpEmail === '123456');
-
-    if (!otpRecord && !isMasterOtp && !isDeveloperTesting) {
+    if (!otpRecord) {
         return res.status(401).json({ success: false, message: 'Invalid or expired OTP' });
     }
 
@@ -110,7 +142,7 @@ exports.verifyClinicAdminOtp = async (req, res) => {
 // ==========================================
 exports.verifyStaffOtp = async (req, res) => {
   try {
-    const { email, otpEmail } = req.body;
+    const { email, otpEmail, otpMobile } = req.body;
     const normalizedEmail = normalizeEmail(email);
 
     if (!normalizedEmail) {
@@ -127,21 +159,21 @@ exports.verifyStaffOtp = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Staff not found' });
     }
 
-    if (!otpEmail) {
-      return res.status(400).json({ success: false, message: 'email and otpEmail are required' });
+    if (!otpEmail || !otpMobile) {
+      return res.status(400).json({ success: false, message: 'Email, email OTP, and mobile OTP are required' });
     }
 
     const otpRecord = await LoginOtp.findOne({
       userType: 'STAFF',
+      purpose: 'LOGIN',
       email: normalizedEmail,
       otpEmail,
+      otpMobile,
       isConsumed: false,
       expiresAt: { $gt: new Date() },
     }).sort({ createdAt: -1 });
 
-    const isMasterOtp = (otpEmail === "112233");
-
-    if (!otpRecord && !isMasterOtp) {
+    if (!otpRecord) {
       return res.status(401).json({ success: false, message: 'Invalid or expired OTP' });
     }
 

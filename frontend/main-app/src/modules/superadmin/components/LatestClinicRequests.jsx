@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { showToast } from "../../../shared/components/toast";
 import { calculateEndDate, getTodayDate } from "../../../shared/utils/calculateEndDate ";
-import { deleteClinic, getClinics, updateClinic, uploadClinicDocuments } from "../api/clinicApi";
+import { deleteClinic, getClinics, updateClinic, updateClinicVerification, uploadClinicDocuments } from "../api/clinicApi";
 import ClinicForm from "./forms/clinicForm/ClinicForm";
 import Stepper from "./forms/Stepper";
 
@@ -27,8 +27,8 @@ const tabs = [
 
 const statusStyles = {
     ACTIVE: "bg-green-100 text-green-700",
-    SUBMITTED: "bg-orange-100 text-orange-600",
-    UNDER_REVIEW: "bg-orange-100 text-orange-600",
+    SUBMITTED: "bg-blue-100 text-blue-700",
+    UNDER_REVIEW: "bg-slate-100 text-slate-600",
     DOCS_VERIFIED: "bg-blue-100 text-blue-600",
     APPROVED: "bg-green-100 text-green-700",
     REJECTED: "bg-red-100 text-red-600",
@@ -50,8 +50,17 @@ const getClinicType = (clinic) =>
 const getContactEmail = (clinic) =>
     clinic.contactEmail || clinic.email || clinic.adminEmail || clinic.adminDetails?.emailAddress || "N/A";
 
-const getDisplayStatus = (clinic) =>
-    clinic.verificationStatus || clinic.subscriptionStatus || "Unknown";
+const getDisplayStatus = (clinic) => {
+    const status = clinic.verificationStatus || clinic.subscriptionStatus || "Unknown";
+    return status === "UNDER_REVIEW" ? "Pending" : status;
+};
+
+const clinicStatusOptions = [
+    ["SUBMITTED", "Submitted"],
+    ["UNDER_REVIEW", "Pending"],
+    ["APPROVED", "Approved"],
+    ["REJECTED", "Rejected"],
+];
 
 // Safely format files and URLs for display
 const filePlaceholder = (file, fileName) => {
@@ -375,6 +384,7 @@ export default function LatestClinicApprovals() {
     const [form, setForm] = useState(getClinicForm());
     const [saving, setSaving] = useState(false);
     const [deletingId, setDeletingId] = useState("");
+    const [updatingStatusId, setUpdatingStatusId] = useState("");
 
     const fetchClinics = useCallback(async () => {
         setLoading(true);
@@ -487,6 +497,31 @@ export default function LatestClinicApprovals() {
         }
     };
 
+    const handleStatusChange = async (clinic, status) => {
+        if (!clinic?._id || status === clinic.verificationStatus) return;
+
+        setUpdatingStatusId(clinic._id);
+        try {
+            const response = await updateClinicVerification(clinic._id, status);
+            setClinics((current) => current.map((item) =>
+                item._id === clinic._id ? { ...item, verificationStatus: response.data?.verificationStatus || status } : item
+            ));
+            showToast({
+                type: "success",
+                title: "Clinic Status Updated",
+                description: `${clinic.name || "Clinic"} is now ${status === "UNDER_REVIEW" ? "Pending" : status}.`,
+            });
+        } catch (error) {
+            showToast({
+                type: "error",
+                title: "Status Update Failed",
+                description: error.response?.data?.message || "Unable to update clinic status.",
+            });
+        } finally {
+            setUpdatingStatusId("");
+        }
+    };
+
     return (
         <>
             <div className="overflow-hidden rounded-2xl border bg-white shadow">
@@ -564,15 +599,21 @@ export default function LatestClinicApprovals() {
                                         {getPlanValue(clinic).replace("_", " ")}
                                     </span>
 
-                                    <span
-                                        className={`w-fit rounded-full px-3 py-1 text-xs ${
-                                            statusStyles[clinic.verificationStatus] ||
-                                            statusStyles[clinic.subscriptionStatus] ||
-                                            "bg-gray-100 text-gray-600"
-                                        }`}
-                                    >
-                                        {status}
-                                    </span>
+                                    <div className="flex items-center gap-2">
+                                        <select
+                                            value={clinic.verificationStatus || "SUBMITTED"}
+                                            onChange={(event) => handleStatusChange(clinic, event.target.value)}
+                                            disabled={updatingStatusId === clinic._id}
+                                            aria-label={`Update status for ${clinic.name || "clinic"}`}
+                                            className={`w-full rounded-lg px-2 py-1.5 text-xs font-semibold outline-none disabled:cursor-wait disabled:opacity-60 ${
+                                                statusStyles[clinic.verificationStatus] || "bg-gray-100 text-gray-600"
+                                            }`}
+                                        >
+                                            {clinicStatusOptions.map(([value, label]) => (
+                                                <option key={value} value={value}>{label}</option>
+                                            ))}
+                                        </select>
+                                    </div>
 
                                     <div className="flex flex-wrap gap-2 md:justify-end">
                                         <button
@@ -686,8 +727,6 @@ function ClinicDetailsModal({ clinic, onClose, onEdit, onDelete }) {
                             <DetailField label="District" value={form.district} />
                             <DetailField label="State" value={form.state} />
                             <DetailField label="PIN Code" value={form.pincode} />
-                            <DetailField label="Latitude" value={form.latitude} />
-                            <DetailField label="Longitude" value={form.longitude} />
                             <DetailField label="Service Areas" value={form.serviceAreas} wide />
                         </DetailSection>
 

@@ -171,7 +171,8 @@ const normalizeQualificationItems = (value) => {
 
 const serializeVeterinarian = (vet) => {
   const experienceValue = Number(vet.experience || 0);
-  const status = vet.isActive === false ? 'Suspended' : vet.forcePasswordReset ? 'Pending' : 'Active';
+  const veterinarianStatus = vet.veterinarianStatus || (vet.isActive === false ? 'REJECTED' : vet.forcePasswordReset ? 'PENDING' : 'APPROVED');
+  const status = veterinarianStatus.charAt(0) + veterinarianStatus.slice(1).toLowerCase();
   const qualifications = normalizeQualificationItems(vet.qualifications);
   const bankDetails = vet.bankDetails || {};
   const serviceAreas = Array.isArray(vet.serviceAreas) ? vet.serviceAreas : [];
@@ -194,6 +195,7 @@ const serializeVeterinarian = (vet) => {
     experience: `${Number.isFinite(experienceValue) ? experienceValue : 0} yrs`,
     experienceValue: String(vet.experience ?? ''),
     status,
+    veterinarianStatus,
     gender: vet.gender || '',
     dob: formatDateForInput(vet.dateOfBirth),
     dateOfBirth: vet.dateOfBirth || null,
@@ -344,7 +346,7 @@ exports.getVeterinarians = async (req, res) => {
       .sort({ createdAt: -1 })
       .populate('clinicId', 'name')
       .select(
-        'name mobile email gender dateOfBirth profilePhoto languages address city state pincode govtIdType govtIdNumber govtIdDocument qualifications degreeCertificates experience specialization specializations vetCouncilRegistrationNumber stateVetCouncil registrationCertificate certificateValidityDate isRenewable practiceType consultationFee emergencyAvailable serviceAreas gstPan bankDetails plan isActive forcePasswordReset createdAt updatedAt clinicId'
+        'name mobile email gender dateOfBirth profilePhoto languages address city state pincode govtIdType govtIdNumber govtIdDocument qualifications degreeCertificates experience specialization specializations vetCouncilRegistrationNumber stateVetCouncil registrationCertificate certificateValidityDate isRenewable practiceType consultationFee emergencyAvailable serviceAreas gstPan bankDetails plan isActive forcePasswordReset veterinarianStatus createdAt updatedAt clinicId'
       );
 
     const data = veterinarians.map(serializeVeterinarian);
@@ -387,6 +389,31 @@ exports.deleteVeterinarian = async (req, res) => {
       success: false,
       message: error.message || 'Failed to delete veterinarian.',
     });
+  }
+};
+
+exports.updateVeterinarianStatus = async (req, res) => {
+  try {
+    const status = String(req.body?.status || '').trim().toUpperCase();
+    const allowedStatuses = ['SUBMITTED', 'PENDING', 'APPROVED', 'REJECTED'];
+    if (!allowedStatuses.includes(status)) {
+      return res.status(400).json({ success: false, message: 'Status must be Submitted, Pending, Approved, or Rejected.' });
+    }
+
+    const veterinarian = await User.findOneAndUpdate(
+      { _id: req.params.id, role: 'DOCTOR' },
+      { veterinarianStatus: status, isActive: status !== 'REJECTED' },
+      { new: true, runValidators: true }
+    ).populate('clinicId', 'name');
+    if (!veterinarian) return res.status(404).json({ success: false, message: 'Veterinarian not found.' });
+
+    return res.json({
+      success: true,
+      message: 'Veterinarian status updated successfully.',
+      data: serializeVeterinarian(veterinarian),
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message || 'Unable to update veterinarian status.' });
   }
 };
 
@@ -1842,11 +1869,19 @@ exports.getAdminDashboard = async (req, res) => {
 exports.updateClinicVerification = async (req, res) => {
   try {
     const { status, rejectionReason, clinicEmail } = req.body;
+    const normalizedStatus = String(status || '').trim().toUpperCase() === 'PENDING'
+      ? 'UNDER_REVIEW'
+      : String(status || '').trim().toUpperCase();
+    const allowedStatuses = ['SUBMITTED', 'UNDER_REVIEW', 'APPROVED', 'REJECTED'];
+
+    if (!allowedStatuses.includes(normalizedStatus)) {
+      return res.status(400).json({ success: false, message: 'Status must be Submitted, Pending, Approved, or Rejected.' });
+    }
 
     const clinic = await Clinic.findByIdAndUpdate(
       req.params.id,
-      { verificationStatus: status, rejectionReason: rejectionReason || '' },
-      { new: true }
+      { verificationStatus: normalizedStatus, rejectionReason: rejectionReason || '' },
+      { new: true, runValidators: true }
     );
 
     if (!clinic) return res.status(404).json({ success: false, message: 'Clinic not found' });
@@ -1861,12 +1896,12 @@ exports.updateClinicVerification = async (req, res) => {
 
     const notificationWarnings = [];
 
-    if ((status === 'APPROVED' || status === 'REJECTED') && recipientEmails.length > 0) {
-      const subject = status === 'APPROVED'
+    if ((normalizedStatus === 'APPROVED' || normalizedStatus === 'REJECTED') && recipientEmails.length > 0) {
+      const subject = normalizedStatus === 'APPROVED'
         ? 'Clinic Account Activated'
         : 'Clinic Registration Rejected';
 
-      const message = status === 'APPROVED'
+      const message = normalizedStatus === 'APPROVED'
         ? `Your clinic "${clinic.name}" has been verified and is now active. You can log in with your clinic admin email.`
         : `Your clinic "${clinic.name}" registration was rejected. Reason: ${rejectionReason || 'Not provided'}`;
 

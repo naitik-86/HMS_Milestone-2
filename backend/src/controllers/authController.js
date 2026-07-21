@@ -347,7 +347,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
 const { generateOTP } = require('../utils/otpService');
-const { sendOtpMultiChannel } = require('../utils/sendOtpMultiChannel');
+const { sendOtpMultiChannel, createOtpPair } = require('../utils/sendOtpMultiChannel');
 const sendEmail = require('../utils/emailService');
 
 const Staff = require("../models/Staff");
@@ -426,8 +426,7 @@ const createOtpChallengeForLogin = async ({ account, accountType, email }) => {
       throw error;
     }
 
-    const otpEmail = generateOTP();
-    const otpMobile = generateOTP();
+    const { otpEmail, otpMobile } = createOtpPair();
 
     await LoginOtp.create({
       userType: "SUPER_ADMIN",
@@ -495,8 +494,7 @@ const createOtpChallengeForLogin = async ({ account, accountType, email }) => {
       throw error;
     }
 
-    const otpEmail = generateOTP();
-    const otpMobile = generateOTP();
+    const { otpEmail, otpMobile } = createOtpPair();
     const mobile = account.personalInfo.mobileNumber;
 
     await LoginOtp.create({
@@ -585,8 +583,7 @@ exports.login = async (req, res) => {
       }
 
       // 2FA OTP Generation for Super Admin
-      const otpEmail = generateOTP();
-      const otpMobile = generateOTP();
+      const { otpEmail, otpMobile } = createOtpPair();
 
       const mobile = process.env.SUPER_ADMIN_MOBILE;
       if (!mobile) {
@@ -707,8 +704,7 @@ exports.login = async (req, res) => {
       }
 
       // 2FA OTP Generation for Staff
-      const otpEmail = generateOTP();
-      const otpMobile = generateOTP();
+      const { otpEmail, otpMobile } = createOtpPair();
       const mobile = staff.personalInfo.mobileNumber;
       const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes expiry
 
@@ -809,6 +805,85 @@ exports.login = async (req, res) => {
       message: "An internal server error occurred during login.",
       error: error.message
     });
+  }
+};
+
+const findPasswordResetAccount = async (email) => {
+  const normalizedEmail = email.trim().toLowerCase();
+  const admin = await SuperAdmin.findOne({ email: normalizedEmail }).select('+password');
+  if (admin) return { account: admin, type: 'SUPER_ADMIN' };
+
+  const clinicAdmin = await ClinicAdmin.findOne({ email: normalizedEmail }).select('+password');
+  if (clinicAdmin) return { account: clinicAdmin, type: 'CLINIC_ADMIN' };
+
+  const staff = await Staff.findOne({ 'personalInfo.email': normalizedEmail, isDeleted: false });
+  if (staff) return { account: staff, type: 'STAFF' };
+
+  const user = await User.findOne({ email: normalizedEmail }).select('+password');
+  if (user) return { account: user, type: 'USER' };
+  return null;
+};
+
+exports.requestPasswordReset = async (req, res) => {
+  try {
+    const email = String(req.body?.email || '').trim().toLowerCase();
+    if (!email) return res.status(400).json({ success: false, message: 'Email is required' });
+
+    const match = await findPasswordResetAccount(email);
+    // Do not disclose whether an account exists.
+    if (!match) return res.json({ success: true, message: 'If an account exists, a reset OTP has been sent.' });
+
+    const otpEmail = generateOTP();
+    await LoginOtp.create({
+      userType: match.type,
+      purpose: 'PASSWORD_RESET',
+      userId: match.account._id,
+      email,
+      otpEmail,
+      expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+    });
+    await sendEmail({
+      email,
+      subject: 'Reset your HMS password',
+      message: `Your password reset OTP is ${otpEmail}. It is valid for 10 minutes.`,
+    });
+    return res.json({ success: true, message: 'If an account exists, a reset OTP has been sent.' });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message || 'Unable to send reset OTP' });
+  }
+};
+
+exports.resetPassword = async (req, res) => {
+  try {
+    const email = String(req.body?.email || '').trim().toLowerCase();
+    const otp = String(req.body?.otp || '').trim();
+    const newPassword = String(req.body?.newPassword || '');
+    if (!email || !otp || !newPassword) return res.status(400).json({ success: false, message: 'Email, OTP, and new password are required' });
+    if (newPassword.length < 8) return res.status(400).json({ success: false, message: 'New password must be at least 8 characters' });
+
+    const match = await findPasswordResetAccount(email);
+    if (!match) return res.status(400).json({ success: false, message: 'Invalid or expired reset OTP' });
+    const otpRecord = await LoginOtp.findOne({
+      userType: match.type, purpose: 'PASSWORD_RESET', userId: match.account._id,
+      email, otpEmail: otp, isConsumed: false, expiresAt: { $gt: new Date() },
+    }).sort({ createdAt: -1 });
+    if (!otpRecord) return res.status(400).json({ success: false, message: 'Invalid or expired reset OTP' });
+
+    const password = await bcrypt.hash(newPassword, 10);
+    if (match.type === 'STAFF') {
+      match.account.accountInfo.password = password;
+      match.account.accountInfo.forcePasswordReset = false;
+    } else {
+      match.account.password = password;
+      if ('forcePasswordReset' in match.account) match.account.forcePasswordReset = false;
+    }
+    await match.account.save();
+    otpRecord.isConsumed = true;
+    otpRecord.verifiedAt = new Date();
+    await otpRecord.save();
+    return res.json({ success: true, message: 'Password reset successfully. You can now log in.' });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message || 'Unable to reset password' });
   }
 };
 

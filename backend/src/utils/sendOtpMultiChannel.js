@@ -41,9 +41,11 @@ async function sendOtpMultiChannel({
 }
 
 function createOtpPair() {
+  const otp = generateOTP();
   return {
-    otpEmail: generateOTP(),
-    otpMobile: generateOTP(),
+    // A login challenge has one code, delivered through both channels.
+    otpEmail: otp,
+    otpMobile: otp,
   };
 }
 

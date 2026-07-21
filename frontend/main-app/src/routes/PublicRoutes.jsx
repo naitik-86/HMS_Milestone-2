@@ -6,6 +6,7 @@ const Home = lazy(() => import("../modules/public/pages/Home"));
 const About = lazy(() => import("../modules/public/pages/About"));
 const Contact = lazy(() => import("../modules/public/pages/Contact"));
 const Login = lazy(() => import("../modules/public/pages/Login"));
+const ForgotPassword = lazy(() => import("../modules/public/pages/ForgotPassword"));
 const Terms = lazy(() => import("../modules/public/pages/Terms"));
 const Privacy = lazy(() => import("../modules/public/pages/Privacy"));
 const Cookies = lazy(() => import("../modules/public/pages/Cookies"));
@@ -20,6 +21,7 @@ const PublicRoutes = (
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/cookies" element={<Cookies />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/total-users" element={<Info />} />
     </Route>
 );

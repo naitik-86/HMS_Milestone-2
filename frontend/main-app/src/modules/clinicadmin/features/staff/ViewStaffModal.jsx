@@ -226,14 +226,6 @@ export default function ViewStaffModal({
 
                     {/* Footer */}
                     <div className="mt-8 border-t border-gray-200 pt-6 flex items-center justify-end gap-4">
-
-                        <button
-                            onClick={() => onDelete(staff._id)}
-                            className="px-6 py-3 rounded-xl bg-[#FEF3EB] text-[#E8630A] border border-[#F8C7A8] font-semibold hover:bg-[#FDE7D8] transition-all duration-200"
-                        >
-                            Delete Staff
-                        </button>
-
                         <button
                             onClick={onClose}
                             className="px-6 py-3 rounded-xl bg-[#E8630A] text-white font-semibold hover:bg-[#d35400] transition-all duration-200"
