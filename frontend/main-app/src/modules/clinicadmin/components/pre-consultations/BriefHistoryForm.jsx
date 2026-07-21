@@ -57,12 +57,11 @@ export default function BriefHistoryForm({ formData, setFormData }) {
                 },
               }))
             }
-            className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm md:text-base outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-100"
+            className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm md:text-base outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-100 font-medium"
           >
-            <option value="Days">Days</option>
-            <option value="Weeks">Weeks</option>
-            <option value="Months">Months</option>
-            <option value="Years">Years</option>
+            <option value="Days">days</option>
+            <option value="Weeks">weeks</option>
+            <option value="Years">years</option>
           </select>
         </div>
 
@@ -76,7 +75,7 @@ export default function BriefHistoryForm({ formData, setFormData }) {
             name="onset"
             value={formData.onset}
             onChange={handleChange}
-            className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm md:text-base outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-100"
+            className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm md:text-base outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-100 font-medium"
           >
             <option value="">Select Onset</option>
             <option value="Sudden">Sudden</option>
@@ -94,7 +93,7 @@ export default function BriefHistoryForm({ formData, setFormData }) {
             name="progression"
             value={formData.progression}
             onChange={handleChange}
-            className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm md:text-base outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-100"
+            className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm md:text-base outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-100 font-medium"
           >
             <option value="">Select Progression</option>
             <option value="Improving">Improving</option>
@@ -111,39 +110,39 @@ export default function BriefHistoryForm({ formData, setFormData }) {
 
           <select
             name="recentTravel"
-            value={String(formData.recentTravel)}
+            value={formData.recentTravel ? "yes" : "no"}
             onChange={(e) =>
               setFormData((prev) => ({
                 ...prev,
-                recentTravel: e.target.value === "true",
+                recentTravel: e.target.value === "yes",
               }))
             }
-            className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm md:text-base outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-100"
+            className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm md:text-base outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-100 font-medium"
           >
-            <option value="false">No</option>
-            <option value="true">Yes</option>
+            <option value="no">No</option>
+            <option value="yes">Yes</option>
           </select>
         </div>
 
         {/* Animal Contact */}
         <div>
           <label className="block mb-2 font-medium text-slate-700">
-            Any Contact With Animal
+            Any Contact With Any Animal
           </label>
 
           <select
             name="animalContact"
-            value={String(formData.animalContact)}
+            value={formData.animalContact ? "yes" : "no"}
             onChange={(e) =>
               setFormData((prev) => ({
                 ...prev,
-                animalContact: e.target.value === "true",
+                animalContact: e.target.value === "yes",
               }))
             }
-            className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm md:text-base outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-100"
+            className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm md:text-base outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-100 font-medium"
           >
-            <option value="false">No</option>
-            <option value="true">Yes</option>
+            <option value="no">No</option>
+            <option value="yes">Yes</option>
           </select>
         </div>
 

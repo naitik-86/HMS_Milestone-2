@@ -47,7 +47,7 @@ export default function ProblemDescriptionForm({ formData, setFormData }) {
         {/* Primary Complaint */}
         <div className="lg:col-span-2">
           <label className="block mb-2 font-medium text-slate-700">
-            Primary Complaint *
+            Primary Complaint <span className="text-red-500 font-bold ml-1">*</span>
           </label>
 
           <textarea

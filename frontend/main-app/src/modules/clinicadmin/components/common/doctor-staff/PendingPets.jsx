@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
-import { AlertCircle, Stethoscope, Clock, CheckCircle2, ShieldAlert } from "lucide-react";
+import { AlertCircle, Stethoscope, Clock, CheckCircle2, ShieldAlert, Plus, Trash2, Check } from "lucide-react";
 import LabReportModal from "./LabReportModal";
 import PreConsultationReportModal from "./PreConsultReportModal";
 import CaseCompletionModal from "./CaseCompletionModal";
@@ -696,192 +696,291 @@ export default function PendingPets() {
               )}
 
               {step === 1 && (
-                <div>
-
-                  <h2 className="mb-6 text-2xl font-bold sm:mb-8 sm:text-3xl">
-                    🩺 History Review
-                  </h2>
+                <div className="space-y-6">
+                  <div className="border-b border-slate-200 pb-3">
+                    <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2 sm:text-3xl">
+                      <span>🩺 History - Doctor Reviews</span>
+                    </h2>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Review & confirm dietary, behavioral, exercise, and medication history for patient
+                    </p>
+                  </div>
 
                   <div className="grid gap-5 md:grid-cols-2 md:gap-6">
-
+                    {/* 1. Diet Type (dropdown) */}
                     <div>
-                      <label className="block font-semibold mb-2">
+                      <label className="block font-semibold text-slate-700 mb-2 text-sm">
                         🍖 Diet Type
                       </label>
-
                       <select
-
-                        value={formData.history.dietType}
-                        onChange={(e) =>
-                          handleChange("history", "dietType", e.target.value)
-                        }
-                        className="
-    w-full
-    h-12 sm:h-14
-    rounded-2xl
-    border border-slate-300
-    bg-white
-    px-4
-    text-sm sm:text-base
-    outline-none
-    focus:border-orange-500
-    focus:ring-4
-    focus:ring-orange-100
-    appearance-none
-  "
+                        value={formData.history.dietType || ""}
+                        onChange={(e) => handleChange("history", "dietType", e.target.value)}
+                        className="w-full h-12 rounded-2xl border border-slate-300 bg-white px-4 text-sm outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-100 font-medium"
                       >
-                        <option>Select Diet Type</option>
-                        <option>Commercial Dry</option>
-                        <option>Commercial Wet</option>
-                        <option>Home Cooked</option>
-                        <option>Raw</option>
-                        <option>Mixed</option>
+                        <option value="">Select Diet Type</option>
+                        <option value="Commercial Dry">Commercial Dry</option>
+                        <option value="Commercial Wet">Commercial Wet</option>
+                        <option value="Home Cooked">Home Cooked</option>
+                        <option value="Raw">Raw</option>
+                        <option value="Mixed">Mixed</option>
                       </select>
                     </div>
 
+                    {/* 2. Diet Frequency (meals per day) (numbers) */}
                     <div>
-                      <label className="block font-semibold mb-2">
-                        🍽️ Diet Frequency (Meals Per Day)
+                      <label className="block font-semibold text-slate-700 mb-2 text-sm">
+                        🍽️ Diet Frequency (meals per day)
                       </label>
-
                       <input
                         type="number"
-                        value={formData.history.dietFrequency}
-                        onChange={(e) =>
-                          handleChange("history", "dietFrequency", e.target.value)
-                        }
-                        placeholder="Enter Meals Per Day"
-                        className="w-full border border-slate-300 p-3 rounded-2xl"
+                        min="0"
+                        value={formData.history.dietFrequency || ""}
+                        onChange={(e) => handleChange("history", "dietFrequency", e.target.value)}
+                        placeholder="Enter meals per day"
+                        className="w-full h-12 rounded-2xl border border-slate-300 bg-white px-4 text-sm outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-100 font-medium"
                       />
                     </div>
 
+                    {/* 3. Water Intake (dropdown) */}
                     <div>
-                      <label className="block font-semibold mb-2">
+                      <label className="block font-semibold text-slate-700 mb-2 text-sm">
                         💧 Water Intake
                       </label>
+                      <select
+                        value={formData.history.waterIntake || ""}
+                        onChange={(e) => handleChange("history", "waterIntake", e.target.value)}
+                        className="w-full h-12 rounded-2xl border border-slate-300 bg-white px-4 text-sm outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-100 font-medium"
+                      >
+                        <option value="">Select Water Intake</option>
+                        <option value="Normal">Normal</option>
+                        <option value="Reduced">Reduced</option>
+                        <option value="Increased">Increased</option>
+                      </select>
+                    </div>
 
-                      <div className="relative">
-                        <select
-                          value={formData.history.waterIntake}
-                          onChange={(e) =>
-                            handleChange("history", "waterIntake", e.target.value)
-                          }
-                          className="
-        w-full
-        h-12 sm:h-14
-        rounded-2xl
-        border border-slate-300
-        bg-white
-        px-4
-        pr-10
-        text-sm sm:text-base
-        outline-none
-        appearance-none
-        focus:border-orange-500
-        focus:ring-4
-        focus:ring-orange-100
-      "
-                        >
-                          <option>Select Water Intake</option>
-                          <option>Normal</option>
-                          <option>Reduced</option>
-                          <option>Increased</option>
-                        </select>
+                    {/* 4. Behavioral Habits (dropdown + multi select) */}
+                    <div>
+                      <label className="block font-semibold text-slate-700 mb-2 text-sm">
+                        🐾 Behavioral Habits (multi-select)
+                      </label>
+                      <div className="flex flex-wrap gap-2 p-2.5 border border-slate-300 rounded-2xl bg-white min-h-[48px] items-center">
+                        {["Indoor", "Outdoor", "Free Roaming", "Chained", "Socialized"].map((habit) => {
+                          const selectedHabits = Array.isArray(formData.history.behaviour)
+                            ? formData.history.behaviour
+                            : (formData.history.behaviour || "").split(",").map(s => s.trim()).filter(Boolean);
+                          const isSelected = selectedHabits.includes(habit);
 
-                        <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2">
-                          ▼
-                        </span>
+                          return (
+                            <button
+                              key={habit}
+                              type="button"
+                              onClick={() => {
+                                let updated = isSelected
+                                  ? selectedHabits.filter(h => h !== habit)
+                                  : [...selectedHabits, habit];
+                                handleChange("history", "behaviour", updated.join(", "));
+                              }}
+                              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
+                                isSelected
+                                  ? "bg-orange-500 text-white shadow-xs"
+                                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                              }`}
+                            >
+                              <span>{habit}</span>
+                              {isSelected && <Check className="w-3 h-3 ml-0.5" />}
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
 
+                    {/* 5. Exercise Level (dropdown) */}
                     <div>
-                      <label className="block font-semibold mb-2">
-                        🐾 Behavioral Habits
-                      </label>
-
-                      <textarea
-                        rows="3"
-                        value={formData.history.behaviour}
-                        onChange={(e) =>
-                          handleChange("history", "behaviour", e.target.value)
-                        }
-                        placeholder="Behavioral Habits"
-                        className="w-full border border-slate-300 p-3 rounded-2xl"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block font-semibold mb-2">
+                      <label className="block font-semibold text-slate-700 mb-2 text-sm">
                         🏃 Exercise Level
                       </label>
-
                       <select
-                        value={formData.history.exercise}
-                        onChange={(e) =>
-                          handleChange("history", "exercise", e.target.value)
-                        }
-                        className="w-full border border-slate-300 p-3 rounded-2xl"
+                        value={formData.history.exercise || ""}
+                        onChange={(e) => handleChange("history", "exercise", e.target.value)}
+                        className="w-full h-12 rounded-2xl border border-slate-300 bg-white px-4 text-sm outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-100 font-medium"
                       >
-                        <option>Select Exercise Level</option>
-                        <option>Indoor</option>
-                        <option>Outdoor</option>
-                        <option>Free Roaming</option>
-                        <option>Chained</option>
-                        <option>Socialized</option>
+                        <option value="">Select Exercise Level</option>
+                        <option value="Low">Low</option>
+                        <option value="Moderate">Moderate</option>
+                        <option value="High">High</option>
                       </select>
                     </div>
 
+                    {/* 7. Vaccinations Status verified */}
                     <div>
-                      <label className="block font-semibold mb-2">
-                        💊 Current Medications
-                      </label>
-
-                      <textarea
-                        rows="3"
-                        value={formData.history.currentMedication}
-                        onChange={(e) =>
-                          handleChange("history", "currentMedication", e.target.value)
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="font-semibold text-slate-700 text-sm">
+                          💉 Vaccination Status Verified
+                        </label>
+                        <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                          Auto filled from pet profile
+                        </span>
+                      </div>
+                      <input
+                        type="text"
+                        value={
+                          formData.history.vaccinationStatus ||
+                          selectedPet?.pet?.history?.vaccineName ||
+                          selectedPet?.preConsultationId?.history?.vaccineName ||
+                          "Verified & Up to Date"
                         }
-                        placeholder="Current Medications"
-                        className="w-full border border-slate-300 p-3 rounded-2xl"
+                        onChange={(e) => handleChange("history", "vaccinationStatus", e.target.value)}
+                        placeholder="Vaccination Status"
+                        className="w-full h-12 rounded-2xl border border-slate-300 bg-slate-50 px-4 text-sm font-medium outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-100"
                       />
                     </div>
 
-                    <div>
-                      <label className="block font-semibold mb-2">
-                        💉 Vaccination Status
-                      </label>
-
-                      <select
-                        value={formData.history.vaccinationStatus}
-                        onChange={(e) =>
-                          handleChange("history", "vaccinationStatus", e.target.value)
+                    {/* 8. Known Allergies Verified */}
+                    <div className="md:col-span-2">
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="font-semibold text-slate-700 text-sm">
+                          ⚠️ Known Allergies Verified
+                        </label>
+                        <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                          Auto filled from pet profile
+                        </span>
+                      </div>
+                      <input
+                        type="text"
+                        value={
+                          formData.history.allergies ||
+                          selectedPet?.pet?.history?.allergies ||
+                          selectedPet?.preConsultationId?.allergies ||
+                          "No Known Allergies Reported"
                         }
-                        className="w-full border border-slate-300 p-3 rounded-2xl"
-                      >
-                        <option>Verified</option>
-                        <option>Pending</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block font-semibold mb-2">
-                        ⚠️ Known Allergies
-                      </label>
-
-                      <textarea
-                        rows="3"
-                        value={formData.history.allergies}
-                        onChange={(e) =>
-                          handleChange("history", "allergies", e.target.value)
-                        }
-                        placeholder="Known Allergies"
-                        className="w-full border border-slate-300 p-3 rounded-2xl"
+                        onChange={(e) => handleChange("history", "allergies", e.target.value)}
+                        placeholder="Known Allergies Verified"
+                        className="w-full h-12 rounded-2xl border border-slate-300 bg-slate-50 px-4 text-sm font-medium outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-100"
                       />
                     </div>
 
+                    {/* 6. Current Medications Confirmed (multi rows: Drug, Dose, Frequency, Since) */}
+                    <div className="md:col-span-2 bg-slate-50/80 p-5 rounded-2xl border border-slate-200 space-y-4">
+                      <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                        <h3 className="text-sm font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                          <span>💊 Current Medications Confirmed (multi rows)</span>
+                        </h3>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const currentList = Array.isArray(formData.history.medicationsConfirmed) && formData.history.medicationsConfirmed.length > 0
+                              ? formData.history.medicationsConfirmed
+                              : [{ drug: "", dose: "", frequency: "", since: "" }];
+                            const updated = [...currentList, { drug: "", dose: "", frequency: "", since: "" }];
+                            handleChange("history", "medicationsConfirmed", updated);
+                          }}
+                          className="px-3 py-1.5 bg-orange-50 hover:bg-orange-100 text-orange-600 border border-orange-200 rounded-xl text-xs font-bold transition flex items-center gap-1 cursor-pointer border-none"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>+ Add Medication Row</span>
+                        </button>
+                      </div>
+
+                      {(() => {
+                        const medList = (Array.isArray(formData.history.medicationsConfirmed) && formData.history.medicationsConfirmed.length > 0)
+                          ? formData.history.medicationsConfirmed
+                          : [{
+                              drug: (typeof formData.history.currentMedication === "string" ? formData.history.currentMedication : "") || selectedPet?.pet?.history?.medications || "",
+                              dose: "",
+                              frequency: "",
+                              since: ""
+                            }];
+
+                        return medList.map((row, rIdx) => (
+                          <div key={rIdx} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 p-3 bg-white rounded-xl border border-slate-200">
+                            <div>
+                              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                                1. Drug
+                              </label>
+                              <input
+                                type="text"
+                                value={row.drug || ""}
+                                onChange={(e) => {
+                                  const updated = [...medList];
+                                  updated[rIdx] = { ...updated[rIdx], drug: e.target.value };
+                                  handleChange("history", "medicationsConfirmed", updated);
+                                }}
+                                placeholder="Drug name"
+                                className="w-full border border-slate-200 rounded-xl p-2.5 text-xs outline-none focus:border-orange-500"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                                2. Dose
+                              </label>
+                              <input
+                                type="text"
+                                value={row.dose || ""}
+                                onChange={(e) => {
+                                  const updated = [...medList];
+                                  updated[rIdx] = { ...updated[rIdx], dose: e.target.value };
+                                  handleChange("history", "medicationsConfirmed", updated);
+                                }}
+                                placeholder="e.g. 5mg / 1 Tab"
+                                className="w-full border border-slate-200 rounded-xl p-2.5 text-xs outline-none focus:border-orange-500"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                                3. Frequency
+                              </label>
+                              <input
+                                type="text"
+                                value={row.frequency || ""}
+                                onChange={(e) => {
+                                  const updated = [...medList];
+                                  updated[rIdx] = { ...updated[rIdx], frequency: e.target.value };
+                                  handleChange("history", "medicationsConfirmed", updated);
+                                }}
+                                placeholder="e.g. Once Daily / BD"
+                                className="w-full border border-slate-200 rounded-xl p-2.5 text-xs outline-none focus:border-orange-500"
+                              />
+                            </div>
+
+                            <div className="flex items-end gap-2">
+                              <div className="flex-1">
+                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                                  4. Since
+                                </label>
+                                <input
+                                  type="text"
+                                  value={row.since || ""}
+                                  onChange={(e) => {
+                                    const updated = [...medList];
+                                    updated[rIdx] = { ...updated[rIdx], since: e.target.value };
+                                    handleChange("history", "medicationsConfirmed", updated);
+                                  }}
+                                  placeholder="e.g. 2 Weeks / 1 Month"
+                                  className="w-full border border-slate-200 rounded-xl p-2.5 text-xs outline-none focus:border-orange-500"
+                                />
+                              </div>
+
+                              {medList.length > 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const updated = medList.filter((_, i) => i !== rIdx);
+                                    handleChange("history", "medicationsConfirmed", updated);
+                                  }}
+                                  className="p-2.5 text-rose-500 hover:bg-rose-50 rounded-xl border border-rose-200 transition cursor-pointer"
+                                  title="Remove medication"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        ));
+                      })()}
+                    </div>
                   </div>
-
                 </div>
               )}
               {step === 2 && (
@@ -1481,172 +1580,699 @@ export default function PendingPets() {
                 </div>
               )}
               {step === 5 && (
-                <div>
-
-                  <h2 className="mb-6 text-2xl font-bold sm:mb-8 sm:text-3xl">
-                    💉 Treatment
-                  </h2>
-
-                  <div className="grid gap-5 md:grid-cols-2 md:gap-6">
-
-                    {/* Medications */}
-                    <div>
-                      <label className="block font-semibold mb-2">
-                        💊 Medications Prescribed
-                      </label>
-
-                      <textarea
-                        rows="5"
-                        value={formData.treatment.medicines}
-                        onChange={(e) =>
-                          handleChange(
-                            "treatment",
-                            "medicines",
-                            e.target.value
-                          )}
-                        placeholder="Enter medications with dosage..."
-                        className="w-full border border-slate-300 p-3 rounded-2xl"
-                      />
-                    </div>
-
-                    {/* Procedures */}
-                    <div>
-                      <label className="block font-semibold mb-2">
-                        🩺 Procedures Performed
-                      </label>
-
-                      <textarea
-                        rows="5"
-                        value={formData.treatment.procedures}
-                        onChange={(e) =>
-                          handleChange(
-                            "treatment",
-                            "procedures",
-                            e.target.value
-                          )}
-                        placeholder="Enter procedures performed..."
-                        className="w-full border border-slate-300 p-3 rounded-2xl"
-                      />
-                    </div>
-
-                    {/* Vaccination */}
-                    <div>
-                      <label className="block font-semibold mb-2">
-                        💉 Vaccination Administered
-                      </label>
-
-                      <input
-                        type="text"
-                        value={formData.treatment.vaccinations}
-                        onChange={(e) =>
-                          handleChange(
-                            "treatment",
-                            "vaccinations",
-                            e.target.value
-                          )}
-                        placeholder="Vaccination Name"
-                        className="w-full border border-slate-300 p-3 rounded-2xl"
-                      />
-                    </div>
-
-                    {/* Deworming */}
-                    <div>
-                      <label className="block font-semibold mb-2">
-                        🪱 Deworming Administered
-                      </label>
-
-                      <input
-                        type="text"
-                        value={formData.treatment.deworming}
-
-                        onChange={(e) =>
-
-                          handleChange(
-                            "treatment",
-                            "deworming",
-                            e.target.value
-                          )}
-                        placeholder="Vaccination Name"
-                        className="w-full border border-slate-300 p-3 rounded-2xl"
-                      />
-                    </div>
-
-                    {/* IV Fluids */}
-                    <div>
-                      <label className="block font-semibold mb-2">
-                        💧 IV Fluids Given
-                      </label>
-
-                      <input
-                        type="text"
-                        value={formData.treatment.fluids}
-
-                        onChange={(e) =>
-
-                          handleChange(
-                            "treatment",
-                            "fluids",
-                            e.target.value
-                          )}
-                        placeholder="Deworming Details"
-                        className="w-full border border-slate-300 p-3 rounded-2xl"
-                      />
-                    </div>
-
-                    {/* Follow-up */}
-                    <div>
-                      <label className="block font-semibold mb-2">
-                        📅 Follow-Up Required
-                      </label>
-
-                      <select
-                        value={formData.treatment.followUp}
-                        onChange={(e) =>
-                          handleChange(
-                            "treatment",
-                            "followUp",
-                            e.target.value
-                          )}
-                        className="w-full border border-slate-300 p-3 rounded-2xl"
-                      >
-                        <option value="">Select</option>
-                        <option value="Yes">Yes</option>
-                        <option value="No">No</option>
-                      </select>
-                    </div>
-
+                <div className="space-y-6">
+                  <div className="border-b border-slate-200 pb-3">
+                    <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2 sm:text-3xl">
+                      <span>💉 Treatment & Prescription</span>
+                    </h2>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Prescribe medications, record in-clinic procedures, vaccinations, deworming, and IV fluids
+                    </p>
                   </div>
 
-                  <div className="mt-6">
+                  <div className="space-y-6">
+                    {/* 1. Medications Prescribed */}
+                    <div className="bg-slate-50/80 p-5 rounded-2xl border border-slate-200 space-y-4">
+                      <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                        <h3 className="text-sm font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                          <span>💊 Medications Prescribed</span>
+                        </h3>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const currentList = Array.isArray(formData.treatment.medicationsList) && formData.treatment.medicationsList.length > 0
+                              ? formData.treatment.medicationsList
+                              : [{ drugName: "", dose: "", route: "", frequency: "", duration: "", instruction: "" }];
+                            const updated = [...currentList, { drugName: "", dose: "", route: "", frequency: "", duration: "", instruction: "" }];
+                            handleChange("treatment", "medicationsList", updated);
+                            const textSummary = updated.map(m => `${m.drugName || ''} ${m.dose || ''} ${m.frequency || ''} for ${m.duration || ''}`).join("\n");
+                            handleChange("treatment", "medicines", textSummary);
+                          }}
+                          className="px-3 py-1.5 bg-orange-50 hover:bg-orange-100 text-orange-600 border border-orange-200 rounded-xl text-xs font-bold transition flex items-center gap-1 cursor-pointer border-none"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>+ Add Medication</span>
+                        </button>
+                      </div>
 
-                    <label className="block font-semibold mb-2">
-                      📝 Treatment Notes
-                    </label>
+                      {(() => {
+                        const medList = (Array.isArray(formData.treatment.medicationsList) && formData.treatment.medicationsList.length > 0)
+                          ? formData.treatment.medicationsList
+                          : [{ drugName: typeof formData.treatment.medicines === "string" ? formData.treatment.medicines : "", dose: "", route: "", frequency: "", duration: "", instruction: "" }];
 
-                    <textarea
+                        return medList.map((row, rIdx) => (
+                          <div key={rIdx} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-3 p-3 bg-white rounded-xl border border-slate-200 relative">
+                            <div>
+                              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                                Drug Name
+                              </label>
+                              <input
+                                type="text"
+                                value={row.drugName || ""}
+                                onChange={(e) => {
+                                  const updated = [...medList];
+                                  updated[rIdx] = { ...updated[rIdx], drugName: e.target.value };
+                                  handleChange("treatment", "medicationsList", updated);
+                                  const textSummary = updated.map(m => `${m.drugName || ''} ${m.dose || ''} ${m.frequency || ''} for ${m.duration || ''}`).join("\n");
+                                  handleChange("treatment", "medicines", textSummary);
+                                }}
+                                placeholder="Drug name"
+                                className="w-full border border-slate-200 rounded-xl p-2.5 text-xs outline-none focus:border-orange-500 font-medium"
+                              />
+                            </div>
 
-                      rows="6"
+                            <div>
+                              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                                Dose
+                              </label>
+                              <input
+                                type="text"
+                                value={row.dose || ""}
+                                onChange={(e) => {
+                                  const updated = [...medList];
+                                  updated[rIdx] = { ...updated[rIdx], dose: e.target.value };
+                                  handleChange("treatment", "medicationsList", updated);
+                                }}
+                                placeholder="e.g. 500mg / 1 Tab"
+                                className="w-full border border-slate-200 rounded-xl p-2.5 text-xs outline-none focus:border-orange-500 font-medium"
+                              />
+                            </div>
 
-                      value={formData.treatment.treatmentNotes}
+                            <div>
+                              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                                Route
+                              </label>
+                              <input
+                                type="text"
+                                value={row.route || ""}
+                                onChange={(e) => {
+                                  const updated = [...medList];
+                                  updated[rIdx] = { ...updated[rIdx], route: e.target.value };
+                                  handleChange("treatment", "medicationsList", updated);
+                                }}
+                                placeholder="Route"
+                                className="w-full border border-slate-200 rounded-xl p-2.5 text-xs outline-none focus:border-orange-500 font-medium"
+                              />
+                            </div>
 
-                      onChange={(e) =>
+                            <div>
+                              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                                Frequency
+                              </label>
+                              <input
+                                type="text"
+                                value={row.frequency || ""}
+                                onChange={(e) => {
+                                  const updated = [...medList];
+                                  updated[rIdx] = { ...updated[rIdx], frequency: e.target.value };
+                                  handleChange("treatment", "medicationsList", updated);
+                                }}
+                                placeholder="Frequency"
+                                className="w-full border border-slate-200 rounded-xl p-2.5 text-xs outline-none focus:border-orange-500 font-medium"
+                              />
+                            </div>
 
-                        handleChange(
-                          "treatment",
-                          "treatmentNotes",
-                          e.target.value
-                        )
+                            <div>
+                              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                                Duration
+                              </label>
+                              <input
+                                type="text"
+                                value={row.duration || ""}
+                                onChange={(e) => {
+                                  const updated = [...medList];
+                                  updated[rIdx] = { ...updated[rIdx], duration: e.target.value };
+                                  handleChange("treatment", "medicationsList", updated);
+                                }}
+                                placeholder="e.g. 5 Days"
+                                className="w-full border border-slate-200 rounded-xl p-2.5 text-xs outline-none focus:border-orange-500 font-medium"
+                              />
+                            </div>
 
-                      }
+                            <div className="flex items-end gap-2">
+                              <div className="flex-1">
+                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                                  Instruction
+                                </label>
+                                <input
+                                  type="text"
+                                  value={row.instruction || ""}
+                                  onChange={(e) => {
+                                    const updated = [...medList];
+                                    updated[rIdx] = { ...updated[rIdx], instruction: e.target.value };
+                                    handleChange("treatment", "medicationsList", updated);
+                                  }}
+                                  placeholder="e.g. After meals"
+                                  className="w-full border border-slate-200 rounded-xl p-2.5 text-xs outline-none focus:border-orange-500 font-medium"
+                                />
+                              </div>
 
-                      placeholder="Additional treatment notes..."
+                              {medList.length > 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const updated = medList.filter((_, i) => i !== rIdx);
+                                    handleChange("treatment", "medicationsList", updated);
+                                  }}
+                                  className="p-2.5 text-rose-500 hover:bg-rose-50 rounded-xl border border-rose-200 transition cursor-pointer"
+                                  title="Remove medication"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        ));
+                      })()}
+                    </div>
 
-                      className="w-full border border-slate-300 p-3 rounded-2xl"
+                    {/* 2. In Clinic Procedure Done */}
+                    <div className="bg-slate-50/80 p-5 rounded-2xl border border-slate-200 space-y-4">
+                      <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                        <h3 className="text-sm font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                          <span>🩺 In Clinic Procedure Done</span>
+                        </h3>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const currentList = Array.isArray(formData.treatment.proceduresList) && formData.treatment.proceduresList.length > 0
+                              ? formData.treatment.proceduresList
+                              : [{ procedure: "", description: "", outcome: "" }];
+                            const updated = [...currentList, { procedure: "", description: "", outcome: "" }];
+                            handleChange("treatment", "proceduresList", updated);
+                            const textSummary = updated.map(p => `${p.procedure || ''}: ${p.description || ''} (${p.outcome || ''})`).join("\n");
+                            handleChange("treatment", "procedures", textSummary);
+                          }}
+                          className="px-3 py-1.5 bg-orange-50 hover:bg-orange-100 text-orange-600 border border-orange-200 rounded-xl text-xs font-bold transition flex items-center gap-1 cursor-pointer border-none"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>+ Add Procedure</span>
+                        </button>
+                      </div>
 
-                    />
+                      {(() => {
+                        const procList = (Array.isArray(formData.treatment.proceduresList) && formData.treatment.proceduresList.length > 0)
+                          ? formData.treatment.proceduresList
+                          : [{ procedure: typeof formData.treatment.procedures === "string" ? formData.treatment.procedures : "", description: "", outcome: "" }];
 
+                        return procList.map((row, rIdx) => (
+                          <div key={rIdx} className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 bg-white rounded-xl border border-slate-200">
+                            <div>
+                              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                                Procedure
+                              </label>
+                              <input
+                                type="text"
+                                value={row.procedure || ""}
+                                onChange={(e) => {
+                                  const updated = [...procList];
+                                  updated[rIdx] = { ...updated[rIdx], procedure: e.target.value };
+                                  handleChange("treatment", "proceduresList", updated);
+                                }}
+                                placeholder="Procedure name"
+                                className="w-full border border-slate-200 rounded-xl p-2.5 text-xs outline-none focus:border-orange-500 font-medium"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                                Description
+                              </label>
+                              <input
+                                type="text"
+                                value={row.description || ""}
+                                onChange={(e) => {
+                                  const updated = [...procList];
+                                  updated[rIdx] = { ...updated[rIdx], description: e.target.value };
+                                  handleChange("treatment", "proceduresList", updated);
+                                }}
+                                placeholder="Procedure description"
+                                className="w-full border border-slate-200 rounded-xl p-2.5 text-xs outline-none focus:border-orange-500 font-medium"
+                              />
+                            </div>
+
+                            <div className="flex items-end gap-2">
+                              <div className="flex-1">
+                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                                  Outcome
+                                </label>
+                                <input
+                                  type="text"
+                                  value={row.outcome || ""}
+                                  onChange={(e) => {
+                                    const updated = [...procList];
+                                    updated[rIdx] = { ...updated[rIdx], outcome: e.target.value };
+                                    handleChange("treatment", "proceduresList", updated);
+                                  }}
+                                  placeholder="e.g. Successful / Normal"
+                                  className="w-full border border-slate-200 rounded-xl p-2.5 text-xs outline-none focus:border-orange-500 font-medium"
+                                />
+                              </div>
+
+                              {procList.length > 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const updated = procList.filter((_, i) => i !== rIdx);
+                                    handleChange("treatment", "proceduresList", updated);
+                                  }}
+                                  className="p-2.5 text-rose-500 hover:bg-rose-50 rounded-xl border border-rose-200 transition cursor-pointer"
+                                  title="Remove procedure"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        ));
+                      })()}
+                    </div>
+
+                    {/* 3. Vaccination Administered */}
+                    <div className="bg-slate-50/80 p-5 rounded-2xl border border-slate-200 space-y-4">
+                      <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                        <h3 className="text-sm font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                          <span>💉 Vaccination Administered</span>
+                        </h3>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const currentList = Array.isArray(formData.treatment.vaccinationsList) && formData.treatment.vaccinationsList.length > 0
+                              ? formData.treatment.vaccinationsList
+                              : [{ vaccine: "", batchNumber: "", dose: "", route: "", nextDueDate: "" }];
+                            const updated = [...currentList, { vaccine: "", batchNumber: "", dose: "", route: "", nextDueDate: "" }];
+                            handleChange("treatment", "vaccinationsList", updated);
+                          }}
+                          className="px-3 py-1.5 bg-orange-50 hover:bg-orange-100 text-orange-600 border border-orange-200 rounded-xl text-xs font-bold transition flex items-center gap-1 cursor-pointer border-none"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>+ Add Vaccination</span>
+                        </button>
+                      </div>
+
+                      {(() => {
+                        const vacList = (Array.isArray(formData.treatment.vaccinationsList) && formData.treatment.vaccinationsList.length > 0)
+                          ? formData.treatment.vaccinationsList
+                          : [{ vaccine: typeof formData.treatment.vaccinations === "string" ? formData.treatment.vaccinations : "", batchNumber: "", dose: "", route: "", nextDueDate: "" }];
+
+                        return vacList.map((row, rIdx) => (
+                          <div key={rIdx} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3 p-3 bg-white rounded-xl border border-slate-200">
+                            <div>
+                              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                                Vaccine
+                              </label>
+                              <input
+                                type="text"
+                                value={row.vaccine || ""}
+                                onChange={(e) => {
+                                  const updated = [...vacList];
+                                  updated[rIdx] = { ...updated[rIdx], vaccine: e.target.value };
+                                  handleChange("treatment", "vaccinationsList", updated);
+                                }}
+                                placeholder="Vaccine name"
+                                className="w-full border border-slate-200 rounded-xl p-2.5 text-xs outline-none focus:border-orange-500 font-medium"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                                Batch No.
+                              </label>
+                              <input
+                                type="text"
+                                value={row.batchNumber || ""}
+                                onChange={(e) => {
+                                  const updated = [...vacList];
+                                  updated[rIdx] = { ...updated[rIdx], batchNumber: e.target.value };
+                                  handleChange("treatment", "vaccinationsList", updated);
+                                }}
+                                placeholder="Batch number"
+                                className="w-full border border-slate-200 rounded-xl p-2.5 text-xs outline-none focus:border-orange-500 font-medium"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                                Dose
+                              </label>
+                              <input
+                                type="text"
+                                value={row.dose || ""}
+                                onChange={(e) => {
+                                  const updated = [...vacList];
+                                  updated[rIdx] = { ...updated[rIdx], dose: e.target.value };
+                                  handleChange("treatment", "vaccinationsList", updated);
+                                }}
+                                placeholder="Dose (e.g. 1 ml)"
+                                className="w-full border border-slate-200 rounded-xl p-2.5 text-xs outline-none focus:border-orange-500 font-medium"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                                Route
+                              </label>
+                              <input
+                                type="text"
+                                value={row.route || ""}
+                                onChange={(e) => {
+                                  const updated = [...vacList];
+                                  updated[rIdx] = { ...updated[rIdx], route: e.target.value };
+                                  handleChange("treatment", "vaccinationsList", updated);
+                                }}
+                                placeholder="e.g. SC / IM"
+                                className="w-full border border-slate-200 rounded-xl p-2.5 text-xs outline-none focus:border-orange-500 font-medium"
+                              />
+                            </div>
+
+                            <div className="flex items-end gap-2">
+                              <div className="flex-1">
+                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                                  Next Due Date
+                                </label>
+                                <input
+                                  type="date"
+                                  value={row.nextDueDate || ""}
+                                  onChange={(e) => {
+                                    const updated = [...vacList];
+                                    updated[rIdx] = { ...updated[rIdx], nextDueDate: e.target.value };
+                                    handleChange("treatment", "vaccinationsList", updated);
+                                  }}
+                                  className="w-full border border-slate-200 rounded-xl p-2.5 text-xs outline-none focus:border-orange-500 font-medium"
+                                />
+                              </div>
+
+                              {vacList.length > 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const updated = vacList.filter((_, i) => i !== rIdx);
+                                    handleChange("treatment", "vaccinationsList", updated);
+                                  }}
+                                  className="p-2.5 text-rose-500 hover:bg-rose-50 rounded-xl border border-rose-200 transition cursor-pointer"
+                                  title="Remove vaccination"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        ));
+                      })()}
+                    </div>
+
+                    {/* 4. Deworming Administered */}
+                    <div className="bg-slate-50/80 p-5 rounded-2xl border border-slate-200 space-y-4">
+                      <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                        <div className="flex items-center gap-3">
+                          <h3 className="text-sm font-extrabold text-slate-800 uppercase tracking-wider">
+                            <span>🪱 Deworming Administered</span>
+                          </h3>
+
+                          {/* Toggle Switch */}
+                          <div className="flex items-center bg-slate-200 p-1 rounded-xl">
+                            <button
+                              type="button"
+                              onClick={() => handleChange("treatment", "hasDeworming", false)}
+                              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                !formData.treatment.hasDeworming
+                                  ? "bg-white text-slate-800 shadow-xs"
+                                  : "text-slate-500 hover:text-slate-700"
+                              }`}
+                            >
+                              No
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleChange("treatment", "hasDeworming", true)}
+                              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                formData.treatment.hasDeworming
+                                  ? "bg-orange-500 text-white shadow-xs"
+                                  : "text-slate-500 hover:text-slate-700"
+                              }`}
+                            >
+                              Yes
+                            </button>
+                          </div>
+                        </div>
+
+                        {formData.treatment.hasDeworming && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const currentList = Array.isArray(formData.treatment.dewormingList) && formData.treatment.dewormingList.length > 0
+                                ? formData.treatment.dewormingList
+                                : [{ product: "", dose: "", date: new Date().toISOString().split("T")[0] }];
+                              const updated = [...currentList, { product: "", dose: "", date: new Date().toISOString().split("T")[0] }];
+                              handleChange("treatment", "dewormingList", updated);
+                            }}
+                            className="px-3 py-1.5 bg-orange-50 hover:bg-orange-100 text-orange-600 border border-orange-200 rounded-xl text-xs font-bold transition flex items-center gap-1 cursor-pointer border-none"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            <span>+ Add Deworming</span>
+                          </button>
+                        )}
+                      </div>
+
+                      {formData.treatment.hasDeworming && (() => {
+                        const dewList = (Array.isArray(formData.treatment.dewormingList) && formData.treatment.dewormingList.length > 0)
+                          ? formData.treatment.dewormingList
+                          : [{ product: typeof formData.treatment.deworming === "string" ? formData.treatment.deworming : "", dose: "", date: new Date().toISOString().split("T")[0] }];
+
+                        return dewList.map((row, rIdx) => (
+                          <div key={rIdx} className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 bg-white rounded-xl border border-slate-200">
+                            <div>
+                              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                                Product
+                              </label>
+                              <input
+                                type="text"
+                                value={row.product || ""}
+                                onChange={(e) => {
+                                  const updated = [...dewList];
+                                  updated[rIdx] = { ...updated[rIdx], product: e.target.value };
+                                  handleChange("treatment", "dewormingList", updated);
+                                }}
+                                placeholder="Product name"
+                                className="w-full border border-slate-200 rounded-xl p-2.5 text-xs outline-none focus:border-orange-500 font-medium"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                                Dose
+                              </label>
+                              <input
+                                type="text"
+                                value={row.dose || ""}
+                                onChange={(e) => {
+                                  const updated = [...dewList];
+                                  updated[rIdx] = { ...updated[rIdx], dose: e.target.value };
+                                  handleChange("treatment", "dewormingList", updated);
+                                }}
+                                placeholder="e.g. 1 Tab"
+                                className="w-full border border-slate-200 rounded-xl p-2.5 text-xs outline-none focus:border-orange-500 font-medium"
+                              />
+                            </div>
+
+                            <div className="flex items-end gap-2">
+                              <div className="flex-1">
+                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                                  Date
+                                </label>
+                                <input
+                                  type="date"
+                                  value={row.date || ""}
+                                  onChange={(e) => {
+                                    const updated = [...dewList];
+                                    updated[rIdx] = { ...updated[rIdx], date: e.target.value };
+                                    handleChange("treatment", "dewormingList", updated);
+                                  }}
+                                  className="w-full border border-slate-200 rounded-xl p-2.5 text-xs outline-none focus:border-orange-500 font-medium"
+                                />
+                              </div>
+
+                              {dewList.length > 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const updated = dewList.filter((_, i) => i !== rIdx);
+                                    handleChange("treatment", "dewormingList", updated);
+                                  }}
+                                  className="p-2.5 text-rose-500 hover:bg-rose-50 rounded-xl border border-rose-200 transition cursor-pointer"
+                                  title="Remove deworming"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        ));
+                      })()}
+                    </div>
+
+                    {/* 5. Fluids/ IV Given */}
+                    <div className="bg-slate-50/80 p-5 rounded-2xl border border-slate-200 space-y-4">
+                      <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                        <div className="flex items-center gap-3">
+                          <h3 className="text-sm font-extrabold text-slate-800 uppercase tracking-wider">
+                            <span>💧 Fluids / IV Given</span>
+                          </h3>
+
+                          {/* Toggle Switch */}
+                          <div className="flex items-center bg-slate-200 p-1 rounded-xl">
+                            <button
+                              type="button"
+                              onClick={() => handleChange("treatment", "hasFluids", false)}
+                              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                !formData.treatment.hasFluids
+                                  ? "bg-white text-slate-800 shadow-xs"
+                                  : "text-slate-500 hover:text-slate-700"
+                              }`}
+                            >
+                              No
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleChange("treatment", "hasFluids", true)}
+                              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                formData.treatment.hasFluids
+                                  ? "bg-orange-500 text-white shadow-xs"
+                                  : "text-slate-500 hover:text-slate-700"
+                              }`}
+                            >
+                              Yes
+                            </button>
+                          </div>
+                        </div>
+
+                        {formData.treatment.hasFluids && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const currentList = Array.isArray(formData.treatment.fluidsList) && formData.treatment.fluidsList.length > 0
+                                ? formData.treatment.fluidsList
+                                : [{ type: "", volume: "", rate: "" }];
+                              const updated = [...currentList, { type: "", volume: "", rate: "" }];
+                              handleChange("treatment", "fluidsList", updated);
+                            }}
+                            className="px-3 py-1.5 bg-orange-50 hover:bg-orange-100 text-orange-600 border border-orange-200 rounded-xl text-xs font-bold transition flex items-center gap-1 cursor-pointer border-none"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            <span>+ Add Fluid/IV</span>
+                          </button>
+                        )}
+                      </div>
+
+                      {formData.treatment.hasFluids && (() => {
+                        const fluidList = (Array.isArray(formData.treatment.fluidsList) && formData.treatment.fluidsList.length > 0)
+                          ? formData.treatment.fluidsList
+                          : [{ type: typeof formData.treatment.fluids === "string" ? formData.treatment.fluids : "", volume: "", rate: "" }];
+
+                        return fluidList.map((row, rIdx) => (
+                          <div key={rIdx} className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 bg-white rounded-xl border border-slate-200">
+                            <div>
+                              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                                Type
+                              </label>
+                              <input
+                                type="text"
+                                value={row.type || ""}
+                                onChange={(e) => {
+                                  const updated = [...fluidList];
+                                  updated[rIdx] = { ...updated[rIdx], type: e.target.value };
+                                  handleChange("treatment", "fluidsList", updated);
+                                }}
+                                placeholder="e.g. NS 0.9% / RL"
+                                className="w-full border border-slate-200 rounded-xl p-2.5 text-xs outline-none focus:border-orange-500 font-medium"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                                Volume
+                              </label>
+                              <input
+                                type="text"
+                                value={row.volume || ""}
+                                onChange={(e) => {
+                                  const updated = [...fluidList];
+                                  updated[rIdx] = { ...updated[rIdx], volume: e.target.value };
+                                  handleChange("treatment", "fluidsList", updated);
+                                }}
+                                placeholder="e.g. 500 ml"
+                                className="w-full border border-slate-200 rounded-xl p-2.5 text-xs outline-none focus:border-orange-500 font-medium"
+                              />
+                            </div>
+
+                            <div className="flex items-end gap-2">
+                              <div className="flex-1">
+                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                                  Rate
+                                </label>
+                                <input
+                                  type="text"
+                                  value={row.rate || ""}
+                                  onChange={(e) => {
+                                    const updated = [...fluidList];
+                                    updated[rIdx] = { ...updated[rIdx], rate: e.target.value };
+                                    handleChange("treatment", "fluidsList", updated);
+                                  }}
+                                  placeholder="e.g. 20 drops/min"
+                                  className="w-full border border-slate-200 rounded-xl p-2.5 text-xs outline-none focus:border-orange-500 font-medium"
+                                />
+                              </div>
+
+                              {fluidList.length > 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const updated = fluidList.filter((_, i) => i !== rIdx);
+                                    handleChange("treatment", "fluidsList", updated);
+                                  }}
+                                  className="p-2.5 text-rose-500 hover:bg-rose-50 rounded-xl border border-rose-200 transition cursor-pointer"
+                                  title="Remove fluid"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        ));
+                      })()}
+                    </div>
+
+                    {/* Follow-Up & Doctor Treatment Notes */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block font-semibold mb-2 text-slate-700 text-sm">
+                          📅 Follow-Up Required
+                        </label>
+                        <select
+                          value={formData.treatment.followUp || ""}
+                          onChange={(e) => handleChange("treatment", "followUp", e.target.value)}
+                          className="w-full h-12 rounded-2xl border border-slate-300 bg-white px-4 text-sm outline-none focus:border-orange-500 font-medium"
+                        >
+                          <option value="">Select Option</option>
+                          <option value="Yes">Yes</option>
+                          <option value="No">No</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block font-semibold mb-2 text-slate-700 text-sm">
+                          📝 Treatment Notes
+                        </label>
+                        <textarea
+                          rows="3"
+                          value={formData.treatment.treatmentNotes || ""}
+                          onChange={(e) => handleChange("treatment", "treatmentNotes", e.target.value)}
+                          placeholder="Enter additional treatment notes..."
+                          className="w-full border border-slate-300 rounded-2xl p-3 text-sm outline-none focus:border-orange-500 font-medium"
+                        />
+                      </div>
+                    </div>
                   </div>
-
                 </div>
               )}
               {step === 6 && (
