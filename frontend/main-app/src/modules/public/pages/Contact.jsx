@@ -64,7 +64,7 @@ export default function Contact() {
     <>
       <section className="legal-gradient py-24 text-center">
         <div className="max-w-3xl mx-auto px-6">
-          <span className="inline-flex items-center px-4 py-1.5 rounded-full bg-brand-light text-brand-dark text-sm font-medium">
+          <span className="inline-flex items-center px-4 py-1.5 rounded-fullbg-[#fff3e0] text-[#f7931e] border border-[#f7931e]/20text-sm font-medium">
             Contact Us
           </span>
           <h1 className="font-serif text-5xl md:text-6xl font-bold mt-7 text-ink">
@@ -82,10 +82,10 @@ export default function Contact() {
           {INFO.map((i) => (
             <div
               key={i.title}
-              className="bg-white rounded-2xl border border-line p-7 text-center shadow-sm"
+            className="bg-white rounded-2xl border border-line p-7 text-center shadow-sm hover:-translate-y-1 hover:border-[#f7931e] hover:shadow-lg transition-all duration-300"  
             >
-              <div className="w-12 h-12 mx-auto rounded-xl bg-brand-light flex items-center justify-center">
-                <i.icon className="w-5 h-5 text-brand-dark" />
+              <div className="w-12 h-12 mx-auto rounded-xl bg-[#fff3e0] flex items-center justify-center">
+                <i.icon className="w-5 h-5 text-[#f7931e]" />
               </div>
               <h3 className="mt-5 font-semibold text-ink">{i.title}</h3>
               <p className="mt-2 text-ink">{i.line1}</p>
@@ -125,7 +125,7 @@ export default function Contact() {
 
           <form
             onSubmit={onSubmit}
-            className="bg-white border border-line rounded-2xl p-8 shadow-sm"
+           className="bg-white border border-line rounded-2xl p-8 shadow-sm hover:shadow-xl transition-all duration-300" 
           >
             <div className="grid sm:grid-cols-2 gap-5">
               <Field
@@ -190,7 +190,7 @@ export default function Contact() {
               <Send className="w-4 h-4" />
             </button>
             {sent && (
-              <p className="mt-4 text-sm text-brand-dark">
+              <p className="mt-4 text-sm text-[#f7931e]">
                 Thanks! We'll be in touch shortly.
               </p>
             )}
@@ -245,21 +245,22 @@ const REASONS = [
     icon: MessageSquare,
     title: "Sales Inquiries",
     desc: "Interested in PAHMS for your clinic? Let's discuss your needs.",
-    bg: "bg-brand-light",
-    color: "text-brand-dark",
+   bg: "bg-[#fff3e0]",
+color: "text-[#f7931e]",
+    
   },
   {
     icon: Headphones,
     title: "Technical Support",
     desc: "Need help with the platform? Our support team is here 24/7.",
-    bg: "bg-accent-soft",
-    color: "text-accent",
+ bg: "bg-[#fff8ef]",
+color: "text-[#f7931e]",
   },
   {
     icon: Building2,
     title: "Enterprise Solutions",
     desc: "Custom integrations and dedicated support for large organizations.",
-    bg: "bg-brand-light",
-    color: "text-brand-dark",
+   bg: "bg-[#fff8ef]",
+color: "text-[#f7931e]",
   },
 ];

@@ -1,4 +1,5 @@
 import { NavLink, Link, useLocation } from "react-router-dom";
+import { User } from "lucide-react";
 import Logo from "./Logo.jsx";
 
 const links = [
@@ -9,6 +10,7 @@ const links = [
 
 export default function Navbar() {
   const { pathname } = useLocation();
+
   return (
     <header className="sticky top-0 z-40 bg-white/85 backdrop-blur border-b border-line">
       <div className="max-w-7xl mx-auto px-6 lg:px-10 h-20 flex items-center justify-between">
@@ -24,10 +26,11 @@ export default function Navbar() {
               <NavLink
                 key={l.to}
                 to={l.to}
-                className={`px-5 py-2 rounded-full text-sm font-medium transition ${active
-                  ? "bg-brand-light text-brand-dark"
-                  : "text-ink-soft hover:text-ink"
-                  }`}
+                className={`px-5 py-2 rounded-full text-sm font-medium transition ${
+                  active
+                    ? "bg-brand-light text-brand-dark"
+                    : "text-ink-soft hover:text-ink"
+                }`}
               >
                 {l.label}
               </NavLink>
@@ -36,32 +39,20 @@ export default function Navbar() {
         </nav>
 
         <div className="flex items-center gap-3">
-
-          {/* Login */}
+          {/* Account Icon Button */}
           <NavLink
             to="/login"
+            aria-label="Account"
             className={({ isActive }) =>
-              `px-5 py-2 rounded-full text-sm font-medium transition ${isActive
-                ? "bg-green-200 text-green-700"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              `w-10 h-10 rounded-full flex items-center justify-center transition shadow-xs ${
+                isActive
+                  ? "bg-brand text-white"
+                  : "bg-brand-soft text-brand-dark hover:bg-brand-light border border-brand-light"
               }`
             }
           >
-            Log In
+            <User className="w-5 h-5" />
           </NavLink>
-
-
-
-
-
-          {/* Signup */}
-          <NavLink
-            to="/login"
-            className="bg-brand hover:bg-brand-dark text-white text-sm font-semibold px-5 py-2.5 rounded-lg shadow-sm transition"
-          >
-            Sign Up Free
-          </NavLink>
-
         </div>
       </div>
     </header>
