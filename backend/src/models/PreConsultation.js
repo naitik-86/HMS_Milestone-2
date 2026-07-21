@@ -95,7 +95,7 @@ const preConsultationSchema = new mongoose.Schema(
       },
       unit: {
         type: String,
-        enum: ["Days", "Weeks", "Months", "Years"],
+        enum: ["Days", "Weeks", "Months", "Years", "days", "weeks", "months", "years"],
       },
     },
 

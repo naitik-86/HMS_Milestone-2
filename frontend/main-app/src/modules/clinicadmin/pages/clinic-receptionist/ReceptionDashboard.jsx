@@ -2,102 +2,70 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   getExistingCustomers,
-  getDashboardStats,
-  updateOwner,
-  updatePet
+  getDashboardStats
 } from "../../api/receptionApi";
 import { 
   Plus, 
-  ClipboardList, 
   UserCheck, 
-  Calendar, 
-  Clock, 
-  Activity, 
-  X,
-  Edit2
+  Users, 
+  RefreshCw, 
+  ChevronRight, 
+  Sparkles,
+  PawPrint,
+  ShieldCheck,
+  Building,
+  UserPlus
 } from "lucide-react";
+import toast from "react-hot-toast";
+import ExistingCustomerPet from "./ExistingCustomerPet";
 
 export default function ReceptionDashboard() {
   const navigate = useNavigate();
+  const [currentView, setCurrentView] = useState("hub"); // "hub" | "customers"
   const [loading, setLoading] = useState(true);
-  const [pendingRegistrations, setPendingRegistrations] = useState([]);
+  const [refreshing, setRefreshing] = useState(false);
+  
   const [dashboardStats, setDashboardStats] = useState({
     todayVisits: 0,
     newPets: 0,
-    appointments: 0,
-    pending: 0,
+    totalCustomers: 0,
   });
 
-  const [selectedPet, setSelectedPet] = useState(null);
-  const [editForm, setEditForm] = useState({
-    token: "",
-    owner: "",
-    pet: "",
-    status: "",
-  });
-
-  const fetchData = async () => {
+  const fetchData = async (isManual = false) => {
     try {
-      setLoading(true);
+      if (isManual) setRefreshing(true);
+      else setLoading(true);
 
-      // 1. Fetch stats from backend
-      const statsRes = await getDashboardStats();
+      const statsRes = await getDashboardStats().catch(() => ({ data: {} }));
       const backendStats = statsRes.data || {};
 
-      // 2. Fetch customers to populate table and compute today's stats
-      const customersRes = await getExistingCustomers();
+      const customersRes = await getExistingCustomers().catch(() => ({ data: [] }));
       const customers = customersRes.data || [];
 
-      const pendingList = [];
-      let todayVisitsCount = 0;
       let newPetsTodayCount = 0;
-
       const todayStr = new Date().toISOString().split("T")[0];
 
       customers.forEach((item) => {
         const owner = item.owner || {};
-        const pet = item.pet || {};
-        const visits = pet.visits || [];
-
-        // Count new pets registered today (checking owner/pet createdAt timestamp)
         const ownerCreatedDate = owner.createdAt ? owner.createdAt.split("T")[0] : null;
         if (ownerCreatedDate === todayStr) {
           newPetsTodayCount++;
         }
-
-        visits.forEach((visit) => {
-          const visitDate = visit.appointmentDate ? visit.appointmentDate.split("T")[0] : null;
-          if (visitDate === todayStr) {
-            todayVisitsCount++;
-          }
-
-          if (visit.status === "Pending") {
-            pendingList.push({
-              token: visit.tokenNumber || `TK-${visit._id ? visit._id.substring(visit._id.length - 4) : 'N/A'}`,
-              owner: owner.ownerName || "Unknown Owner",
-              pet: pet.petName || "Unknown Pet",
-              status: "Pending",
-              ownerId: owner._id,
-              petId: pet._id,
-              visitId: visit._id
-            });
-          }
-        });
       });
-
-      setPendingRegistrations(pendingList);
 
       setDashboardStats({
-        todayVisits: todayVisitsCount || backendStats.activeVisits || 0,
+        todayVisits: backendStats.activeVisits || 0,
         newPets: newPetsTodayCount || backendStats.totalPets || 0,
-        appointments: backendStats.totalPets || 0,
-        pending: pendingList.length || backendStats.pendingVisits || 0,
+        totalCustomers: customers.length || backendStats.totalPets || 0,
       });
 
+      if (isManual) toast.success("Front Desk Hub synchronized");
     } catch (error) {
-      console.error("Error fetching receptionist dashboard data:", error);
+      console.error("Error fetching reception hub data:", error);
+      toast.error("Could not sync reception hub data");
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
@@ -105,288 +73,185 @@ export default function ReceptionDashboard() {
     fetchData();
   }, []);
 
-  const handleEdit = (pet) => {
-    setSelectedPet(pet);
-    setEditForm({
-      token: pet.token,
-      owner: pet.owner,
-      pet: pet.pet,
-      status: pet.status,
-    });
-  };
-
-  const handleSave = async () => {
-    try {
-      if (!selectedPet) return;
-
-      // 1. Update Owner name in backend
-      if (editForm.owner && selectedPet.ownerId) {
-        await updateOwner(selectedPet.ownerId, { ownerName: editForm.owner });
-      }
-
-      // 2. Update Pet name in backend
-      if (editForm.pet && selectedPet.ownerId && selectedPet.petId) {
-        await updatePet(selectedPet.ownerId, selectedPet.petId, { petName: editForm.pet });
-      }
-
-      // 3. Since there's no endpoint to update visit status inside PetRegistration,
-      // we update the frontend state list to keep it responsive and clean.
-      setPendingRegistrations((items) =>
-        items.map((item) =>
-          item.token === editForm.token
-            ? {
-                ...item,
-                owner: editForm.owner,
-                pet: editForm.pet,
-                status: editForm.status,
-              }
-            : item
-        ).filter(item => item.status === "Pending")
-      );
-
-      setSelectedPet(null);
-      alert("Changes saved successfully!");
-      fetchData();
-    } catch (error) {
-      console.error("Failed to save changes:", error);
-      alert("Error saving changes. Please try again.");
-    }
-  };
-
-  const stats = [
-    { label: "Today's Visits", value: String(dashboardStats.todayVisits), color: "text-orange-600 bg-orange-50 border-orange-100", icon: Activity },
-    { label: "New Pets", value: String(dashboardStats.newPets), color: "text-emerald-600 bg-emerald-50 border-emerald-100", icon: Plus },
-    { label: "Appointments", value: String(dashboardStats.appointments), color: "text-blue-600 bg-blue-50 border-blue-100", icon: Calendar },
-    { label: "Pending", value: String(dashboardStats.pending), color: "text-rose-600 bg-rose-50 border-rose-100", icon: Clock },
-  ];
-
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4">
-        <div className="flex flex-col items-center gap-4">
+      <div className="min-h-[70vh] flex items-center justify-center p-6">
+        <div className="flex flex-col items-center gap-3">
           <div className="h-12 w-12 rounded-full border-4 border-orange-500 border-t-transparent animate-spin"></div>
-          <p className="text-slate-600 font-semibold animate-pulse">Loading dashboard data...</p>
+          <p className="text-slate-600 font-bold animate-pulse text-sm">Loading Reception Hub...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-100 p-4 sm:p-6 lg:p-8">
-      <div className="mb-6 sm:mb-8">
-        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-800">
-          Reception Dashboard
-        </h1>
-        <p className="text-slate-500 mt-2">
-          Manage pet registrations, appointments and visits
-        </p>
-      </div>
+    <div className="space-y-8">
+      {/* ========================================= */}
+      {/* CLASSIC ULTRA-MODERN HERO SECTION */}
+      {/* ========================================= */}
+      <div className="relative overflow-hidden rounded-3xl border border-slate-200/90 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white p-7 md:p-10 shadow-xl">
+        {/* Glow Accents */}
+        <div className="absolute -right-12 -top-12 w-80 h-80 bg-orange-500/20 rounded-full blur-3xl pointer-events-none"></div>
+        <div className="absolute -left-12 -bottom-12 w-80 h-80 bg-amber-500/15 rounded-full blur-3xl pointer-events-none"></div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
-        {stats.map((item) => {
-          const Icon = item.icon;
-          return (
-            <div key={item.label} className="bg-white rounded-3xl p-6 shadow-md shadow-slate-100/70 border border-slate-200/50 hover:shadow-xl hover:shadow-slate-200/60 hover:-translate-y-0.5 transition-all duration-300">
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <p className="text-slate-400 text-sm font-semibold tracking-wide uppercase">{item.label}</p>
-                  <h2 className="text-4xl font-extrabold mt-2 text-slate-800 tracking-tight">
-                    {item.value}
-                  </h2>
-                </div>
-                <div className={`h-12 w-12 shrink-0 rounded-2xl border flex items-center justify-center ${item.color}`}>
-                  <Icon className="h-6 w-6" />
-                </div>
-              </div>
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div className="space-y-2">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-orange-500/20 text-orange-400 text-xs font-extrabold uppercase tracking-widest border border-orange-500/30">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              Front Desk Station Live
             </div>
-          );
-        })}
-      </div>
-
-      <div className="bg-white rounded-3xl p-6 shadow-lg shadow-slate-200/50 border border-slate-200/60 mb-6 sm:mb-8">
-        <h2 className="text-lg sm:text-xl font-bold text-slate-800 mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <button
-            onClick={() => navigate("new-registration")}
-            className="group h-16 bg-linear-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white rounded-2xl font-semibold transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 flex items-center justify-center gap-3 cursor-pointer border-none"
-          >
-            <Plus className="h-5 w-5 transition-transform group-hover:rotate-90" />
-            Patient Registration & Intake
-          </button>
-          <button
-            onClick={() => navigate("existing-customer")}
-            className="group h-16 bg-linear-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white rounded-2xl font-semibold transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 flex items-center justify-center gap-3 cursor-pointer border-none"
-          >
-            <UserCheck className="h-5 w-5 transition-transform group-hover:scale-110" />
-            Existing Customer Records
-          </button>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-3xl p-6 shadow-xl shadow-slate-200/60 border border-slate-200/70">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
-          <div>
-            <h2 className="text-xl font-bold text-slate-800">Pending Registrations</h2>
-            <p className="text-slate-400 text-sm mt-1">Visits waiting for vitals checking</p>
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white flex items-center gap-3">
+              Reception Hub <Sparkles className="w-7 h-7 text-amber-400 animate-bounce" />
+            </h1>
+            <p className="text-slate-300 text-sm md:text-base max-w-2xl font-medium leading-relaxed">
+              Welcome to the clinical front desk. Seamlessly register new pet patients or inspect existing customer profile records with ease.
+            </p>
           </div>
-          <span className="w-fit bg-orange-50 text-orange-600 border border-orange-100 px-4 py-1.5 rounded-xl text-sm font-semibold flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-orange-500 animate-ping"></span>
-            {pendingRegistrations.length} Active
-          </span>
-        </div>
 
-        <div className="md:hidden space-y-4">
-          {pendingRegistrations.length === 0 ? (
-            <div className="text-center py-12 text-slate-400 font-medium bg-slate-50 rounded-2xl">
-              No pending registrations found
-            </div>
-          ) : (
-            pendingRegistrations.map((item) => (
-              <div key={item.token} className="rounded-2xl border border-slate-200 bg-slate-50/30 p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Token No</p>
-                    <h3 className="text-base font-mono font-bold text-slate-800">{item.token}</h3>
-                  </div>
-                  <span className="bg-amber-50 text-amber-700 border border-amber-100 px-3 py-1 rounded-full text-xs font-semibold">
-                    {item.status}
-                  </span>
-                </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => fetchData(true)}
+              disabled={refreshing}
+              className="flex items-center gap-2 bg-slate-800/90 hover:bg-slate-700 text-slate-200 border border-slate-700 px-5 py-3 rounded-2xl font-bold transition-all text-xs md:text-sm shadow-md cursor-pointer backdrop-blur-xs"
+            >
+              <RefreshCw className={`w-4 h-4 text-orange-400 ${refreshing ? "animate-spin" : ""}`} />
+              <span>Sync Hub</span>
+            </button>
 
-                <div className="mt-4 grid grid-cols-2 gap-3">
-                  <div className="rounded-xl bg-white p-3 border border-slate-100">
-                    <p className="text-xs text-slate-400">Owner Name</p>
-                    <p className="font-semibold text-slate-700 text-sm mt-0.5">{item.owner}</p>
-                  </div>
-                  <div className="rounded-xl bg-white p-3 border border-slate-100">
-                    <p className="text-xs text-slate-400">Pet Name</p>
-                    <p className="font-semibold text-slate-700 text-sm mt-0.5">{item.pet}</p>
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => handleEdit(item)}
-                  className="mt-4 w-full bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-slate-800 border border-slate-200 py-2.5 rounded-xl font-semibold transition flex items-center justify-center gap-1.5 cursor-pointer text-sm"
-                >
-                  <Edit2 className="h-4 w-4" />
-                  Edit Details
-                </button>
-              </div>
-            ))
-          )}
-        </div>
-
-        <div className="hidden md:block overflow-x-auto">
-          <table className="w-full min-w-[720px] border-collapse">
-            <thead>
-              <tr className="border-b border-slate-100 text-slate-400 text-sm font-semibold uppercase tracking-wider">
-                <th className="text-left py-4 px-2">Token No</th>
-                <th className="text-left py-4 px-2">Owner Name</th>
-                <th className="text-left py-4 px-2">Pet Name</th>
-                <th className="text-left py-4 px-2">Status</th>
-                <th className="text-right py-4 px-2">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-50 text-slate-600">
-              {pendingRegistrations.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="text-center py-12 text-slate-400 font-medium">
-                    No pending registrations found
-                  </td>
-                </tr>
-              ) : (
-                pendingRegistrations.map((item) => (
-                  <tr key={item.token} className="hover:bg-slate-50/50 transition-colors">
-                    <td className="py-4 px-2 font-mono font-semibold text-slate-700">{item.token}</td>
-                    <td className="py-4 px-2 font-medium">{item.owner}</td>
-                    <td className="py-4 px-2 font-medium">{item.pet}</td>
-                    <td className="py-4 px-2">
-                      <span className="bg-amber-50 text-amber-700 border border-amber-100 px-3 py-1 rounded-full text-xs font-semibold">
-                        {item.status}
-                      </span>
-                    </td>
-                    <td className="py-4 px-2 text-right">
-                      <button
-                        onClick={() => handleEdit(item)}
-                        className="bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-slate-800 border border-slate-200 px-4 py-2 rounded-xl transition font-medium text-sm inline-flex items-center gap-1.5 cursor-pointer"
-                      >
-                        <Edit2 className="h-4 w-4" />
-                        Edit
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {selectedPet && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-3xl w-full max-w-[500px] p-6 shadow-2xl border border-slate-100">
-            <div className="flex justify-between items-center gap-4 mb-6">
-              <h2 className="text-xl font-bold text-slate-800">Edit Registration</h2>
-              <button 
-                onClick={() => setSelectedPet(null)} 
-                className="h-8 w-8 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 transition cursor-pointer border-none bg-transparent"
+            {currentView === "customers" && (
+              <button
+                onClick={() => setCurrentView("hub")}
+                className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-5 py-3 rounded-2xl text-xs md:text-sm shadow-md transition cursor-pointer border-none"
               >
-                <X className="h-5 w-5" />
+                Back to Hub Entry
               </button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* VIEW 1: MAIN RECEPTION HUB ENTRY */}
+      {currentView === "hub" ? (
+        <div className="space-y-8">
+          {/* KPI STATS BAR */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+            <div className="bg-white rounded-3xl p-6 shadow-xs border border-slate-200/80 flex items-center justify-between gap-4 transition-all hover:shadow-md">
+              <div>
+                <p className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">Total Customer Records</p>
+                <h2 className="text-3xl font-black text-slate-900 mt-2 tracking-tight">
+                  {dashboardStats.totalCustomers}
+                </h2>
+                <span className="inline-block mt-2 text-[11px] font-semibold text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-md">
+                  Active Pet Archive
+                </span>
+              </div>
+              <div className="w-14 h-14 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 shrink-0">
+                <Users className="w-7 h-7" />
+              </div>
             </div>
 
-            <div className="space-y-4">
+            <div className="bg-white rounded-3xl p-6 shadow-xs border border-slate-200/80 flex items-center justify-between gap-4 transition-all hover:shadow-md">
               <div>
-                <label className="block mb-1.5 text-xs font-bold text-slate-400 uppercase tracking-wider">Token Number</label>
-                <input value={selectedPet.token} readOnly className="w-full border border-slate-200 rounded-xl p-3 bg-slate-50 text-slate-500 font-mono font-medium outline-none" />
+                <p className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">New Registered Today</p>
+                <h2 className="text-3xl font-black text-slate-900 mt-2 tracking-tight">
+                  {dashboardStats.newPets}
+                </h2>
+                <span className="inline-block mt-2 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-md">
+                  Fresh Intake Files
+                </span>
               </div>
-              <div>
-                <label className="block mb-1.5 text-xs font-bold text-slate-400 uppercase tracking-wider">Owner Name</label>
-                <input
-                  value={editForm.owner}
-                  onChange={(e) => setEditForm({ ...editForm, owner: e.target.value })}
-                  className="w-full border border-slate-200 rounded-xl p-3 text-slate-700 font-medium focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition outline-none"
-                />
+              <div className="w-14 h-14 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shrink-0">
+                <Plus className="w-7 h-7" />
               </div>
-              <div>
-                <label className="block mb-1.5 text-xs font-bold text-slate-400 uppercase tracking-wider">Pet Name</label>
-                <input
-                  value={editForm.pet}
-                  onChange={(e) => setEditForm({ ...editForm, pet: e.target.value })}
-                  className="w-full border border-slate-200 rounded-xl p-3 text-slate-700 font-medium focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition outline-none"
-                />
-              </div>
-              <div>
-                <label className="block mb-1.5 text-xs font-bold text-slate-400 uppercase tracking-wider">Status</label>
-                <select
-                  value={editForm.status}
-                  onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
-                  className="w-full border border-slate-200 rounded-xl p-3 bg-white text-slate-700 font-medium focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition outline-none cursor-pointer"
-                >
-                  <option>Pending</option>
-                  <option>Completed</option>
-                  <option>Cancelled</option>
-                </select>
-              </div>
+            </div>
 
-              <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-6 border-t border-slate-100 mt-6">
-                <button 
-                  onClick={() => setSelectedPet(null)} 
-                  className="px-5 py-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 rounded-xl font-semibold transition cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button 
-                  onClick={handleSave} 
-                  className="px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-semibold shadow-md shadow-orange-100 transition cursor-pointer border-none"
-                >
-                  Save Changes
-                </button>
+            <div className="bg-white rounded-3xl p-6 shadow-xs border border-slate-200/80 flex items-center justify-between gap-4 transition-all hover:shadow-md">
+              <div>
+                <p className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">Front Desk Status</p>
+                <h2 className="text-3xl font-black text-slate-900 mt-2 tracking-tight">
+                  Ready
+                </h2>
+                <span className="inline-block mt-2 text-[11px] font-semibold text-orange-700 bg-orange-50 px-2.5 py-0.5 rounded-md">
+                  Intake Operations
+                </span>
+              </div>
+              <div className="w-14 h-14 rounded-2xl bg-orange-50 border border-orange-100 flex items-center justify-center text-orange-600 shrink-0">
+                <ShieldCheck className="w-7 h-7" />
               </div>
             </div>
           </div>
+
+          {/* TWO PRIMARY CLASSIC HERO ACTION MODULES */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* MODULE 1: NEW REGISTRATION */}
+            <div 
+              onClick={() => navigate("new-registration")}
+              className="group relative overflow-hidden rounded-3xl border border-orange-200/90 bg-gradient-to-br from-white via-orange-50/40 to-amber-50/60 p-8 shadow-md hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 cursor-pointer flex flex-col justify-between min-h-[260px]"
+            >
+              <div className="absolute right-0 bottom-0 translate-x-6 translate-y-6 w-44 h-44 bg-orange-500/10 rounded-full blur-xl group-hover:scale-125 transition-transform"></div>
+
+              <div className="space-y-4 relative z-10">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-orange-500 to-amber-500 text-white flex items-center justify-center text-2xl font-bold shadow-md shadow-orange-500/20 group-hover:scale-110 transition-transform">
+                  <UserPlus className="w-7 h-7" />
+                </div>
+
+                <div>
+                  <h2 className="text-2xl font-black text-slate-900 tracking-tight group-hover:text-orange-600 transition-colors">
+                    New Patient Registration
+                  </h2>
+                  <p className="text-xs md:text-sm text-slate-600 font-medium mt-1 leading-relaxed">
+                    Complete new pet owner registration, record pet species & breed, verify mobile OTP, and initiate patient file.
+                  </p>
+                </div>
+              </div>
+
+              <div className="pt-6 relative z-10">
+                <span className="inline-flex items-center gap-2 bg-orange-500 group-hover:bg-orange-600 text-white font-extrabold px-6 py-3 rounded-2xl text-xs shadow-md shadow-orange-500/20 transition-all group-hover:gap-3">
+                  <span>Start New Registration</span>
+                  <ChevronRight className="w-4 h-4" />
+                </span>
+              </div>
+            </div>
+
+            {/* MODULE 2: EXISTING CUSTOMER RECORDS */}
+            <div 
+              onClick={() => setCurrentView("customers")}
+              className="group relative overflow-hidden rounded-3xl border border-blue-200/90 bg-gradient-to-br from-white via-blue-50/40 to-indigo-50/60 p-8 shadow-md hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 cursor-pointer flex flex-col justify-between min-h-[260px]"
+            >
+              <div className="absolute right-0 bottom-0 translate-x-6 translate-y-6 w-44 h-44 bg-blue-500/10 rounded-full blur-xl group-hover:scale-125 transition-transform"></div>
+
+              <div className="space-y-4 relative z-10">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center text-2xl font-bold shadow-md shadow-blue-500/20 group-hover:scale-110 transition-transform">
+                  <Users className="w-7 h-7" />
+                </div>
+
+                <div>
+                  <h2 className="text-2xl font-black text-slate-900 tracking-tight group-hover:text-blue-600 transition-colors">
+                    Existing Customer Records
+                  </h2>
+                  <p className="text-xs md:text-sm text-slate-600 font-medium mt-1 leading-relaxed">
+                    Search registered pet owners, filter by species, and inspect complete pet, owner & visit history fields.
+                  </p>
+                </div>
+              </div>
+
+              <div className="pt-6 relative z-10">
+                <span className="inline-flex items-center gap-2 bg-blue-600 group-hover:bg-blue-700 text-white font-extrabold px-6 py-3 rounded-2xl text-xs shadow-md shadow-blue-500/20 transition-all group-hover:gap-3">
+                  <span>View Existing Customers</span>
+                  <ChevronRight className="w-4 h-4" />
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : (
+        /* VIEW 2: EMBEDDED EXISTING CUSTOMERS PAGE */
+        <div className="space-y-4">
+          <ExistingCustomerPet />
         </div>
       )}
     </div>
   );
 }
+
+

@@ -1,42 +1,48 @@
 import { Heart, Shield, Zap, Globe, Target, Eye } from "lucide-react";
 import SectionHeader from "../components/SectionHeader.jsx";
+import aboutBanner from "../../../assets/image.png";
 
 export default function About() {
   return (
     <>
-      <section className="legal-gradient py-24">
-        <div className="max-w-7xl mx-auto px-6 lg:px-10">
-          <span className="inline-flex items-center px-4 py-1.5 rounded-full bg-brand-light text-brand-dark text-sm font-medium">
-            About PAHMS
-          </span>
-          <h1 className="font-serif text-4xl md:text-6xl font-bold mt-8 leading-tight text-ink max-w-4xl">
-            Revolutionizing Veterinary Healthcare, One Clinic at a Time
-          </h1>
-          <p className="mt-8 text-lg text-ink-soft max-w-3xl leading-relaxed">
-            PAHMS was born from a simple observation — veterinary clinics
-            deserve the same powerful digital tools that human healthcare
-            systems enjoy. We're on a mission to digitize and automate every
-            aspect of animal healthcare management.
-          </p>
-        </div>
-      </section>
+<section className="relative h-[700px] overflow-hidden">
+  
+  {/* Background Image */}
+ <img
+  src={aboutBanner}
+  alt="Veterinary"
+  className="absolute inset-0 w-full h-full object-cover"
+/>
 
-      <section className="py-24">
-        <div className="max-w-7xl mx-auto px-6 lg:px-10 grid md:grid-cols-2 gap-8">
-          <MVCard
-            icon={Target}
-            title="Our Mission"
-            desc="To empower every veterinary clinic with an enterprise-grade digital platform that streamlines operations, improves patient outcomes, and enables sustainable growth — regardless of the clinic's size or location."
-            tone="brand"
-          />
-          <MVCard
-            icon={Eye}
-            title="Our Vision"
-            desc="To become the global standard for veterinary healthcare management — a unified ecosystem where every pet's health journey is tracked, every clinic runs efficiently, and every vet has access to world-class tools."
-            tone="accent"
-          />
-        </div>
-      </section>
+  {/* Overlay */}
+ <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/40 to-[#f7931e]/20"></div> 
+
+  {/* Content */}
+  <div className="relative z-10 max-w-7xl mx-auto px-6 h-full flex items-center">
+    <div className="max-w-xl text-white">
+
+     <span className="inline-block bg-[#f7931e] text-white px-5 py-2 rounded-full font-medium shadow-lg"> 
+        About PAHMS
+      </span>
+
+  <h1 className="text-7xl lg:text-5xl font-serif font-black text-[#f7931e] mt-6 leading-tight">
+  Revolutionizing{" "}
+  <span className="text-[#f7931e] font-black">
+    Veterinary Healthcare
+  </span>
+  
+ 
+</h1>
+
+      <p className="mt-6 text-3xl">
+        PAHMS was born from a simple observation — veterinary clinics
+        deserve powerful digital tools.
+      </p>
+
+    </div>
+  </div>
+
+</section>
 
       <section className="bg-brand-soft py-24">
         <div className="max-w-7xl mx-auto px-6 lg:px-10">
@@ -50,9 +56,9 @@ export default function About() {
                 key={v.title}
                 className="bg-white rounded-2xl p-8 text-center border border-line shadow-sm"
               >
-                <div className="w-14 h-14 mx-auto rounded-2xl bg-brand-light flex items-center justify-center">
-                  <v.icon className="w-6 h-6 text-brand-dark" />
-                </div>
+               <div className="w-14 h-14 mx-auto rounded-2xl bg-[#fff3e0] flex items-center justify-center">
+  <v.icon className="w-6 h-6 text-[#f7931e]" />
+</div>
                 <h3 className="mt-6 font-semibold text-lg text-ink">
                   {v.title}
                 </h3>
@@ -78,7 +84,7 @@ export default function About() {
                 <img
                   src={p.img}
                   alt={p.name}
-                  className="w-full aspect-square object-cover rounded-2xl border border-line"
+                 className="w-full aspect-square object-cover rounded-2xl border-2 border-[#f7931e]/20 hover:border-[#f7931e] transition-all duration-300"
                 />
                 <h3 className="mt-6 font-semibold text-lg text-ink">
                   {p.name}
