@@ -44,6 +44,11 @@ const userSchema = new mongoose.Schema({
     required: true 
   },
   isActive: { type: Boolean, default: true },
+  veterinarianStatus: {
+    type: String,
+    enum: ['SUBMITTED', 'PENDING', 'APPROVED', 'REJECTED'],
+    default: 'SUBMITTED',
+  },
   specialization: { type: String }, // Only populated if role is DOCTOR
   specializations: {
     type: [String],

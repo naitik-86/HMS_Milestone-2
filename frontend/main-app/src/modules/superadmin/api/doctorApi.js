@@ -86,6 +86,11 @@ export const deleteDoctor = async (id) => {
     return res.data;
 };
 
+export const updateDoctorStatus = async (id, status) => {
+    const res = await API.put(`/super-admin/veterinarians/${id}/status`, { status });
+    return res.data;
+};
+
 export const updateDoctor = async (id, doctorData) => {
     const formData = buildDoctorFormData(doctorData);
     const res = await API.put(`/super-admin/veterinarians/${id}`, formData);

@@ -1360,8 +1360,6 @@ export default function ClinicForm({
                                     </div>
                                 </Full>
 
-                                <Input name="latitude" label="Latitude" value={form.latitude} onChange={handleChange} readOnly />
-                                <Input name="longitude" label="Longitude" value={form.longitude} onChange={handleChange} readOnly />
 
                             </Grid>
                         </Card>

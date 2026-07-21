@@ -11,5 +11,7 @@ const authController = require('../controllers/authController');
 // router.post('/auth/login', verifySuperAdmin); // log in of superadmin via email & password
 //router.post('/auth/verify-otp', verifyOTPAndLogin);
 router.post('/login', authController.login);
+router.post('/forgot-password', authController.requestPasswordReset);
+router.post('/reset-password', authController.resetPassword);
 router.post('/change-password', protect, authController.changePassword);
 module.exports = router;

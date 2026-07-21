@@ -5,7 +5,7 @@ import AddDoctor from "../components/forms/doctorForm/AddDoctor";
 import DoctorDetailsModal from "../components/forms/doctorForm/DoctorDetailsModal";
 import DoctorModal from "../components/forms/doctorForm/DoctorModal";
 import DoctorsTable from "../components/DoctorsTable";
-import { deleteDoctor, getDoctors } from "../api/doctorApi";
+import { deleteDoctor, getDoctors, updateDoctorStatus } from "../api/doctorApi";
 import { showToast } from "../../../shared/components/toast";
 
 export default function Doctors() {
@@ -16,6 +16,7 @@ export default function Doctors() {
     const [searchTerm, setSearchTerm] = useState("");
     const [viewDoctor, setViewDoctor] = useState(null);
     const [editDoctor, setEditDoctor] = useState(null);
+    const [updatingStatusId, setUpdatingStatusId] = useState("");
 
     const loadDoctors = useCallback(async (query = "") => {
         setLoading(true);
@@ -97,6 +98,29 @@ export default function Doctors() {
         loadDoctors(searchTerm);
     };
 
+    const handleStatusChange = async (doctor, status) => {
+        if (!doctor?.id || status === doctor.veterinarianStatus) return;
+        setUpdatingStatusId(doctor.id);
+        try {
+            const response = await updateDoctorStatus(doctor.id, status);
+            const updatedDoctor = response.data;
+            setDoctors((current) => current.map((item) => item.id === doctor.id ? updatedDoctor : item));
+            showToast({
+                type: "success",
+                title: "Veterinarian Status Updated",
+                description: `${doctor.name} is now ${updatedDoctor.status}.`,
+            });
+        } catch (err) {
+            showToast({
+                type: "error",
+                title: "Status Update Failed",
+                description: err.response?.data?.message || "Unable to update veterinarian status.",
+            });
+        } finally {
+            setUpdatingStatusId("");
+        }
+    };
+
     return (
         <div className="p-4 sm:p-6 space-y-6">
             <AddDoctor onCreated={handleCreated} />
@@ -142,6 +166,8 @@ export default function Doctors() {
                 onView={handleViewDoctor}
                 onEdit={handleEditDoctor}
                 onDelete={handleDeleteDoctor}
+                onStatusChange={handleStatusChange}
+                updatingStatusId={updatingStatusId}
             />
 
             {viewDoctor && (

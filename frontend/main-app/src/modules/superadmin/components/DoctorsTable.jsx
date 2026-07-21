@@ -1,10 +1,18 @@
 import { Loader2, Eye, Pencil, RefreshCw, Trash2 } from "lucide-react";
 
 const statusStyles = {
-    Active: "bg-emerald-100 text-emerald-700",
-    Pending: "bg-amber-100 text-amber-700",
-    Suspended: "bg-rose-100 text-rose-700",
+    Submitted: "bg-blue-100 text-blue-700",
+    Pending: "bg-slate-100 text-slate-600",
+    Approved: "bg-green-100 text-green-700",
+    Rejected: "bg-red-100 text-red-700",
 };
+
+const statusOptions = [
+    ["SUBMITTED", "Submitted"],
+    ["PENDING", "Pending"],
+    ["APPROVED", "Approved"],
+    ["REJECTED", "Rejected"],
+];
 
 export default function DoctorsTable({
     doctors = [],
@@ -14,6 +22,8 @@ export default function DoctorsTable({
     onView,
     onEdit,
     onDelete,
+    onStatusChange,
+    updatingStatusId = "",
 }) {
     const renderBody = () => {
         if (loading) {
@@ -71,7 +81,7 @@ export default function DoctorsTable({
 
                     <tbody className="divide-y">
                         {doctors.map((doctor) => {
-                            const status = doctor.status || "Active";
+                            const status = doctor.status || "Submitted";
 
                             return (
                                 <tr
@@ -105,13 +115,17 @@ export default function DoctorsTable({
                                     </td>
 
                                     <td className="px-4 md:px-6 py-4">
-                                        <span
-                                            className={`px-3 py-1 text-xs rounded-full font-medium ${
+                                        <select
+                                            value={doctor.veterinarianStatus || status.toUpperCase()}
+                                            onChange={(event) => onStatusChange?.(doctor, event.target.value)}
+                                            disabled={updatingStatusId === doctor.id}
+                                            aria-label={`Update status for ${doctor.name}`}
+                                            className={`rounded-lg px-3 py-1.5 text-xs font-medium outline-none disabled:cursor-wait disabled:opacity-60 ${
                                                 statusStyles[status] || "bg-slate-100 text-slate-600"
                                             }`}
                                         >
-                                            {status}
-                                        </span>
+                                            {statusOptions.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                                        </select>
                                     </td>
 
                                     <td className="px-4 md:px-6 py-4">
