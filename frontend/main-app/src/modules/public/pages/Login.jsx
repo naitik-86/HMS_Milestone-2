@@ -1,4 +1,4 @@
-import { Eye, EyeOff, LogIn, Mail, Lock, Phone } from "lucide-react";
+import { Eye, EyeOff, LoaderCircle, LogIn, Mail, Lock, Phone } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { authApi, googleLoginApi } from "../../auth/api/authApi";
@@ -23,13 +23,7 @@ export default function Login() {
     useState(false);
 
 
-  const [phoneOtp, setPhoneOtp] = useState("");
-  const [emailOtp, setEmailOtp] = useState("");
-
-  const [phoneOtpSent, setPhoneOtpSent] = useState(false);
-  const [emailOtpSent, setEmailOtpSent] = useState(false);
-  const [phoneVerified, setPhoneVerified] = useState(false);
-  const [emailVerified, setEmailVerified] = useState(false);
+  const [otp, setOtp] = useState("");
 
   const [googleLoading, setGoogleLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -54,12 +48,7 @@ export default function Login() {
       email: email || prev.email,
       phone: phone || prev.phone,
     }));
-    setPhoneOtp("");
-    setEmailOtp("");
-    setPhoneVerified(false);
-    setEmailVerified(false);
-    setEmailOtpSent(true);
-    setPhoneOtpSent(role !== "CLINIC_ADMIN");
+    setOtp("");
     setShowVerificationModal(true);
   }, []);
 
@@ -231,70 +220,19 @@ export default function Login() {
     }
   };
 
-  const handleSendPhoneOtp = () => {
-    if (!form.phone) {
-      alert("Phone number missing");
-      return;
-    }
-
-    setPhoneOtpSent(true);
-
-    console.log("Send OTP on:", form.phone);
-  };
-
-  const validateOtp = async (channel) => {
-    const otp = channel === "mobile" ? phoneOtp : emailOtp;
-    if (otp.length !== 6) {
-      alert("Please enter a valid 6 digit OTP");
-      return;
-    }
-    try {
-      await API.post("/auth/validate-login-otp", {
-        email: form.email,
-        otp,
-        channel,
-        role: localStorage.getItem("role"),
-      });
-      if (channel === "mobile") setPhoneVerified(true);
-      else setEmailVerified(true);
-    } catch (error) {
-      if (channel === "mobile") setPhoneVerified(false);
-      else setEmailVerified(false);
-      alert(error.response?.data?.message || "Invalid or expired OTP.");
-    }
-  };
-
-  const handleVerifyPhoneOtp = () => validateOtp("mobile");
-
-  const handleSendEmailOtp = () => {
-    setEmailOtpSent(true);
-    console.log("Send Email OTP:", form.email);
-  };
-  
-  const handleVerifyEmailOtp = () => {
-    validateOtp("email");
-  };
-
-
   const handleContinue = async () => {
     const role = localStorage.getItem("role");
     let verifyEndpoint = "";
-    let payload = {};
+    if (!/^\d{6}$/.test(otp)) return alert("Please enter a valid 6 digit OTP");
 
-    // 1. Check conditions and prepare payload
     if (role === "SUPER_ADMIN") {
-      if (!phoneVerified || !emailVerified) return alert("Please verify both Phone and Email OTPs");
       verifyEndpoint = "/auth/superadmin/verify-otp";
-      payload = { email: form.email, otpEmail: emailOtp, otpMobile: phoneOtp };
     } else if (role === "CLINIC_ADMIN") {
-      if (!emailVerified) return alert("Please verify the Email OTP");
       verifyEndpoint = "/auth/clinicadmin/verify-otp";
-      payload = { email: form.email, otpEmail: emailOtp };
     } else {
-      if (!phoneVerified || !emailVerified) return alert("Please verify both Phone and Email OTPs");
       verifyEndpoint = "/auth/staff/verify-otp";
-      payload = { email: form.email, otpEmail: emailOtp, otpMobile: phoneOtp };
     }
+    const payload = { email: form.email, otp };
 
     // 2. Make Verification Call & Set Token
     // 2. Make Verification Call & Set Token
@@ -509,11 +447,19 @@ export default function Login() {
           </p>
         )}
     <button
-  type="submit"
-  className="mt-7 w-full bg-[#0C3D2E] hover:bg-[#092E23] text-white font-semibold py-3.5 rounded-xl"
->
-  Log in
-</button>
+      type="submit"
+      disabled={loginLoading}
+      className="mt-7 flex w-full items-center justify-center gap-2 rounded-xl bg-[#0C3D2E] py-3.5 font-semibold text-white transition hover:bg-[#092E23] disabled:cursor-not-allowed disabled:opacity-70"
+    >
+      {loginLoading ? (
+        <>
+          <LoaderCircle className="h-5 w-5 animate-spin" aria-hidden="true" />
+          Logging in...
+        </>
+      ) : (
+        "Log in"
+      )}
+    </button>
       </form>
 
       {/* ================================= */}
@@ -528,127 +474,22 @@ export default function Login() {
             </h2>
 
             <p className="text-slate-500 mt-1 mb-6">
-              Complete phone and email verification
+              Enter the OTP sent to your registered email and mobile number.
             </p>
 
-            {/* ONLY SHOW PHONE FOR SUPER ADMIN & STAFF */}
-            {localStorage.getItem("role") !== "CLINIC_ADMIN" && (
-              <>
-                {/* PHONE NUMBER */}
-                <label className="block text-sm font-semibold mb-2">
-                  Phone Number
-                </label>
-
-                <div className="flex gap-3">
-                  <input
-                    type="text"
-                    value={form.phone}
-                    readOnly
-                    className="flex-1 border border-green-600 bg-slate-50 rounded-xl px-4 py-3"
-                  />
-
-                  <button
-                    type="button"
-                    onClick={handleSendPhoneOtp}
-                    className="bg-green-700 hover:bg-green-800 text-white px-5 rounded-xl"
-                  >
-                    Send OTP
-                  </button>
-                </div>
-
-                {/* PHONE OTP */}
-                {phoneOtpSent && (
-                  <>
-                    <label className="block text-sm font-semibold mt-5 mb-2">
-                      Phone OTP
-                    </label>
-
-                    <div className="flex gap-3">
-                      <input
-                        type="text"
-                        value={phoneOtp}
-                        onChange={(e) => {
-                          const value = e.target.value.replace(/\D/g, "");
-                          if (value.length <= 6) {
-                            setPhoneOtp(value);
-                            setPhoneVerified(false);
-                          }
-                        }}
-                        placeholder="Enter 6 digit OTP"
-                        className="flex-1 border border-slate-200 rounded-xl px-4 py-3"
-                      />
-
-                      <button
-                        type="button"
-                        onClick={handleVerifyPhoneOtp}
-                        className={`px-5 rounded-xl text-white ${phoneVerified ? "bg-green-500" : "bg-green-700 hover:bg-green-800"}`}
-                      >
-                        {phoneVerified ? "Verified" : "Verify OTP"}
-                      </button>
-                    </div>
-                  </>
-                )}
-              </>
-            )}
-
-            {/* EMAIL */}
-
-            <div className="mt-5">
-              <label className="block text-sm font-semibold mb-2">
-                Email
-              </label>
-
-              <div className="flex gap-3">
-                <input
-                  type="email"
-                  value={form.email}
-                  readOnly
-                  className="flex-1 border border-green-600 bg-slate-50 rounded-xl px-4 py-3"
-                />
-
-                <button
-                  type="button"
-                  onClick={handleSendEmailOtp}
-                  className="bg-green-700 hover:bg-green-800 text-white px-5 rounded-xl"
-                >
-                  Send OTP
-                </button>
-              </div>
-            </div>
-
-            {/* EMAIL OTP */}
-
-            {emailOtpSent && (
-              <>
-                <label className="block text-sm font-semibold mt-5 mb-2">
-                  Email OTP
-                </label>
-
-                <div className="flex gap-3">
-                  <input
-                    type="text"
-                    value={emailOtp}
-                    onChange={(e) => {
-                      const value = e.target.value.replace(/\D/g, "");
-                      if (value.length <= 6) {
-                        setEmailOtp(value);
-                        setEmailVerified(false);
-                      }
-                    }}
-                    placeholder="Enter 6 digit OTP"
-                    className="flex-1 border border-slate-200 rounded-xl px-4 py-3"
-                  />
-
-                  <button
-                    type="button"
-                    onClick={handleVerifyEmailOtp}
-                  className={`px-5 rounded-xl text-white ${emailVerified ? "bg-green-500" : "bg-green-700 hover:bg-green-800"}`}
-                  >
-                    {emailVerified ? "Verified" : "Verify OTP"}
-                  </button>
-                </div>
-              </>
-            )}
+            <label className="block text-sm font-semibold mb-2" htmlFor="login-otp">
+              One-time password
+            </label>
+            <input
+              id="login-otp"
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              value={otp}
+              onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              placeholder="Enter 6 digit OTP"
+              className="w-full border border-slate-200 rounded-xl px-4 py-3"
+            />
 
             {/* CONTINUE */}
 
