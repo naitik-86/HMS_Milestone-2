@@ -18,8 +18,13 @@ const seedDb = async () => {
     });
     console.log('Connected to MongoDB.');
 
-    const email = 'ankursati75956@gmail.com';
-    const plainPassword = 'Superadmin@123';
+    const email = process.env.SUPERADMIN_SEED_EMAIL;
+    const plainPassword = process.env.SUPERADMIN_SEED_PASSWORD;
+
+    if (!email || !plainPassword) {
+      console.error('Set SUPERADMIN_SEED_EMAIL and SUPERADMIN_SEED_PASSWORD in your .env before running this script.');
+      process.exit(1);
+    }
 
     // 1. Check if the admin already exists
     const existingAdmin = await SuperAdmin.findOne({ email });
