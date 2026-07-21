@@ -741,13 +741,20 @@ export default function NewRegistrationPet() {
 
     if (fields.includes("visit")) {
       let missingPetName = null;
-      activePets.forEach((p) => {
+      let missingPetIndex = -1;
+      activePets.forEach((p, idx) => {
         const v = petVisitsMap[p.id] || defaultVisitReason;
         if (!v.primaryReason || !v.complaint || !v.assignedDoctor) {
-          if (!missingPetName) missingPetName = p.petName;
+          if (!missingPetName) {
+            missingPetName = p.petName;
+            missingPetIndex = idx;
+          }
         }
       });
       if (missingPetName) {
+        if (missingPetIndex !== -1) {
+          setActiveVisitPetIndex(missingPetIndex);
+        }
         nextErrors.visitDetails = `Please select Primary Reason, Complaint and Assigned Doctor for ${missingPetName}.`;
       }
     }
@@ -1705,6 +1712,8 @@ export default function NewRegistrationPet() {
                     <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-slate-100">
                       {activePets.map((pet, idx) => {
                         const isActive = idx === activeVisitPetIndex;
+                        const v = petVisitsMap[pet.id] || defaultVisitReason;
+                        const isComplete = Boolean(v.primaryReason && v.complaint && v.assignedDoctor);
                         return (
                           <button
                             key={pet.id}
@@ -1713,119 +1722,163 @@ export default function NewRegistrationPet() {
                             className={`px-4 py-2.5 rounded-xl font-bold text-xs transition cursor-pointer flex items-center gap-2 shrink-0 border ${
                               isActive
                                 ? "bg-orange-500 text-white border-orange-500 shadow-md shadow-orange-100"
-                                : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
+                                : isComplete
+                                ? "bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100"
+                                : "bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100"
                             }`}
                           >
                             <Stethoscope className="w-3.5 h-3.5" />
                             <span>{pet.petName}</span>
-                            <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-extrabold ${isActive ? "bg-white/20 text-white" : "bg-slate-200 text-slate-600"}`}>
-                              {pet.species}
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-extrabold ${
+                              isActive
+                                ? "bg-white/20 text-white"
+                                : isComplete
+                                ? "bg-emerald-100 text-emerald-800"
+                                : "bg-amber-100 text-amber-900"
+                            }`}>
+                              {isComplete ? "✓ Ready" : "⚠️ Incomplete"}
                             </span>
                           </button>
                         );
                       })}
+
+                      {activePets.length > 1 && currentVisitPet && (
+                        <button
+                          type="button"
+                          onClick={() => applyVisitReasonToAllPets(currentVisitPet.id)}
+                          className="px-3 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition ml-auto shrink-0 flex items-center gap-1.5 cursor-pointer shadow-xs"
+                          title="Copy current visit reason and assigned doctor to all pets"
+                        >
+                          <span>⚡ Apply to All Pets</span>
+                        </button>
+                      )}
                     </div>
                   )}
 
-                  {currentVisitPet && (
-                    <div className="space-y-5">
-                      <div className="p-3 bg-emerald-50/60 border border-emerald-100 rounded-2xl flex items-center justify-between">
-                        <span className="text-xs font-bold text-emerald-800 flex items-center gap-1.5">
-                          <Stethoscope className="w-4 h-4 text-emerald-600" />
-                          Visit Setup for: <strong className="text-emerald-950 font-extrabold">{currentVisitPet.petName}</strong> ({currentVisitPet.breed})
-                        </span>
-                        <span className="text-[11px] font-mono font-bold text-emerald-700">
-                          {currentVisitPet.uniquePetId}
-                        </span>
-                      </div>
+                  {currentVisitPet && (() => {
+                    const currentVisit = petVisitsMap[currentVisitPet.id] || defaultVisitReason;
+                    const isPrimaryReasonMissing = !currentVisit.primaryReason;
+                    const isComplaintMissing = !currentVisit.complaint;
+                    const isAssignedDoctorMissing = !currentVisit.assignedDoctor;
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
-                        <div>
-                          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-                            Primary Reason *
-                          </label>
-                          <select
-                            name="primaryReason"
-                            value={(petVisitsMap[currentVisitPet.id] || defaultVisitReason).primaryReason || ""}
-                            onChange={(e) => handlePetVisitChange(currentVisitPet.id, "primaryReason", e.target.value)}
-                            className={inputClass}
-                          >
-                            <option value="">Select Reason</option>
-                            {reasonOptions.map((item) => (
-                              <option key={item} value={item}>
-                                {item}
-                              </option>
-                            ))}
-                          </select>
+                    return (
+                      <div className="space-y-5">
+                        <div className="p-3 bg-emerald-50/60 border border-emerald-100 rounded-2xl flex items-center justify-between">
+                          <span className="text-xs font-bold text-emerald-800 flex items-center gap-1.5">
+                            <Stethoscope className="w-4 h-4 text-emerald-600" />
+                            Visit Setup for: <strong className="text-emerald-950 font-extrabold">{currentVisitPet.petName}</strong> ({currentVisitPet.breed})
+                          </span>
+                          <span className="text-[11px] font-mono font-bold text-emerald-700">
+                            {currentVisitPet.uniquePetId}
+                          </span>
                         </div>
-                        <div>
-                          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-                            Token / Queue Number
-                          </label>
-                          <input
-                            value="Auto generated by backend"
-                            readOnly
-                            className="w-full border rounded-xl p-3 bg-slate-100 text-slate-500 font-medium text-sm"
-                          />
-                        </div>
-                        <div className="md:col-span-2">
-                          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-                            Specific Complaint In Brief *
-                          </label>
-                          <textarea
-                            name="complaint"
-                            value={(petVisitsMap[currentVisitPet.id] || defaultVisitReason).complaint || ""}
-                            onChange={(e) => handlePetVisitChange(currentVisitPet.id, "complaint", e.target.value)}
-                            rows="3"
-                            placeholder={`Enter complaint details for ${currentVisitPet.petName}`}
-                            className={inputClass}
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-                            Appointment Date *
-                          </label>
-                          <input
-                            name="appointmentDate"
-                            value={(petVisitsMap[currentVisitPet.id] || defaultVisitReason).appointmentDate || today}
-                            onChange={(e) => handlePetVisitChange(currentVisitPet.id, "appointmentDate", e.target.value)}
-                            type="date"
-                            className={inputClass}
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-                            Appointment Time *
-                          </label>
-                          <input
-                            name="appointmentTime"
-                            value={(petVisitsMap[currentVisitPet.id] || defaultVisitReason).appointmentTime || ""}
-                            onChange={(e) => handlePetVisitChange(currentVisitPet.id, "appointmentTime", e.target.value)}
-                            type="time"
-                            className={inputClass}
-                          />
-                        </div>
-                        <div className="md:col-span-2">
-                          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-                            Assigned Doctor *
-                          </label>
-                          <select
-                            name="assignedDoctor"
-                            value={(petVisitsMap[currentVisitPet.id] || defaultVisitReason).assignedDoctor || ""}
-                            onChange={(e) => handlePetVisitChange(currentVisitPet.id, "assignedDoctor", e.target.value)}
-                            className={inputClass}
-                          >
-                            <option value="">Select Doctor</option>
-                            {doctors.map((doctor) => (
-                              <option key={getDoctorOptionValue(doctor)} value={getDoctorName(doctor)}>
-                                {getDoctorName(doctor) || "Doctor"}
-                              </option>
-                            ))}
-                          </select>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
+                          <div>
+                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                              Primary Reason *
+                            </label>
+                            <select
+                              name="primaryReason"
+                              value={currentVisit.primaryReason || ""}
+                              onChange={(e) => {
+                                handlePetVisitChange(currentVisitPet.id, "primaryReason", e.target.value);
+                                if (errors.visitDetails) setErrors((prev) => ({ ...prev, visitDetails: "" }));
+                              }}
+                              className={`${inputClass} ${errors.visitDetails && isPrimaryReasonMissing ? "border-red-500 ring-2 ring-red-100 bg-red-50/20" : ""}`}
+                            >
+                              <option value="">Select Reason</option>
+                              {reasonOptions.map((item) => (
+                                <option key={item} value={item}>
+                                  {item}
+                                </option>
+                              ))}
+                            </select>
+                            {errors.visitDetails && isPrimaryReasonMissing && (
+                              <p className="text-xs text-red-500 font-semibold mt-1">Please select a primary reason.</p>
+                            )}
+                          </div>
+                          <div>
+                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                              Token / Queue Number
+                            </label>
+                            <input
+                              value="Auto generated by backend"
+                              readOnly
+                              className="w-full border rounded-xl p-3 bg-slate-100 text-slate-500 font-medium text-sm"
+                            />
+                          </div>
+                          <div className="md:col-span-2">
+                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                              Specific Complaint In Brief *
+                            </label>
+                            <textarea
+                              name="complaint"
+                              value={currentVisit.complaint || ""}
+                              onChange={(e) => {
+                                handlePetVisitChange(currentVisitPet.id, "complaint", e.target.value);
+                                if (errors.visitDetails) setErrors((prev) => ({ ...prev, visitDetails: "" }));
+                              }}
+                              rows="3"
+                              placeholder={`Enter complaint details for ${currentVisitPet.petName}`}
+                              className={`${inputClass} ${errors.visitDetails && isComplaintMissing ? "border-red-500 ring-2 ring-red-100 bg-red-50/20" : ""}`}
+                            />
+                            {errors.visitDetails && isComplaintMissing && (
+                              <p className="text-xs text-red-500 font-semibold mt-1">Please enter specific complaint details.</p>
+                            )}
+                          </div>
+                          <div>
+                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                              Appointment Date *
+                            </label>
+                            <input
+                              name="appointmentDate"
+                              value={currentVisit.appointmentDate || today}
+                              onChange={(e) => handlePetVisitChange(currentVisitPet.id, "appointmentDate", e.target.value)}
+                              type="date"
+                              className={inputClass}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                              Appointment Time *
+                            </label>
+                            <input
+                              name="appointmentTime"
+                              value={currentVisit.appointmentTime || ""}
+                              onChange={(e) => handlePetVisitChange(currentVisitPet.id, "appointmentTime", e.target.value)}
+                              type="time"
+                              className={inputClass}
+                            />
+                          </div>
+                          <div className="md:col-span-2">
+                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                              Assigned Doctor *
+                            </label>
+                            <select
+                              name="assignedDoctor"
+                              value={currentVisit.assignedDoctor || ""}
+                              onChange={(e) => {
+                                handlePetVisitChange(currentVisitPet.id, "assignedDoctor", e.target.value);
+                                if (errors.visitDetails) setErrors((prev) => ({ ...prev, visitDetails: "" }));
+                              }}
+                              className={`${inputClass} ${errors.visitDetails && isAssignedDoctorMissing ? "border-red-500 ring-2 ring-red-100 bg-red-50/20" : ""}`}
+                            >
+                              <option value="">Select Doctor</option>
+                              {doctors.map((doctor) => (
+                                <option key={getDoctorOptionValue(doctor)} value={getDoctorName(doctor)}>
+                                  {getDoctorName(doctor) || "Doctor"}
+                                </option>
+                              ))}
+                            </select>
+                            {errors.visitDetails && isAssignedDoctorMissing && (
+                              <p className="text-xs text-red-500 font-semibold mt-1">Please select an assigned doctor.</p>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  )}
+                    );
+                  })()}
                 </div>
               )}
             </div>
