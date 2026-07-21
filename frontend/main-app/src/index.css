@@ -18,15 +18,16 @@ body,
     --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
     --font-serif: "Playfair Display", ui-serif, Georgia, serif;
 
-    --color-brand: #16a34a;
-    --color-brand-dark: #15803d;
-    --color-brand-light: #dcfce7;
-    --color-brand-soft: #f0fdf4;
-    --color-accent: #f97316;
-    --color-accent-soft: #fff7ed;
-    --color-ink: #0f172a;
-    --color-ink-soft: #475569;
-    --color-line: #e5e7eb;
+    --color-brand: #0C3D2E;
+    --color-brand-dark: #08281E;      
+    --color-brand-light: #D9E8E3;     
+    --color-brand-soft: #F2F7F5;      
+    --color-accent: #F7931E;
+    --color-accent-soft: #FFF4E5;
+    --color-ink: #111827;
+    --color-ink-soft: #4B5563;
+
+    --color-line: #E5E7EB;
 }
 
 html,
@@ -41,23 +42,34 @@ body {
 }
 
 .hero-gradient {
-    background: linear-gradient(135deg,
-            #ecfdf5 0%,
-            #f0fdf4 35%,
-            #fef3e9 100%);
+    background: linear-gradient(
+        135deg,
+        #FFFFFF 0%,
+        #F2F7F5 55%,
+        #FFF4E5 100%
+    );
 }
 
 .legal-gradient {
-    background: linear-gradient(180deg, #dcfce7 0%, #f0fdf4 35%, #ffffff 100%);
+    background: linear-gradient(
+        180deg,
+        #dcfce7 0%,
+        #f0fdf4 35%,
+        #ffffff 100%
+    );
 }
 
 .dark-section {
-    background: radial-gradient(ellipse at 20% 20%,
-            rgba(22, 163, 74, 0.08),
-            transparent 60%),
-        radial-gradient(ellipse at 80% 80%,
+    background: radial-gradient(
+            ellipse at 20% 20%,
+            rgba(12, 61, 46, 0.12),
+            transparent 60%
+        ),
+        radial-gradient(
+            ellipse at 80% 80%,
             rgba(249, 115, 22, 0.06),
-            transparent 60%),
+            transparent 60%
+        ),
         #0b0b0c;
 }
 

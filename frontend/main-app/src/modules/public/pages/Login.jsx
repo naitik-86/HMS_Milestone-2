@@ -338,9 +338,9 @@ export default function Login() {
     <div className="min-h-screen bg-white flex flex-col items-center justify-center px-6 py-12">
       {/* LOGO */}
 
-      <div className="w-14 h-14 rounded-2xl bg-green-600 flex items-center justify-center">
-        <LogIn className="w-7 h-7 text-white" />
-      </div>
+    <div className="w-14 h-14 rounded-2xl bg-[#0C3D2E] flex items-center justify-center">
+  <LogIn className="w-7 h-7 text-white" />
+</div>
 
       <h1 className="mt-6 font-serif text-4xl font-bold text-slate-900">
         Welcome back
@@ -482,12 +482,12 @@ export default function Login() {
             {errors.password}
           </p>
         )}
-        <button
-          type="submit"
-          className="mt-7 w-full bg-green-700 hover:bg-green-800 text-white font-semibold py-3.5 rounded-xl"
-        >
-          Log in
-        </button>
+    <button
+  type="submit"
+  className="mt-7 w-full bg-[#0C3D2E] hover:bg-[#092E23] text-white font-semibold py-3.5 rounded-xl"
+>
+  Log in
+</button>
       </form>
 
       {/* ================================= */}
