@@ -34,6 +34,7 @@ export default function Login() {
   const [otpExpiresAt, setOtpExpiresAt] = useState(null);
   const [resendSeconds, setResendSeconds] = useState(0);
   const [resendLoading, setResendLoading] = useState(false);
+  const [otpVerifyLoading, setOtpVerifyLoading] = useState(false);
 
   const [googleLoading, setGoogleLoading] = useState(false);
   const [loginLoading, setLoginLoading] = useState(false);
@@ -273,6 +274,21 @@ export default function Login() {
     };
 
   const handleContinue = async () => {
+    // Guards against double-submission (double-click, or a slow network
+    // making the user click again): without this, two verify-otp requests
+    // can both fire - the first consumes the OTP and logs the user in, the
+    // second then correctly fails against the now-used code and pops an
+    // "Invalid OTP" alert even though the user is already authenticated.
+    if (otpVerifyLoading) return;
+    setOtpVerifyLoading(true);
+    try {
+      await runOtpVerification();
+    } finally {
+      setOtpVerifyLoading(false);
+    }
+  };
+
+  const runOtpVerification = async () => {
     const role = localStorage.getItem("role");
     let verifyEndpoint;
    const otpValue = otp.join("");
@@ -536,9 +552,17 @@ export default function Login() {
           <button
           type="button"
           onClick={handleContinue}
-          className="mt-8 w-full rounded-full bg-[#0C3D2E] hover:bg-[#092E23] text-white font-semibold py-3 transition"
+          disabled={otpVerifyLoading}
+          className="mt-8 flex w-full items-center justify-center gap-2 rounded-full bg-[#0C3D2E] hover:bg-[#092E23] text-white font-semibold py-3 transition disabled:cursor-not-allowed disabled:opacity-70"
         >
-          Login
+          {otpVerifyLoading ? (
+            <>
+              <LoaderCircle className="h-5 w-5 animate-spin" aria-hidden="true" />
+              Verifying...
+            </>
+          ) : (
+            "Login"
+          )}
         </button>
            
 

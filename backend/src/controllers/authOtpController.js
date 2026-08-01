@@ -62,23 +62,22 @@ exports.verifySuperAdminOtp = async (req, res) => {
       return res.status(403).json({ success: false, message: lockoutService.LOCK_MESSAGE.otp });
     }
 
-    const otpRecord = await LoginOtp.findOne({
+    const otpRecord = await LoginOtp.findOneAndUpdate({
       userType: 'SUPER_ADMIN',
       purpose: 'LOGIN',
       email: normalizedEmail,
       otpEmail: otp,
       isConsumed: false,
       expiresAt: { $gt: new Date() },
-    }).sort({ createdAt: -1 });
+    },
+      { $set: { isConsumed: true, verifiedAt: new Date() } },
+      { sort: { createdAt: -1 } }
+    );
 
     if (!otpRecord) {
       await lockoutService.registerFailedAttempt(admin, admin, 'otp');
       return res.status(401).json({ success: false, message: await otpFailureMessage({ userType: 'SUPER_ADMIN', email: normalizedEmail, otp }) });
     }
-
-    otpRecord.isConsumed = true;
-    otpRecord.verifiedAt = new Date();
-    await otpRecord.save();
 
     await lockoutService.resetAttempts(admin, admin, 'otp');
     await recordLoginSuccess(admin, admin, req);
@@ -115,23 +114,22 @@ exports.verifyClinicAdminOtp = async (req, res) => {
       return res.status(403).json({ success: false, message: lockoutService.LOCK_MESSAGE.otp });
     }
 
-    const otpRecord = await LoginOtp.findOne({
+    const otpRecord = await LoginOtp.findOneAndUpdate({
       userType: 'CLINIC_ADMIN',
       purpose: 'LOGIN',
       email: normalizedEmail,
       otpEmail: otp,
       isConsumed: false,
       expiresAt: { $gt: new Date() },
-    }).sort({ createdAt: -1 });
+    },
+      { $set: { isConsumed: true, verifiedAt: new Date() } },
+      { sort: { createdAt: -1 } }
+    );
 
     if (!otpRecord) {
       await lockoutService.registerFailedAttempt(clinicAdmin, clinicAdmin, 'otp');
       return res.status(401).json({ success: false, message: await otpFailureMessage({ userType: 'CLINIC_ADMIN', email: normalizedEmail, otp }) });
     }
-
-    otpRecord.isConsumed = true;
-    otpRecord.verifiedAt = new Date();
-    await otpRecord.save();
 
     await lockoutService.resetAttempts(clinicAdmin, clinicAdmin, 'otp');
     await recordLoginSuccess(clinicAdmin, clinicAdmin, req);
@@ -189,23 +187,22 @@ exports.verifyStaffOtp = async (req, res) => {
       return res.status(403).json({ success: false, message: lockoutService.LOCK_MESSAGE.otp });
     }
 
-    const otpRecord = await LoginOtp.findOne({
+    const otpRecord = await LoginOtp.findOneAndUpdate({
       userType: 'STAFF',
       purpose: 'LOGIN',
       email: normalizedEmail,
       otpEmail: otp,
       isConsumed: false,
       expiresAt: { $gt: new Date() },
-    }).sort({ createdAt: -1 });
+    },
+      { $set: { isConsumed: true, verifiedAt: new Date() } },
+      { sort: { createdAt: -1 } }
+    );
 
     if (!otpRecord) {
       await lockoutService.registerFailedAttempt(staff, staff.accountInfo, 'otp');
       return res.status(401).json({ success: false, message: await otpFailureMessage({ userType: 'STAFF', email: normalizedEmail, otp }) });
     }
-
-    otpRecord.isConsumed = true;
-    otpRecord.verifiedAt = new Date();
-    await otpRecord.save();
 
     await lockoutService.resetAttempts(staff, staff.accountInfo, 'otp');
     await recordLoginSuccess(staff, staff.accountInfo, req);
