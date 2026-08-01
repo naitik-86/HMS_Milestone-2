@@ -915,15 +915,16 @@ export default function NewRegistrationPet() {
 
     setErrors((prev) => {
       const next = { ...prev };
+      const errorKey = `${field}_ext_${index}`;
       if (field === "dob") {
         if (dobError) next[`dob_${index}`] = dobError;
         else delete next[`dob_${index}`];
         delete next.petSelection;
         return next;
       }
-      if (!prev[`${field}_${index}`] && !prev.petSelection) return prev;
+      if (!prev[errorKey] && !prev.petSelection) return prev;
       if (cleanValue && String(cleanValue).trim()) {
-        delete next[`${field}_${index}`];
+        delete next[errorKey];
       }
       delete next.petSelection;
       return next;
@@ -1072,6 +1073,33 @@ export default function NewRegistrationPet() {
     });
   };
 
+  // Shared by the pet-list onBlur handlers below and validateFields()'s
+  // "pet" step check, so both agree on what "valid" means per field -
+  // same pattern as the Bank Account Details live-validation fix.
+  const validatePetListField = (list, idx, field) => {
+    const p = list[idx];
+    if (!p) return "";
+
+    if (field === "petName") {
+      return p.petName.trim() ? "" : "Pet name is required.";
+    }
+    if (field === "breed") {
+      return p.breed.trim() ? "" : "Pet breed is required.";
+    }
+    if (field === "otherSpecies") {
+      if (p.species === "Other" && (!p.otherSpecies || !p.otherSpecies.trim())) {
+        return "Custom species is required when 'Other' is selected.";
+      }
+      return "";
+    }
+    return "";
+  };
+
+  const handlePetFieldBlur = (list, idx, field, errorKeySuffix) => {
+    const message = validatePetListField(list, idx, field);
+    setErrors((prev) => ({ ...prev, [`${field}${errorKeySuffix}`]: message }));
+  };
+
   const validateFields = (fields) => {
     const nextErrors = {};
     const required = (name, message) => {
@@ -1191,6 +1219,17 @@ export default function NewRegistrationPet() {
       step === 1 ? validateFields(["owner"]) : step === 2 ? validateFields(["pet"]) : true;
     if (isValid) setStep((prev) => prev + 1);
   };
+
+  const hasVisiblePetErrors =
+    step === 2 &&
+    Object.entries(errors).some(
+      ([key, value]) =>
+        value &&
+        (key.startsWith("petName_") ||
+          key.startsWith("breed_") ||
+          key.startsWith("otherSpecies_") ||
+          key === "petSelection")
+    );
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -1911,6 +1950,7 @@ export default function NewRegistrationPet() {
                                       type="text"
                                       value={pet.petName}
                                       onChange={(e) => handleNewPetForExistingChange(idx, "petName", e.target.value)}
+                                      onBlur={() => handlePetFieldBlur(newPetsForExisting, idx, "petName", `_ext_${idx}`)}
                                       placeholder="Pet Name"
                                       className={inputClass}
                                     />
@@ -1937,6 +1977,7 @@ export default function NewRegistrationPet() {
                                           type="text"
                                           value={pet.otherSpecies || ""}
                                           onChange={(e) => handleNewPetForExistingChange(idx, "otherSpecies", e.target.value)}
+                                          onBlur={() => handlePetFieldBlur(newPetsForExisting, idx, "otherSpecies", `_ext_${idx}`)}
                                           placeholder="Enter Custom Species"
                                           className={inputClass}
                                         />
@@ -1959,6 +2000,7 @@ export default function NewRegistrationPet() {
                                           handleNewPetForExistingChange(idx, "breed", v);
                                         }
                                       }}
+                                      onBlur={() => handlePetFieldBlur(newPetsForExisting, idx, "breed", `_ext_${idx}`)}
                                       className={inputClass}
                                     >
                                       <option value="">Select Breed</option>
@@ -1972,6 +2014,7 @@ export default function NewRegistrationPet() {
                                         type="text"
                                         value={pet.breed}
                                         onChange={(e) => handleNewPetForExistingChange(idx, "breed", e.target.value)}
+                                        onBlur={() => handlePetFieldBlur(newPetsForExisting, idx, "breed", `_ext_${idx}`)}
                                         placeholder="Enter Breed"
                                         className={`${inputClass} mt-2`}
                                       />
@@ -2060,6 +2103,7 @@ export default function NewRegistrationPet() {
                                     </label>
                                     <div className="flex items-center gap-4 p-4 border border-dashed border-slate-300 rounded-2xl bg-white">
                                       <input
+                                        id={`pet-photo-ext-${idx}`}
                                         type="file"
                                         accept="image/*"
                                         onChange={(e) => {
@@ -2073,8 +2117,14 @@ export default function NewRegistrationPet() {
                                             reader.readAsDataURL(file);
                                           }
                                         }}
-                                        className="text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100 cursor-pointer"
+                                        className="hidden"
                                       />
+                                      <label
+                                        htmlFor={`pet-photo-ext-${idx}`}
+                                        className="shrink-0 py-2 px-4 rounded-xl text-xs font-semibold bg-orange-50 text-orange-700 hover:bg-orange-100 cursor-pointer"
+                                      >
+                                        {pet.photo ? "Change Photo" : "Choose File"}
+                                      </label>
                                       {pet.photo && (
                                         <div className="flex items-center gap-2 min-w-0">
                                           <img
@@ -2135,6 +2185,7 @@ export default function NewRegistrationPet() {
                                 type="text"
                                 value={petItem.petName}
                                 onChange={(e) => handleNewOwnerPetChange(idx, "petName", e.target.value)}
+                                onBlur={() => handlePetFieldBlur(newOwnerPets, idx, "petName", `_${idx}`)}
                                 placeholder="Enter Pet Name"
                                 className={inputClass}
                               />
@@ -2162,6 +2213,7 @@ export default function NewRegistrationPet() {
                                     type="text"
                                     value={petItem.otherSpecies || ""}
                                     onChange={(e) => handleNewOwnerPetChange(idx, "otherSpecies", e.target.value)}
+                                    onBlur={() => handlePetFieldBlur(newOwnerPets, idx, "otherSpecies", `_${idx}`)}
                                     placeholder="Enter Custom Species"
                                     className={inputClass}
                                   />
@@ -2185,6 +2237,7 @@ export default function NewRegistrationPet() {
                                     handleNewOwnerPetChange(idx, "breed", v);
                                   }
                                 }}
+                                onBlur={() => handlePetFieldBlur(newOwnerPets, idx, "breed", `_${idx}`)}
                                 className={inputClass}
                               >
                                 <option value="">Select Breed</option>
@@ -2198,6 +2251,7 @@ export default function NewRegistrationPet() {
                                   type="text"
                                   value={petItem.breed}
                                   onChange={(e) => handleNewOwnerPetChange(idx, "breed", e.target.value)}
+                                  onBlur={() => handlePetFieldBlur(newOwnerPets, idx, "breed", `_${idx}`)}
                                   placeholder="Enter Breed"
                                   className={`${inputClass} mt-2`}
                                 />
@@ -2293,6 +2347,7 @@ export default function NewRegistrationPet() {
                                </label>
                                <div className="flex items-center gap-4 p-4 border border-dashed border-slate-300 rounded-2xl bg-slate-50/50">
                                  <input
+                                   id={`pet-photo-new-${idx}`}
                                    type="file"
                                    accept="image/*"
                                    onChange={(e) => {
@@ -2306,8 +2361,14 @@ export default function NewRegistrationPet() {
                                        reader.readAsDataURL(file);
                                      }
                                    }}
-                                   className="text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100 cursor-pointer"
+                                   className="hidden"
                                  />
+                                 <label
+                                   htmlFor={`pet-photo-new-${idx}`}
+                                   className="shrink-0 py-2 px-4 rounded-xl text-xs font-semibold bg-orange-50 text-orange-700 hover:bg-orange-100 cursor-pointer"
+                                 >
+                                   {petItem.photo ? "Change Photo" : "Choose File"}
+                                 </label>
                                  {petItem.photo && (
                                    <div className="flex items-center gap-2 min-w-0">
                                      <img
@@ -3087,7 +3148,8 @@ export default function NewRegistrationPet() {
               {step < steps.length ? (
                 <button
                   onClick={handleNext}
-                  className="flex items-center gap-1.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white px-6 py-2.5 rounded-xl font-semibold text-xs sm:text-sm shadow-md shadow-orange-100 transition cursor-pointer border-none"
+                  disabled={hasVisiblePetErrors}
+                  className="flex items-center gap-1.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white px-6 py-2.5 rounded-xl font-semibold text-xs sm:text-sm shadow-md shadow-orange-100 transition cursor-pointer border-none disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:from-orange-500 disabled:hover:to-amber-500"
                 >
                   Next Step
                   <ArrowRight className="w-4 h-4" />
