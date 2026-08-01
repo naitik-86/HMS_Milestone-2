@@ -19,11 +19,18 @@
 #                             Google" button (Google Identity Services).
 #                             Must match the backend's GOOGLE_CLIENT_ID env
 #                             var exactly, or token verification fails.
+#   CLOUDFRONT_DISTRIBUTION_ID - dedicated distribution for this testing
+#                             server (E1MN8GQE24P54K / d113u4fu4xedub.cloudfront.net).
+#                             Without invalidation, CloudFront can keep
+#                             serving a cached old index.html/assets after a
+#                             deploy even though S3 has the new files.
 #
 # See docs/06-github-actions-cicd.md for how to add these.
 #
-# Note: no CloudFront invalidation step here - this testing server is
-# accessed by plain IP:port, no CloudFront distribution in front of it.
+# Note: S3_FRONTEND_BUCKET for this repo MUST be its own dedicated bucket,
+# never production's - the two repos briefly shared a bucket and every
+# testing deploy silently overwrote production's live frontend until this
+# was caught and split apart (see HMS-Session-Bug-Log.md).
 
 name: Deploy Frontend
 
@@ -83,6 +90,12 @@ jobs:
           # build reference instead of an old cached bundle hash.
           aws s3 cp dist/index.html "s3://${{ secrets.S3_FRONTEND_BUCKET }}/index.html" \
             --cache-control "no-cache, must-revalidate"
+
+      - name: Invalidate CloudFront cache
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id "${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}" \
+            --paths "/*"
 
       - name: Copy build to EC2
         uses: appleboy/scp-action@v0.1.7
