@@ -189,7 +189,14 @@ exports.createSubscriptionPayment = async (req, res) => {
 
     const firstname = clinic.name;
 
-    const email = clinic.contactEmail;
+    // Falls back to "" (never undefined): a missing value here would
+    // otherwise get embedded in the hash string as the literal text
+    // "undefined" via template-literal coercion, while the JSON response's
+    // "email" key gets silently dropped by JSON.stringify (which omits
+    // undefined values) - so PayU would receive no email field at all and
+    // recompute a different hash, failing with "incorrectly calculated
+    // hash parameter" even though nothing in the request looked wrong.
+    const email = clinic.contactEmail || clinic.email || "";
 
 
 
