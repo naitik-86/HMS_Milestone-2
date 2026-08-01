@@ -212,7 +212,10 @@ const formatAgeDisplay = (dob) => {
     return `${totalMonths} ${totalMonths === 1 ? "month" : "months"}`;
   }
   const years = Math.floor(totalMonths / 12);
-  return `${years} ${years === 1 ? "yr" : "yrs"}`;
+  const remainderMonths = totalMonths % 12;
+  const yearsLabel = `${years} ${years === 1 ? "yr" : "yrs"}`;
+  if (remainderMonths === 0) return yearsLabel;
+  return `${yearsLabel} ${remainderMonths} ${remainderMonths === 1 ? "mo" : "mos"}`;
 };
 
 const normalizeDoctorList = (response) => {
