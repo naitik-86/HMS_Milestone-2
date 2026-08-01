@@ -112,6 +112,8 @@ function EnrollForm({ onClose, onSave, editData, mode, staff, isSubmitting, }) {
     forcePasswordReset: true
   });
 
+  const [bankFieldErrors, setBankFieldErrors] = useState({ ifscCode: "", upiId: "" });
+
 
   const validateStep = async () => {
     if (step === 1) {
@@ -262,17 +264,20 @@ function EnrollForm({ onClose, onSave, editData, mode, staff, isSubmitting, }) {
       const ifscCode = form.ifscCode.trim().toUpperCase();
 
       if (!ifscRegex.test(ifscCode)) {
-        alert("Please enter a valid IFSC code");
+        setBankFieldErrors(prev => ({ ...prev, ifscCode: "Please enter a valid IFSC code" }));
         return false;
       }
 
       if (bankRule?.ifscPrefix && !ifscCode.startsWith(bankRule.ifscPrefix)) {
-        alert(`IFSC for ${form.bankName} should start with ${bankRule.ifscPrefix}.`);
+        setBankFieldErrors(prev => ({
+          ...prev,
+          ifscCode: `IFSC for ${form.bankName} should start with ${bankRule.ifscPrefix}.`,
+        }));
         return false;
       }
 
       if (form.upiId.trim() && !upiRegex.test(form.upiId.trim())) {
-        alert("Please enter a valid UPI ID (e.g. name@bank)");
+        setBankFieldErrors(prev => ({ ...prev, upiId: "Please enter a valid UPI ID (e.g. name@bank)" }));
         return false;
       }
     }
@@ -424,6 +429,9 @@ function EnrollForm({ onClose, onSave, editData, mode, staff, isSubmitting, }) {
   const update = (k, v) => {
     if (isView) return;
     setForm(prev => ({ ...prev, [k]: v }));
+    if (k === "ifscCode" || k === "upiId") {
+      setBankFieldErrors(prev => ({ ...prev, [k]: "" }));
+    }
   };
 
   const toggleModule = (m) => {
@@ -1024,6 +1032,9 @@ function EnrollForm({ onClose, onSave, editData, mode, staff, isSubmitting, }) {
                       }
                       placeholder="Enter IFSC Code"
                     />
+                    {bankFieldErrors.ifscCode && (
+                      <p className="mt-1 text-sm text-red-500 font-medium">{bankFieldErrors.ifscCode}</p>
+                    )}
                   </div>
 
                   <div>
@@ -1054,6 +1065,9 @@ function EnrollForm({ onClose, onSave, editData, mode, staff, isSubmitting, }) {
                       }
                       placeholder="example@upi"
                     />
+                    {bankFieldErrors.upiId && (
+                      <p className="mt-1 text-sm text-red-500 font-medium">{bankFieldErrors.upiId}</p>
+                    )}
                   </div>
 
                 </div>
