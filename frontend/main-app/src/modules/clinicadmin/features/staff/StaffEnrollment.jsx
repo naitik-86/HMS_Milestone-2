@@ -112,7 +112,71 @@ function EnrollForm({ onClose, onSave, editData, mode, staff, isSubmitting, }) {
     forcePasswordReset: true
   });
 
-  const [bankFieldErrors, setBankFieldErrors] = useState({ ifscCode: "", upiId: "" });
+  const [bankFieldErrors, setBankFieldErrors] = useState({
+    bankName: "",
+    accountHolderName: "",
+    accountNumber: "",
+    ifscCode: "",
+    upiId: "",
+  });
+
+  // Shared by the onBlur handlers below and the Next-button validateStep()
+  // check, so both surfaces agree on exactly what "valid" means per field.
+  const validateBankField = (field, formSnapshot = form) => {
+    const bankRule = getBankRule(formSnapshot.bankName);
+
+    if (field === "bankName") {
+      return formSnapshot.bankName.trim() ? "" : "Please select a bank.";
+    }
+
+    if (field === "accountHolderName") {
+      const name = formSnapshot.accountHolderName.trim();
+      if (!name) return "Account holder name is required.";
+      if (!/^[A-Za-z\s]+$/.test(name)) return "Account holder name must contain only letters and spaces.";
+      if (name.length < 3) return "Account holder name must be at least 3 characters.";
+      return "";
+    }
+
+    if (field === "accountNumber") {
+      const accountNumber = formSnapshot.accountNumber.trim();
+      if (!accountNumber) return "Account number is required.";
+      if (bankRule?.accountLengths) {
+        if (!bankRule.accountLengths.includes(accountNumber.length)) {
+          return `Account number for ${formSnapshot.bankName} must be ${formatAccountLength(bankRule)}.`;
+        }
+      } else if (
+        accountNumber.length < (bankRule?.minAccountLength || 9) ||
+        accountNumber.length > (bankRule?.maxAccountLength || 18)
+      ) {
+        return `Account number must be ${formatAccountLength(bankRule)}.`;
+      }
+      return "";
+    }
+
+    if (field === "ifscCode") {
+      const ifscCode = formSnapshot.ifscCode.trim().toUpperCase();
+      if (!ifscCode) return "IFSC code is required.";
+      if (!ifscRegex.test(ifscCode)) return "Please enter a valid IFSC code";
+      if (bankRule?.ifscPrefix && !ifscCode.startsWith(bankRule.ifscPrefix)) {
+        return `IFSC for ${formSnapshot.bankName} should start with ${bankRule.ifscPrefix}.`;
+      }
+      return "";
+    }
+
+    if (field === "upiId") {
+      const upiId = formSnapshot.upiId.trim();
+      if (upiId && !upiRegex.test(upiId)) return "Please enter a valid UPI ID (e.g. name@bank)";
+      return "";
+    }
+
+    return "";
+  };
+
+  const handleBankFieldBlur = (field) => {
+    setBankFieldErrors(prev => ({ ...prev, [field]: validateBankField(field) }));
+  };
+
+  const hasVisibleBankErrors = step === 3 && Object.values(bankFieldErrors).some(Boolean);
 
 
   const validateStep = async () => {
@@ -225,59 +289,11 @@ function EnrollForm({ onClose, onSave, editData, mode, staff, isSubmitting, }) {
     }
 
     if (step === 3) {
-      if (
-        !form.bankName.trim() ||
-        !form.accountHolderName.trim() ||
-        !form.accountNumber.trim() ||
-        !form.ifscCode.trim()
-      ) {
-        alert("Please fill all required Bank Account Details");
-        return false;
-      }
-
-      if (!/^[A-Za-z\s]+$/.test(form.accountHolderName.trim())) {
-        alert("Account holder name must contain only letters and spaces.");
-        return false;
-      }
-
-      if (form.accountHolderName.trim().length < 3) {
-        alert("Account holder name must be at least 3 characters.");
-        return false;
-      }
-
-      const bankRule = getBankRule(form.bankName);
-      const accountNumber = form.accountNumber.trim();
-
-      if (bankRule?.accountLengths) {
-        if (!bankRule.accountLengths.includes(accountNumber.length)) {
-          alert(`Account number for ${form.bankName} must be ${formatAccountLength(bankRule)}.`);
-          return false;
-        }
-      } else if (
-        accountNumber.length < (bankRule?.minAccountLength || 9) ||
-        accountNumber.length > (bankRule?.maxAccountLength || 18)
-      ) {
-        alert(`Account number must be ${formatAccountLength(bankRule)}.`);
-        return false;
-      }
-
-      const ifscCode = form.ifscCode.trim().toUpperCase();
-
-      if (!ifscRegex.test(ifscCode)) {
-        setBankFieldErrors(prev => ({ ...prev, ifscCode: "Please enter a valid IFSC code" }));
-        return false;
-      }
-
-      if (bankRule?.ifscPrefix && !ifscCode.startsWith(bankRule.ifscPrefix)) {
-        setBankFieldErrors(prev => ({
-          ...prev,
-          ifscCode: `IFSC for ${form.bankName} should start with ${bankRule.ifscPrefix}.`,
-        }));
-        return false;
-      }
-
-      if (form.upiId.trim() && !upiRegex.test(form.upiId.trim())) {
-        setBankFieldErrors(prev => ({ ...prev, upiId: "Please enter a valid UPI ID (e.g. name@bank)" }));
+      const nextErrors = Object.fromEntries(
+        bankFieldKeys.map((field) => [field, validateBankField(field)])
+      );
+      setBankFieldErrors(nextErrors);
+      if (Object.values(nextErrors).some(Boolean)) {
         return false;
       }
     }
@@ -426,11 +442,20 @@ function EnrollForm({ onClose, onSave, editData, mode, staff, isSubmitting, }) {
 
 
 
+  const bankFieldKeys = ["bankName", "accountHolderName", "accountNumber", "ifscCode", "upiId"];
+
   const update = (k, v) => {
     if (isView) return;
     setForm(prev => ({ ...prev, [k]: v }));
-    if (k === "ifscCode" || k === "upiId") {
-      setBankFieldErrors(prev => ({ ...prev, [k]: "" }));
+    if (bankFieldKeys.includes(k)) {
+      setBankFieldErrors(prev => ({
+        ...prev,
+        [k]: "",
+        // A bank change can invalidate the account number's length rule and
+        // the IFSC prefix rule - clear those too rather than leave a stale
+        // error referencing the old bank.
+        ...(k === "bankName" ? { accountNumber: "", ifscCode: "" } : {}),
+      }));
     }
   };
 
@@ -974,12 +999,16 @@ function EnrollForm({ onClose, onSave, editData, mode, staff, isSubmitting, }) {
                         update("bankName", e.target.value);
                         update("accountNumber", form.accountNumber.slice(0, getMaxAccountLength(rule)));
                       }}
+                      onBlur={() => handleBankFieldBlur("bankName")}
                     >
                       <option value="">Select</option>
                       {BANK_OPTIONS.map((bank) => (
                         <option key={bank}>{bank}</option>
                       ))}
                     </select>
+                    {bankFieldErrors.bankName && (
+                      <p className="mt-1 text-sm text-red-500 font-medium">{bankFieldErrors.bankName}</p>
+                    )}
                   </div>
 
                   <div>
@@ -996,8 +1025,12 @@ function EnrollForm({ onClose, onSave, editData, mode, staff, isSubmitting, }) {
                           lettersOnly(e.target.value)
                         )
                       }
+                      onBlur={() => handleBankFieldBlur("accountHolderName")}
                       placeholder="Enter Account Holder Name"
                     />
+                    {bankFieldErrors.accountHolderName && (
+                      <p className="mt-1 text-sm text-red-500 font-medium">{bankFieldErrors.accountHolderName}</p>
+                    )}
                   </div>
 
                   <div>
@@ -1011,12 +1044,17 @@ function EnrollForm({ onClose, onSave, editData, mode, staff, isSubmitting, }) {
                       onChange={(e) =>
                         update("accountNumber", digitsOnly(e.target.value, getMaxAccountLength(getBankRule(form.bankName))))
                       }
+                      onBlur={() => handleBankFieldBlur("accountNumber")}
                       maxLength={getMaxAccountLength(getBankRule(form.bankName))}
                       placeholder="Enter Account Number"
                     />
-                    <p className="mt-1 text-xs text-gray-400">
-                      Expected Length: {formatAccountLength(getBankRule(form.bankName))}
-                    </p>
+                    {bankFieldErrors.accountNumber ? (
+                      <p className="mt-1 text-sm text-red-500 font-medium">{bankFieldErrors.accountNumber}</p>
+                    ) : (
+                      <p className="mt-1 text-xs text-gray-400">
+                        Expected Length: {formatAccountLength(getBankRule(form.bankName))}
+                      </p>
+                    )}
                   </div>
 
                   <div>
@@ -1030,6 +1068,7 @@ function EnrollForm({ onClose, onSave, editData, mode, staff, isSubmitting, }) {
                       onChange={(e) =>
                         update("ifscCode", e.target.value.toUpperCase())
                       }
+                      onBlur={() => handleBankFieldBlur("ifscCode")}
                       placeholder="Enter IFSC Code"
                     />
                     {bankFieldErrors.ifscCode && (
@@ -1063,6 +1102,7 @@ function EnrollForm({ onClose, onSave, editData, mode, staff, isSubmitting, }) {
                       onChange={(e) =>
                         update("upiId", e.target.value)
                       }
+                      onBlur={() => handleBankFieldBlur("upiId")}
                       placeholder="example@upi"
                     />
                     {bankFieldErrors.upiId && (
@@ -1198,9 +1238,9 @@ function EnrollForm({ onClose, onSave, editData, mode, staff, isSubmitting, }) {
             </button>
 
             <button
-              disabled={isSubmitting || checkingAvailability}
+              disabled={isSubmitting || checkingAvailability || hasVisibleBankErrors}
               onClick={async () => {
-                if (isSubmitting || checkingAvailability) return;
+                if (isSubmitting || checkingAvailability || hasVisibleBankErrors) return;
 
                 if (isView) {
                   onClose();
@@ -1220,17 +1260,17 @@ function EnrollForm({ onClose, onSave, editData, mode, staff, isSubmitting, }) {
                 }
               }}
               className={`px-8 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors
-    ${isSubmitting || checkingAvailability ? "opacity-70 cursor-not-allowed" : "cursor-pointer"}`}
+    ${isSubmitting || checkingAvailability || hasVisibleBankErrors ? "opacity-70 cursor-not-allowed" : "cursor-pointer"}`}
               style={{
-                backgroundColor: isSubmitting || checkingAvailability ? "#C77B45" : "#E8630A",
+                backgroundColor: isSubmitting || checkingAvailability || hasVisibleBankErrors ? "#C77B45" : "#E8630A",
                 border: "none",
               }}
               onMouseEnter={(e) => {
-                if (!isSubmitting && !checkingAvailability)
+                if (!isSubmitting && !checkingAvailability && !hasVisibleBankErrors)
                   e.currentTarget.style.backgroundColor = "#D05A09";
               }}
               onMouseLeave={(e) => {
-                if (!isSubmitting && !checkingAvailability)
+                if (!isSubmitting && !checkingAvailability && !hasVisibleBankErrors)
                   e.currentTarget.style.backgroundColor = "#E8630A";
               }}
             >
