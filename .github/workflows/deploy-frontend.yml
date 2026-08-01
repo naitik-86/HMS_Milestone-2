@@ -15,12 +15,15 @@
 #                             to also deploy the frontend to EC2:8080 as a
 #                             fallback for networks that block S3 website
 #                             endpoints (see docs/06)
-#   CLOUDFRONT_DISTRIBUTION_ID - `terraform output cloudfront_distribution_id`.
-#                             Without invalidation, CloudFront can keep
-#                             serving a cached old index.html/assets after a
-#                             deploy even though S3 has the new files.
+#   VITE_GOOGLE_CLIENT_ID   - Google OAuth client ID for the "Continue with
+#                             Google" button (Google Identity Services).
+#                             Must match the backend's GOOGLE_CLIENT_ID env
+#                             var exactly, or token verification fails.
 #
 # See docs/06-github-actions-cicd.md for how to add these.
+#
+# Note: no CloudFront invalidation step here - this testing server is
+# accessed by plain IP:port, no CloudFront distribution in front of it.
 
 name: Deploy Frontend
 
@@ -60,6 +63,7 @@ jobs:
         env:
           VITE_BACKEND_URL: ${{ secrets.VITE_BACKEND_URL }}
           VITE_PAYU_BASE_URL: ${{ secrets.VITE_PAYU_BASE_URL }}
+          VITE_GOOGLE_CLIENT_ID: ${{ secrets.VITE_GOOGLE_CLIENT_ID }}
         run: npm run build
 
       - name: Configure AWS credentials
@@ -80,6 +84,12 @@ jobs:
           aws s3 cp dist/index.html "s3://${{ secrets.S3_FRONTEND_BUCKET }}/index.html" \
             --cache-control "no-cache, must-revalidate"
 
+      - name: Copy build to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
           source: "frontend/main-app/dist/*,frontend/main-app/nginx.conf"
           target: "/opt/app/frontend_new"
           strip_components: 2
