@@ -191,6 +191,30 @@ const calculateAge = (dob) => {
   return age >= 0 ? age : "";
 };
 
+// Total age in whole months - used only to render a friendlier "X months"
+// display for pets under a year old, so a puppy/kitten doesn't just show
+// a bare "0". The stored/submitted age (calculateAge, in years) is unchanged.
+const calculateAgeInMonths = (dob) => {
+  if (!dob) return null;
+  const birthDate = new Date(dob);
+  const currentDate = new Date();
+  let months =
+    (currentDate.getFullYear() - birthDate.getFullYear()) * 12 +
+    (currentDate.getMonth() - birthDate.getMonth());
+  if (currentDate.getDate() < birthDate.getDate()) months -= 1;
+  return months >= 0 ? months : null;
+};
+
+const formatAgeDisplay = (dob) => {
+  const totalMonths = calculateAgeInMonths(dob);
+  if (totalMonths === null) return "";
+  if (totalMonths < 12) {
+    return `${totalMonths} ${totalMonths === 1 ? "month" : "months"}`;
+  }
+  const years = Math.floor(totalMonths / 12);
+  return `${years} ${years === 1 ? "yr" : "yrs"}`;
+};
+
 const normalizeDoctorList = (response) => {
   const doctors =
     response?.doctors || response?.data?.doctors || response?.data || response || [];
@@ -1980,13 +2004,13 @@ export default function NewRegistrationPet() {
                                   </div>
                                   <div>
                                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 flex items-center justify-between">
-                                      <span>Age (Years)</span>
+                                      <span>Age</span>
                                       <span className="text-[10px] text-emerald-600 font-extrabold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">Auto Calculated</span>
                                     </label>
                                     <input
                                       type="text"
                                       readOnly
-                                      value={pet.age !== undefined && pet.age !== null && pet.age !== "" ? pet.age : "—"}
+                                      value={pet.dob ? formatAgeDisplay(pet.dob) : "—"}
                                       placeholder="Set DOB to calculate"
                                       className="w-full border border-slate-200 rounded-lg py-1.5 px-3 bg-slate-100 text-slate-700 font-mono font-bold text-xs shadow-2xs outline-none cursor-not-allowed select-none"
                                     />
@@ -2209,13 +2233,13 @@ export default function NewRegistrationPet() {
 
                              <div>
                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 flex items-center justify-between">
-                                 <span>Age (Years)</span>
+                                 <span>Age</span>
                                  <span className="text-[10px] text-emerald-600 font-extrabold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">Auto Calculated</span>
                                </label>
                                <input
                                  type="text"
                                  readOnly
-                                 value={petItem.age !== undefined && petItem.age !== null && petItem.age !== "" ? petItem.age : "—"}
+                                 value={petItem.dob ? formatAgeDisplay(petItem.dob) : "—"}
                                  placeholder="Set DOB to calculate"
                                  className="w-full border border-slate-200 rounded-lg py-1.5 px-3 bg-slate-100 text-slate-700 font-mono font-bold text-xs shadow-2xs outline-none cursor-not-allowed select-none"
                                />
