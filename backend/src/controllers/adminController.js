@@ -19,8 +19,10 @@ const OwnerReport = require('../models/OwnerReport');
 const LoginOtp = require('../models/LoginOtp');
 const Staff = require('../models/Staff');
 const SubscriptionPlan = require('../models/SubscriptionPlan');
+const ClinicSubscriptionTracker = require("../models/ClinicSubscriptionTracker");
 const { Pet } = require('../models/Pet');
 const sendEmail = require('../utils/emailService'); // NEW: Email Trigger Utility
+const { credentialEmail, clinicVerificationEmail } = require('../utils/emailTemplates');
 const bcrypt = require('bcryptjs');
 const generatePassword = require('../utils/generatePassword');
 
@@ -33,6 +35,30 @@ const PAN_REGEX = /^[A-Z]{5}[0-9]{4}[A-Z]$/;
 const PASSPORT_REGEX = /^[A-Z][0-9]{7}$/;
 const GST_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
 const IFSC_REGEX = /^[A-Z]{4}0[A-Z0-9]{6}$/;
+const normalizePhone = (value) => String(value || '').replace(/\D/g, '').slice(0, 10);
+
+const findExistingClinicContact = async ({ email, phone, excludeClinicId }) => {
+  const normalizedEmail = normalizeEmail(email);
+  const normalizedPhone = normalizePhone(phone);
+  const checks = [];
+
+  const clinicExclusion = excludeClinicId ? { _id: { $ne: excludeClinicId } } : {};
+  const clinicAdminExclusion = excludeClinicId ? { clinicId: { $ne: excludeClinicId } } : {};
+
+  if (normalizedEmail) checks.push(
+    Clinic.findOne({ ...clinicExclusion, $or: [{ email: normalizedEmail }, { contactEmail: normalizedEmail }, { 'adminDetails.adminEmail': normalizedEmail }] }).select('_id'),
+    ClinicAdmin.findOne({ email: normalizedEmail, ...clinicAdminExclusion }).select('_id'),
+    Staff.findOne({ 'personalInfo.email': normalizedEmail }).select('_id'),
+    User.findOne({ email: normalizedEmail }).select('_id')
+  );
+  if (normalizedPhone) checks.push(
+    Clinic.findOne({ ...clinicExclusion, $or: [{ phone: normalizedPhone }, { altPhone: normalizedPhone }, { 'adminDetails.adminPhone': normalizedPhone }] }).select('_id'),
+    Staff.findOne({ 'personalInfo.mobileNumber': normalizedPhone }).select('_id'),
+    User.findOne({ mobile: normalizedPhone }).select('_id')
+  );
+
+  return (await Promise.all(checks)).some(Boolean);
+};
 
 const parseMaybeJson = (value, fallback = null) => {
   if (value === undefined || value === null || value === '') {
@@ -93,6 +119,185 @@ const normalizeNumber = (value) => {
   return Number.isFinite(nextValue) ? nextValue : NaN;
 };
 
+const pickFirstDefined = (...values) =>
+  values.find((value) => value !== undefined && value !== null && value !== '');
+
+const normalizeClinicLicenseLimits = (value = {}, fallback = {}) => {
+  const limits = parseMaybeJson(value, {}) || {};
+  const fallbackLimits = parseMaybeJson(fallback, {}) || {};
+  const maxPetsValue = pickFirstDefined(
+    limits.maxPets,
+    limits.maxPetRecords,
+    fallbackLimits.maxPets,
+    fallbackLimits.maxPetRecords
+  );
+  const maxPetsUnlimited =
+    normalizeBoolean(limits.maxPetsUnlimited) ||
+    normalizeBoolean(limits.maxPetRecordsUnlimited) ||
+    String(maxPetsValue || '').trim().toLowerCase() === 'unlimited';
+
+  return {
+    maxDoctors: pickFirstDefined(limits.maxDoctors, fallbackLimits.maxDoctors),
+    maxStaff: pickFirstDefined(limits.maxStaff, limits.maxStaffAccounts, fallbackLimits.maxStaff, fallbackLimits.maxStaffAccounts),
+    maxPets: maxPetsUnlimited ? undefined : maxPetsValue,
+    maxPetsUnlimited,
+    storageLimit: pickFirstDefined(limits.storageLimit, limits.storageLimitGb, fallbackLimits.storageLimit, fallbackLimits.storageLimitGb),
+  };
+};
+
+const CLINIC_CODE_PREFIX = 'CA';
+const CLINIC_CODE_PATTERN = /^CA-(\d+)([A-Z])$/;
+
+const getClinicCodeIndex = (clinicCode) => {
+  const match = CLINIC_CODE_PATTERN.exec(String(clinicCode || '').trim().toUpperCase());
+  if (!match) return -1;
+
+  const sequenceNumber = Number(match[1]);
+  const suffixIndex = match[2].charCodeAt(0) - 65;
+
+  if (!Number.isInteger(sequenceNumber) || sequenceNumber < 1 || suffixIndex < 0 || suffixIndex > 25) {
+    return -1;
+  }
+
+  return (sequenceNumber - 1) * 26 + suffixIndex;
+};
+
+const formatClinicCode = (index) => {
+  const sequenceNumber = Math.floor(index / 26) + 1;
+  const suffix = String.fromCharCode(65 + (index % 26));
+
+  return `${CLINIC_CODE_PREFIX}-${String(sequenceNumber).padStart(3, '0')}${suffix}`;
+};
+
+const getNextClinicCode = async () => {
+  const clinics = await Clinic.find({ clinicCode: { $regex: '^CA-\\d+[A-Z]$' } })
+    .select('clinicCode')
+    .lean();
+  const maxIndex = clinics.reduce(
+    (highest, clinic) => Math.max(highest, getClinicCodeIndex(clinic.clinicCode)),
+    -1
+  );
+
+  return formatClinicCode(maxIndex + 1);
+};
+
+// Sup-013: Phone + OTP verify for the clinic admin's contact number on
+// Add Clinic. Same lightweight pattern as the reception desk's
+// registration OTP (petRegistrationController.js) - a fixed/logged OTP
+// rather than real SMS delivery, since no SMS provider is wired up yet
+// anywhere in this app. Verification itself is real (checked against
+// what was actually issued, with expiry), only the delivery channel is
+// a stub.
+const clinicAdminOtps = new Map();
+
+exports.sendClinicAdminOtp = async (req, res) => {
+  try {
+    const cleanPhone = String(req.body.adminPhone || '').replace(/\D/g, '').slice(-10);
+
+    if (!cleanPhone || !/^[6-9]\d{9}$/.test(cleanPhone)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Valid 10 digit Indian mobile number starting with 6-9 is required',
+      });
+    }
+
+    const otp = '123456';
+    clinicAdminOtps.set(cleanPhone, { otp, expiresAt: Date.now() + 5 * 60 * 1000 });
+    console.log(`[CLINIC ADMIN OTP] Phone: ${cleanPhone} => OTP: ${otp}`);
+
+    return res.status(200).json({
+      success: true,
+      message: 'OTP sent successfully.',
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message || 'Failed to send OTP' });
+  }
+};
+
+exports.verifyClinicAdminOtp = async (req, res) => {
+  const cleanPhone = String(req.body.adminPhone || '').replace(/\D/g, '').slice(-10);
+  const otp = String(req.body.otp || '').trim();
+  const entry = clinicAdminOtps.get(cleanPhone);
+
+  if (!entry || entry.expiresAt < Date.now() || entry.otp !== otp) {
+    return res.status(400).json({ success: false, message: 'Invalid or expired OTP' });
+  }
+
+  clinicAdminOtps.delete(cleanPhone);
+  return res.status(200).json({ success: true, message: 'OTP verified successfully' });
+};
+
+// Preview-only: shows the Super Admin what code will *likely* be assigned
+// while filling out Add Clinic, before the record is actually created.
+// createClinicWithCode() re-derives and retries on a collision at save
+// time, so this preview never itself reserves or guarantees the code.
+exports.getNextClinicCodePreview = async (req, res) => {
+  try {
+    const clinicCode = await getNextClinicCode();
+    res.status(200).json({ success: true, data: { clinicCode } });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+const createClinicWithCode = async (clinicPayload) => {
+  let lastError;
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      return await Clinic.create({
+        ...clinicPayload,
+        clinicCode: await getNextClinicCode(),
+      });
+    } catch (error) {
+      lastError = error;
+      if (error?.code !== 11000 || !error?.keyPattern?.clinicCode) {
+        throw error;
+      }
+    }
+  }
+
+  throw lastError;
+};
+
+const ensureClinicCodes = async () => {
+  const clinicsMissingCode = await Clinic.find({
+    $or: [
+      { clinicCode: { $exists: false } },
+      { clinicCode: null },
+      { clinicCode: '' },
+    ],
+  })
+    .sort({ createdAt: 1, _id: 1 })
+    .select('_id')
+    .lean();
+
+  for (const clinic of clinicsMissingCode) {
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      try {
+        const clinicCode = await getNextClinicCode();
+        const result = await Clinic.updateOne(
+          {
+            _id: clinic._id,
+            $or: [
+              { clinicCode: { $exists: false } },
+              { clinicCode: null },
+              { clinicCode: '' },
+            ],
+          },
+          { $set: { clinicCode } }
+        );
+
+        if (result.modifiedCount || result.matchedCount === 0) break;
+      } catch (error) {
+        if (error?.code !== 11000 || !error?.keyPattern?.clinicCode || attempt === 2) {
+          throw error;
+        }
+      }
+    }
+  }
+};
+
 const isPastDate = (value) => {
   if (!value) return false;
 
@@ -132,7 +337,7 @@ const isValidGstPan = (value) => {
 };
 
 const firstUploadName = (file) =>
-  file?.originalname || file?.filename || file?.name || '';
+  file?.location || file?.path || file?.originalname || file?.filename || file?.name || '';
 
 const normalizeUploadNames = (files) => {
   if (!Array.isArray(files)) {
@@ -874,6 +1079,10 @@ exports.createClinic = async (req, res) => {
 
     const contactEmail = normalizeEmail(email);
     const clinicAdminEmail = normalizeEmail(adminEmail);
+    const clinicPhone = normalizePhone(req.body.phone);
+    const clinicAdminPhone = normalizePhone(req.body.adminPhone || req.body.adminDetails?.adminPhone);
+    const normalizedAddressDetails = parseMaybeJson(addressDetails, {}) || {};
+    const serviceAreaPincodes = normalizeStringList(normalizedAddressDetails.serviceAreas);
 
     if (!clinicAdminEmail) {
       return res.status(400).json({
@@ -882,12 +1091,29 @@ exports.createClinic = async (req, res) => {
       });
     }
 
-    const existingClinicAdmin = await ClinicAdmin.findOne({ email: clinicAdminEmail });
-    if (existingClinicAdmin) {
-      return res.status(409).json({
-        success: false,
-        message: 'A clinic admin with this email already exists.',
-      });
+    if (!EMAIL_REGEX.test(contactEmail) || !EMAIL_REGEX.test(clinicAdminEmail)) {
+      return res.status(400).json({ success: false, message: 'A valid clinic and admin email are required.' });
+    }
+    if (!PHONE_REGEX.test(clinicPhone) || !PHONE_REGEX.test(clinicAdminPhone)) {
+      return res.status(400).json({ success: false, message: 'A valid clinic and admin phone number are required.' });
+    }
+    if (!/^\d{6}$/.test(String(normalizedAddressDetails.pincode || '').trim())) {
+      return res.status(400).json({ success: false, field: 'pincode', message: 'A valid 6-digit clinic PIN code is required.' });
+    }
+    if (!serviceAreaPincodes.length || serviceAreaPincodes.some((pincode) => !/^\d{6}$/.test(pincode))) {
+      return res.status(400).json({ success: false, field: 'serviceAreas', message: 'Add at least one valid 6-digit service area PIN code.' });
+    }
+
+    const contactsInUse = await Promise.all([
+      findExistingClinicContact({ email: contactEmail }),
+      findExistingClinicContact({ email: clinicAdminEmail }),
+      findExistingClinicContact({ phone: clinicPhone }),
+      findExistingClinicContact({ phone: clinicAdminPhone }),
+    ]);
+    const duplicateField = ['email', 'adminEmail', 'phone', 'adminPhone'][contactsInUse.findIndex(Boolean)];
+    if (duplicateField) {
+      const label = duplicateField.toLowerCase().includes('email') ? 'email' : 'phone number';
+      return res.status(409).json({ success: false, field: duplicateField, message: `This ${label} is already being used.` });
     }
 
     let expiryDate = new Date();
@@ -897,7 +1123,7 @@ exports.createClinic = async (req, res) => {
     if (subscriptionType === '12_MONTHS') expiryDate.setFullYear(expiryDate.getFullYear() + 1);
     if (subscriptionType === 'FREE_TIER') expiryDate = null;
 
-    const clinic = await Clinic.create({
+    const clinic = await createClinicWithCode({
       name,
       address,
       facilityType: req.body.facilityType,
@@ -911,13 +1137,17 @@ exports.createClinic = async (req, res) => {
       trialDays: req.body.trialDays,
       discountCode: req.body.discountCode,
       notes: req.body.notes,
-      phone: req.body.phone,
-      altPhone: req.body.altPhone,
+      phone: clinicPhone,
+      altPhone: normalizePhone(req.body.altPhone),
       website: req.body.website,
       email: contactEmail || undefined,
-      licenseLimits: req.body.licenseLimits || { maxDoctors, maxStaff },
-      addressDetails,
-      adminDetails: req.body.adminDetails,
+      licenseLimits: normalizeClinicLicenseLimits(req.body.licenseLimits, { maxDoctors, maxStaff }),
+      addressDetails: { ...normalizedAddressDetails, serviceAreas: serviceAreaPincodes },
+      adminDetails: {
+        ...(parseMaybeJson(req.body.adminDetails, {}) || {}),
+        adminEmail: clinicAdminEmail,
+        adminPhone: clinicAdminPhone,
+      },
       taxDetails: req.body.taxDetails,
       registrationDetails: req.body.registrationDetails,
       features: req.body.features,
@@ -953,24 +1183,25 @@ exports.createClinic = async (req, res) => {
       {
         email: clinicAdminEmail,
         subject: `${clinicDisplayName} clinic admin account created`,
-        message: `Hello ${adminDisplayName},\n\nYour clinic "${clinicDisplayName}" has been created in HMS.\n\nLogin email: ${clinicAdminEmail}\nTemporary password: ${temporaryPassword}\n\nPlease sign in and change your password after the first login.`,
+        ...credentialEmail({
+          name: adminDisplayName,
+          email: clinicAdminEmail,
+          password: temporaryPassword,
+          accountLabel: `${clinicDisplayName} clinic admin`,
+        }),
       },
     ];
 
-    if (contactEmail && contactEmail !== clinicAdminEmail) {
-      notificationJobs.push({
-        email: contactEmail,
-        subject: `${clinicDisplayName} clinic registration received`,
-        message: `Hello,\n\nYour clinic "${clinicDisplayName}" has been created in HMS.\n\nThe clinic admin login has been prepared separately and will use the admin email on file.\n\nIf you are the clinic contact, you will receive future approval and status updates here.`,
-      });
-    }
+    // Credentials are intentionally sent only to the Admin Info email.
+    // The clinic's official email must never receive login credentials.
 
     const notificationResults = await Promise.allSettled(
-      notificationJobs.map(({ email: recipientEmail, subject, message }) =>
+      notificationJobs.map(({ email: recipientEmail, subject, message, html }) =>
         sendEmail({
           email: recipientEmail,
           subject,
           message,
+          html,
         })
       )
     );
@@ -1079,6 +1310,13 @@ exports.createVeterinarian = async (req, res) => {
         success: false,
         message: 'A valid 10-digit mobile number is required.',
       });
+    }
+
+    if (await findExistingClinicContact({ email: normalizedEmail })) {
+      return res.status(409).json({ success: false, field: 'email', message: 'This email is already being used.' });
+    }
+    if (await findExistingClinicContact({ phone: normalizedMobile })) {
+      return res.status(409).json({ success: false, field: 'mobile', message: 'This phone number is already being used.' });
     }
 
     if (!gender) {
@@ -1398,7 +1636,12 @@ exports.createVeterinarian = async (req, res) => {
       await sendEmail({
         email: normalizedEmail,
         subject: 'Your veterinarian login credentials',
-        message: `Hello ${String(fullName).trim()},\n\nYour veterinarian account has been created in HMS.\n\nLogin email: ${normalizedEmail}\nTemporary password: ${temporaryPassword}\n\nPlease sign in and change your password after the first login.\n\nRegards,\nHMS Team`,
+        ...credentialEmail({
+          name: String(fullName).trim(),
+          email: normalizedEmail,
+          password: temporaryPassword,
+          accountLabel: 'veterinarian',
+        }),
       });
     } catch (emailError) {
       const warningMessage = `Failed to send veterinarian credential email to ${normalizedEmail}: ${emailError.message}`;
@@ -1510,7 +1753,49 @@ exports.deleteStaff = async (req, res) => {
 // GET /api/clinics -> List all clinics
 exports.getAllClinics = async (req, res) => {
   try {
-    const clinics = await Clinic.find().sort({ createdAt: -1 });
+    await ensureClinicCodes();
+
+    const search = String(req.query.search || '').trim();
+    const query = {};
+
+    if (search) {
+      const searchRegex = new RegExp(escapeRegex(search), 'i');
+      query.$or = [
+        { clinicCode: searchRegex },
+        { name: searchRegex },
+        { facilityType: searchRegex },
+        { address: searchRegex },
+        { contactEmail: searchRegex },
+        { email: searchRegex },
+        { phone: searchRegex },
+        { altPhone: searchRegex },
+        { plan: searchRegex },
+        { subscriptionType: searchRegex },
+        { subscriptionStatus: searchRegex },
+        { billingCycle: searchRegex },
+        { verificationStatus: searchRegex },
+        { 'addressDetails.addressLine1': searchRegex },
+        { 'addressDetails.addressLine2': searchRegex },
+        { 'addressDetails.city': searchRegex },
+        { 'addressDetails.district': searchRegex },
+        { 'addressDetails.state': searchRegex },
+        { 'addressDetails.pincode': searchRegex },
+        { 'addressDetails.serviceAreas': searchRegex },
+        { 'adminDetails.adminName': searchRegex },
+        { 'adminDetails.adminEmail': searchRegex },
+        { 'adminDetails.adminPhone': searchRegex },
+        { 'adminDetails.designation': searchRegex },
+        { 'adminDetails.govtIdNumber': searchRegex },
+        { 'taxDetails.gstNumber': searchRegex },
+        { 'taxDetails.panNumber': searchRegex },
+        { 'registrationDetails.vetRegistrationNumber': searchRegex },
+        { 'registrationDetails.stateCouncil': searchRegex },
+        { 'registrationDetails.tradeLicenseNumber': searchRegex },
+        { 'registrationDetails.drugLicenseNumber': searchRegex },
+      ];
+    }
+
+    const clinics = await Clinic.find(query).sort({ createdAt: -1 });
     res.status(200).json({ success: true, count: clinics.length, data: clinics });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -1534,18 +1819,196 @@ exports.updateClinic = async (req, res) => {
       });
     }
 
+    const requestedContacts = [
+      { field: 'email', value: normalizeEmail(updateData.email || updateData.contactEmail), current: normalizeEmail(clinic.email || clinic.contactEmail), type: 'email' },
+      { field: 'phone', value: normalizePhone(updateData.phone), current: normalizePhone(clinic.phone), type: 'phone' },
+      { field: 'adminEmail', value: normalizeEmail(updateData.adminEmail || updateData.adminDetails?.adminEmail), current: normalizeEmail(clinic.adminDetails?.adminEmail), type: 'email' },
+      { field: 'adminPhone', value: normalizePhone(updateData.adminPhone || updateData.adminDetails?.adminPhone), current: normalizePhone(clinic.adminDetails?.adminPhone), type: 'phone' },
+    ];
+
+    for (const contact of requestedContacts) {
+      if (!contact.value || contact.value === contact.current) continue;
+      if (await findExistingClinicContact({ [contact.type]: contact.value, excludeClinicId: clinic._id })) {
+        const label = contact.type === 'email' ? 'email' : 'phone number';
+        return res.status(409).json({ success: false, field: contact.field, message: `This ${label} is already being used.` });
+      }
+    }
+
+    // The onboarding form can update the clinic admin's contact details.
+    // Keep the separate login account in sync so all future login OTPs are
+    // delivered to the newly saved email address.
+    const requestedAdminEmail = normalizeEmail(
+      updateData.adminEmail || updateData.adminDetails?.adminEmail
+    );
+    let adminCredentialEmailJob = null;
+
+    if (requestedAdminEmail) {
+      if (!EMAIL_REGEX.test(requestedAdminEmail)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Please provide a valid clinic admin email address.',
+        });
+      }
+
+      const clinicAdmin = await ClinicAdmin.findOne({ clinicId: clinic._id });
+      if (!clinicAdmin) {
+        return res.status(404).json({
+          success: false,
+          message: 'Clinic admin account not found.',
+        });
+      }
+
+      if (clinicAdmin.email !== requestedAdminEmail) {
+        const temporaryPassword = generatePassword();
+        const hashedPassword = await bcrypt.hash(temporaryPassword, 10);
+        const duplicateAdmin = await ClinicAdmin.findOne({
+          email: requestedAdminEmail,
+          _id: { $ne: clinicAdmin._id },
+        });
+        if (duplicateAdmin) {
+          return res.status(409).json({
+            success: false,
+            message: 'A clinic admin with this email already exists.',
+          });
+        }
+
+        clinicAdmin.email = requestedAdminEmail;
+        clinicAdmin.password = hashedPassword;
+        clinicAdmin.forcePasswordReset = true;
+        await clinicAdmin.save();
+
+        // Do not allow a challenge created for the old address to remain valid.
+        await LoginOtp.deleteMany({
+          userType: 'CLINIC_ADMIN',
+          userId: clinicAdmin._id,
+          purpose: 'LOGIN',
+          isConsumed: false,
+        });
+
+        const clinicDisplayName = String(updateData.name || clinic.name || 'Clinic').trim();
+        const adminDisplayName = String(
+          updateData.adminName ||
+          updateData.adminDetails?.adminName ||
+          clinic.adminDetails?.adminName ||
+          'Clinic Admin'
+        ).trim();
+
+        adminCredentialEmailJob = {
+          email: requestedAdminEmail,
+          subject: `${clinicDisplayName} clinic admin login updated`,
+          ...credentialEmail({
+            name: adminDisplayName,
+            email: requestedAdminEmail,
+            password: temporaryPassword,
+            accountLabel: `${clinicDisplayName} clinic admin`,
+          }),
+        };
+      }
+
+      updateData.adminEmail = requestedAdminEmail;
+      updateData.adminDetails = {
+        ...(updateData.adminDetails || {}),
+        adminEmail: requestedAdminEmail,
+      };
+    }
+
+    updateData.licenseLimits = normalizeClinicLicenseLimits(
+      updateData.licenseLimits,
+      clinic.licenseLimits
+    );
+
     // Update the clinic using the new fields defined in the schema
     const updatedClinic = await Clinic.findByIdAndUpdate(
       id,
       { $set: updateData },
       { new: true, runValidators: true }
     );
+    const tracker = await ClinicSubscriptionTracker.findOne({
+      clinicId: updatedClinic._id,
+    });
 
+    if (tracker) {
+      let trackerChanged = false;
+
+      // Keep the tracker's planId (what Clinic Admin's Subscription page
+      // actually reads) in sync whenever the assigned plan/billing cycle
+      // changes here - previously this only ever updated Clinic.plan /
+      // Clinic.subscriptionType, leaving the tracker pointed at whatever
+      // plan it was created with and never reflecting later changes.
+      const planOrBillingChanged =
+        (updateData.plan !== undefined && updateData.plan !== clinic.plan) ||
+        (updateData.subscriptionType !== undefined && updateData.subscriptionType !== clinic.subscriptionType);
+
+      if (planOrBillingChanged) {
+        const billingCycleMap = {
+          Monthly: "Monthly",
+          Quarterly: "Quarterly",
+          "6_MONTHS": "Half-Yearly",
+          "12_MONTHS": "Annual",
+        };
+        const billingCycle = billingCycleMap[updatedClinic.subscriptionType] || updatedClinic.subscriptionType;
+        const matchingPlan =
+          (await SubscriptionPlan.findOne({
+            subscriptionPlan: updatedClinic.plan,
+            billingCycle,
+            status: "Active",
+          })) ||
+          (await SubscriptionPlan.findOne({ billingCycle, status: "Active" }));
+
+        if (matchingPlan) {
+          tracker.planId = matchingPlan._id;
+          trackerChanged = true;
+        }
+      }
+
+      if (tracker.status === "TRIAL" && updateData.trialDays !== undefined) {
+        const trialDays = Math.max(Number(updateData.trialDays || 0), 0);
+        const trialStartDate = tracker.trialStartDate || new Date();
+        const newTrialEndDate = new Date(trialStartDate);
+
+        newTrialEndDate.setDate(newTrialEndDate.getDate() + trialDays);
+        tracker.trialStartDate = trialStartDate;
+        tracker.trialEndDate = newTrialEndDate;
+
+        if (trialDays === 0 || new Date() >= newTrialEndDate) {
+          tracker.status = "PAYMENT_REQUIRED";
+        }
+
+        trackerChanged = true;
+      }
+
+      if (trackerChanged) {
+        await tracker.save();
+      }
+    }
+
+    const emailWarnings = [];
+    if (adminCredentialEmailJob) {
+      try {
+        await sendEmail({
+          email: adminCredentialEmailJob.email,
+          subject: adminCredentialEmailJob.subject,
+          message: adminCredentialEmailJob.message,
+          html: adminCredentialEmailJob.html,
+        });
+      } catch (emailError) {
+        const failureMessage = `Clinic admin credentials were reset but could not be emailed to ${adminCredentialEmailJob.email}: ${emailError.message || emailError}`;
+        emailWarnings.push(failureMessage);
+        console.error(failureMessage);
+      }
+    }
+    
     return res.status(200).json({
       success: true,
-      message: 'Clinic updated successfully.',
+      message: emailWarnings.length
+        ? 'Clinic updated, but the new admin credential email was not sent.'
+        : adminCredentialEmailJob
+          ? 'Clinic updated successfully. New admin credentials were sent.'
+          : 'Clinic updated successfully.',
       data: updatedClinic,
+      emailWarning: emailWarnings,
     });
+
   } catch (error) {
     console.error('UPDATE CLINIC ERROR:', error.message);
     return res.status(500).json({
@@ -1656,6 +2119,8 @@ exports.updateSubscription = async (req, res) => {
 // GET /api/clinics/dashboard -> Platform stats
 exports.getAdminDashboard = async (req, res) => {
   try {
+    await ensureClinicCodes();
+
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const startOfWeek = new Date(now);
@@ -1682,18 +2147,22 @@ exports.getAdminDashboard = async (req, res) => {
       lastMonthRevenueAggregation,
     ] = await Promise.all([
       Clinic.countDocuments(),
-      Clinic.countDocuments({ subscriptionStatus: 'ACTIVE' }),
+      Clinic.countDocuments({ isActive: true }),
       Clinic.countDocuments({ subscriptionStatus: { $in: ['SUSPENDED', 'EXPIRED'] } }),
       Owner.countDocuments(),
-      DoctorDetails.countDocuments(),
-      DoctorDetails.countDocuments({ status: 'Active' }),
+      // Veterinarians here means the same population as the Veterinarian
+      // Management page (super-admin-onboarded solo vets, User role
+      // DOCTOR) - not DoctorDetails, which is clinic-attached doctors added
+      // via a clinic's own Doctor module and is a separate population.
+      User.countDocuments({ role: 'DOCTOR' }),
+      User.countDocuments({ role: 'DOCTOR', isActive: true, forcePasswordReset: false }),
       SubscriptionPlan.countDocuments({ status: 'Active' }),
       Clinic.countDocuments({ createdAt: { $gte: startOfWeek } }),
       Clinic.countDocuments({ createdAt: { $gte: startOfMonth } }),
-      DoctorDetails.countDocuments({ createdAt: { $gte: startOfMonth } }),
+      User.countDocuments({ role: 'DOCTOR', createdAt: { $gte: startOfMonth } }),
       SubscriptionPlan.countDocuments({ createdAt: { $gte: startOfMonth } }),
       Clinic.find()
-        .select('name contactEmail subscriptionStatus verificationStatus createdAt expiryDate')
+        .select('clinicCode name contactEmail subscriptionStatus verificationStatus createdAt expiryDate')
         .sort({ createdAt: -1 })
         .limit(6)
         .lean(),
@@ -1705,38 +2174,19 @@ exports.getAdminDashboard = async (req, res) => {
           },
         },
       ]),
-      Appointment.aggregate([
-        {
-          $match: {
-            status: 'COMPLETED',
-          },
-        },
-        {
-          $lookup: {
-            from: 'users',
-            localField: 'doctorId',
-            foreignField: '_id',
-            as: 'doctor',
-          },
-        },
-        {
-          $unwind: {
-            path: '$doctor',
-            preserveNullAndEmptyArrays: true,
-          },
-        },
-        {
-          $addFields: {
-            fee: { $ifNull: ['$doctor.consultationFee', 0] },
-          },
-        },
+      // Revenue is recognized from clinic subscription purchases
+      // (SubscriptionPlan.price), not from patient appointment consultation
+      // fees - the Appointment collection isn't used by the clinic
+      // workflow (Visit/PreConsultation are), so it's always empty and the
+      // old fee-based aggregation here always produced zero revenue.
+      SubscriptionPlan.aggregate([
         {
           $group: {
             _id: {
-              year: { $year: '$appointmentDate' },
-              month: { $month: '$appointmentDate' },
+              year: { $year: '$createdAt' },
+              month: { $month: '$createdAt' },
             },
-            revenue: { $sum: '$fee' },
+            revenue: { $sum: '$price' },
           },
         },
         {
@@ -1746,36 +2196,19 @@ exports.getAdminDashboard = async (req, res) => {
           },
         },
       ]),
-      Appointment.aggregate([
+      SubscriptionPlan.aggregate([
         {
           $match: {
-            status: 'COMPLETED',
-            appointmentDate: {
+            createdAt: {
               $gte: startOfLastMonth,
               $lte: endOfLastMonth,
             },
           },
         },
         {
-          $lookup: {
-            from: 'users',
-            localField: 'doctorId',
-            foreignField: '_id',
-            as: 'doctor',
-          },
-        },
-        {
-          $unwind: {
-            path: '$doctor',
-            preserveNullAndEmptyArrays: true,
-          },
-        },
-        {
           $group: {
             _id: null,
-            revenue: {
-              $sum: { $ifNull: ['$doctor.consultationFee', 0] },
-            },
+            revenue: { $sum: '$price' },
           },
         },
       ]),
@@ -1842,7 +2275,7 @@ exports.getAdminDashboard = async (req, res) => {
         ],
         recentClinics: recentClinics.map((clinic, index) => ({
           ...clinic,
-          displayId: `#${String(index + 1).padStart(3, '0')}`,
+          displayId: clinic.clinicCode || `#${String(index + 1).padStart(3, '0')}`,
         })),
         revenueTrend,
         revenueComparison: {
@@ -1901,16 +2334,18 @@ exports.updateClinicVerification = async (req, res) => {
         ? 'Clinic Account Activated'
         : 'Clinic Registration Rejected';
 
-      const message = normalizedStatus === 'APPROVED'
-        ? `Your clinic "${clinic.name}" has been verified and is now active. You can log in with your clinic admin email.`
-        : `Your clinic "${clinic.name}" registration was rejected. Reason: ${rejectionReason || 'Not provided'}`;
+      const emailContent = clinicVerificationEmail({
+        clinicName: clinic.name,
+        approved: normalizedStatus === 'APPROVED',
+        rejectionReason,
+      });
 
       const results = await Promise.allSettled(
         recipientEmails.map((recipientEmail) =>
           sendEmail({
             email: recipientEmail,
             subject,
-            message,
+            ...emailContent,
           })
         )
       );
@@ -1935,6 +2370,50 @@ exports.updateClinicVerification = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+exports.checkClinicContactAvailability = async (req, res) => {
+  try {
+    const email = normalizeEmail(req.query?.email);
+    const phone = normalizePhone(req.query?.phone);
+    if (!email && !phone) return res.status(400).json({ success: false, message: 'Email or phone number is required.' });
+
+    const inUse = await findExistingClinicContact({ email, phone });
+    const label = email ? 'email' : 'phone number';
+    return res.json({ success: true, available: !inUse, message: inUse ? `This ${label} is already being used.` : `${label[0].toUpperCase()}${label.slice(1)} is available.` });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message || 'Unable to check contact availability.' });
+  }
+};
+
+exports.updateClinicActivity = async (req, res) => {
+  try {
+    const { isActive } = req.body;
+    if (typeof isActive !== 'boolean') return res.status(400).json({ success: false, message: 'isActive must be a boolean.' });
+
+    const clinic = await Clinic.findById(req.params.id);
+    if (!clinic) return res.status(404).json({ success: false, message: 'Clinic not found.' });
+    if (clinic.verificationStatus !== 'APPROVED') return res.status(400).json({ success: false, message: 'Only approved clinics can be activated or deactivated.' });
+
+    clinic.isActive = isActive;
+    await clinic.save();
+
+    if (!isActive) {
+      const [clinicAdmin, staffMembers] = await Promise.all([
+        ClinicAdmin.findOne({ clinicId: clinic._id }).select('_id'),
+        Staff.find({ clinicId: clinic._id }).select('_id'),
+      ]);
+      const userIds = [clinicAdmin?._id, ...staffMembers.map((staff) => staff._id)].filter(Boolean);
+      if (userIds.length) await LoginOtp.updateMany(
+        { purpose: 'LOGIN', userId: { $in: userIds }, isConsumed: false },
+        { $set: { isConsumed: true } }
+      );
+    }
+
+    return res.status(200).json({ success: true, message: `Clinic is now ${clinic.isActive ? 'active' : 'inactive'}.`, data: clinic });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message || 'Unable to update clinic activity.' });
   }
 };
 
@@ -2011,12 +2490,11 @@ exports.uploadClinicDocuments = async (req, res) => {
       return res.status(400).json({ success: false, message: 'No documents uploaded' });
     }
 
-    // The upload middleware keeps files in memory. Store a data URL so the
-    // document remains available for the clinic view even in local deployments.
-    // Production deployments can replace this value with an object-storage URL.
+    // Files are uploaded straight to S3 by the uploadClinicDocuments
+    // middleware, so file.location is already the public URL.
     clinic.legalDocuments = clinic.legalDocuments || {};
     uploadedDocuments.forEach(({ urlKey, nameKey, file }) => {
-      clinic.legalDocuments[urlKey] = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
+      clinic.legalDocuments[urlKey] = file.location;
       clinic.legalDocuments[nameKey] = file.originalname;
     });
     await clinic.save();

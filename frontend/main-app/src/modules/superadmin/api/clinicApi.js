@@ -49,6 +49,7 @@ export const createClinic = async (clinicData) => {
             maxDoctors: clinicData.maxDoctors || 5,
             maxStaff: clinicData.maxStaff || 10,
             maxPets: clinicData.maxPets,
+            maxPetsUnlimited: String(clinicData.maxPets || "").trim().toLowerCase() === "unlimited",
             storageLimit: clinicData.storageLimit
         },
         addressDetails: {
@@ -109,8 +110,23 @@ export const createClinic = async (clinicData) => {
     return createRes.data;
 };
 
-export const getClinics = async () => {
-    const res = await API.get("/super-admin/clinics");
+export const getNextClinicCode = async () => {
+    const res = await API.get("/super-admin/clinics/next-code");
+    return res.data;
+};
+
+export const sendClinicAdminOtp = async (adminPhone) => {
+    const res = await API.post("/super-admin/clinics/admin-otp/send", { adminPhone });
+    return res.data;
+};
+
+export const verifyClinicAdminOtp = async (adminPhone, otp) => {
+    const res = await API.post("/super-admin/clinics/admin-otp/verify", { adminPhone, otp });
+    return res.data;
+};
+
+export const getClinics = async (params = {}) => {
+    const res = await API.get("/super-admin/clinics", { params });
     return res.data;
 };
 
@@ -121,6 +137,16 @@ export const updateClinic = async (id, clinicData) => {
 
 export const updateClinicVerification = async (id, status) => {
     const res = await API.put(`/super-admin/clinics/${id}/verification`, { status });
+    return res.data;
+};
+
+export const checkClinicContactAvailability = async ({ email, phone }) => {
+    const res = await API.get("/super-admin/clinics/contact-availability", { params: { email, phone } });
+    return res.data;
+};
+
+export const updateClinicActivity = async (id, isActive) => {
+    const res = await API.put(`/super-admin/clinics/${id}/activity`, { isActive });
     return res.data;
 };
 

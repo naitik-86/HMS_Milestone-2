@@ -10,6 +10,7 @@ import ChangePassword from './ChangePassword';
 import Payment from "../modules/billingModule/pages/PaymentPage";
 import PaymentSucess from "../modules/billingModule/pages/PaymentSuccess";
 import PaymentFailure from "../modules/billingModule/pages/PaymentFailed";
+import ComingSoon from "../modules/clinicadmin/pages/pet-owner/ComingSoon";
 
 
 function AppRoutes() {
@@ -27,6 +28,7 @@ function AppRoutes() {
             <Route path="/payment-failure" element={<PaymentFailure />} />
 
             <Route path="/change-password" element={<ChangePassword />} />
+            <Route path="/coming-soon" element={<ComingSoon />} />
 
             <Route path="/unauthorized" element={<div />} />
 

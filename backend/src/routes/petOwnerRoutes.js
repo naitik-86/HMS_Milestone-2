@@ -4,6 +4,9 @@ const router = express.Router();
 
 const petOwnerController = require("../controllers/petOwnerController");
 const upload = require("../middlewares/upload");
+const { protect } = require("../middlewares/auth");
+
+router.use(protect);
 
 // Dashboard
 router.get("/dashboard", petOwnerController.getDashboard

@@ -4,6 +4,8 @@ const { authorize } = require('../middlewares/auth');
 const upload = require('../middlewares/uploadMiddleware');
 const groomerController = require('../controllers/groomerController');
 
+router.use(authorize("CLINIC_ADMIN"));
+
 router.post('/create', upload.fields([
     { name: "certificateDocument", maxCount: 1 },
 ]), groomerController.createGroomer);

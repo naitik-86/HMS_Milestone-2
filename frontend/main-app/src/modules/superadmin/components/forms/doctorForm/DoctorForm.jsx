@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { showToast } from "../../../../../shared/components/toast";
 import { INDIAN_STATE_OPTIONS } from "../../../../../shared/constants/indiaStates";
@@ -8,6 +8,10 @@ import Select from "../Select";
 import { Grid, Full } from "../Grid";
 import Upload from "../Upload";
 import { createDoctor, updateDoctor } from "../../../api/doctorApi";
+import { checkClinicContactAvailability } from "../../../api/clinicApi";
+import { BANK_OPTIONS, getBankRule, formatAccountLength, getMaxAccountLength } from "../../../../../shared/constants/bankAccountRules";
+
+const BILLING_CYCLE_OPTIONS = ["Monthly", "Quarterly", "Half-Yearly", "Annual"];
 
 const DEGREE_OPTIONS = [
     "BVSc",
@@ -130,6 +134,9 @@ const getGovtIdRule = (type) => {
 
 const getStepErrorMessage = (errors) => Object.values(errors).find(Boolean) || "";
 
+const getTodayDateStr = () => new Date().toISOString().split("T")[0];
+const today = getTodayDateStr();
+
 export default function DoctorForm({
     activeTab,
     tabs,
@@ -149,6 +156,126 @@ export default function DoctorForm({
     const [errors, setErrors] = useState({});
     const [submitting, setSubmitting] = useState(false);
     const isEditMode = mode === "edit";
+
+    // Captures the email/mobile this veterinarian already had when the form
+    // opened (only set once, on mount) so editing without touching either
+    // field never flags them as "already used" against the record's own
+    // existing values.
+    const initialContact = useRef({ email: form.email, mobile: form.mobile }).current;
+
+    useEffect(() => {
+        const checkField = async (field, value, isEmail) => {
+            const trimmed = String(value || "").trim();
+            if (!trimmed) return;
+            if (isEmail ? !EMAIL_REGEX.test(trimmed) : !PHONE_REGEX.test(trimmed)) return;
+            if (isEditMode && trimmed.toLowerCase() === String(initialContact[field] || "").trim().toLowerCase()) {
+                return;
+            }
+
+            try {
+                const result = await checkClinicContactAvailability(
+                    isEmail ? { email: trimmed } : { phone: trimmed }
+                );
+                setErrors((prev) => {
+                    const next = { ...prev };
+                    if (result.available) {
+                        delete next[field];
+                    } else {
+                        next[field] = result.message || `This ${isEmail ? "email" : "mobile number"} is already being used.`;
+                    }
+                    return next;
+                });
+            } catch (err) {
+                console.error("Contact availability check failed", err);
+            }
+        };
+
+        const timer = window.setTimeout(() => {
+            checkField("email", form.email, true);
+            checkField("mobile", form.mobile, false);
+        }, 400);
+
+        return () => window.clearTimeout(timer);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [form.email, form.mobile]);
+
+    // Each service-area entry must be a real India Post PIN code, not just
+    // 6 digits - verifiedPincodes[pincode] is true/false once checked, so
+    // validatePracticeStep can require every current entry to be verified
+    // before Next enables (matches the format-only pincode gate already
+    // used for the clinic address form).
+    const [verifiedPincodes, setVerifiedPincodes] = useState({});
+
+    useEffect(() => {
+        const list = parseDelimitedList(form.serviceAreas).filter((p) => PINCODE_REGEX.test(p));
+        const unchecked = list.filter((p) => !(p in verifiedPincodes));
+        if (!unchecked.length) return undefined;
+
+        const timer = window.setTimeout(() => {
+            unchecked.forEach(async (pincode) => {
+                try {
+                    const response = await fetch(`https://api.postalpincode.in/pincode/${pincode}`);
+                    const data = await response.json();
+                    const valid = Boolean(data?.[0]?.Status === "Success" && data[0].PostOffice?.length);
+                    setVerifiedPincodes((prev) => ({ ...prev, [pincode]: valid }));
+                } catch (err) {
+                    console.error("PIN code verification failed", err);
+                    setVerifiedPincodes((prev) => ({ ...prev, [pincode]: false }));
+                }
+            });
+        }, 500);
+
+        return () => window.clearTimeout(timer);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [form.serviceAreas]);
+
+    useEffect(() => {
+        const list = parseDelimitedList(form.serviceAreas);
+        if (!list.length) {
+            clearErrorKeys("serviceAreas");
+            return;
+        }
+        if (list.some((p) => !PINCODE_REGEX.test(p))) {
+            setErrors((prev) => ({ ...prev, serviceAreas: "Each service area must be a valid 6-digit Indian PIN code." }));
+            return;
+        }
+        if (list.every((p) => verifiedPincodes[p] === true)) {
+            clearErrorKeys("serviceAreas");
+        } else if (list.some((p) => verifiedPincodes[p] === false)) {
+            setErrors((prev) => ({ ...prev, serviceAreas: "One or more PIN codes could not be verified against India Post records." }));
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [form.serviceAreas, verifiedPincodes]);
+
+    // The 15-char registration number rule and the certificate-validity-date
+    // rule were previously only checked inside validateVetStep(), which only
+    // runs from handleNext() - but a disabled Next button can't be clicked,
+    // so the error text explaining WHY it's disabled never rendered. This
+    // mirrors the live-validation pattern above so the reason is visible
+    // as soon as the value is invalid, not just silently blocked.
+    useEffect(() => {
+        const regNumber = form.vetCouncilRegistrationNumber.trim();
+
+        setErrors((prev) => {
+            const next = { ...prev };
+
+            if (!regNumber || /^\S{1,18}$/.test(regNumber)) {
+                delete next.vetCouncilRegistrationNumber;
+            } else {
+                next.vetCouncilRegistrationNumber =
+                    `Registration number must be at most 18 characters (letters, numbers and symbols allowed) - currently ${regNumber.length}.`;
+            }
+
+            if (!form.certificateValidityDate || !isPastDate(form.certificateValidityDate)) {
+                delete next.certificateValidityDate;
+            } else {
+                next.certificateValidityDate = "Certificate validity date cannot be in the past.";
+            }
+
+            return next;
+        });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [form.vetCouncilRegistrationNumber, form.certificateValidityDate]);
 
     const currentStepIndex = Math.max(
         tabs.findIndex(([key]) => key === activeTab),
@@ -262,7 +389,8 @@ export default function DoctorForm({
     };
 
     const handleAccountNumberChange = (e) => {
-        setFieldValue("accountNumber", digitsOnly(e.target.value, 18));
+        const rule = getBankRule(form.bankName);
+        setFieldValue("accountNumber", digitsOnly(e.target.value, getMaxAccountLength(rule)));
     };
 
     const handleIfscChange = (e) => {
@@ -320,11 +448,11 @@ export default function DoctorForm({
             const office = data[0].PostOffice[0];
 
             const stateMatched =
-                office.State.trim().toLowerCase() ===
+                office.State?.trim().toLowerCase() ===
                 String(stateValue || "").trim().toLowerCase();
 
             const cityMatched =
-                office.District.trim().toLowerCase() ===
+                office.District?.trim().toLowerCase() ===
                 String(cityValue || "").trim().toLowerCase() ||
                 office.Block?.trim().toLowerCase() ===
                 String(cityValue || "").trim().toLowerCase();
@@ -499,18 +627,9 @@ export default function DoctorForm({
         const enteredRows = qualifications
             .map((row, index) => ({ row, index }))
             .filter(({ row }) => isQualificationRowFilled(row));
-        const hasCertificate = Boolean(form.degreeCertificates);
 
-        if (!enteredRows.length && !hasCertificate) {
+        if (!enteredRows.length) {
             return nextErrors;
-        }
-
-        if (!enteredRows.length && hasCertificate) {
-            nextErrors.qualifications = "Add at least one degree entry before uploading certificates.";
-        }
-
-        if (enteredRows.length && !hasCertificate) {
-            nextErrors.degreeCertificates = "Degree certificates are required when qualifications are entered.";
         }
 
         enteredRows.forEach(({ row, index }) => {
@@ -524,6 +643,10 @@ export default function DoctorForm({
 
             if (!row.institution?.trim()) {
                 nextErrors[`qualification-${index}-institution`] = "Institute name is required.";
+            }
+
+            if (!row.certificate) {
+                nextErrors[`qualification-${index}-certificate`] = "Degree certificate is required.";
             }
 
             if (!YEAR_REGEX.test(String(row.year || "").trim())) {
@@ -546,9 +669,9 @@ export default function DoctorForm({
 
         if (!form.vetCouncilRegistrationNumber.trim()) {
             nextErrors.vetCouncilRegistrationNumber = "Registration number is required.";
-        } else if (!/^[A-Za-z0-9/-]{5,30}$/.test(form.vetCouncilRegistrationNumber.trim())) {
+        } else if (!/^\S{1,18}$/.test(form.vetCouncilRegistrationNumber.trim())) {
             nextErrors.vetCouncilRegistrationNumber =
-                "Registration number must be 5-30 characters and may include letters, numbers, / or -.";
+                `Registration number must be at most 18 characters (letters, numbers and symbols allowed) - currently ${form.vetCouncilRegistrationNumber.trim().length}.`;
         }
 
         if (!form.stateVetCouncil) {
@@ -596,6 +719,10 @@ export default function DoctorForm({
 
         if (!serviceAreaList.length) {
             nextErrors.serviceAreas = "Service areas or pincodes are required.";
+        } else if (serviceAreaList.some((pincode) => !PINCODE_REGEX.test(pincode))) {
+            nextErrors.serviceAreas = "Each service area must be a valid 6-digit Indian PIN code.";
+        } else if (serviceAreaList.some((pincode) => verifiedPincodes[pincode] !== true)) {
+            nextErrors.serviceAreas = "One or more PIN codes could not be verified against India Post records.";
         }
 
         if (!form.gstPan.trim()) {
@@ -612,26 +739,45 @@ export default function DoctorForm({
 
         if (!form.accountName.trim()) {
             nextErrors.accountName = "Account holder name is required.";
-        }
-
-        if (!String(form.accountNumber || "").trim()) {
-            nextErrors.accountNumber = "Account number is required.";
-        } else if (!/^\d{9,18}$/.test(String(form.accountNumber || "").trim())) {
-            nextErrors.accountNumber = "Account number must be between 9 and 18 digits.";
-        }
-
-        if (!String(form.ifsc || "").trim()) {
-            nextErrors.ifsc = "IFSC code is required.";
-        } else if (!IFSC_REGEX.test(String(form.ifsc || "").trim().toUpperCase())) {
-            nextErrors.ifsc = "Enter a valid IFSC code.";
+        } else if (form.accountName.trim().length < 3) {
+            nextErrors.accountName = "Account holder name must be at least 3 characters.";
         }
 
         if (!form.bankName.trim()) {
             nextErrors.bankName = "Bank name is required.";
         }
 
+        const bankRule = getBankRule(form.bankName);
+        const accountNumber = String(form.accountNumber || "").trim();
+
+        if (!accountNumber) {
+            nextErrors.accountNumber = "Account number is required.";
+        } else if (bankRule?.accountLengths) {
+            if (!bankRule.accountLengths.includes(accountNumber.length)) {
+                nextErrors.accountNumber = `Account number for ${form.bankName} must be ${formatAccountLength(bankRule)}.`;
+            }
+        } else if (
+            accountNumber.length < (bankRule?.minAccountLength || 9) ||
+            accountNumber.length > (bankRule?.maxAccountLength || 18)
+        ) {
+            nextErrors.accountNumber = `Account number must be ${formatAccountLength(bankRule)}.`;
+        }
+
+        const ifsc = String(form.ifsc || "").trim().toUpperCase();
+        if (!ifsc) {
+            nextErrors.ifsc = "IFSC code is required.";
+        } else if (!IFSC_REGEX.test(ifsc)) {
+            nextErrors.ifsc = "Enter a valid IFSC code.";
+        } else if (bankRule?.ifscPrefix && !ifsc.startsWith(bankRule.ifscPrefix)) {
+            nextErrors.ifsc = `IFSC for ${form.bankName} should start with ${bankRule.ifscPrefix}.`;
+        }
+
         if (!form.branch.trim()) {
             nextErrors.branch = "Branch is required.";
+        }
+
+        if (!form.billing) {
+            nextErrors.billing = "Billing cycle is required.";
         }
 
         if (!form.plan) {
@@ -701,6 +847,21 @@ export default function DoctorForm({
         }
     };
 
+    const hasCurrentStepErrors = () => {
+        switch (activeTab) {
+            case "qualification":
+                return Object.keys(validateQualificationStep()).length > 0;
+            case "vet":
+                return Object.keys(validateVetStep()).length > 0;
+            case "practice":
+                return Object.keys(validatePracticeStep()).length > 0;
+            case "bank":
+                return Object.keys(validateBankStep()).length > 0;
+            default:
+                return Object.keys(errors).length > 0;
+        }
+    };
+
     const handleNext = async () => {
         if (submitting) return;
 
@@ -725,15 +886,14 @@ export default function DoctorForm({
         if (!isQualificationStep) return;
 
         setQualifications([{ degree: "", institution: "", year: "" }]);
-        setFieldValue("degreeCertificates", null);
         clearErrorKeys(
             "qualifications",
-            "degreeCertificates",
             ...qualifications
                 .map((_, index) => [
                     `qualification-${index}-degree`,
                     `qualification-${index}-institution`,
                     `qualification-${index}-year`,
+                    `qualification-${index}-certificate`,
                 ])
                 .flat()
         );
@@ -742,17 +902,27 @@ export default function DoctorForm({
     };
 
     const buildSubmissionPayload = () => {
-        const normalizedQualifications = qualifications
-            .map((row) => ({
-                degree: String(row.degree === "Other" ? row.customDegree : row.degree || "").trim(),
-                institution: String(row.institution || "").trim(),
-                year: String(row.year || "").trim(),
-            }))
-            .filter(isQualificationRowFilled);
+        const filledRows = qualifications.filter(isQualificationRowFilled);
+
+        const normalizedQualifications = filledRows.map((row) => ({
+            degree: String(row.degree === "Other" ? row.customDegree : row.degree || "").trim(),
+            institution: String(row.institution || "").trim(),
+            year: String(row.year || "").trim(),
+        }));
+
+        // Only newly-picked files need to travel back to the server - an
+        // untouched row's certificate is still just the existing string URL
+        // (see buildQualifications), and re-sending that under a multipart
+        // file field would confuse multer. The backend already keeps the
+        // existing degreeCertificates on update when none are uploaded.
+        const degreeCertificates = filledRows
+            .map((row) => row.certificate)
+            .filter((certificate) => certificate instanceof File);
 
         return {
             ...form,
             qualifications: normalizedQualifications,
+            degreeCertificates,
             languages: Array.isArray(form.languages) ? form.languages : [],
             specializations: Array.isArray(form.specializations) ? form.specializations : [],
             serviceAreas: parseDelimitedList(form.serviceAreas),
@@ -839,26 +1009,27 @@ export default function DoctorForm({
         w-full
         border
         rounded-xl
-        p-3
+        p-3.5
         resize-none
-        outline-none
-        transition
+        outline-hidden
+        transition-all
+        text-sm
         ${error
-            ? "border-red-400 focus:ring-2 focus:ring-red-200 focus:border-red-500"
-            : "border-slate-300 focus:ring-2 focus:ring-orange-400 focus:border-orange-400"
+            ? "border-rose-400 focus:border-rose-500 focus:ring-1 focus:ring-rose-500"
+            : "border-gray-200 focus:border-[#0C3D2E] focus:ring-1 focus:ring-[#0C3D2E]"
         }
     `;
 
     const chipClass = (active) =>
-        `inline-flex items-center gap-2 px-3 py-2 rounded-full border text-sm font-medium transition ${
+        `inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border text-xs font-semibold transition-all duration-200 cursor-pointer ${
             active
-                ? "border-orange-500 bg-orange-50 text-orange-700"
-                : "border-slate-200 bg-white text-slate-600 hover:border-orange-300"
+                ? "border-[#F7931E]/30 bg-[#FFF4E5] text-[#F7931E] shadow-xs"
+                : "border-gray-200 bg-white text-gray-600 hover:border-[#F7931E]/40"
         }`;
 
     return (
         <form onSubmit={handleFormSubmit}>
-            <div className="p-3 sm:p-4 md:p-6 bg-gray-100 min-h-full">
+            <div className="p-3 sm:p-4 md:p-6 bg-slate-50/50 min-h-full">
                 <div className="max-w-6xl mx-auto space-y-4 md:space-y-6">
                     {/* PERSONAL */}
                     {activeTab === "personal" && (
@@ -890,6 +1061,7 @@ export default function DoctorForm({
                                     name="dob"
                                     label="Date of Birth"
                                     error={errors.dob}
+                                    max={today}
                                     onChange={handleSimpleChange}
                                 />
 
@@ -924,8 +1096,8 @@ export default function DoctorForm({
                                 />
 
                                 <Full>
-                                    <label className={`block text-sm font-medium mb-2 ${errors.languages ? "text-red-600" : "text-slate-700"}`}>
-                                        Languages Spoken <span className="text-red-500">*</span>
+                                    <label className={`block text-xs font-semibold uppercase tracking-wider mb-2 ${errors.languages ? "text-rose-600" : "text-gray-500"}`}>
+                                        Languages Spoken <span className="text-rose-500">*</span>
                                     </label>
 
                                     <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 flex-wrap">
@@ -935,6 +1107,7 @@ export default function DoctorForm({
                                                     type="checkbox"
                                                     checked={form.languages?.includes(language) || false}
                                                     onChange={() => toggleArray("languages", language)}
+                                                    className="accent-[#F7931E]"
                                                 />
                                                 {language}
                                             </label>
@@ -942,7 +1115,7 @@ export default function DoctorForm({
                                     </div>
 
                                     {errors.languages && (
-                                        <p className="mt-1 text-xs text-red-600">
+                                        <p className="mt-1 text-xs text-rose-600 font-medium">
                                             {errors.languages}
                                         </p>
                                     )}
@@ -951,9 +1124,9 @@ export default function DoctorForm({
                                 <Full>
                                     <label
                                         htmlFor="address"
-                                        className={`block mb-1 text-sm font-medium ${errors.address ? "text-red-600" : "text-slate-700"}`}
+                                        className={`block mb-1.5 text-xs font-semibold uppercase tracking-wider ${errors.address ? "text-rose-600" : "text-gray-500"}`}
                                     >
-                                        Full Address <span className="text-red-500">*</span>
+                                        Full Address <span className="text-rose-500">*</span>
                                     </label>
 
                                     <textarea
@@ -966,7 +1139,7 @@ export default function DoctorForm({
                                     />
 
                                     {errors.address && (
-                                        <p className="mt-1 text-xs text-red-600">
+                                        <p className="mt-1 text-xs text-rose-600 font-medium">
                                             {errors.address}
                                         </p>
                                     )}
@@ -1046,24 +1219,24 @@ export default function DoctorForm({
                     {/* QUALIFICATION */}
                     {activeTab === "qualification" && (
                         <Card title="Veterinary Qualifications">
-                            <p className="mb-4 text-sm text-slate-500">
+                            <p className="mb-4 text-xs font-medium text-gray-400">
                                 This step is optional. Use Skip if you want to add qualification details later.
                             </p>
 
                             {qualifications.map((qualification, index) => (
                                 <div
                                     key={index}
-                                    className="mb-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:p-5"
+                                    className="mb-4 rounded-2xl border border-gray-100 bg-slate-50/50 p-4 sm:p-5"
                                 >
                                     <div className="mb-4 flex items-center justify-between gap-3">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                        <span className="text-xs font-bold uppercase tracking-wider text-[#0C3D2E]">
                                             Degree {index + 1}
                                         </span>
 
                                         {index > 0 && (
                                             <button
                                                 type="button"
-                                                className="rounded-full border border-red-200 px-3 py-1 text-xs font-semibold text-red-600 hover:bg-red-50"
+                                                className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-bold text-rose-600 hover:bg-rose-600 hover:text-white transition-colors"
                                                 onClick={() =>
                                                     setQualifications((prev) =>
                                                         prev.filter((_, itemIndex) => itemIndex !== index)
@@ -1080,7 +1253,15 @@ export default function DoctorForm({
                                             label="Degree Name"
                                             requiredField={false}
                                             value={qualification.degree || ""}
-                                            options={DEGREE_OPTIONS}
+                                            options={DEGREE_OPTIONS.filter(
+                                                (option) =>
+                                                    option === "Other" ||
+                                                    option === qualification.degree ||
+                                                    !qualifications.some(
+                                                        (other, otherIndex) =>
+                                                            otherIndex !== index && other.degree === option
+                                                    )
+                                            )}
                                             error={errors[`qualification-${index}-degree`]}
                                             onChange={(e) =>
                                                 setQualificationValue(index, "degree", e.target.value)
@@ -1122,12 +1303,36 @@ export default function DoctorForm({
                                             onChange={handleYearChange(index)}
                                         />
                                     </Grid>
+
+                                    <div className="mt-4">
+                                        <Upload
+                                            requiredField={false}
+                                            label="Degree Certificate"
+                                            value={qualification.certificate}
+                                            error={errors[`qualification-${index}-certificate`]}
+                                            accept=".pdf,application/pdf"
+                                            onChange={(e) => {
+                                                const file = e.target.files?.[0];
+                                                if (!file) return;
+                                                if (file.type !== "application/pdf") {
+                                                    showToast({
+                                                        type: "error",
+                                                        title: "Invalid File",
+                                                        description: "Degree certificate must be a PDF file.",
+                                                    });
+                                                    return;
+                                                }
+                                                setQualificationValue(index, "certificate", file);
+                                            }}
+                                            onRemove={() => setQualificationValue(index, "certificate", null)}
+                                        />
+                                    </div>
                                 </div>
                             ))}
 
                             <button
                                 type="button"
-                                className="mt-2 w-full sm:w-auto rounded-xl bg-orange-500 px-4 py-2 text-white transition hover:bg-orange-600"
+                                className="mt-2 w-full sm:w-auto rounded-xl bg-[#F7931E] px-4 py-2.5 text-xs font-bold text-white transition hover:bg-[#e08319] shadow-xs"
                                 onClick={() =>
                                     setQualifications([
                                         ...qualifications,
@@ -1139,22 +1344,10 @@ export default function DoctorForm({
                             </button>
 
                             {errors.qualifications && (
-                                <p className="mt-2 text-xs text-red-600">
+                                <p className="mt-2 text-xs text-rose-600 font-medium">
                                     {errors.qualifications}
                                 </p>
                             )}
-
-                            <div className="mt-4">
-                                <Upload
-                                    requiredField={false}
-                                    label="Degree Certificates"
-                                    value={form.degreeCertificates}
-                                    error={errors.degreeCertificates}
-                                    accept=".pdf,application/pdf"
-                                    onChange={handleFileUpload("degreeCertificates")}
-                                    onRemove={() => setFieldValue("degreeCertificates", null)}
-                                />
-                            </div>
                         </Card>
                     )}
 
@@ -1162,14 +1355,21 @@ export default function DoctorForm({
                     {activeTab === "vet" && (
                         <Card title="Vet Council Registration">
                             <Grid>
-                                <Input
-                                    requiredField={true}
-                                    value={form.vetCouncilRegistrationNumber}
-                                    name="vetCouncilRegistrationNumber"
-                                    label="Complete Vet Council Registration Number"
-                                    error={errors.vetCouncilRegistrationNumber}
-                                    onChange={handleSimpleChange}
-                                />
+                                <div>
+                                    <Input
+                                        requiredField={true}
+                                        value={form.vetCouncilRegistrationNumber}
+                                        name="vetCouncilRegistrationNumber"
+                                        label="Complete Vet Council Registration Number"
+                                        error={errors.vetCouncilRegistrationNumber}
+                                        onChange={handleSimpleChange}
+                                    />
+                                    {!errors.vetCouncilRegistrationNumber && (
+                                        <p className="mt-1 text-xs text-gray-400">
+                                            Up to 18 characters - letters, numbers and symbols allowed (e.g. VCI/MH/2020/123456).
+                                        </p>
+                                    )}
+                                </div>
 
                                 <Select
                                     value={form.stateVetCouncil || ""}
@@ -1200,8 +1400,38 @@ export default function DoctorForm({
                                     name="certificateValidityDate"
                                     label="Certificate Validity Date"
                                     error={errors.certificateValidityDate}
+                                    min={today}
+                                    max="9999-12-31"
                                     onChange={handleSimpleChange}
                                 />
+
+                                <Full>
+                                    <div className="flex items-center justify-between gap-4 rounded-xl border border-[#0C3D2E]/10 bg-white px-4 py-3">
+                                        <div>
+                                            <p className="text-sm font-semibold text-[#0C3D2E]">
+                                                Is registration renewable?
+                                            </p>
+                                            <p className="text-xs text-gray-500 mt-0.5">
+                                                Toggle on if this vet council registration can be renewed after expiry.
+                                            </p>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => setFieldValue("isRenewable", !form.isRenewable)}
+                                            aria-pressed={Boolean(form.isRenewable)}
+                                            aria-label="Is registration renewable?"
+                                            className={`relative inline-flex h-7 w-14 shrink-0 items-center rounded-full transition-colors duration-300 cursor-pointer ${
+                                                form.isRenewable ? "bg-[#F7931E]" : "bg-gray-300"
+                                            }`}
+                                        >
+                                            <span
+                                                className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform duration-300 ${
+                                                    form.isRenewable ? "translate-x-8" : "translate-x-1"
+                                                }`}
+                                            />
+                                        </button>
+                                    </div>
+                                </Full>
                             </Grid>
                         </Card>
                     )}
@@ -1243,7 +1473,7 @@ export default function DoctorForm({
                                 />
 
                                 <Full>
-                                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                                    <label className="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">
                                         Specializations
                                     </label>
 
@@ -1262,7 +1492,7 @@ export default function DoctorForm({
                                                         type="checkbox"
                                                         checked={active}
                                                         readOnly
-                                                        className="accent-orange-500"
+                                                        className="accent-[#F7931E]"
                                                     />
                                                     {specialization}
                                                 </button>
@@ -1271,12 +1501,13 @@ export default function DoctorForm({
                                     </div>
                                 </Full>
 
-                                <label className="flex items-center gap-3 text-sm font-medium text-slate-700">
+                                <label className="flex items-center gap-3 text-sm font-semibold text-[#0C3D2E]">
                                     <input
                                         type="checkbox"
                                         name="emergencyAvailable"
                                         checked={Boolean(form.emergencyAvailable)}
                                         onChange={handleSimpleChange}
+                                        className="accent-[#0C3D2E] h-4 w-4 rounded-xs"
                                     />
                                     Available for emergency calls
                                 </label>
@@ -1318,6 +1549,16 @@ export default function DoctorForm({
                                     onChange={handleSimpleChange}
                                 />
 
+                                <Select
+                                    requiredField={true}
+                                    name="bankName"
+                                    label="Bank Name"
+                                    value={form.bankName}
+                                    options={BANK_OPTIONS}
+                                    error={errors.bankName}
+                                    onChange={handleSimpleChange}
+                                />
+
                                 <Input
                                     value={form.accountNumber}
                                     requiredField={true}
@@ -1326,8 +1567,11 @@ export default function DoctorForm({
                                     error={errors.accountNumber}
                                     onChange={handleAccountNumberChange}
                                     inputMode="numeric"
-                                    maxLength={18}
+                                    maxLength={getMaxAccountLength(getBankRule(form.bankName))}
                                 />
+                                <p className="text-xs text-gray-500 mt-1">
+                                    Expected Length: {formatAccountLength(getBankRule(form.bankName))}
+                                </p>
 
                                 <Input
                                     requiredField={true}
@@ -1337,15 +1581,6 @@ export default function DoctorForm({
                                     error={errors.ifsc}
                                     onChange={handleIfscChange}
                                     maxLength={11}
-                                />
-
-                                <Input
-                                    requiredField={true}
-                                    name="bankName"
-                                    label="Bank Name"
-                                    value={form.bankName}
-                                    error={errors.bankName}
-                                    onChange={handleSimpleChange}
                                 />
 
                                 <Input
@@ -1366,16 +1601,26 @@ export default function DoctorForm({
                                     error={errors.plan}
                                     onChange={handleSimpleChange}
                                 />
+
+                                <Select
+                                    value={form.billing || ""}
+                                    requiredField={true}
+                                    name="billing"
+                                    label="Billing Cycle"
+                                    options={BILLING_CYCLE_OPTIONS}
+                                    error={errors.billing}
+                                    onChange={handleSimpleChange}
+                                />
                             </Grid>
                         </Card>
                     )}
 
                     {/* FOOTER */}
-                    <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between pt-2">
+                    <div className="sticky bottom-0 z-10 -mx-3 sm:-mx-4 md:-mx-6 flex flex-col-reverse gap-3 border-t border-gray-100 bg-slate-50/95 px-3 py-3 shadow-[0_-10px_24px_rgba(15,23,42,0.06)] backdrop-blur-sm sm:flex-row sm:items-center sm:justify-between sm:px-4 md:px-6">
                         <button
                             type="button"
                             onClick={currentStepIndex > 0 ? goToPreviousStep : onClose}
-                            className="w-full sm:w-auto rounded-xl border border-slate-300 bg-white px-6 py-3 font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
+                            className="w-full sm:w-auto rounded-xl border border-gray-200 bg-white px-6 py-3 font-semibold text-xs text-gray-700 transition hover:bg-gray-50 disabled:opacity-60"
                             disabled={submitting}
                         >
                             {currentStepIndex > 0 ? "Previous" : "Cancel"}
@@ -1386,7 +1631,7 @@ export default function DoctorForm({
                                 <button
                                     type="button"
                                     onClick={handleSkip}
-                                    className="w-full sm:w-auto rounded-xl border border-slate-300 bg-white px-6 py-3 font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
+                                    className="w-full sm:w-auto rounded-xl border border-gray-200 bg-white px-6 py-3 font-semibold text-xs text-gray-700 transition hover:bg-gray-50 disabled:opacity-60"
                                     disabled={submitting}
                                 >
                                     Skip
@@ -1397,8 +1642,8 @@ export default function DoctorForm({
                                 <button
                                     type="button"
                                     onClick={handleNext}
-                                    className="w-full sm:w-auto rounded-xl bg-orange-500 px-6 py-3 font-medium text-white transition hover:bg-orange-600 disabled:opacity-60"
-                                    disabled={submitting}
+                                    className="w-full sm:w-auto rounded-xl bg-[#F7931E] hover:bg-[#e08319] px-6 py-3 font-semibold text-xs text-white transition-all duration-200 transform hover:-translate-y-0.5 shadow-xs disabled:opacity-60"
+                                    disabled={submitting || hasCurrentStepErrors()}
                                 >
                                     Next
                                 </button>
@@ -1406,7 +1651,7 @@ export default function DoctorForm({
                                 <button
                                     type="button"
                                     onClick={handleSubmit}
-                                    className="w-full sm:w-auto rounded-xl bg-orange-500 px-6 py-3 font-medium text-white transition hover:bg-orange-600 disabled:opacity-60"
+                                    className="w-full sm:w-auto rounded-xl bg-[#F7931E] hover:bg-[#e08319] px-6 py-3 font-semibold text-xs text-white transition-all duration-200 transform hover:-translate-y-0.5 shadow-xs disabled:opacity-60"
                                     disabled={submitting}
                                 >
                                     {submitting

@@ -125,12 +125,12 @@ const PetOwnerUploadDocuments = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-100 via-slate-50 to-blue-50">
+    <div className="pet-owner-theme min-h-screen bg-gradient-to-br from-slate-100 via-slate-50 to-emerald-50">
       <PetOwnerSidebar />
 
       <div className="ml-0 lg:ml-[280px] pt-[80px] lg:pt-8 p-4 md:p-6 lg:p-8 min-w-0">
         {/* Header */}
-        <div className="mb-8 rounded-[32px] bg-gradient-to-r from-slate-950 via-blue-900 to-blue-600 p-5 md:p-8 text-white shadow-2xl">
+        <div className="mb-8 rounded-[32px] bg-gradient-to-r from-[#063D31] via-[#075443] to-[#0A5243] p-5 md:p-8 text-white shadow-2xl">
           <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold">
             Upload Documents
           </h1>

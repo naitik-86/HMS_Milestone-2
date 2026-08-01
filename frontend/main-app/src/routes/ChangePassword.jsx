@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import API from '../shared/api/axios';
 import { changePassword } from '../modules/auth/api/authApi';
 import { getDashboardPathForRole } from '../shared/utils/roleRedirects';
+import PasswordInput from '../shared/components/PasswordInput';
+import PasswordStrengthIndicator from '../shared/components/PasswordStrengthIndicator';
+import { isStrongPassword } from '../shared/utils/passwordStrength';
 
 export default function ChangePassword() {
   const navigate = useNavigate();
@@ -46,6 +49,11 @@ export default function ChangePassword() {
       return;
     }
 
+    if (!isStrongPassword(newPassword)) {
+      alert('Use a strong password that meets all the requirements below.');
+      return;
+    }
+
     setSubmitting(true);
 
     try {
@@ -82,11 +90,10 @@ export default function ChangePassword() {
             <label className="block text-sm font-semibold text-slate-900 mb-2">
               Current password
             </label>
-            <input
-              type="password"
-              className="w-full border border-slate-200 rounded-xl px-4 py-3"
+            <PasswordInput
               value={currentPassword}
               onChange={(e) => setCurrentPassword(e.target.value)}
+              autoComplete="current-password"
             />
           </div>
 
@@ -94,23 +101,22 @@ export default function ChangePassword() {
             <label className="block text-sm font-semibold text-slate-900 mb-2">
               New password
             </label>
-            <input
-              type="password"
-              className="w-full border border-slate-200 rounded-xl px-4 py-3"
+            <PasswordInput
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
+              autoComplete="new-password"
             />
+            <PasswordStrengthIndicator password={newPassword} />
           </div>
 
           <div>
             <label className="block text-sm font-semibold text-slate-900 mb-2">
               Confirm new password
             </label>
-            <input
-              type="password"
-              className="w-full border border-slate-200 rounded-xl px-4 py-3"
+            <PasswordInput
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
+              autoComplete="new-password"
             />
           </div>
 

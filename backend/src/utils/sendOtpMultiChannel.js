@@ -1,4 +1,5 @@
 const { generateOTP, sendSMS, sendWhatsApp } = require('./otpService');
+const { loginOtpEmail } = require('./emailTemplates');
 
 /**
  * Generates OTPs for email + mobile and sends them.
@@ -12,11 +13,12 @@ async function sendOtpMultiChannel({
   emailSender,
   smsChannel = 'SMS',
 }) {
+  const emailContent = loginOtpEmail(otpEmail);
   const deliveryTasks = [
     emailSender({
       email,
       subject: 'Your HMS Login OTP',
-      message: `Your login OTP is ${otpEmail}. It is valid for 5 minutes.`,
+      ...emailContent,
     }),
   ];
 
@@ -31,12 +33,11 @@ async function sendOtpMultiChannel({
   const results = await Promise.allSettled(deliveryTasks);
   const failures = results.filter((result) => result.status === 'rejected');
 
+  // Log failures but don't crash - allow login to proceed even if OTP delivery fails
   if (failures.length) {
-    const errorMessage = failures
-      .map((result) => result.reason?.message || 'OTP delivery failed')
-      .join(' | ');
-
-    throw new Error(errorMessage);
+    failures.forEach((result) => {
+      console.warn('OTP delivery failed:', result.reason?.message || result.reason);
+    });
   }
 }
 

@@ -1,257 +1,136 @@
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  getExistingCustomers,
-  getDashboardStats
-} from "../../api/receptionApi";
-import { 
-  Plus, 
-  UserCheck, 
-  Users, 
-  RefreshCw, 
-  ChevronRight, 
-  Sparkles,
+  CalendarCheck,
+  ChevronRight,
+  ClipboardList,
+  MoreHorizontal,
   PawPrint,
-  ShieldCheck,
-  Building,
-  UserPlus
+  Plus,
+  UserPlus,
+  Users,
 } from "lucide-react";
-import toast from "react-hot-toast";
-import ExistingCustomerPet from "./ExistingCustomerPet";
+import { getDashboardStats, getExistingCustomers } from "../../api/receptionApi";
+
+const initials = (value = "Pet") =>
+  value
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((word) => word[0])
+    .join("")
+    .toUpperCase();
+
+const dateLabel = (value) => {
+  if (!value) return "—";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? "—"
+    : new Intl.DateTimeFormat("en-IN", { day: "2-digit", month: "short", year: "numeric" }).format(date);
+};
+
+const unwrap = (response) => response?.data?.data ?? response?.data ?? response ?? [];
 
 export default function ReceptionDashboard() {
   const navigate = useNavigate();
-  const [currentView, setCurrentView] = useState("hub"); // "hub" | "customers"
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  
-  const [dashboardStats, setDashboardStats] = useState({
-    todayVisits: 0,
-    newPets: 0,
-    totalCustomers: 0,
-  });
-
-  const fetchData = async (isManual = false) => {
-    try {
-      if (isManual) setRefreshing(true);
-      else setLoading(true);
-
-      const statsRes = await getDashboardStats().catch(() => ({ data: {} }));
-      const backendStats = statsRes.data || {};
-
-      const customersRes = await getExistingCustomers().catch(() => ({ data: [] }));
-      const customers = customersRes.data || [];
-
-      let newPetsTodayCount = 0;
-      const todayStr = new Date().toISOString().split("T")[0];
-
-      customers.forEach((item) => {
-        const owner = item.owner || {};
-        const ownerCreatedDate = owner.createdAt ? owner.createdAt.split("T")[0] : null;
-        if (ownerCreatedDate === todayStr) {
-          newPetsTodayCount++;
-        }
-      });
-
-      setDashboardStats({
-        todayVisits: backendStats.activeVisits || 0,
-        newPets: newPetsTodayCount || backendStats.totalPets || 0,
-        totalCustomers: customers.length || backendStats.totalPets || 0,
-      });
-
-      if (isManual) toast.success("Front Desk Hub synchronized");
-    } catch (error) {
-      console.error("Error fetching reception hub data:", error);
-      toast.error("Could not sync reception hub data");
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
+  const [customers, setCustomers] = useState([]);
+  const [stats, setStats] = useState({});
 
   useEffect(() => {
-    fetchData();
+    let active = true;
+
+    Promise.allSettled([getDashboardStats(), getExistingCustomers()]).then(([statsResult, customersResult]) => {
+      if (!active) return;
+      if (statsResult.status === "fulfilled") setStats(unwrap(statsResult.value) || {});
+      if (customersResult.status === "fulfilled") {
+        const items = unwrap(customersResult.value);
+        setCustomers(Array.isArray(items) ? items : []);
+      }
+      setLoading(false);
+    });
+
+    return () => { active = false; };
   }, []);
 
+  const summary = useMemo(() => {
+    const today = new Date().toISOString().slice(0, 10);
+    const newToday = customers.filter((item) => (item?.owner?.createdAt || item?.createdAt || "").slice(0, 10) === today).length;
+    return {
+      records: customers.length || Number(stats.totalCustomers || stats.totalPets || 0),
+      newToday: newToday || Number(stats.newPets || 0),
+      activeVisits: Number(stats.activeVisits || 0),
+      pending: Number(stats.pendingVisits || 0),
+    };
+  }, [customers, stats]);
+
+  const cards = [
+    { label: "Patient Records", value: summary.records, note: `${summary.records ? "+" : ""}${summary.records} total records`, icon: Users, tone: "green" },
+    { label: "New Registrations", value: summary.newToday, note: "Today", icon: UserPlus, tone: "orange" },
+    { label: "Active Visits", value: summary.activeVisits, note: "Currently in clinic", icon: CalendarCheck, tone: "green" },
+    { label: "Pending Queue", value: summary.pending, note: summary.pending ? "Needs attention" : "Queue is clear", icon: ClipboardList, tone: "orange" },
+  ];
+
   if (loading) {
-    return (
-      <div className="min-h-[70vh] flex items-center justify-center p-6">
-        <div className="flex flex-col items-center gap-3">
-          <div className="h-12 w-12 rounded-full border-4 border-orange-500 border-t-transparent animate-spin"></div>
-          <p className="text-slate-600 font-bold animate-pulse text-sm">Loading Reception Hub...</p>
-        </div>
-      </div>
-    );
+    return <div className="min-h-[60vh] grid place-items-center text-sm font-semibold text-[#0C3D2E]/70">Loading dashboard…</div>;
   }
 
   return (
-    <div className="space-y-8">
-      {/* ========================================= */}
-      {/* CLASSIC ULTRA-MODERN HERO SECTION */}
-      {/* ========================================= */}
-      <div className="relative overflow-hidden rounded-3xl border border-slate-200/90 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white p-7 md:p-10 shadow-xl">
-        {/* Glow Accents */}
-        <div className="absolute -right-12 -top-12 w-80 h-80 bg-orange-500/20 rounded-full blur-3xl pointer-events-none"></div>
-        <div className="absolute -left-12 -bottom-12 w-80 h-80 bg-amber-500/15 rounded-full blur-3xl pointer-events-none"></div>
+    <div className="space-y-6">
+      <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        {cards.map(({ label, value, note, icon: Icon, tone }) => {
+          const orange = tone === "orange";
+          return (
+            <article key={label} className={`rounded-2xl border p-5 transition hover:-translate-y-0.5 hover:shadow-md ${orange ? "bg-[#FFF4E5] border-[#F7931E]/25" : "bg-[#D9E8E3]/30 border-[#0C3D2E]/15"}`}>
+              <div className="flex gap-4">
+                <div className={`grid size-12 place-items-center rounded-xl text-white shrink-0 ${orange ? "bg-[#F7931E]" : "bg-[#0C3D2E]"}`}><Icon size={22} /></div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-2"><p className={`text-xs font-bold uppercase tracking-wider ${orange ? "text-amber-900/80" : "text-[#0C3D2E]/80"}`}>{label}</p><MoreHorizontal size={16} className="text-slate-400" /></div>
+                  <p className="mt-1 text-3xl leading-none font-black text-[#073E30]">{value}</p>
+                  <span className={`mt-3 inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold ${orange ? "bg-[#F7931E]/15 text-[#D76D0B]" : "bg-[#0C3D2E]/10 text-[#0C3D2E]"}`}>{note}</span>
+                </div>
+              </div>
+            </article>
+          );
+        })}
+      </section>
 
-        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-          <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-orange-500/20 text-orange-400 text-xs font-extrabold uppercase tracking-widest border border-orange-500/30">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-              Front Desk Station Live
-            </div>
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white flex items-center gap-3">
-              Reception Hub <Sparkles className="w-7 h-7 text-amber-400 animate-bounce" />
-            </h1>
-            <p className="text-slate-300 text-sm md:text-base max-w-2xl font-medium leading-relaxed">
-              Welcome to the clinical front desk. Seamlessly register new pet patients or inspect existing customer profile records with ease.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => fetchData(true)}
-              disabled={refreshing}
-              className="flex items-center gap-2 bg-slate-800/90 hover:bg-slate-700 text-slate-200 border border-slate-700 px-5 py-3 rounded-2xl font-bold transition-all text-xs md:text-sm shadow-md cursor-pointer backdrop-blur-xs"
-            >
-              <RefreshCw className={`w-4 h-4 text-orange-400 ${refreshing ? "animate-spin" : ""}`} />
-              <span>Sync Hub</span>
-            </button>
-
-            {currentView === "customers" && (
-              <button
-                onClick={() => setCurrentView("hub")}
-                className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-5 py-3 rounded-2xl text-xs md:text-sm shadow-md transition cursor-pointer border-none"
-              >
-                Back to Hub Entry
-              </button>
-            )}
-          </div>
+      <section className="overflow-hidden rounded-2xl border border-[#0C3D2E]/15 bg-[#D9E8E3]/20 p-5 sm:p-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div><h1 className="text-base font-bold text-[#0C3D2E]">Reception Activity</h1><p className="mt-2 text-xs text-slate-500">Pending visits: <span className="font-bold text-[#F7931E]">{summary.pending}</span></p></div>
+          <button onClick={() => navigate("existing-customer")} className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 shadow-sm transition hover:border-[#F7931E] hover:text-[#F7931E]">View all patients <ChevronRight size={15} /></button>
         </div>
-      </div>
 
-      {/* VIEW 1: MAIN RECEPTION HUB ENTRY */}
-      {currentView === "hub" ? (
-        <div className="space-y-8">
-          {/* KPI STATS BAR */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-            <div className="bg-white rounded-3xl p-6 shadow-xs border border-slate-200/80 flex items-center justify-between gap-4 transition-all hover:shadow-md">
-              <div>
-                <p className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">Total Customer Records</p>
-                <h2 className="text-3xl font-black text-slate-900 mt-2 tracking-tight">
-                  {dashboardStats.totalCustomers}
-                </h2>
-                <span className="inline-block mt-2 text-[11px] font-semibold text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-md">
-                  Active Pet Archive
-                </span>
-              </div>
-              <div className="w-14 h-14 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 shrink-0">
-                <Users className="w-7 h-7" />
-              </div>
-            </div>
 
-            <div className="bg-white rounded-3xl p-6 shadow-xs border border-slate-200/80 flex items-center justify-between gap-4 transition-all hover:shadow-md">
-              <div>
-                <p className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">New Registered Today</p>
-                <h2 className="text-3xl font-black text-slate-900 mt-2 tracking-tight">
-                  {dashboardStats.newPets}
-                </h2>
-                <span className="inline-block mt-2 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-md">
-                  Fresh Intake Files
-                </span>
-              </div>
-              <div className="w-14 h-14 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shrink-0">
-                <Plus className="w-7 h-7" />
-              </div>
-            </div>
-
-            <div className="bg-white rounded-3xl p-6 shadow-xs border border-slate-200/80 flex items-center justify-between gap-4 transition-all hover:shadow-md">
-              <div>
-                <p className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">Front Desk Status</p>
-                <h2 className="text-3xl font-black text-slate-900 mt-2 tracking-tight">
-                  Ready
-                </h2>
-                <span className="inline-block mt-2 text-[11px] font-semibold text-orange-700 bg-orange-50 px-2.5 py-0.5 rounded-md">
-                  Intake Operations
-                </span>
-              </div>
-              <div className="w-14 h-14 rounded-2xl bg-orange-50 border border-orange-100 flex items-center justify-center text-orange-600 shrink-0">
-                <ShieldCheck className="w-7 h-7" />
-              </div>
-            </div>
-          </div>
-
-          {/* TWO PRIMARY CLASSIC HERO ACTION MODULES */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* MODULE 1: NEW REGISTRATION */}
-            <div 
-              onClick={() => navigate("new-registration")}
-              className="group relative overflow-hidden rounded-3xl border border-orange-200/90 bg-gradient-to-br from-white via-orange-50/40 to-amber-50/60 p-8 shadow-md hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 cursor-pointer flex flex-col justify-between min-h-[260px]"
-            >
-              <div className="absolute right-0 bottom-0 translate-x-6 translate-y-6 w-44 h-44 bg-orange-500/10 rounded-full blur-xl group-hover:scale-125 transition-transform"></div>
-
-              <div className="space-y-4 relative z-10">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-orange-500 to-amber-500 text-white flex items-center justify-center text-2xl font-bold shadow-md shadow-orange-500/20 group-hover:scale-110 transition-transform">
-                  <UserPlus className="w-7 h-7" />
-                </div>
-
-                <div>
-                  <h2 className="text-2xl font-black text-slate-900 tracking-tight group-hover:text-orange-600 transition-colors">
-                    New Patient Registration
-                  </h2>
-                  <p className="text-xs md:text-sm text-slate-600 font-medium mt-1 leading-relaxed">
-                    Complete new pet owner registration, record pet species & breed, verify mobile OTP, and initiate patient file.
-                  </p>
-                </div>
-              </div>
-
-              <div className="pt-6 relative z-10">
-                <span className="inline-flex items-center gap-2 bg-orange-500 group-hover:bg-orange-600 text-white font-extrabold px-6 py-3 rounded-2xl text-xs shadow-md shadow-orange-500/20 transition-all group-hover:gap-3">
-                  <span>Start New Registration</span>
-                  <ChevronRight className="w-4 h-4" />
-                </span>
-              </div>
-            </div>
-
-            {/* MODULE 2: EXISTING CUSTOMER RECORDS */}
-            <div 
-              onClick={() => setCurrentView("customers")}
-              className="group relative overflow-hidden rounded-3xl border border-blue-200/90 bg-gradient-to-br from-white via-blue-50/40 to-indigo-50/60 p-8 shadow-md hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 cursor-pointer flex flex-col justify-between min-h-[260px]"
-            >
-              <div className="absolute right-0 bottom-0 translate-x-6 translate-y-6 w-44 h-44 bg-blue-500/10 rounded-full blur-xl group-hover:scale-125 transition-transform"></div>
-
-              <div className="space-y-4 relative z-10">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center text-2xl font-bold shadow-md shadow-blue-500/20 group-hover:scale-110 transition-transform">
-                  <Users className="w-7 h-7" />
-                </div>
-
-                <div>
-                  <h2 className="text-2xl font-black text-slate-900 tracking-tight group-hover:text-blue-600 transition-colors">
-                    Existing Customer Records
-                  </h2>
-                  <p className="text-xs md:text-sm text-slate-600 font-medium mt-1 leading-relaxed">
-                    Search registered pet owners, filter by species, and inspect complete pet, owner & visit history fields.
-                  </p>
-                </div>
-              </div>
-
-              <div className="pt-6 relative z-10">
-                <span className="inline-flex items-center gap-2 bg-blue-600 group-hover:bg-blue-700 text-white font-extrabold px-6 py-3 rounded-2xl text-xs shadow-md shadow-blue-500/20 transition-all group-hover:gap-3">
-                  <span>View Existing Customers</span>
-                  <ChevronRight className="w-4 h-4" />
-                </span>
-              </div>
-            </div>
-          </div>
+        <div className="overflow-x-auto rounded-xl border border-slate-100 bg-white shadow-sm">
+          <table className="min-w-[760px] w-full text-sm"><thead><tr className="border-b border-slate-100 bg-slate-50/70 text-left text-[11px] font-bold uppercase tracking-wider text-[#0C3D2E]"><th className="px-4 py-3">Patient ID</th><th className="px-4 py-3">Pet & owner</th><th className="px-4 py-3">Contact</th><th className="px-4 py-3">Species</th><th className="px-4 py-3">Status</th><th className="px-4 py-3">Registered</th></tr></thead>
+            <tbody className="divide-y divide-slate-100">
+              {customers.slice(0, 6).map((item, index) => {
+                const owner = item.owner || item;
+                const pet = item.pet || item.pets?.[0] || {};
+                const name = pet.name || pet.petName || "Unnamed pet";
+                return <tr key={item._id || pet._id || index} className="transition hover:bg-[#D9E8E3]/20"><td className="px-4 py-3 text-xs font-semibold text-[#F7931E]">{pet.petId || owner.ownerId || `PT-${String(index + 1).padStart(3, "0")}`}</td><td className="px-4 py-3"><div className="flex items-center gap-2.5"><span className="grid size-8 place-items-center rounded-full bg-[#0C3D2E] text-xs font-bold text-white">{initials(name)}</span><div><p className="font-semibold text-[#0C3D2E]">{name}</p><p className="text-[11px] text-slate-400">{owner.ownerName || owner.name || "Pet owner"}</p></div></div></td><td className="px-4 py-3 text-slate-500">{owner.mobileNumber || owner.phone || owner.email || "—"}</td><td className="px-4 py-3 text-slate-500">{pet.species || "—"}</td><td className="px-4 py-3"><span className="rounded-full bg-[#D9E8E3] px-2.5 py-1 text-[11px] font-bold text-[#0C3D2E]">ACTIVE</span></td><td className="px-4 py-3 text-xs text-slate-500">{dateLabel(owner.createdAt || item.createdAt)}</td></tr>;
+              })}
+              {!customers.length && <tr><td colSpan="6" className="px-4 py-10 text-center text-sm text-slate-500">No patient records available yet.</td></tr>}
+            </tbody>
+          </table>
         </div>
-      ) : (
-        /* VIEW 2: EMBEDDED EXISTING CUSTOMERS PAGE */
-        <div className="space-y-4">
-          <ExistingCustomerPet />
-        </div>
-      )}
+      </section>
+
+      <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <ActionCard icon={Plus} title="New Patient Registration" copy="Create a pet and owner profile, then start their visit." action="Start registration" onClick={() => navigate("new-registration")} tone="orange" />
+        <ActionCard icon={Users} title="Existing Customer" copy="Find an owner, review patient details, or begin a follow-up visit." action="Open patient records" onClick={() => navigate("existing-customer")} tone="green" />
+      </section>
     </div>
   );
 }
 
+function Metric({ icon: Icon, value, label, tone }) {
+  const styles = tone === "orange" ? "bg-[#FFF4E5] text-[#F7931E]" : tone === "light" ? "bg-[#D9E8E3] text-[#0C3D2E]" : "bg-[#0C3D2E] text-white";
+  return <div className="flex items-center gap-3 rounded-xl border border-slate-100 bg-white p-3"><span className={`grid size-10 place-items-center rounded-xl ${styles}`}><Icon size={19} /></span><div><p className="text-xl font-bold text-[#0C3D2E]">{value}</p><p className="text-xs text-slate-500">{label}</p></div></div>;
+}
 
+function ActionCard({ icon: Icon, title, copy, action, onClick, tone }) {
+  const orange = tone === "orange";
+  return <button onClick={onClick} className="group flex items-center gap-4 rounded-2xl border border-[#0C3D2E]/15 bg-white p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"><span className={`grid size-12 place-items-center rounded-xl text-white ${orange ? "bg-[#F7931E]" : "bg-[#0C3D2E]"}`}><Icon size={22} /></span><span className="min-w-0 flex-1"><span className="block font-bold text-[#0C3D2E]">{title}</span><span className="mt-1 block text-xs leading-relaxed text-slate-500">{copy}</span><span className={`mt-3 inline-flex items-center gap-1 text-xs font-bold ${orange ? "text-[#F7931E]" : "text-[#0C3D2E]"}`}>{action} <ChevronRight size={14} /></span></span></button>;
+}

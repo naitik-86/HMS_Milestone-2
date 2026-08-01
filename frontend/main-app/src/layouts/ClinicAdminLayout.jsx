@@ -16,7 +16,7 @@ function ClinicAdminLayout() {
             "/clinic": "Dashboard",
             "/clinic/staff": "Staff",
             "/clinic/doctors": "Doctors",
-            "/clinic/lab": "Lab",
+            "/clinic/lab-technician": "Lab Technician",
             "/clinic/groomer": "Groomer",
             "/clinic/kennel": "Kennel",
             "/clinic/reports": "Reports",

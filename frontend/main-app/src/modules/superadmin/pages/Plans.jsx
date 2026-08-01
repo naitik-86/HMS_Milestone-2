@@ -9,6 +9,10 @@ function Plans() {
         open: false,
         plan: null,
     });
+    const [viewerState, setViewerState] = useState({
+        open: false,
+        plan: null,
+    });
 
     const openCreateModal = () => {
         setEditorState({ open: true, plan: null });
@@ -20,6 +24,14 @@ function Plans() {
 
     const closeModal = () => {
         setEditorState({ open: false, plan: null });
+    };
+
+    const openViewModal = (plan) => {
+        setViewerState({ open: true, plan });
+    };
+
+    const closeViewModal = () => {
+        setViewerState({ open: false, plan: null });
     };
 
     const handleSaved = () => {
@@ -38,8 +50,16 @@ function Plans() {
                 onSaved={handleSaved}
             />
 
+            <PlanModal
+                open={viewerState.open}
+                plan={viewerState.plan}
+                onClose={closeViewModal}
+                readOnly
+            />
+
             <ActivePlans
                 refreshKey={refreshKey}
+                onViewPlan={openViewModal}
                 onEditPlan={openEditModal}
                 onChanged={() => setRefreshKey((key) => key + 1)}
             />

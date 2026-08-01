@@ -73,3 +73,8 @@ export const createPatient = async (patientData) => {
 
     return res.data;
 };
+
+export const deletePatient = async (id) => {
+    const res = await API.delete(`${BASE_URL}/patient/${id}`);
+    return res.data;
+};

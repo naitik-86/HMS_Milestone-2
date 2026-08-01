@@ -15,16 +15,38 @@ export default function Footer() {
               solutions.
             </p>
             <ul className="mt-8 space-y-4 text-sm text-slate-400">
-              <li className="flex items-center gap-3">
-                <Mail className="w-4 h-4" /> info@pahms.com
-              </li>
-              <li className="flex items-center gap-3">
-                <Phone className="w-4 h-4" /> +91 123 456 7890
-              </li>
-              <li className="flex items-center gap-3">
-                <MapPin className="w-4 h-4" /> New Delhi, India
-              </li>
-            </ul>
+            <li>
+              <a
+                href="mailto:info@pahms.com"
+                className="group flex items-center gap-3 hover:text-[#f7931e] transition-colors"
+              >
+                <Mail className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                <span>info@pahms.com</span>
+              </a>
+            </li>
+
+            <li>
+              <a
+                href="tel:+911234567890"
+                className="group flex items-center gap-3 hover:text-[#f7931e] transition-colors"
+              >
+                <Phone className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                <span>+91 123 456 7890</span>
+              </a>
+            </li>
+
+            <li>
+              <a
+                href="https://maps.google.com/?q=New+Delhi,+India"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group flex items-center gap-3 hover:text-[#f7931e] transition-colors"
+              >
+                <MapPin className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                <span>New Delhi, India</span>
+              </a>
+            </li>
+          </ul>
           </div>
 
           <FooterCol

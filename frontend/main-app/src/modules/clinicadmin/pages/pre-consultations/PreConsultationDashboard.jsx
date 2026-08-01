@@ -2,18 +2,22 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { getDashboard, getPendingPets, getCompletedPets } from "../../api/preConsultationApi";
 import PetRegistrationWizard from "./PetRegistrationWizard";
-import { 
-  Activity, 
-  Clock, 
-  CheckCircle, 
-  AlertCircle, 
-  Search, 
-  RefreshCw, 
-  ChevronRight, 
-  UserCheck, 
-  ClipboardList, 
-  Stethoscope, 
-  FileText 
+import {
+  Activity,
+  Clock,
+  CheckCircle,
+  AlertCircle,
+  Search,
+  RefreshCw,
+  ChevronRight,
+  UserCheck,
+  ClipboardList,
+  Stethoscope,
+  FileText,
+  PawPrint,
+  Cat,
+  Bird,
+  Rabbit,
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -100,107 +104,126 @@ export default function PreConsultationDashboard() {
 
   const getSpeciesIcon = (species) => {
     const s = (species || "").toLowerCase();
-    if (s.includes("cat")) return "🐱";
-    if (s.includes("bird") || s.includes("parrot")) return "🦜";
-    if (s.includes("rabbit")) return "🐇";
-    return "🐶";
+
+    if (s.includes("cat")) {
+      return <Cat className="w-6 h-6 text-orange-600" />;
+    }
+
+    if (s.includes("bird") || s.includes("parrot")) {
+      return <Bird className="w-6 h-6 text-blue-600" />;
+    }
+
+    if (s.includes("rabbit")) {
+      return <Rabbit className="w-6 h-6 text-purple-600" />;
+    }
+
+    return <PawPrint className="w-6 h-6 text-orange-600" />;
   };
 
-  const cards = [
-    {
-      title: "Today's Patients",
-      value: stats.todayPatients,
-      icon: "🐾",
-      color: "bg-blue-50 text-blue-600 border-blue-100",
-      trend: "Total Intake",
-    },
-    {
-      title: "Vitals Pending",
-      value: stats.vitalsPending,
-      icon: "❤️",
-      color: "bg-orange-50 text-orange-600 border-orange-100",
-      trend: "Action Required",
-    },
-    {
-      title: "Severe / Observations",
-      value: stats.observations,
-      icon: "👀",
-      color: "bg-purple-50 text-purple-600 border-purple-100",
-      trend: "High Priority",
-    },
-    {
-      title: "Completed Today",
-      value: stats.completed,
-      icon: "✅",
-      color: "bg-green-50 text-green-600 border-green-100",
-      trend: "Sent to Doctor",
-    },
-  ];
-
   return (
-    <div className="space-y-6">
-      {/* Banner */}
-      <div className="rounded-3xl border border-orange-200/80 bg-gradient-to-r from-white via-orange-50/60 to-amber-50/70 p-6 md:p-8 shadow-xs text-slate-900 relative overflow-hidden">
-        <div className="absolute right-0 top-0 translate-x-10 -translate-y-10 w-72 h-72 bg-orange-400/10 rounded-full blur-2xl pointer-events-none"></div>
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 relative z-10">
+    <div className="space-y-[20px]">
+      {/* HEADER (EXACT DESIGN SYSTEM) */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-[16px] bg-[#D9E8E3]/30 p-[20px] md:p-[24px] rounded-[16px] border border-[#0C3D2E]/15 shadow-sm transition-all duration-200">
+        <div className="flex items-center gap-[16px]">
+          <div className="w-[48px] h-[48px] rounded-[12px] bg-[#0C3D2E] text-white flex items-center justify-center shrink-0">
+            <Stethoscope className="w-[22px] h-[22px]" />
+          </div>
           <div>
-            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-orange-100 text-orange-800 text-xs font-bold uppercase tracking-wider mb-3 border border-orange-200/80">
-              <Stethoscope className="w-3.5 h-3.5 text-orange-600" /> Pre-Consultation Station
-            </div>
-            <h1 className="text-2xl md:text-3xl lg:text-4xl font-extrabold tracking-tight text-slate-900">
-              Welcome Back, Triage Staff 👋
+            <h1 className="text-[20px] md:text-[24px] font-[900] tracking-tight text-[#0C3D2E]">
+              Pre-Consultation Station
             </h1>
-            <p className="text-slate-600 mt-2 text-sm md:text-base max-w-2xl font-medium">
+            <p className="text-[12px] md:text-[14px] font-[600] text-[#0C3D2E]/70 mt-[2px]">
               Real-time management of pet vitals, health histories, primary complaints, and doctor workflow queue.
             </p>
           </div>
+        </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              onClick={handleRefresh}
-              disabled={refreshing}
-              className="flex items-center gap-2 bg-white hover:bg-slate-50 border border-slate-200/90 text-slate-700 px-5 py-3 rounded-2xl font-bold transition-all text-xs md:text-sm shadow-2xs"
-            >
-              <RefreshCw className={`w-4 h-4 text-orange-500 ${refreshing ? "animate-spin" : ""}`} />
-              <span>Sync Queue</span>
-            </button>
-            <button
-              onClick={() => navigate("/clinic/preconsultation/pending")}
-              className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-2xl font-bold shadow-md shadow-orange-500/20 transition-all hover:scale-[1.02] text-xs md:text-sm"
-            >
-              <span>Assess Patients ({stats.vitalsPending})</span>
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
+        <div className="flex flex-wrap items-center gap-[12px] w-full md:w-auto">
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="w-full md:w-auto flex items-center justify-center gap-[8px] bg-white hover:bg-slate-50 text-[#0C3D2E] border border-[#0C3D2E]/15 px-[20px] py-[10px] rounded-[12px] text-[12px] font-[700] shadow-sm transition-all duration-200 hover:-translate-y-[2px] cursor-pointer"
+          >
+            <RefreshCw className={`w-[16px] h-[16px] text-[#F7931E] ${refreshing ? "animate-spin" : ""}`} />
+            <span>Sync Queue</span>
+          </button>
+
+          <button
+            onClick={() => navigate("/clinic/preconsultation/pending")}
+            className="w-full md:w-auto flex items-center justify-center gap-[8px] bg-[#F7931E] hover:bg-[#E08319] text-white px-[20px] py-[10px] rounded-[12px] text-[12px] font-[700] shadow-sm transition-all duration-200 hover:-translate-y-[2px] cursor-pointer border-none"
+          >
+            <span>Assess Patients ({stats.vitalsPending})</span>
+            <ChevronRight className="w-[16px] h-[16px]" />
+          </button>
         </div>
       </div>
 
-        {/* KPI Summary Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
-          {cards.map((card, index) => (
-            <div
-              key={index}
-              className="bg-white rounded-3xl p-5 border border-slate-200/80 shadow-xs hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
-            >
-              <div className="flex justify-between items-center">
-                <div>
-                  <p className="text-slate-500 text-sm font-medium">{card.title}</p>
-                  <h2 className="text-3xl font-extrabold mt-2 text-slate-800 tracking-tight">
-                    {loading ? "..." : card.value}
-                  </h2>
-                  <span className="inline-block text-xs font-semibold mt-2 text-slate-500">
-                    {card.trend}
-                  </span>
-                </div>
-                <div
-                  className={`w-14 h-14 rounded-2xl flex items-center justify-center text-2xl border ${card.color}`}
-                >
-                  {card.icon}
-                </div>
-              </div>
-            </div>
-          ))}
+      {/* STAT CARDS (EXACT DESIGN SYSTEM) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-[16px]">
+        {/* CARD 1: Today's Patients (Green Theme) */}
+        <div className="bg-[#D9E8E3]/35 rounded-[16px] p-[16px] md:p-[20px] border border-[#0C3D2E]/15 shadow-xs hover:shadow-md transition-all duration-200 hover:-translate-y-[2px] flex items-center justify-between gap-[16px]">
+          <div>
+            <p className=" text-[12px] font-[700] tracking-wider text-[#0C3D2E]/80">Today's Patients</p>
+            <h2 className="text-[24px] md:text-[32px] font-[900] text-[#0C3D2E] mt-[4px] tracking-tight">
+              {loading ? "..." : stats.todayPatients}
+            </h2>
+            <span className="inline-block rounded-full px-[10px] py-[2px] text-[11px] font-[700] bg-[#0C3D2E]/10 text-[#0C3D2E] mt-[6px]">
+              Total Intake
+            </span>
+          </div>
+          <div className="w-[48px] h-[48px] rounded-[12px] bg-[#0C3D2E] text-white flex items-center justify-center shrink-0">
+            <Activity className="w-[22px] h-[22px]" />
+          </div>
         </div>
+
+        {/* CARD 2: Vitals Pending (Orange Theme) */}
+        <div className="bg-[#FFF4E5] rounded-[16px] p-[16px] md:p-[20px] border border-[#F7931E]/20 shadow-xs hover:shadow-md transition-all duration-200 hover:-translate-y-[2px] flex items-center justify-between gap-[16px]">
+          <div>
+            <p className=" text-[12px] font-[700] tracking-wider text-[#F7931E]">Vitals Pending</p>
+            <h2 className="text-[24px] md:text-[32px] font-[900] text-[#0C3D2E] mt-[4px] tracking-tight">
+              {loading ? "..." : stats.vitalsPending}
+            </h2>
+            <span className="inline-block rounded-full px-[10px] py-[2px] text-[11px] font-[700] bg-[#F7931E]/10 text-[#F7931E] mt-[6px]">
+              Action Required
+            </span>
+          </div>
+          <div className="w-[48px] h-[48px] rounded-[12px] bg-[#F7931E] text-white flex items-center justify-center shrink-0">
+            <Clock className="w-[22px] h-[22px]" />
+          </div>
+        </div>
+
+        {/* CARD 3: Severe / Observations (Orange Theme) */}
+        <div className="bg-[#FFF4E5] rounded-[16px] p-[16px] md:p-[20px] border border-[#F7931E]/20 shadow-xs hover:shadow-md transition-all duration-200 hover:-translate-y-[2px] flex items-center justify-between gap-[16px]">
+          <div>
+            <p className=" text-[12px] font-[700] tracking-wider text-[#F7931E]">Severe / Observations</p>
+            <h2 className="text-[24px] md:text-[32px] font-[900] text-[#0C3D2E] mt-[4px] tracking-tight">
+              {loading ? "..." : stats.observations}
+            </h2>
+            <span className="inline-block rounded-full px-[10px] py-[2px] text-[11px] font-[700] bg-[#F7931E]/10 text-[#F7931E] mt-[6px]">
+              High Priority
+            </span>
+          </div>
+          <div className="w-[48px] h-[48px] rounded-[12px] bg-[#F7931E] text-white flex items-center justify-center shrink-0">
+            <AlertCircle className="w-[22px] h-[22px]" />
+          </div>
+        </div>
+
+        {/* CARD 4: Completed Today (Green Theme) */}
+        <div className="bg-[#D9E8E3]/35 rounded-[16px] p-[16px] md:p-[20px] border border-[#0C3D2E]/15 shadow-xs hover:shadow-md transition-all duration-200 hover:-translate-y-[2px] flex items-center justify-between gap-[16px]">
+          <div>
+            <p className=" text-[12px] font-[700] tracking-wider text-[#0C3D2E]/80">Completed </p>
+            <h2 className="text-[24px] md:text-[32px] font-[900] text-[#0C3D2E] mt-[4px] tracking-tight">
+              {loading ? "..." : stats.completed}
+            </h2>
+            <span className="inline-block rounded-full px-[10px] py-[2px] text-[11px] font-[700] bg-[#0C3D2E]/10 text-[#0C3D2E] mt-[6px]">
+              Sent to Doctor
+            </span>
+          </div>
+          <div className="w-[48px] h-[48px] rounded-[12px] bg-[#0C3D2E] text-white flex items-center justify-center shrink-0">
+            <CheckCircle className="w-[22px] h-[22px]" />
+          </div>
+        </div>
+      </div>
 
         {/* Main Grid Section */}
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
@@ -237,7 +260,9 @@ export default function PreConsultationDashboard() {
                 </div>
               ) : filteredQueue.length === 0 ? (
                 <div className="py-16 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-                  <div className="text-4xl mb-3">🐾</div>
+                  <div className="flex justify-center mb-3">
+                      <PawPrint className="w-10 h-10 text-orange-500" />
+                  </div>
                   <h3 className="font-bold text-slate-700">No Patients in Pending Queue</h3>
                   <p className="text-xs text-slate-500 mt-1">
                     All registered pets have completed pre-consultation assessments.
@@ -245,7 +270,7 @@ export default function PreConsultationDashboard() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {filteredQueue.map((item) => {
+                  {filteredQueue.slice(0, 6).map((item) => {
                     const petName = item.pet?.petName || item.petName || "Pet";
                     const species = item.pet?.species || item.species || "Dog";
                     const ownerName = item.owner?.ownerName || item.ownerName || "Owner";
@@ -310,7 +335,7 @@ export default function PreConsultationDashboard() {
                   className="w-full flex items-center justify-between bg-orange-50 hover:bg-orange-100 border border-orange-200 p-4 rounded-2xl text-orange-900 font-semibold transition-all"
                 >
                   <div className="flex items-center gap-3">
-                    <span className="text-2xl">⏳</span>
+                    <Clock className="w-6 h-6 text-orange-600" />
                     <div className="text-left">
                       <p className="text-sm font-bold">Pending Assessments</p>
                       <p className="text-xs text-orange-700 font-normal">View waiting room list</p>
@@ -324,7 +349,7 @@ export default function PreConsultationDashboard() {
                   className="w-full flex items-center justify-between bg-green-50 hover:bg-green-100 border border-green-200 p-4 rounded-2xl text-green-900 font-semibold transition-all"
                 >
                   <div className="flex items-center gap-3">
-                    <span className="text-2xl">✅</span>
+                    <CheckCircle className="w-6 h-6 text-green-600" />
                     <div className="text-left">
                       <p className="text-sm font-bold">Completed Cases</p>
                       <p className="text-xs text-green-700 font-normal">Vitals recorded & submitted</p>
@@ -338,7 +363,7 @@ export default function PreConsultationDashboard() {
                   className="w-full flex items-center justify-between bg-blue-50 hover:bg-blue-100 border border-blue-200 p-4 rounded-2xl text-blue-900 font-semibold transition-all"
                 >
                   <div className="flex items-center gap-3">
-                    <span className="text-2xl">📚</span>
+                    <FileText className="w-6 h-6 text-blue-600" />
                     <div className="text-left">
                       <p className="text-sm font-bold">Pet History Archive</p>
                       <p className="text-xs text-blue-700 font-normal">Search past visits</p>
@@ -366,7 +391,7 @@ export default function PreConsultationDashboard() {
                     <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-100">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-lg bg-green-100 text-green-700 flex items-center justify-center font-bold text-xs">
-                          ✓
+                          <CheckCircle className="size-4" />
                         </div>
                         <div>
                           <p className="text-xs font-bold text-slate-800">

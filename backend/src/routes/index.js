@@ -8,7 +8,6 @@ const superAdminReportsRoutes = require('./superAdminReportsRoutes');
 const clinicAdminRoutes = require('./clinicAdminRoutes');
 const doctorRoutes = require('./doctorRoutes');
 const receptionRoutes = require('./receptionRoutes');
-const preConsultationRoutes = require("./preConsultationRoutes");
 const petOwnerRoutes = require("./petOwnerRoutes");
 const doctorModule = require('./DoctorModuleRoutes');
 const labRoutes = require("./labRoutes");

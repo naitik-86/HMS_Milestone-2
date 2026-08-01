@@ -14,6 +14,7 @@ import TrialSubscriptionCard from "./TrialSubscriptionCard";
 function PrePaidSubscription() {
     const [currentSubscription, setCurrentSubscription] = useState(null);
     const [plans, setPlans] = useState([]);
+    const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
 
 
@@ -38,22 +39,28 @@ function PrePaidSubscription() {
                 getAllPlans(),
             ]);
 
-            console.log(subscriptionRes);
-            console.log(plansRes);
-
             setCurrentSubscription(subscriptionRes.data);
             setPlans(plansRes.data);
-
-
-
-
         } catch (error) {
             console.error(error);
+        } finally {
+            setLoading(false);
         }
     };
 
-    if (!currentSubscription) {
+    if (loading) {
         return <div>Loading...</div>;
+    }
+
+    if (!currentSubscription) {
+        return (
+            <div className="space-y-8 p-6">
+                <h1 className="text-3xl font-bold">Subscription & Billing</h1>
+                <p className="text-gray-600">
+                    No subscription found for this clinic yet.
+                </p>
+            </div>
+        );
     }
 
     return (
@@ -77,7 +84,7 @@ function PrePaidSubscription() {
             <PlanCarousel
                 status={currentSubscription?.status}
                 plans={plans}
-                currentPlanId={currentSubscription.plan._id}
+                currentPlanId={currentSubscription.plan?._id}
             />
 
         </div>

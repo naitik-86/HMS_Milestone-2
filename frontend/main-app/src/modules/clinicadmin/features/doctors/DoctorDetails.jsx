@@ -11,15 +11,57 @@ import {
   IndianRupee,
   Clock3,
   ShieldAlert,
+  Upload,
+  FileText,
 } from "lucide-react";
 import { createDoctor, getDoctors, updateDoctor, deleteDoctor } from '../../api/doctorApi';
 import { useEffect, useState } from "react";
 import { getDoctorStaff } from "../../api/staffApi";
+import { getCurrentSubscription } from "../../api/subscriptionApi";
 // ── Mock Data ────────────────────────────────────────────────────────────────
 const degreeTypes = ['BVSc', 'BVSc & AH', 'MVSc', 'PhD (Vet)', 'BAMS', 'Other'];
 const specializations = ['Small Animal', 'Large Animal', 'Exotic & Wildlife', 'Poultry', 'Aquatic', 'Surgery', 'Dermatology', 'Dentistry', 'Oncology', 'Cardiology'];
 const languages = ['English', 'Hindi', 'Marathi', 'Tamil', 'Telugu', 'Kannada', 'Bengali', 'Gujarati'];
-const states = ['Maharashtra', 'Karnataka', 'Tamil Nadu', 'Delhi', 'Gujarat', 'Rajasthan', 'Kerala', 'West Bengal', 'Uttar Pradesh', 'Madhya Pradesh'];
+const states = [
+  "Andhra Pradesh",
+  "Arunachal Pradesh",
+  "Assam",
+  "Bihar",
+  "Chhattisgarh",
+  "Goa",
+  "Gujarat",
+  "Haryana",
+  "Himachal Pradesh",
+  "Jharkhand",
+  "Karnataka",
+  "Kerala",
+  "Madhya Pradesh",
+  "Maharashtra",
+  "Manipur",
+  "Meghalaya",
+  "Mizoram",
+  "Nagaland",
+  "Odisha",
+  "Punjab",
+  "Rajasthan",
+  "Sikkim",
+  "Tamil Nadu",
+  "Telangana",
+  "Tripura",
+  "Uttar Pradesh",
+  "Uttarakhand",
+  "West Bengal",
+
+  // Union Territories
+  "Andaman and Nicobar Islands",
+  "Chandigarh",
+  "Dadra and Nagar Haveli and Daman and Diu",
+  "Delhi",
+  "Jammu and Kashmir",
+  "Ladakh",
+  "Lakshadweep",
+  "Puducherry"
+];
 const digitsOnly = (value, max = 10) => value.replace(/\D/g, "").slice(0, max);
 const isPdfFile = (file) => file?.type === "application/pdf";
 const isImageFile = (file) => file?.type?.startsWith("image/");
@@ -29,6 +71,13 @@ const isPastDate = (value) => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   return selected < today;
+};
+const isValidEmail = (email) => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+};
+const isValidMobile = (mobile) => {
+  return mobile.length === 10 && /^\d{10}$/.test(mobile);
 };
 
 
@@ -58,9 +107,11 @@ function UploadBox({ id, accept, label }) {
 }
 
 // ── DoctorForm ───────────────────────────────────────────────────────────────
-function DoctorForm({ onClose, onSave, existingData, isEdit, isSubmitting }) {
+function DoctorForm({ onClose, onSave, existingData, isEdit, isSubmitting, doctorLimitReached, maxDoctors }) {
+  const blockedByLimit = !isEdit && doctorLimitReached;
   const [doctorStaff, setDoctorStaff] = useState([]);
   const [activeStep, setActiveStep] = useState(0);
+  const todayDateStr = new Date().toISOString().split('T')[0];
 
   console.log(existingData);
 
@@ -143,6 +194,24 @@ function DoctorForm({ onClose, onSave, existingData, isEdit, isSubmitting }) {
     return true;
   };
 
+  const getAvailableDegrees = (currentIndex) => {
+    const selectedDegrees = degrees
+      .map((d, i) => i !== currentIndex ? (d.degree || d.degreeName) : null)
+      .filter(Boolean);
+    return degreeTypes.filter(dt => !selectedDegrees.includes(dt));
+  };
+
+  // A degree row with a type picked but no certificate (new upload or an
+  // already-saved one) shouldn't be allowed past this step - previously
+  // Next had no gating at all on any step, only the final Save.
+  const hasMissingDegreeCertificate = () =>
+    degrees.some(
+      (d) => (d.degree || d.degreeName) && !d.certificate && !d.existingCertificate && !d.degreeCertificate
+    );
+
+  const hasInvalidCertValidity = () =>
+    Boolean(formData.certValidity) && isPastDate(formData.certValidity);
+
   const steps = [
     { label: 'Qualifications' },
     { label: 'Vet Council Registration' },
@@ -151,18 +220,74 @@ function DoctorForm({ onClose, onSave, existingData, isEdit, isSubmitting }) {
 
   const validate = () => {
     const e = {};
+    
+    // Doctor selection validation
+    if (!formData.staff) e.staff = 'Please select a doctor';
+    
+    // Name validation
     if (!formData.name.trim()) e.name = 'Doctor name is required';
-    if (!formData.staff) e.name = 'Please select a doctor';
-    if (!formData.experience || Number(formData.experience) <= 0 || Number(formData.experience) > 70) e.experience = 'Experience must be between 1 and 70 years';
-    if (!degrees.some(d => d.degree || d.degreeName)) e.degrees = 'Select at least one degree type';
-    if (!selectedSpecs.length) e.selectedSpecs = 'Select at least one specialization';
-    if (!formData.regNumber.trim()) e.regNumber = 'Registration number is required';
-    else if (!/^[A-Za-z0-9/-]{5,30}$/.test(formData.regNumber.trim())) e.regNumber = 'Use 5-30 letters, numbers, / or - only';
-    if (!formData.state) e.state = 'Please select a state';
-    if (formData.certValidity && isPastDate(formData.certValidity)) e.certValidity = 'Certificate validity date cannot be in the past';
-    if (formData.reminderDays === "" || Number(formData.reminderDays) < 0 || Number(formData.reminderDays) > 365) e.reminderDays = 'Reminder days must be between 0 and 365';
-    if (!formData.fees || Number(formData.fees) <= 0 || Number(formData.fees) > 100000) e.fees = 'Consultation fees must be between 1 and 100000';
-    if (!formData.avgDuration || Number(formData.avgDuration) < 5 || Number(formData.avgDuration) > 240) e.avgDuration = 'Duration must be between 5 and 240 minutes';
+    
+    // Mobile validation
+    if (!formData.mobile.trim()) {
+      e.mobile = 'Mobile number is required';
+    } else if (!isValidMobile(formData.mobile)) {
+      e.mobile = 'Mobile must be a valid 10-digit number';
+    }
+    
+    // Email validation
+    if (!formData.email.trim()) {
+      e.email = 'Email is required';
+    } else if (!isValidEmail(formData.email)) {
+      e.email = 'Please enter a valid email address';
+    }
+    
+    // Experience validation
+    if (!formData.experience || Number(formData.experience) <= 0 || Number(formData.experience) > 70) {
+      e.experience = 'Experience must be between 1 and 70 years';
+    }
+    
+    // Degrees validation
+    if (!degrees.some(d => d.degree || d.degreeName)) {
+      e.degrees = 'Select at least one degree type';
+    }
+    
+    // Specialization validation
+    if (!selectedSpecs.length) {
+      e.selectedSpecs = 'Select at least one specialization';
+    }
+    
+    // Registration number validation
+    if (!formData.regNumber.trim()) {
+      e.regNumber = 'Registration number is required';
+    } else if (!/^[A-Za-z0-9/-]{5,30}$/.test(formData.regNumber.trim())) {
+      e.regNumber = 'Use 5-30 letters, numbers, / or - only';
+    }
+    
+    // State validation
+    if (!formData.state) {
+      e.state = 'Please select a state';
+    }
+    
+    // Certificate validity validation
+    if (formData.certValidity && isPastDate(formData.certValidity)) {
+      e.certValidity = 'Certificate validity date cannot be in the past';
+    }
+    
+    // Reminder days validation
+    if (formData.reminderDays === "" || Number(formData.reminderDays) < 0 || Number(formData.reminderDays) > 365) {
+      e.reminderDays = 'Reminder days must be between 0 and 365';
+    }
+    
+    // Consultation fees validation
+    if (!formData.fees || Number(formData.fees) <= 0 || Number(formData.fees) > 100000) {
+      e.fees = 'Consultation fees must be between 1 and 100000';
+    }
+    
+    // Average duration validation
+    if (!formData.avgDuration || Number(formData.avgDuration) < 5 || Number(formData.avgDuration) > 240) {
+      e.avgDuration = 'Duration must be between 5 and 240 minutes';
+    }
+    
     setErrors(e);
     return !Object.keys(e).length;
   };
@@ -191,7 +316,7 @@ function DoctorForm({ onClose, onSave, existingData, isEdit, isSubmitting }) {
   const toggleLang = (l) => setSelectedLangs(p => p.includes(l) ? p.filter(x => x !== l) : [...p, l]);
 
   const stepErrors = [
-    [errors.name, errors.experience, errors.degrees, errors.selectedSpecs].filter(Boolean).length,
+    [errors.name, errors.mobile, errors.email, errors.experience, errors.degrees, errors.selectedSpecs].filter(Boolean).length,
     [errors.regNumber, errors.state, errors.certValidity, errors.reminderDays].filter(Boolean).length,
     [errors.fees, errors.avgDuration].filter(Boolean).length,
   ];
@@ -205,7 +330,7 @@ function DoctorForm({ onClose, onSave, existingData, isEdit, isSubmitting }) {
 
   const fetchDoctorStaff = async () => {
     try {
-      const data = await getDoctorStaff();
+      const data = await getDoctorStaff(existingData?._id);
       setDoctorStaff(data);
     } catch (err) {
       console.log(err);
@@ -318,7 +443,8 @@ function DoctorForm({ onClose, onSave, existingData, isEdit, isSubmitting }) {
                     <div>
                       <label className={labelCls}>Doctor Full Name <span className="text-[#E8630A]">*</span></label>
                       <select
-                        className={errors.name ? inputErrCls : inputCls}
+                        disabled={blockedByLimit}
+                        className={(errors.staff || blockedByLimit) ? inputErrCls : inputCls}
                         value={formData.staffId || ""}
                         onChange={(e) => {
 
@@ -345,6 +471,7 @@ function DoctorForm({ onClose, onSave, existingData, isEdit, isSubmitting }) {
                             email:
                               doctor.personalInfo.email,
                           }));
+                          if (errors.staff) setErrors(p => ({ ...p, staff: '' }));
                         }}
                       >
                         <option value="">
@@ -364,7 +491,13 @@ function DoctorForm({ onClose, onSave, existingData, isEdit, isSubmitting }) {
                           </option>
                         ))}
                       </select>
-                      {errors.name && <p className="text-red-500 text-xs mt-1.5">{errors.name}</p>}
+                      {blockedByLimit ? (
+                        <p className="text-red-500 text-xs mt-1.5">
+                          Maximum of {maxDoctors} doctor{maxDoctors === 1 ? '' : 's'} reached for your current plan. Upgrade your plan to add more.
+                        </p>
+                      ) : (
+                        errors.staff && <p className="text-red-500 text-xs mt-1.5">{errors.staff}</p>
+                      )}
                     </div>
                     <div>
                       <label className={labelCls}>Years of Experience <span className="text-[#E8630A]">*</span></label>
@@ -390,9 +523,17 @@ function DoctorForm({ onClose, onSave, existingData, isEdit, isSubmitting }) {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                           <div>
                             <label className={labelCls}>Degree Type</label>
-                            <select className={inputCls} value={d.degree || d.degreeName || ""} onChange={e => setDegrees(degrees.map((deg, j) => j === i ? { ...deg, degree: e.target.value, degreeName: e.target.value } : deg))}>
+                            <select 
+                              className={inputCls} 
+                              value={d.degree || d.degreeName || ""} 
+                              onChange={e => setDegrees(degrees.map((deg, j) => j === i ? { ...deg, degree: e.target.value, degreeName: e.target.value } : deg))}
+                            >
                               <option value="">Select</option>
-                              {degreeTypes.map(t => <option key={t}>{t}</option>)}
+                              {getAvailableDegrees(i).map(t => (
+                                <option key={t} value={t}>
+                                  {t}
+                                </option>
+                              ))}
                             </select>
                           </div>
                           <div>
@@ -400,41 +541,59 @@ function DoctorForm({ onClose, onSave, existingData, isEdit, isSubmitting }) {
                               Certificate (PDF)
                             </label>
 
-                            <input
-                              type="file"
-                              accept="application/pdf,.pdf"
-                              onChange={(e) => {
-                                const file = e.target.files[0];
+                            <label className="flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-dashed border-[#E8630A] bg-white px-4 py-3 text-sm font-semibold text-[#E8630A] transition hover:bg-[#FEF3EB]">
+                              <span className="flex items-center gap-2">
+                                <Upload size={16} />
+                                {d.certificate?.name || "Upload certificate PDF"}
+                              </span>
+                              <span className="text-[11px] text-[#6B7280]">PDF only</span>
+                              <input
+                                type="file"
+                                accept="application/pdf,.pdf"
+                                onChange={(e) => {
+                                  const file = e.target.files[0];
 
-                                const valid = requirePdf(file, (pdf) =>
-                                  setDegrees(
-                                    degrees.map((deg, j) =>
-                                      j === i
-                                        ? {
-                                          ...deg,
-                                          certificate: pdf,
-                                        }
-                                        : deg
+                                  const valid = requirePdf(file, (pdf) =>
+                                    setDegrees(
+                                      degrees.map((deg, j) =>
+                                        j === i
+                                          ? {
+                                            ...deg,
+                                            certificate: pdf,
+                                          }
+                                          : deg
+                                      )
                                     )
-                                  )
-                                );
+                                  );
 
-                                if (valid === false) e.target.value = "";
-                              }}
-                              className={inputCls}
-                            />
+                                  if (valid === false) e.target.value = "";
+                                }}
+                                className="hidden"
+                              />
+                            </label>
 
-                            {(d.degreeCertificate || d.existingCertificate) && (
-                              <div className="mt-2 text-sm">
-                                <a
-                                  href={d.degreeCertificate || d.existingCertificate}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-[#E8630A] hover:underline"
-                                >
-                                  📄 View uploaded certificate
-                                </a>
-                              </div>
+                            {d.certificate && (
+                              <a
+                                href={URL.createObjectURL(d.certificate)}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-[#0C3D2E] hover:text-[#E8630A]"
+                              >
+                                <FileText size={14} />
+                                View uploaded certificate
+                              </a>
+                            )}
+
+                            {(d.degreeCertificate || d.existingCertificate) && !d.certificate && (
+                              <a
+                                href={d.degreeCertificate || d.existingCertificate}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-[#0C3D2E] hover:text-[#E8630A]"
+                              >
+                                <FileText size={14} />
+                                View existing certificate
+                              </a>
                             )}
                           </div>
                         </div>
@@ -486,7 +645,20 @@ function DoctorForm({ onClose, onSave, existingData, isEdit, isSubmitting }) {
                   </div>
                   <div>
                     <label className={labelCls}>Certificate Validity Date</label>
-                    <input type="date" value={formData.certValidity} onChange={e => u('certValidity', e.target.value)} className={errors.certValidity ? inputErrCls : inputCls} />
+                    <input
+                      type="date"
+                      min={todayDateStr}
+                      value={formData.certValidity}
+                      onChange={e => {
+                        const value = e.target.value;
+                        setFormData(p => ({ ...p, certValidity: value }));
+                        setErrors(p => ({
+                          ...p,
+                          certValidity: isPastDate(value) ? 'Certificate validity date cannot be in the past' : '',
+                        }));
+                      }}
+                      className={errors.certValidity ? inputErrCls : inputCls}
+                    />
                     {errors.certValidity && <p className="text-red-500 text-xs mt-1.5">{errors.certValidity}</p>}
                   </div>
                   <div>
@@ -529,7 +701,7 @@ function DoctorForm({ onClose, onSave, existingData, isEdit, isSubmitting }) {
 
                     {/* Show newly selected file */}
                     {registrationCertificate instanceof File && (
-                      <p className="mt-2 text-sm text-gray-600">
+                      <p className="mt-2 text-sm text-green-600">
                         Selected: {registrationCertificate.name}
                       </p>
                     )}
@@ -689,9 +861,11 @@ function DoctorForm({ onClose, onSave, existingData, isEdit, isSubmitting }) {
               {activeStep > 0 ? '← Previous' : 'Cancel'}
             </button>
             <button
-              disabled={isSubmitting}
+              disabled={isSubmitting || blockedByLimit || (activeStep === 0 && hasMissingDegreeCertificate()) || (activeStep === 1 && hasInvalidCertValidity())}
               onClick={() => {
-                if (isSubmitting) return;
+                if (isSubmitting || blockedByLimit) return;
+                if (activeStep === 0 && hasMissingDegreeCertificate()) return;
+                if (activeStep === 1 && hasInvalidCertValidity()) return;
 
                 if (activeStep < steps.length - 1) {
                   setActiveStep(activeStep + 1);
@@ -700,16 +874,16 @@ function DoctorForm({ onClose, onSave, existingData, isEdit, isSubmitting }) {
                 }
               }}
               className={`px-8 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors border-none
-    ${isSubmitting ? "opacity-70 cursor-not-allowed" : "cursor-pointer"}`}
+    ${(isSubmitting || blockedByLimit || (activeStep === 0 && hasMissingDegreeCertificate()) || (activeStep === 1 && hasInvalidCertValidity())) ? "opacity-70 cursor-not-allowed" : "cursor-pointer"}`}
               style={{
-                backgroundColor: isSubmitting ? "#C77B45" : "#E8630A",
+                backgroundColor: (isSubmitting || blockedByLimit || (activeStep === 0 && hasMissingDegreeCertificate()) || (activeStep === 1 && hasInvalidCertValidity())) ? "#C77B45" : "#E8630A",
               }}
               onMouseEnter={(e) => {
-                if (!isSubmitting)
+                if (!isSubmitting && !blockedByLimit && !(activeStep === 0 && hasMissingDegreeCertificate()) && !(activeStep === 1 && hasInvalidCertValidity()))
                   e.currentTarget.style.backgroundColor = "#D05A09";
               }}
               onMouseLeave={(e) => {
-                if (!isSubmitting)
+                if (!isSubmitting && !blockedByLimit && !(activeStep === 0 && hasMissingDegreeCertificate()) && !(activeStep === 1 && hasInvalidCertValidity()))
                   e.currentTarget.style.backgroundColor = "#E8630A";
               }}
             >
@@ -811,7 +985,7 @@ function ViewProfileModal({ doctor, onClose, onEdit, onDelete }) {
             <h2 className="font-['Syne'] text-2xl font-bold text-[#1A1D2E]">{doctor.name}</h2>
             <p className="text-sm text-gray-400 mt-0.5">{doctor.id}</p>
             <div className="flex items-center gap-2 mt-2">
-              <span className="text-xs font-semibold px-3 py-1 rounded-full bg-green-100 text-green-600">{doctor.status}</span>
+              <span className="text-xs font-semibold px-3 py-1 rounded-full bg-[#E6F6EC] text-[#1E9E5A] border border-[#BFEBCF]">{doctor.status}</span>
               {doctor.degrees?.[0]?.degree && (
                 <span className="text-xs font-semibold px-3 py-1 rounded-full bg-[#E8630A]/10 text-[#E8630A]">{doctor.degrees[0].degree}</span>
               )}
@@ -821,13 +995,25 @@ function ViewProfileModal({ doctor, onClose, onEdit, onDelete }) {
         <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 cursor-pointer bg-transparent border-none">✕</button>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        {statItems.map(item => (
-          <div key={item.label} className="bg-gray-50 rounded-xl p-3.5 border border-[#EAE5DC]">
-            <div className="text-xs text-gray-400 font-semibold uppercase tracking-wider mb-1.5">{item.label}</div>
-            <div className={`text-sm font-bold ${item.cls || 'text-[#1A1D2E]'}`}>{item.value}</div>
+      {/* Green highlight box — mirrors the mint "overview" panel style */}
+      <div className="rounded-2xl p-5 sm:p-6 border" style={{ backgroundColor: '#EAF7F0', borderColor: '#CFEEDB' }}>
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: '#16261E' }}>
+            <Stethoscope size={18} color="#fff" />
           </div>
-        ))}
+          <div>
+            <h3 className="text-sm font-bold text-[#1A1D2E]">Doctor Overview</h3>
+            <p className="text-xs text-gray-500 mt-0.5">Key practice details at a glance</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {statItems.map(item => (
+            <div key={item.label} className="bg-white rounded-xl p-3.5 border border-[#CFEEDB]">
+              <div className="text-xs text-gray-400 font-semibold uppercase tracking-wider mb-1.5">{item.label}</div>
+              <div className={`text-sm font-bold ${item.cls || 'text-[#1A1D2E]'}`}>{item.value}</div>
+            </div>
+          ))}
+        </div>
       </div>
 
       <div className="bg-gray-50 rounded-xl p-4 border border-[#EAE5DC]">
@@ -868,6 +1054,42 @@ function ViewProfileModal({ doctor, onClose, onEdit, onDelete }) {
         </div>
       )}
 
+      {(doctor.registrationCertificate || doctor.digitalSignature || doctor.doctorLetterhead || doctor.degrees?.some(d => d.degreeCertificate || d.existingCertificate)) && (
+        <div>
+          <div className="text-xs text-gray-400 font-semibold uppercase tracking-wider mb-2">Uploaded Documents</div>
+          <div className="flex flex-col gap-2">
+            {doctor.degrees?.map((d, i) => (
+              (d.degreeCertificate || d.existingCertificate) && (
+                <a
+                  key={i}
+                  href={d.degreeCertificate || d.existingCertificate}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm font-medium text-[#E8630A] hover:underline"
+                >
+                  📄 {d.degree || d.degreeName || `Degree ${i + 1}`} Certificate
+                </a>
+              )
+            ))}
+            {doctor.registrationCertificate && (
+              <a href={doctor.registrationCertificate} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-[#E8630A] hover:underline">
+                📄 Registration Certificate
+              </a>
+            )}
+            {doctor.digitalSignature && (
+              <a href={doctor.digitalSignature} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-[#E8630A] hover:underline">
+                🖊 Digital Signature
+              </a>
+            )}
+            {doctor.doctorLetterhead && (
+              <a href={doctor.doctorLetterhead} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-[#E8630A] hover:underline">
+                📄 Doctor Letterhead / Stamp
+              </a>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="flex justify-end gap-3 pt-3 border-t border-[#EAE5DC]">
         <button onClick={onClose} className="px-6 py-2.5 bg-gray-100 hover:bg-gray-200 text-[#1A1D2E] text-sm font-semibold rounded-xl cursor-pointer border-none transition-colors">
           Close
@@ -887,11 +1109,23 @@ export default function DoctorDetails() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
+  const [maxDoctors, setMaxDoctors] = useState(null);
   useEffect(() => {
     fetchDoctors();
+    fetchMaxDoctors();
 
 
   }, []);
+
+  const fetchMaxDoctors = async () => {
+    try {
+      const res = await getCurrentSubscription();
+      const limit = res?.data?.plan?.featureLimits?.maxDoctors;
+      setMaxDoctors(Number.isFinite(limit) ? limit : null);
+    } catch (err) {
+      console.log(err);
+    }
+  };
 
   const fetchDoctors = async () => {
     try {
@@ -1033,12 +1267,15 @@ export default function DoctorDetails() {
       showToast({
         type: "error",
         title: "Operation Failed",
-        description: "Unable to save Doctor details. Please try again.",
+        description:
+          error?.response?.data?.message || "Unable to save Doctor details. Please try again.",
       });
     } finally {
       setIsSubmitting(false);
     }
   };
+  const doctorLimitReached = Number.isFinite(maxDoctors) && doctors.length >= maxDoctors;
+
   const filteredDoctors = doctors.filter((doctor) => {
     const matchesSearch =
       doctor.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -1066,7 +1303,15 @@ export default function DoctorDetails() {
       )}
 
       {(modal?.type === 'add' || modal?.type === 'edit') && (
-        <DoctorForm onClose={closeModal} onSave={handleSave} isSubmitting={isSubmitting} existingData={modal.doctor} isEdit={modal.type === 'edit'} />
+        <DoctorForm
+          onClose={closeModal}
+          onSave={handleSave}
+          isSubmitting={isSubmitting}
+          existingData={modal.doctor}
+          isEdit={modal.type === 'edit'}
+          doctorLimitReached={doctorLimitReached}
+          maxDoctors={maxDoctors}
+        />
       )}
 
       {modal?.type === 'view' && (
@@ -1086,22 +1331,37 @@ export default function DoctorDetails() {
         </div>
       )}
 
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
-        <div>
-          <h2 className="font-['Syne'] text-2xl font-bold text-[#1A1D2E]">Doctor Details</h2>
-          <p className="text-gray-500 text-sm mt-1">Manage doctor profiles, qualifications & practice settings</p>
+      {/* Page Header — mint/green panel, mirrors the "Clinic Management" overview card */}
+      <div
+        className="rounded-2xl p-5 sm:p-6 mb-6 border flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4"
+        style={{ backgroundColor: '#EAF7F0', borderColor: '#CFEEDB' }}
+      >
+        <div className="flex items-center gap-4">
+          <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: '#16261E' }}>
+            <Stethoscope size={20} color="#fff" />
+          </div>
+          <div>
+            <h2 className="font-['Syne'] text-2xl font-bold text-[#1A1D2E]">Doctor Details</h2>
+            <p className="text-gray-500 text-sm mt-1">Manage doctor profiles, qualifications & practice settings</p>
+            {doctorLimitReached && (
+              <p className="text-red-600 text-xs font-semibold mt-1.5">
+                Maximum of {maxDoctors} doctor{maxDoctors === 1 ? '' : 's'} reached for your current plan. Upgrade your plan to add more.
+              </p>
+            )}
+          </div>
         </div>
         <button
           onClick={() => setModal({ type: 'add' })}
-          className="bg-[#E8630A] hover:bg-[#D05A09] text-white text-sm font-semibold px-6 py-3 rounded-xl cursor-pointer border-none transition-colors"
+          disabled={doctorLimitReached}
+          title={doctorLimitReached ? `Maximum of ${maxDoctors} doctor(s) reached for your current plan.` : undefined}
+          className={`text-white text-sm font-semibold px-6 py-3 rounded-xl border-none transition-colors shrink-0 ${doctorLimitReached ? "bg-gray-300 cursor-not-allowed" : "bg-[#E8630A] hover:bg-[#D05A09] cursor-pointer"}`}
         >
           + Add Doctor Details
         </button>
       </div>
 
       {/* ==================== Filter Bar ==================== */}
-      <div className="bg-[#F8F9FA] border border-[#E5E7EB] rounded-2xl shadow-sm p-5 sm:p-6 mt-10 mb-10">
+      <div className="bg-[#F8F9FA] border border-[#E5E7EB] rounded-2xl shadow-sm p-5 sm:p-6 mb-10">
         <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-5">
 
           {/* Left Side */}
@@ -1172,7 +1432,7 @@ export default function DoctorDetails() {
 
           {/* Right Side */}
           <div className="flex items-center self-end">
-            <div className="bg-[#cccac83f] border border-[#f1ece763] rounded-xl px-3 py-2 w-[118px] h-[60px] flex flex-col justify-center">
+            <div className="border rounded-xl px-3 py-2 w-[118px] h-[60px] flex flex-col justify-center" style={{ backgroundColor: '#EAF7F0', borderColor: '#CFEEDB' }}>
               <p className="text-[11px] font-semibold uppercase tracking-wide text-[#6B7280]">
                 Total Doctors
               </p>
@@ -1279,10 +1539,6 @@ export default function DoctorDetails() {
                           <div className="font-semibold text-[#1A1D2E]">
                             {d.name}
                           </div>
-
-                          <div className="text-xs text-gray-400">
-                            {d._id}
-                          </div>
                         </div>
                       </div>
                     </td>
@@ -1304,7 +1560,7 @@ export default function DoctorDetails() {
                       <span
                         className={`px-3 py-1 rounded-full text-xs font-semibold ${
                           d.emergency
-                            ? "bg-green-100 text-green-700"
+                            ? "bg-[#E6F6EC] text-[#1E9E5A]"
                             : "bg-red-100 text-red-600"
                         }`}
                       >
@@ -1314,7 +1570,7 @@ export default function DoctorDetails() {
 
                     {/* Status */}
                     <td className="px-6 py-5">
-                      <span className="px-3 py-1 rounded-full bg-green-100 text-green-700 text-xs font-semibold">
+                      <span className="px-3 py-1 rounded-full text-xs font-semibold" style={{ backgroundColor: '#E6F6EC', color: '#1E9E5A' }}>
                         {d.status}
                       </span>
                     </td>

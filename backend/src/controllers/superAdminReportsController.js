@@ -7,26 +7,17 @@ const SubscriptionPlan = require("../models/SubscriptionPlan");
 const sendEmail = require("../utils/emailService");
 
 const MONTH_NAMES = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec",
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun", 
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
 ];
 
-const REPORT_COLORS = {
-  accent: "#E8630A",
-  indigo: "#6366F1",
-  green: "#22C55E",
-  amber: "#F59E0B",
-  rose: "#EF4444",
+const COLORS = {
+  accentHex: "#0C3D2E",
+  titleHex: "#0F172A",
+  mutedHex: "#64748B",
+  slateHex: "#334155",
+  borderHex: "#E2E8F0",
+  softHex: "#F8FAFC",
 };
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -36,20 +27,14 @@ const formatINR = (value) =>
     maximumFractionDigits: 0,
   }).format(Number(value) || 0);
 
-const normalizeDate = (date) => {
-  const value = new Date(date);
-  value.setHours(0, 0, 0, 0);
-  return value;
-};
-
-const buildMonthKey = (date) =>
-  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-
 const monthLabel = (date) =>
   MONTH_NAMES[date.getMonth()] || date.toLocaleString("en-US", { month: "short" });
 
 const getMonthDate = (baseDate, offset) =>
   new Date(baseDate.getFullYear(), baseDate.getMonth() - offset, 1);
+
+const buildMonthKey = (date) =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 
 const toCurrency = (value) => `INR ${formatINR(value)}`;
 
@@ -57,87 +42,188 @@ const csvCell = (value) => `"${String(value ?? "").replace(/"/g, '""')}"`;
 
 const parseEmailList = (value) => {
   if (!value) return [];
-
   const rawValues = Array.isArray(value)
     ? value
     : String(value)
         .split(/[,;]+/)
         .map((item) => item.trim());
-
   return [...new Set(rawValues.filter((email) => EMAIL_REGEX.test(email)))];
-};
-
-const buildMonthlySeries = (aggregation, fieldName, months = 6) => {
-  const today = new Date();
-  const values = new Map(
-    aggregation.map((item) => [
-      buildMonthKey(new Date(item._id.year, item._id.month - 1, 1)),
-      Number(item[fieldName] || 0),
-    ])
-  );
-
-  const series = [];
-  for (let offset = months - 1; offset >= 0; offset -= 1) {
-    const monthDate = getMonthDate(today, offset);
-    series.push({
-      month: monthLabel(monthDate),
-      value: Number(values.get(buildMonthKey(monthDate)) || 0),
-    });
-  }
-
-  return series;
 };
 
 const buildPdfBuffer = async (reportData) =>
   new Promise((resolve, reject) => {
-    const doc = new PDFDocument({ margin: 40, size: "A4" });
+    const doc = new PDFDocument({ margin: 40, size: "A4", layout: "portrait" });
     const chunks = [];
 
     doc.on("data", (chunk) => chunks.push(chunk));
     doc.on("end", () => resolve(Buffer.concat(chunks)));
     doc.on("error", reject);
 
-    doc.font("Helvetica-Bold").fontSize(22).fillColor("#111827").text("Super Admin Report", {
-      align: "center",
-    });
-    doc.moveDown(0.3);
-    doc.font("Helvetica").fontSize(10).fillColor("#6B7280").text(
-      `Generated on ${new Date().toLocaleString("en-IN")}`,
-      { align: "center" }
-    );
+    const pageWidth = doc.page.width;
+    const pageHeight = doc.page.height;
+    const margin = 40;
+    const contentWidth = pageWidth - margin * 2;
 
-    doc.moveDown(1.2);
-    doc.font("Helvetica-Bold").fontSize(14).fillColor("#111827").text("Summary");
-    doc.moveDown(0.4);
-    doc.font("Helvetica").fontSize(11).fillColor("#374151");
-    doc.text(`- Total clinics: ${reportData.totalClinics}`);
-    doc.text(`- Active clinics: ${reportData.activeClinics}`);
-    doc.text(`- Suspended clinics: ${reportData.suspendedClinics}`);
-    doc.text(`- Total payment collected: ${toCurrency(reportData.totalPaymentCollected)}`);
+    const renderHeader = () => {
+      // Doubled top accent band height (from 14 to 28)
+      doc.rect(0, 0, pageWidth, 28).fill(COLORS.accentHex);
 
-    doc.moveDown(1);
-    doc.font("Helvetica-Bold").fontSize(14).fillColor("#111827").text("Revenue Trend");
-    doc.moveDown(0.4);
-    doc.font("Helvetica").fontSize(11).fillColor("#374151");
-    reportData.revenueTrend.forEach((item) => {
-      doc.text(`- ${item.month}: ${toCurrency(item.revenue)}`);
+      // Doubled spacing and larger font sizes to occupy double the vertical header height
+      doc.font("Helvetica-Bold").fontSize(13).fillColor(COLORS.accentHex);
+      doc.text("PAHMS — Pet Animal Healthcare Management System", margin, 38, { align: "center", width: contentWidth });
+
+      doc.font("Helvetica-Bold").fontSize(24).fillColor(COLORS.titleHex);
+      doc.text("Super Admin Basic Analytics Report", margin, 58, { align: "center", width: contentWidth });
+
+      doc.font("Helvetica").fontSize(11).fillColor(COLORS.mutedHex);
+      doc.text("Live database system overview and core performance metrics.", margin, 88, { align: "center", width: contentWidth });
+
+      doc.font("Helvetica-Oblique").fontSize(9.5);
+      doc.text(`Generated at ${new Date().toLocaleString("en-IN")}`, margin, 106, { align: "center", width: contentWidth });
+
+      doc.strokeColor(COLORS.borderHex).lineWidth(1);
+      doc.moveTo(margin, 122).lineTo(pageWidth - margin, 122).stroke();
+    };
+
+    renderHeader();
+
+    // Adjusted cursor to sit properly below the doubled-height header block
+    let cursorY = 138;
+
+    doc.font("Helvetica-Bold").fontSize(12).fillColor(COLORS.titleHex);
+    doc.text("Summary Overview", margin, cursorY);
+    cursorY += 16;
+
+    const summaryItems = [
+      { label: "Total Clinics", value: reportData.totalClinics },
+      { label: "Active Clinics", value: reportData.activeClinics },
+      { label: "Suspended / Expired Clinics", value: reportData.suspendedClinics },
+      { label: "Total Payment Collected", value: toCurrency(reportData.totalPaymentCollected) },
+    ];
+
+    summaryItems.forEach((item) => {
+      if (cursorY > pageHeight - 50) {
+        doc.addPage();
+        renderHeader();
+        cursorY = 138;
+      }
+
+      doc.font("Helvetica-Bold").fontSize(9.5).fillColor(COLORS.titleHex);
+      doc.text(`${item.label}:`, margin, cursorY, { width: 170 });
+
+      doc.font("Helvetica").fontSize(9.5).fillColor(COLORS.slateHex);
+      doc.text(String(item.value), margin + 180, cursorY, { width: contentWidth - 180 });
+
+      cursorY += 16;
     });
 
-    doc.moveDown(1);
-    doc.font("Helvetica-Bold").fontSize(14).fillColor("#111827").text("Clinic Onboarding");
-    doc.moveDown(0.4);
-    doc.font("Helvetica").fontSize(11).fillColor("#374151");
-    reportData.clinicTrend.forEach((item) => {
-      doc.text(`- ${item.month}: ${item.clinics} clinics`);
-    });
+    cursorY += 8;
 
-    doc.moveDown(1);
-    doc.font("Helvetica-Bold").fontSize(14).fillColor("#111827").text("Subscription Distribution");
-    doc.moveDown(0.4);
-    doc.font("Helvetica").fontSize(11).fillColor("#374151");
-    reportData.clinicDistribution.forEach((item) => {
-      doc.text(`- ${item.name}: ${item.value}`);
-    });
+    const drawTable = (title, columns, rows) => {
+      if (cursorY > pageHeight - 100) {
+        doc.addPage();
+        renderHeader();
+        cursorY = 138;
+      }
+
+      doc.font("Helvetica-Bold").fontSize(12).fillColor(COLORS.titleHex);
+      doc.text(title, margin, cursorY);
+      cursorY += 16;
+
+      const colWidths = columns.map((col) => col.width || contentWidth / columns.length);
+      const rowHeight = 20;
+
+      if (cursorY + rowHeight > pageHeight - 50) {
+        doc.addPage();
+        renderHeader();
+        cursorY = 138;
+      }
+
+      let xPos = margin;
+      doc.font("Helvetica-Bold").fontSize(9).fillColor("#FFFFFF");
+      columns.forEach((col, idx) => {
+        doc.rect(xPos, cursorY, colWidths[idx], rowHeight).fill(COLORS.accentHex);
+        doc.text(col.header, xPos + 6, cursorY + 5, { width: colWidths[idx] - 12 });
+        xPos += colWidths[idx];
+      });
+      cursorY += rowHeight;
+
+      rows.forEach((row, rowIndex) => {
+        if (cursorY + rowHeight > pageHeight - 50) {
+          doc.addPage();
+          renderHeader();
+          cursorY = 138;
+
+          let redrawX = margin;
+          doc.font("Helvetica-Bold").fontSize(9).fillColor("#FFFFFF");
+          columns.forEach((col, idx) => {
+            doc.rect(redrawX, cursorY, colWidths[idx], rowHeight).fill(COLORS.accentHex);
+            doc.text(col.header, redrawX + 6, cursorY + 5, { width: colWidths[idx] - 12 });
+            redrawX += colWidths[idx];
+          });
+          cursorY += rowHeight;
+        }
+
+        let rowXPos = margin;
+        const bg = rowIndex % 2 === 0 ? 255 : 249;
+        
+        columns.forEach((col, idx) => {
+          doc.fillColor(bg === 255 ? [255, 255, 255] : [249, 250, 251])
+             .rect(rowXPos, cursorY, colWidths[idx], rowHeight)
+             .fillAndStroke(bg === 255 ? [255, 255, 255] : [249, 250, 251], COLORS.borderHex);
+
+          doc.font("Helvetica").fontSize(9).fillColor(COLORS.slateHex);
+          doc.text(String(col.value(row)), rowXPos + 6, cursorY + 5, { width: colWidths[idx] - 12 });
+          rowXPos += colWidths[idx];
+        });
+        cursorY += rowHeight;
+      });
+
+      cursorY += 16;
+    };
+
+    if (reportData.revenueTrend?.length) {
+      drawTable(
+        "Revenue Trend",
+        [
+          { header: "Month", width: 180, value: (r) => r.month },
+          { header: "Revenue Collected", width: 345, value: (r) => toCurrency(r.revenue) },
+        ],
+        reportData.revenueTrend
+      );
+    }
+
+    if (reportData.clinicTrend?.length) {
+      drawTable(
+        "Clinic Onboarding Trend",
+        [
+          { header: "Month", width: 180, value: (r) => r.month },
+          { header: "New Clinics Registered", width: 345, value: (r) => r.clinics },
+        ],
+        reportData.clinicTrend
+      );
+    }
+
+    if (reportData.clinicDistribution?.length) {
+      drawTable(
+        "Subscription Distribution",
+        [
+          { header: "Status State", width: 180, value: (r) => r.name },
+          { header: "Count", width: 345, value: (r) => r.value },
+        ],
+        reportData.clinicDistribution
+      );
+    }
+
+    const range = doc.bufferedPageRange();
+    for (let i = range.start; i < range.start + range.count; i++) {
+      doc.switchToPage(i);
+      doc.font("Helvetica-Oblique").fontSize(8).fillColor(COLORS.mutedHex);
+      doc.text("PAHMS Super-Admin System Report — Automated Snapshot Export.", margin, pageHeight - 25, {
+        align: "left",
+        width: contentWidth,
+      });
+    }
 
     doc.end();
   });
@@ -146,34 +232,10 @@ const buildCsv = (reportData) => {
   const lines = [];
 
   lines.push("Section,Metric,Value");
-  lines.push(
-    [
-      csvCell("Summary"),
-      csvCell("Total Clinics"),
-      csvCell(reportData.totalClinics),
-    ].join(",")
-  );
-  lines.push(
-    [
-      csvCell("Summary"),
-      csvCell("Active Clinics"),
-      csvCell(reportData.activeClinics),
-    ].join(",")
-  );
-  lines.push(
-    [
-      csvCell("Summary"),
-      csvCell("Suspended Clinics"),
-      csvCell(reportData.suspendedClinics),
-    ].join(",")
-  );
-  lines.push(
-    [
-      csvCell("Summary"),
-      csvCell("Total Payment Collected"),
-      csvCell(reportData.totalPaymentCollected),
-    ].join(",")
-  );
+  lines.push([csvCell("Summary"), csvCell("Total Clinics"), csvCell(reportData.totalClinics)].join(","));
+  lines.push([csvCell("Summary"), csvCell("Active Clinics"), csvCell(reportData.activeClinics)].join(","));
+  lines.push([csvCell("Summary"), csvCell("Suspended Clinics"), csvCell(reportData.suspendedClinics)].join(","));
+  lines.push([csvCell("Summary"), csvCell("Total Payment Collected"), csvCell(reportData.totalPaymentCollected)].join(","));
 
   lines.push("");
   lines.push("Revenue Trend");
@@ -206,7 +268,7 @@ const buildXlsHtml = (reportData) => {
     ["Suspended Clinics", reportData.suspendedClinics],
     ["Total Payment Collected", toCurrency(reportData.totalPaymentCollected)],
   ]
-    .map(([label, value]) => `<tr><td>${label}</td><td>${value}</td></tr>`)
+    .map(([label, value]) => `<tr><td><b>${label}</b></td><td>${value}</td></tr>`)
     .join("");
 
   const revenueRows = reportData.revenueTrend
@@ -226,31 +288,38 @@ const buildXlsHtml = (reportData) => {
 <head>
   <meta charset="utf-8" />
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; color: #111827; }
-    h1, h2 { margin: 0 0 12px; }
-    table { border-collapse: collapse; width: 100%; margin-bottom: 18px; }
-    th, td { border: 1px solid #D1D5DB; padding: 8px 10px; text-align: left; }
-    th { background: #F9FAFB; }
+    body { font-family: Helvetica, Arial, sans-serif; padding: 24px; color: #111827; }
+    h1 { color: #0C3D2E; font-size: 20px; margin-bottom: 4px; }
+    h2 { color: #0F172A; font-size: 14px; margin-top: 24px; margin-bottom: 8px; border-bottom: 2px solid #0C3D2E; padding-bottom: 4px; }
+    p { color: #64748B; font-size: 12px; margin-top: 0; }
+    table { border-collapse: collapse; width: 100%; margin-top: 8px; margin-bottom: 16px; }
+    th, td { border: 1px solid #E2E8F0; padding: 8px 12px; text-align: left; font-size: 11px; }
+    th { background: #0C3D2E; color: #FFFFFF; }
+    tr:nth-child(even) { background-color: #F8FAFC; }
   </style>
 </head>
 <body>
-  <h1>Super Admin Report</h1>
+  <h1>PAHMS — Super Admin Basic Report</h1>
   <p>Generated on ${new Date().toLocaleString("en-IN")}</p>
-  <h2>Summary</h2>
+  
+  <h2>Summary Overview</h2>
   <table><thead><tr><th>Metric</th><th>Value</th></tr></thead><tbody>${summaryRows}</tbody></table>
+  
   <h2>Revenue Trend</h2>
   <table><thead><tr><th>Month</th><th>Revenue</th></tr></thead><tbody>${revenueRows}</tbody></table>
-  <h2>Clinic Onboarding</h2>
-  <table><thead><tr><th>Month</th><th>Clinics</th></tr></thead><tbody>${clinicRows}</tbody></table>
+  
+  <h2>Clinic Onboarding Trend</h2>
+  <table><thead><tr><th>Month</th><th>New Clinics</th></tr></thead><tbody>${clinicRows}</tbody></table>
+  
   <h2>Subscription Distribution</h2>
-  <table><thead><tr><th>Status</th><th>Count</th></tr></thead><tbody>${distributionRows}</tbody></table>
+  <table><thead><tr><th>Status State</th><th>Count</th></tr></thead><tbody>${distributionRows}</tbody></table>
 </body>
 </html>`;
 };
 
 const buildReportData = async () => {
   const totalClinics = await Clinic.countDocuments();
-  const activeClinics = await Clinic.countDocuments({ subscriptionStatus: "ACTIVE" });
+  const activeClinics = await Clinic.countDocuments({ isActive: true });
   const suspendedClinics = await Clinic.countDocuments({
     subscriptionStatus: { $in: ["SUSPENDED", "EXPIRED"] },
   });
@@ -361,19 +430,19 @@ const buildReportData = async () => {
     {
       name: "Active",
       value: activeClinics,
-      color: REPORT_COLORS.green,
+      color: "#22C55E",
     },
     {
       name: "Suspended",
       value: suspendedClinics,
-      color: REPORT_COLORS.amber,
+      color: "#F59E0B",
     },
     {
       name: "Expired",
       value: Number(
         subscriptionAggregation.find((item) => item._id === "EXPIRED")?.value || 0
       ),
-      color: REPORT_COLORS.rose,
+      color: "#EF4444",
     },
   ];
 
@@ -928,7 +997,7 @@ exports.shareSuperAdminBasicReport = async (req, res) => {
         content: Buffer.from(buildCsv(reportData), "utf8"),
         contentType: "text/csv",
       };
-    } else if (format === "xls" || format === "xlsx" || format === "excel") {
+    } else if (format === "xls" || format === "xlsx" / format === "excel") {
       attachment = {
         filename: "superadmin-basic-report.xls",
         content: Buffer.from(buildXlsHtml(reportData), "utf8"),

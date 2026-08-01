@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { Search, Filter, Calendar, RefreshCw, Eye, FileText, CheckCircle2, Stethoscope, User, PawPrint } from "lucide-react";
-import { getHistory } from "../../../api/doctorModuleApi";
+import { Search, Filter, Calendar, RefreshCw, Eye, FileText, CheckCircle2, Stethoscope, User, PawPrint, Syringe, Pill, Trash2 } from "lucide-react";
+import { deletePatient, getHistory } from "../../../api/doctorModuleApi";
 import toast from "react-hot-toast";
 
 export default function History() {
@@ -51,13 +51,18 @@ export default function History() {
     }
   };
 
-  const getSpeciesIcon = (species) => {
-    const s = (species || "").toLowerCase();
-    if (s.includes("cat")) return "🐱";
-    if (s.includes("bird") || s.includes("parrot")) return "🦜";
-    if (s.includes("rabbit")) return "🐇";
-    return "🐶";
+  const handleDelete = async (item) => {
+    if (!window.confirm("Delete this history visit and its linked records? This cannot be undone.")) return;
+    try {
+      await deletePatient(item._id);
+      toast.success("Visit record deleted");
+      fetchHistoryData();
+    } catch (error) {
+      toast.error(error?.response?.data?.message || "Failed to delete visit record");
+    }
   };
+
+  const getSpeciesIcon = () => <PawPrint className="size-5 text-[#F7931E]" />;
 
   const filteredData = historyData.filter((item) => {
     const ownerName = item.ownerName || item.ownerId?.ownerName || item.owner?.ownerName || "";
@@ -94,7 +99,7 @@ export default function History() {
             <h2 className="mt-1 text-3xl font-extrabold text-slate-900">{loading ? "..." : stats.totalRecords}</h2>
           </div>
           <div className="w-13 h-13 rounded-2xl bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center text-2xl">
-            📚
+            <FileText className="size-6" />
           </div>
         </div>
 
@@ -104,7 +109,7 @@ export default function History() {
             <h2 className="mt-1 text-3xl font-extrabold text-slate-900">{loading ? "..." : stats.vaccinations}</h2>
           </div>
           <div className="w-13 h-13 rounded-2xl bg-purple-50 text-purple-600 border border-purple-100 flex items-center justify-center text-2xl">
-            💉
+            <Syringe className="size-6" />
           </div>
         </div>
 
@@ -114,7 +119,7 @@ export default function History() {
             <h2 className="mt-1 text-3xl font-extrabold text-slate-900">{loading ? "..." : stats.treatments}</h2>
           </div>
           <div className="w-13 h-13 rounded-2xl bg-green-50 text-green-600 border border-green-100 flex items-center justify-center text-2xl">
-            💊
+            <Pill className="size-6" />
           </div>
         </div>
       </div>
@@ -151,10 +156,10 @@ export default function History() {
               className="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-xs font-semibold text-slate-700 outline-none cursor-pointer"
             >
               <option value="ALL">All Species</option>
-              <option value="DOG">Dog 🐶</option>
-              <option value="CAT">Cat 🐱</option>
-              <option value="BIRD">Bird 🦜</option>
-              <option value="RABBIT">Rabbit 🐇</option>
+              <option value="DOG">Dog</option>
+              <option value="CAT">Cat</option>
+              <option value="BIRD">Bird</option>
+              <option value="RABBIT">Rabbit</option>
             </select>
           </div>
 
@@ -210,7 +215,7 @@ export default function History() {
               ) : filteredData.length === 0 ? (
                 <tr>
                   <td colSpan="7" className="py-16 text-center text-slate-500">
-                    <div className="text-5xl mb-3">📚</div>
+                    <FileText className="mx-auto mb-3 size-11 text-[#F7931E]" />
                     <h3 className="font-bold text-slate-700">No History Records Found</h3>
                     <p className="text-xs text-slate-500 mt-1">Try adjusting search or date parameters.</p>
                   </td>
@@ -255,13 +260,13 @@ export default function History() {
                       </td>
 
                       <td className="py-4 px-6 text-center">
-                        <button
+                        <div className="flex items-center justify-center gap-2"><button
                           onClick={() => setSelectedRecord(item)}
-                          className="rounded-xl bg-orange-500 px-3.5 py-2 text-xs font-bold text-white hover:bg-orange-600 transition-all inline-flex items-center gap-1.5 shadow-xs"
+                          className="grid size-9 place-items-center rounded-xl bg-[#0C3D2E] text-white transition hover:bg-[#073126]"
+                          title="View record"
                         >
                           <Eye className="w-3.5 h-3.5" />
-                          View Record
-                        </button>
+                        </button><button onClick={() => handleDelete(item)} className="grid size-9 place-items-center rounded-xl border border-rose-200 bg-rose-50 text-rose-600 transition hover:bg-rose-100" title="Delete visit"><Trash2 className="size-4" /></button></div>
                       </td>
                     </tr>
                   );
@@ -314,7 +319,7 @@ export default function History() {
                   Medical Record File
                 </span>
                 <h3 className="text-2xl font-bold text-slate-800 mt-2">
-                  {selectedRecord.petName || selectedRecord.petId?.name || selectedRecord.petId?.petName || "Pet"} Clinical Record
+                  {selectedRecord.petName || selectedRecord.petId?.name || selectedRecord.petId?.petName || selectedRecord.pet?.petName || "Pet"} Clinical Record
                 </h3>
               </div>
               <button
@@ -374,4 +379,4 @@ export default function History() {
     </div>
   );
 }
-
+

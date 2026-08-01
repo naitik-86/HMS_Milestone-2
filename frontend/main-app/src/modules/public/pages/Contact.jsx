@@ -79,19 +79,30 @@ export default function Contact() {
 
       <section className="py-16">
         <div className="max-w-7xl mx-auto px-6 lg:px-10 grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {INFO.map((i) => (
-            <div
-              key={i.title}
-            className="bg-white rounded-2xl border border-line p-7 text-center shadow-sm hover:-translate-y-1 hover:border-[#f7931e] hover:shadow-lg transition-all duration-300"  
-            >
-              <div className="w-12 h-12 mx-auto rounded-xl bg-[#fff3e0] flex items-center justify-center">
-                <i.icon className="w-5 h-5 text-[#f7931e]" />
-              </div>
-              <h3 className="mt-5 font-semibold text-ink">{i.title}</h3>
-              <p className="mt-2 text-ink">{i.line1}</p>
-              <p className="mt-1 text-sm text-ink-soft">{i.line2}</p>
-            </div>
-          ))}
+          {INFO.map((i) => {
+            const Card = i.href ? "a" : "div";
+
+            return (
+              <Card
+                key={i.title}
+                href={i.href || undefined}
+                target={i.href?.startsWith("http") ? "_blank" : undefined}
+                rel={i.href?.startsWith("http") ? "noopener noreferrer" : undefined}
+                className="group bg-white rounded-2xl border border-line p-7 text-center shadow-sm hover:-translate-y-1 hover:border-[#f7931e] hover:shadow-lg transition-all duration-300 cursor-pointer"
+              >
+                <div className="w-12 h-12 mx-auto rounded-xl bg-[#fff3e0] flex items-center justify-center transition-transform duration-300 group-hover:scale-110">
+                  <i.icon className="w-5 h-5 text-[#f7931e]" />
+                </div>
+
+                <h3 className="mt-5 font-semibold text-ink group-hover:text-[#f7931e] transition-colors">
+                  {i.title}
+                </h3>
+
+                <p className="mt-2 text-ink">{i.line1}</p>
+                <p className="mt-1 text-sm text-ink-soft">{i.line2}</p>
+              </Card>
+            );
+          })}
         </div>
       </section>
 
@@ -219,24 +230,28 @@ const INFO = [
     title: "Email Us",
     line1: "info@pahms.com",
     line2: "We reply within 24 hours",
+    href: "mailto:info@pahms.com",
   },
   {
     icon: Phone,
     title: "Call Us",
     line1: "+91 123 456 7890",
     line2: "Mon-Sat, 9AM-6PM IST",
+    href: "tel:+911234567890",
   },
   {
     icon: MapPin,
     title: "Visit Us",
     line1: "Connaught Place, New Delhi",
     line2: "India 110001",
+    href: "https://maps.google.com/?q=Connaught+Place+New+Delhi",
   },
   {
     icon: Clock,
     title: "Business Hours",
     line1: "Mon - Sat: 9AM - 6PM",
     line2: "Sunday: Closed",
+    href: null,
   },
 ];
 

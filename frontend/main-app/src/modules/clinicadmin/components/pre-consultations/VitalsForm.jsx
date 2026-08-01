@@ -104,7 +104,7 @@ export default function VitalsForm({ formData, setFormData }) {
       if (typeof numVal === "number") {
         if (numVal < 0) numVal = 0;
         if (name === "spo2" && numVal > 100) numVal = 100;
-        if (name === "bcs" && numVal > 5) numVal = 5;
+        if (name === "bcs" && numVal > 9) numVal = 9;
       }
 
       return {
@@ -183,17 +183,61 @@ export default function VitalsForm({ formData, setFormData }) {
             Blood Pressure (mmHg)
           </label>
 
-          <select
-            name="bloodPressure"
-            value={formData.bloodPressure}
-            onChange={handleChange}
-            className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm md:text-base outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-100"
-          >
-            <option value="">Select Blood Pressure</option>
-            <option value="Low">Low</option>
-            <option value="Normal">Normal</option>
-            <option value="High">High</option>
-          </select>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-slate-500 mb-1">
+                Systolic
+              </label>
+
+              <select
+                value={formData.bloodPressure?.systolic || ""}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    bloodPressure: {
+                      ...(prev.bloodPressure || {}),
+                      systolic: e.target.value,
+                    },
+                  }))
+                }
+                className="w-full border border-slate-200 rounded-2xl px-4 py-3"
+              >
+                <option value="">Select</option>
+                {Array.from({ length: 121 }, (_, i) => i + 80).map((v) => (
+                  <option key={v} value={v}>
+                    {v}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-slate-500 mb-1">
+                Diastolic
+              </label>
+
+              <select
+                value={formData.bloodPressure?.diastolic || ""}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    bloodPressure: {
+                      ...(prev.bloodPressure || {}),
+                      diastolic: e.target.value,
+                    },
+                  }))
+                }
+                className="w-full border border-slate-200 rounded-2xl px-4 py-3"
+              >
+                <option value="">Select</option>
+                {Array.from({ length: 81 }, (_, i) => i + 40).map((v) => (
+                  <option key={v} value={v}>
+                    {v}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
         </div>
 
         {/* SpO2 */}
@@ -241,12 +285,16 @@ export default function VitalsForm({ formData, setFormData }) {
             onChange={handleChange}
             className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm md:text-base outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-100"
           >
-            <option value="">Select Score Scale</option>
-            <option value={1}>1 - Very Thin</option>
-            <option value={2}>2 - Thin</option>
-            <option value={3}>3 - Ideal</option>
-            <option value={4}>4 - Overweight</option>
-            <option value={5}>5 - Obese</option>
+            <option value="">Select BCS Scale (1–9)</option>
+            <option value={1}>1 - Emaciated</option>
+            <option value={2}>2 - Very Thin</option>
+            <option value={3}>3 - Thin</option>
+            <option value={4}>4 - Underweight</option>
+            <option value={5}>5 - Ideal</option>
+            <option value={6}>6 - Slightly Overweight</option>
+            <option value={7}>7 - Overweight</option>
+            <option value={8}>8 - Obese</option>
+            <option value ={9}>9 - Severely Obese</option>
           </select>
         </div>
 

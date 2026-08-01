@@ -64,7 +64,7 @@ const subscriptionPlanSchema = new mongoose.Schema({
   },
   subscriptionInvoice: {
     type: String,
-    default: 'Auto-generated PDF'
+    default: 'Shared manually by Super Admin'
   },
   status: {
     type: String,

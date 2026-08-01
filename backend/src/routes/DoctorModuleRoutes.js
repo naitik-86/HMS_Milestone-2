@@ -9,14 +9,15 @@ const {
     getPatient,
     getLabPets,
     updatePatient,
+    deletePatient,
     createPatient,
     getLabReportByVisit,
     getPreConsultationByVisit,
+    downloadLabFile,
 } = require("../controllers/DoctorModuleController");
 
-console.log("checking");
-
-
+// Public direct download route for lab files inside generated PDFs
+router.get("/download-lab-file", downloadLabFile);
 
 router.use(authorize("DOCTOR", "CLINIC_ADMIN"));
 
@@ -37,6 +38,7 @@ router.get("/patient/:id", getPatient);
 
 // Save Complete Form
 router.put("/patient/:id", updatePatient);
+router.delete("/patient/:id", deletePatient);
 router.get("/report/lab/:id", getLabReportByVisit);
 router.get("/report/pre-consultation/:id", getPreConsultationByVisit);
 

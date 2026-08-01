@@ -6,7 +6,12 @@ const DASHBOARD = {
   RECEPTIONIST: '/clinic/reception',           // Matches <Route path="/clinic/reception">
   PRE_CONSULTATION: '/clinic/preconsultation', // Matches <Route path="/clinic/preconsultation">
   DOCTOR: '/clinic/doctor',                    // Matches <Route path="/clinic/doctor">
-  LAB_TECHNICIAN: '/clinic/lab',               // Matches <Route path="/clinic/lab">
+  LAB_TECHNICIAN: '/clinic/lab',
+  GROOMER: '/coming-soon',
+  KENNEL: '/coming-soon',
+  KENNEL_STAFF: '/coming-soon',
+  PHARMACIST: '/coming-soon',
+  PHARMACY: '/coming-soon',
   OWNER: '/clinic/owner'                       // Matches <Route path="/clinic/owner">
 };
 
@@ -20,7 +25,12 @@ const ROLE_IDS = {
   OWNER: 'role_owner_004',
   DOCTOR: 'role_doctor_005',
   PRE_CONSULTATION: 'role_pre_consultation_006',
-  LAB_TECHNICIAN: 'role_lab_technician_007'
+  LAB_TECHNICIAN: 'role_lab_technician_007',
+  GROOMER: 'role_groomer_008',
+  KENNEL: 'role_kennel_009',
+  KENNEL_STAFF: 'role_kennel_staff_010',
+  PHARMACIST: 'role_pharmacist_011',
+  PHARMACY: 'role_pharmacy_012'
 };
 
 // Requested UI roles -> backend JWT roles.

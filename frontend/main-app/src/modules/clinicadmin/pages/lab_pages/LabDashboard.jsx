@@ -83,10 +83,10 @@ export default function LabDashboard() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-100 p-4 sm:p-6 lg:p-8 flex justify-center">
+    <div className="lab-workspace min-h-screen bg-slate-50 p-4 sm:p-6 lg:p-8 flex justify-center">
       <div className="w-full max-w-7xl bg-white rounded-3xl shadow-2xl shadow-slate-200/80 border border-slate-200/70 overflow-hidden flex flex-col">
         {/* Sleek Dark Header Hero Section */}
-        <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 p-6 sm:p-8 text-white flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-800">
+        <div className="lab-hero bg-gradient-to-r from-[#063D31] via-[#075443] to-[#063D31] p-6 sm:p-8 text-white flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-[#042B22]">
           <div>
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-2xl bg-orange-500/20 border border-orange-500/30 flex items-center justify-center text-orange-400 font-bold">

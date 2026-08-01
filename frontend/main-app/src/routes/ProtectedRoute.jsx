@@ -34,19 +34,20 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
             try {
                 const { data } = await API.get("/clinic/subscription/status");
 
-                console.log("STATUS API");
-                console.log(data);
-
-
+                // The live endpoint returns subscription fields flattened
+                // directly under data (data.subscriptionStatus, data.plan,
+                // data.remainingTrialDays, ...) rather than a separate
+                // top-level `subscription` object - matching that shape here
+                // is what keeps this from crashing right after OTP login.
                 setSubscriptionData(data);
-                setRemainingTrialDays(data.remainingTrialDays);
+                setRemainingTrialDays(data?.data?.remainingTrialDays ?? 0);
 
                 const shouldShowPopup =
                     location.state?.forceTrialPopup ||
                     !sessionStorage.getItem("trial-popup");
 
                 if (
-                    data.subscription.status === "TRIAL" &&
+                    data?.data?.subscriptionStatus === "TRIAL" &&
                     shouldShowPopup
                 ) {
                     setShowTrialPopup(true);
@@ -57,10 +58,13 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
             } catch (err) {
                 console.error(err);
 
-                localStorage.clear();
-                sessionStorage.clear();
-
-                return <Navigate to="/login" replace />;
+                // Only a genuine auth failure (expired/invalid token) should
+                // log the user out. Other failures (e.g. no subscription
+                // record yet for this clinic) shouldn't wipe a valid session.
+                if (err.response?.status === 401) {
+                    localStorage.clear();
+                    sessionStorage.clear();
+                }
             } finally {
                 setLoading(false);
             }
@@ -82,15 +86,15 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
     }
 
 
-    if (normalizedRole === "CLINIC_ADMIN" && subscriptionData) {
+    if (normalizedRole === "CLINIC_ADMIN" && subscriptionData?.data) {
 
         const clinic = subscriptionData.data;
-        const subscription = subscriptionData.subscription;
+        const status = clinic.subscriptionStatus;
 
         // Allow access during trial or active subscription
         if (
-            subscription.status === "TRIAL" ||
-            subscription.status === "ACTIVE"
+            status === "TRIAL" ||
+            status === "ACTIVE"
         ) {
             if (showTrialPopup) {
                 return (
@@ -109,8 +113,8 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
 
         // Redirect when payment is required or subscription expired
         if (
-            subscription.status === "PAYMENT_REQUIRED" ||
-            subscription.status === "EXPIRED"
+            status === "PAYMENT_REQUIRED" ||
+            status === "EXPIRED"
         ) {
             return (
                 <Navigate

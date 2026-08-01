@@ -93,6 +93,18 @@ const labTechnicianSchema = new mongoose.Schema(
             default: "Active",
         },
 
+        isVerified: {
+            type: Boolean,
+            default: false,
+        },
+
+        verifiedAt: Date,
+
+        verifiedBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "ClinicAdmin",
+        },
+
         department: String,
 
         supervisor: String,

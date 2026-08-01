@@ -5,7 +5,11 @@ const generateStaffId = require("../utils/generateStaffId.js");
 const generateUsername = require("../utils/generateUsername.js");
 const generatePassword = require("../utils/generatePassword.js");
 const sendEmail = require("../utils/emailService.js");
+const { credentialEmail } = require("../utils/emailTemplates.js");
 const ClinicAdmin = require("../models/ClinicAdmin.js");
+const Clinic = require("../models/Clinic.js");
+const User = require("../models/User.js");
+const DoctorDetails = require("../models/DoctorDetails.js");
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const phoneRegex = /^\d{10}$/;
@@ -22,6 +26,18 @@ const createStaff = async (req, res) => {
                 success: false,
                 message: "Clinic context is missing for staff creation",
             });
+        }
+
+        const clinicForLimit = await Clinic.findById(req.user.clinicId).select("licenseLimits");
+        const maxStaff = clinicForLimit?.licenseLimits?.maxStaff;
+        if (Number.isFinite(maxStaff)) {
+            const currentStaffCount = await Staff.countDocuments({ clinicId: req.user.clinicId });
+            if (currentStaffCount >= maxStaff) {
+                return res.status(403).json({
+                    success: false,
+                    message: `This clinic's plan allows a maximum of ${maxStaff} staff member(s). Upgrade the plan to add more.`,
+                });
+            }
         }
 
         const personalInfo = req.body.personalInfo
@@ -70,6 +86,27 @@ const createStaff = async (req, res) => {
         }
 
         personalInfo.email = normalizedEmail;
+        personalInfo.mobileNumber = String(personalInfo.mobileNumber || '').replace(/\D/g, '').slice(0, 10);
+
+        if (!phoneRegex.test(personalInfo.mobileNumber)) {
+            return res.status(400).json({ success: false, message: "A valid 10-digit staff mobile number is required" });
+        }
+
+        const [emailInUse, phoneInUse] = await Promise.all([
+            Promise.all([
+                Clinic.findOne({ $or: [{ email: normalizedEmail }, { contactEmail: normalizedEmail }, { 'adminDetails.adminEmail': normalizedEmail }] }),
+                ClinicAdmin.findOne({ email: normalizedEmail }),
+                User.findOne({ email: normalizedEmail }),
+            ]).then((matches) => matches.some(Boolean)),
+            Promise.all([
+                Clinic.findOne({ $or: [{ phone: personalInfo.mobileNumber }, { altPhone: personalInfo.mobileNumber }, { 'adminDetails.adminPhone': personalInfo.mobileNumber }] }),
+                User.findOne({ mobile: personalInfo.mobileNumber }),
+                Staff.findOne({ 'personalInfo.mobileNumber': personalInfo.mobileNumber }),
+            ]).then((matches) => matches.some(Boolean)),
+        ]);
+
+        if (emailInUse) return res.status(409).json({ success: false, field: 'email', message: 'This email is already being used.' });
+        if (phoneInUse) return res.status(409).json({ success: false, field: 'mobileNumber', message: 'This phone number is already being used.' });
 
         const existingEmail = await Staff.findOne({
             "personalInfo.email": {
@@ -132,7 +169,12 @@ const createStaff = async (req, res) => {
             await sendEmail({
                 email: normalizedEmail,
                 subject: "Your HMS staff login credentials",
-                message: `Hello ${personalInfo.fullName},\n\nYour HMS account has been created by the clinic admin.\n\nStaff ID: ${staffId}\nUsername: ${username}\nTemporary Password: ${temporaryPassword}\n\nFirst login steps:\n1) Change your password\n\nPlease keep this information secure.`,
+                ...credentialEmail({
+                    name: personalInfo.fullName,
+                    email: normalizedEmail,
+                    password: temporaryPassword,
+                    accountLabel: `staff account (Staff ID: ${staffId}, Username: ${username})`,
+                }),
             });
         } catch (emailErr) {
             // Don’t fail staff creation if email fails, but record the warning
@@ -477,7 +519,7 @@ const getManagers = async (req, res) => {
     try {
         const clinicId = req.user.clinicId;
 
-        const [managers, clinicAdmin] = await Promise.all([
+        const [managers, clinicAdmin, clinic] = await Promise.all([
             Staff.find(
                 {
                     clinicId,
@@ -490,6 +532,7 @@ const getManagers = async (req, res) => {
                 }
             ),
             ClinicAdmin.findOne({ clinicId }).select("_id"),
+            Clinic.findById(clinicId).select("adminDetails.adminName"),
         ]);
 
         const data = [...managers];
@@ -498,10 +541,9 @@ const getManagers = async (req, res) => {
             data.unshift({
                 _id: clinicAdmin._id,
                 personalInfo: {
-                    fullName: "Clinic Admin",
+                    fullName: clinic?.adminDetails?.adminName || "Clinic Admin",
                 },
                 employmentInfo: {
-                    staffId: "ADMIN",
                     role: "CLINIC_ADMIN",
                 },
             });
@@ -521,13 +563,62 @@ const getManagers = async (req, res) => {
     }
 };
 
+exports.checkStaffContactAvailability = async (req, res) => {
+    try {
+        const normalizedEmail = typeof req.query?.email === "string"
+            ? req.query.email.trim().toLowerCase()
+            : "";
+        const normalizedPhone = String(req.query?.phone || "").replace(/\D/g, "").slice(0, 10);
+
+        if (!normalizedEmail && !normalizedPhone) {
+            return res.status(400).json({ success: false, message: "Email or phone number is required." });
+        }
+
+        const field = normalizedEmail ? "email" : "mobileNumber";
+        const label = normalizedEmail ? "email" : "phone number";
+
+        const inUse = normalizedEmail
+            ? await Promise.all([
+                Clinic.findOne({ $or: [{ email: normalizedEmail }, { contactEmail: normalizedEmail }, { 'adminDetails.adminEmail': normalizedEmail }] }).select('_id'),
+                ClinicAdmin.findOne({ email: normalizedEmail }).select('_id'),
+                User.findOne({ email: normalizedEmail }).select('_id'),
+                Staff.findOne({ 'personalInfo.email': normalizedEmail }).select('_id'),
+            ]).then((matches) => matches.some(Boolean))
+            : await Promise.all([
+                Clinic.findOne({ $or: [{ phone: normalizedPhone }, { altPhone: normalizedPhone }, { 'adminDetails.adminPhone': normalizedPhone }] }).select('_id'),
+                User.findOne({ mobile: normalizedPhone }).select('_id'),
+                Staff.findOne({ 'personalInfo.mobileNumber': normalizedPhone }).select('_id'),
+            ]).then((matches) => matches.some(Boolean));
+
+        return res.json({
+            success: true,
+            field,
+            available: !inUse,
+            message: inUse
+                ? `This ${label} is already being used.`
+                : `${label[0].toUpperCase()}${label.slice(1)} is available.`,
+        });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: error.message || "Unable to check contact availability." });
+    }
+};
+
 exports.getDoctorStaff = async (req, res) => {
     try {
         const clinicId = req.user.clinicId;
+        const { excludeDoctorId } = req.query;
+
+        const completedQuery = { clinicId };
+        if (excludeDoctorId) {
+            completedQuery._id = { $ne: excludeDoctorId };
+        }
+        const completedDoctors = await DoctorDetails.find(completedQuery).select("staff");
+        const completedStaffIds = completedDoctors.map((d) => d.staff.toString());
 
         const doctors = await Staff.find({
             "employmentInfo.role": "Doctor",
             clinicId,
+            _id: { $nin: completedStaffIds },
         }).select(
             "personalInfo.fullName personalInfo.mobileNumber personalInfo.email employmentInfo.staffId"
         );

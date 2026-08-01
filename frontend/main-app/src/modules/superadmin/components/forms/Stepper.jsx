@@ -1,113 +1,101 @@
-export default function Stepper({
-    tabs,
-    activeTab,
-}) {
-    const currentStep =
-        tabs.findIndex(([key]) => key === activeTab);
+export default function Stepper({ tabs, activeTab }) {
+  const currentStep = tabs.findIndex(([key]) => key === activeTab);
 
-    const progress = Math.round(
-        (currentStep / (tabs.length - 1)) * 100
-    );
+  return (
+    <div className="bg-white border-b">
+      <div className="px-4 py-4">
+        <div className="flex items-center">
+          {tabs.map(([key, label], index) => {
+            const step = index + 1;
+            const completed = index <= currentStep;
 
-    return (
-        <div className="bg-white border-b">
-            <div>
-                <div className="flex items-center justify-between px-4 py-4">
+            return (
+              <div key={key} className="flex items-center flex-1">
+                {/* Step */}
+                <div className="flex flex-col items-center shrink-0">
+                  <div
+                    style={{
+                      backgroundColor: completed ? "#0C3D2E" : "#E8F0EC",
+                      color: completed ? "#fff" : "#0C3D2E",
+                    }}
+                    className="
+                      w-7 h-7
+                      sm:w-8 sm:h-8
+                      rounded-full
+                      flex items-center justify-center
+                      text-[11px]
+                      sm:text-xs
+                      font-semibold
+                      transition-all
+                    "
+                  >
+                    {step}
+                  </div>
 
-                    {tabs.map(([key, label], index) => {
-                        const step = index + 1;
-                        const completed = index <= currentStep;
-
-                        return (
-                            <div
-                                key={key}
-                                className="flex items-center flex-1 min-w-0"
-                            >
-                                {/* STEP */}
-                                <div className="flex flex-col items-center shrink-0">
-
-                                    <div
-                                        className={`
-                                            w-8 h-8
-                                            rounded-full
-                                            flex items-center justify-center
-                                            text-xs
-                                            font-semibold
-                                            ${completed
-                                                ? "bg-orange-500 text-white"
-                                                : "bg-orange-100 text-orange-400"
-                                            }
-                                        `}
-                                    >
-                                        {step}
-                                    </div>
-
-                                    {/* MOBILE LABEL */}
-                                    <span
-                                        className={`
-                                            mt-2 text-[9px]
-                                            text-center
-                                            md:hidden
-                                            ${completed
-                                                ? "text-orange-600"
-                                                : "text-slate-400"
-                                            }
-                                        `}
-                                    >
-                                        {label}
-                                    </span>
-                                </div>
-
-                                {/* DESKTOP LABEL */}
-                                <div className="ml-2 mr-2 hidden md:block min-w-0 flex-1">
-                                    <p
-                                        className={`
-                                            text-xs font-medium
-                                            truncate
-                                            ${completed
-                                                ? "text-orange-600"
-                                                : "text-slate-400"
-                                            }
-                                        `}
-                                    >
-                                        {label}
-
-                                        {activeTab === key && (
-                                            <span className="ml-2 px-2 py-0.5 text-[10px] rounded-full bg-orange-100 text-orange-600 font-semibold">
-                                                {progress}%
-                                            </span>
-                                        )}
-                                    </p>
-                                </div>
-
-                                {/* CONNECTOR */}
-                                {index !== tabs.length - 1 && (
-                                    <div
-                                        className="
-                                            flex-1
-                                            h-1
-                                            rounded-full
-                                            bg-orange-100
-                                            overflow-hidden
-                                            mx-2
-                                        "
-                                    >
-                                        <div
-                                            className={`
-                                                h-full transition-all duration-300
-                                                ${index < currentStep
-                                                    ? "bg-orange-500 w-full"
-                                                    : "bg-orange-500 w-0"
-                                                }
-                                            `}
-                                        />
-                                    </div>
-                                )}
-                            </div>
-                        );
-                    })}
+                  {/* Labels only on >= sm */}
+                  <span
+                    style={{
+                      color: completed ? "#0C3D2E" : undefined,
+                    }}
+                    className={`
+                      hidden sm:block
+                      mt-2
+                      text-xs
+                      text-center
+                      whitespace-nowrap
+                      ${
+                        completed
+                          ? ""
+                          : "text-slate-400"
+                      }
+                    `}
+                  >
+                    {label}
+                  </span>
                 </div>
-            </div>
+
+                {/* Connector */}
+                {index !== tabs.length - 1 && (
+                  <div
+                    className="
+                      flex-1
+                      h-1
+                      rounded-full
+                      bg-[#E8F0EC]
+                      overflow-hidden
+                      mx-1 sm:mx-3
+                    "
+                  >
+                    <div
+                      className={`
+                        h-full
+                        bg-[#0C3D2E]
+                        transition-all
+                        duration-300
+                        ${
+                          index < currentStep
+                            ? "w-full"
+                            : "w-0"
+                        }
+                      `}
+                    />
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
-    );
+
+        {/* Mobile Active Label */}
+        <div className="sm:hidden mt-4 text-center">
+          <p className="text-sm font-semibold text-[#0C3D2E]">
+            Step {currentStep + 1} of {tabs.length}
+          </p>
+          <p className="text-xs text-slate-500 mt-1">
+            {tabs[currentStep]?.[1]}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
 }

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { City, State } from "country-state-city";
 import { useNavigate } from "react-router-dom";
 import {
@@ -170,6 +170,14 @@ export default function CreateVisitForm() {
   // Modal State for Adding New Pet
   const [isAddPetModalOpen, setIsAddPetModalOpen] = useState(false);
   const [modalTab, setModalTab] = useState("registration"); // "registration" | "history" | "visit"
+
+  const formScrollRef = useRef(null);
+
+  useEffect(() => {
+    if (formScrollRef.current) {
+      formScrollRef.current.scrollTop = 0;
+    }
+  }, [modalTab]);
 
   const [searching, setSearching] = useState(false);
   const [savingOwner, setSavingOwner] = useState(false);
@@ -437,14 +445,67 @@ export default function CreateVisitForm() {
     }
 
     if (name === "state") {
-      setOwnerForm((prev) => ({ ...prev, state: value, city: "", district: "" }));
+      setOwnerForm((prev) => ({ ...prev, state: value, city: "", district: "", pincode: "" }));
+      setPincodeValid(false);
+      setPincodeLoading(false);
+      setPincodeDetails("State changed - pincode reset.");
       setError("state", "");
+      setError("pincode", "Invalid PIN code for selected state. Please re-enter PIN code.");
+      return;
+    }
+
+    if (name === "district") {
+      setOwnerForm((prev) => ({ ...prev, district: value, city: prev.city || value, pincode: "" }));
+      setPincodeValid(false);
+      setPincodeLoading(false);
+      setPincodeDetails("District changed - pincode reset.");
+      setError("district", "");
+      setError("pincode", "Invalid PIN code for selected district. Please re-enter PIN code.");
       return;
     }
 
     if (name === "city") {
-      setOwnerForm((prev) => ({ ...prev, city: value, district: value }));
-      setError("city", "");
+      const formatted = value.replace(/[^a-zA-Z\s.-]/g, "");
+      setOwnerForm((prev) => ({ ...prev, city: formatted }));
+      if (formatted.trim()) {
+        setError("city", "");
+      }
+      return;
+    }
+
+    if (name === "ownerIdType") {
+      setOwnerForm((prev) => ({ ...prev, ownerIdType: value, ownerIdNumber: "" }));
+      setError("ownerIdNumber", "");
+      return;
+    }
+
+    if (name === "ownerIdNumber") {
+      let formatted = value;
+      if ((ownerForm.ownerIdType || "Aadhaar Card") === "Aadhaar Card") {
+        formatted = value.replace(/\D/g, "").slice(0, 12);
+        setOwnerForm((prev) => ({ ...prev, ownerIdNumber: formatted }));
+        if (formatted.length === 12) {
+          setError("ownerIdNumber", "");
+        } else if (formatted.length > 0) {
+          setError("ownerIdNumber", `Aadhaar Card number must be 12 digits (${formatted.length}/12).`);
+        } else {
+          setError("ownerIdNumber", "");
+        }
+      } else if (ownerForm.ownerIdType === "PAN Card") {
+        formatted = value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 10);
+        setOwnerForm((prev) => ({ ...prev, ownerIdNumber: formatted }));
+        const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
+        if (panRegex.test(formatted)) {
+          setError("ownerIdNumber", "");
+        } else if (formatted.length > 0) {
+          setError("ownerIdNumber", "Enter a valid 10-character PAN number (e.g. ABCDE1234F).");
+        } else {
+          setError("ownerIdNumber", "");
+        }
+      } else {
+        setOwnerForm((prev) => ({ ...prev, ownerIdNumber: value }));
+        setError("ownerIdNumber", "");
+      }
       return;
     }
 
@@ -467,6 +528,20 @@ export default function CreateVisitForm() {
       return;
     }
 
+    if (name === "color") {
+      const textOnly = value.replace(/[^a-zA-Z\s]/g, "");
+      setPetForm((prev) => ({ ...prev, color: textOnly }));
+      setError("color", "");
+      return;
+    }
+
+    if (name === "rfid") {
+      const stringOnly = value.replace(/[^a-zA-Z0-9-]/g, "");
+      setPetForm((prev) => ({ ...prev, rfid: stringOnly }));
+      setError("rfid", "");
+      return;
+    }
+
     setPetForm((prev) => ({ ...prev, [name]: files ? files[0] : value }));
     setError(name, "");
   };
@@ -479,6 +554,30 @@ export default function CreateVisitForm() {
 
   const handleSaveOwner = async () => {
     if (!owner?._id) return;
+
+    const ownerErrors = {};
+    if (!ownerForm.ownerName?.trim()) ownerErrors.ownerName = "Owner name is required.";
+    if (ownerForm.ownerIdType === "Aadhaar Card" && (!ownerForm.ownerIdNumber || ownerForm.ownerIdNumber.length !== 12)) {
+      ownerErrors.ownerIdNumber = "Aadhaar Card number must be 12 digits.";
+    }
+    if (ownerForm.ownerIdType === "PAN Card" && (!ownerForm.ownerIdNumber || !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(ownerForm.ownerIdNumber))) {
+      ownerErrors.ownerIdNumber = "Enter a valid 10-character PAN number (e.g. ABCDE1234F).";
+    }
+    if (!ownerForm.address?.trim()) ownerErrors.address = "Full address is required.";
+    if (!ownerForm.state?.trim()) ownerErrors.state = "State is required.";
+    if (!ownerForm.district?.trim()) ownerErrors.district = "District is required.";
+    if (!ownerForm.city?.trim()) ownerErrors.city = "City is required.";
+    if (!/^\d{6}$/.test(ownerForm.pincode)) ownerErrors.pincode = "Enter a valid 6-digit pincode.";
+
+    if (Object.keys(ownerErrors).length > 0) {
+      setErrors((prev) => ({ ...prev, ...ownerErrors }));
+      showToast({
+        type: "error",
+        title: "Validation Error",
+        description: "Please fill all required owner details correctly.",
+      });
+      return;
+    }
 
     try {
       setSavingOwner(true);
@@ -710,8 +809,21 @@ export default function CreateVisitForm() {
                     <select name="ownerIdType" value={ownerForm.ownerIdType || "Aadhaar Card"} onChange={handleOwnerChange} className={inputCls}>
                       <option>Aadhaar Card</option>
                       <option>PAN Card</option>
-                      <option>Other Govt ID</option>
                     </select>
+
+                    <div className="mt-2.5">
+                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                        {(ownerForm.ownerIdType || "Aadhaar Card") === "PAN Card" ? "PAN Card Number *" : "Aadhaar Card Number *"}
+                      </label>
+                      <input
+                        name="ownerIdNumber"
+                        value={ownerForm.ownerIdNumber || ""}
+                        onChange={handleOwnerChange}
+                        placeholder={(ownerForm.ownerIdType || "Aadhaar Card") === "PAN Card" ? "e.g. ABCDE1234F" : "e.g. 123456789012"}
+                        className={inputCls}
+                      />
+                      <ErrorText errors={errors} name="ownerIdNumber" />
+                    </div>
                   </div>
 
                   <div>
@@ -763,24 +875,27 @@ export default function CreateVisitForm() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">City *</label>
-                    <select name="city" value={ownerForm.city || ""} onChange={handleOwnerChange} disabled={!ownerForm.state} className={inputCls}>
-                      <option value="">Select City</option>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">District *</label>
+                    <select name="district" value={ownerForm.district || ""} onChange={handleOwnerChange} disabled={!ownerForm.state} className={inputCls}>
+                      <option value="">Select District</option>
                       {cities.map((item) => (
                         <option key={`${item.name}-${item.latitude || "0"}`} value={item.name}>{item.name}</option>
                       ))}
                     </select>
+                    <ErrorText errors={errors} name="district" />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">District *</label>
-                    <select name="district" value={ownerForm.district || ""} onChange={handleOwnerChange} disabled={!ownerForm.state} className={inputCls}>
-                      <option value="">Select District</option>
-                      {ownerForm.city && <option value={ownerForm.city}>{ownerForm.city}</option>}
-                      {ownerForm.district && ownerForm.district !== ownerForm.city && (
-                        <option value={ownerForm.district}>{ownerForm.district}</option>
-                      )}
-                    </select>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">City *</label>
+                    <input
+                      type="text"
+                      name="city"
+                      value={ownerForm.city || ""}
+                      onChange={handleOwnerChange}
+                      placeholder="Enter City Name"
+                      className={inputCls}
+                    />
+                    <ErrorText errors={errors} name="city" />
                   </div>
                 </div>
               </div>
@@ -820,7 +935,7 @@ export default function CreateVisitForm() {
                       <option value="">Select Pet</option>
                       {pets.map((pet) => (
                         <option key={pet._id} value={pet._id}>
-                          {pet.petName || pet.name || "Unnamed Pet"} ({pet.species || "Pet"}) - ID: {pet.uniquePetId || pet._id}
+                          {pet.petName || pet.name || "Unnamed Pet"} ({pet.species || "Pet"}) - Unique Pet ID: {pet.uniquePetId || pet.petId || `PET-${pet._id?.slice(-6)}`}
                         </option>
                       ))}
                     </select>
@@ -1003,7 +1118,7 @@ export default function CreateVisitForm() {
             </div>
 
             {/* Modal Body */}
-            <div className="p-6 sm:p-8 max-h-[60vh] overflow-y-auto">
+            <div ref={formScrollRef} className="p-6 sm:p-8 max-h-[60vh] overflow-y-auto">
               {/* TAB 1: PET REGISTRATION */}
               {modalTab === "registration" && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
@@ -1015,12 +1130,23 @@ export default function CreateVisitForm() {
                   <div>
                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Species *</label>
                     <select name="species" value={petForm.species} onChange={handlePetChange} className={inputCls}>
-                      <option>Dog</option>
-                      <option>Cat</option>
-                      <option>Rabbit</option>
-                      <option>Bird</option>
-                      <option>Other</option>
+                      <option value="Dog">Dog</option>
+                      <option value="Cat">Cat</option>
+                      <option value="Rabbit">Rabbit</option>
+                      <option value="Bird">Bird</option>
+                      <option value="Other">Other</option>
                     </select>
+                    {petForm.species === "Other" && (
+                      <div className="mt-2">
+                        <input
+                          name="otherSpecies"
+                          value={petForm.otherSpecies || ""}
+                          onChange={handlePetChange}
+                          placeholder="Enter Custom Species"
+                          className={inputCls}
+                        />
+                      </div>
+                    )}
                   </div>
 
                   <div>
@@ -1051,9 +1177,8 @@ export default function CreateVisitForm() {
                         onChange={handlePetChange}
                         type={name === "dob" ? "date" : name === "age" ? "number" : "text"}
                         max={name === "dob" ? today : undefined}
-                        readOnly={name === "age"}
                         placeholder={name === "rfid" ? "RFID Number" : undefined}
-                        className={`${inputCls} ${name === "age" ? "bg-slate-100" : ""}`}
+                        className={inputCls}
                       />
                     </div>
                   ))}
@@ -1077,8 +1202,16 @@ export default function CreateVisitForm() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Unique Pet ID</label>
-                    <input value="Auto generated by backend" readOnly className="w-full border rounded-xl p-3 bg-slate-100 text-slate-500 font-medium" />
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                      <span>Unique Pet ID</span>
+                      <span className="text-[10px] text-emerald-600 font-extrabold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">Auto Generated</span>
+                    </label>
+                    <input
+                      name="uniquePetId"
+                      readOnly
+                      value={petForm.uniquePetId || "PET-101"}
+                      className="w-full border border-slate-200 rounded-lg py-1.5 px-3 bg-slate-100 text-slate-700 font-mono font-bold text-xs outline-none cursor-not-allowed select-none"
+                    />
                   </div>
                 </div>
               )}
@@ -1134,7 +1267,12 @@ export default function CreateVisitForm() {
 
                   <div>
                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Token / Queue Number</label>
-                    <input value="Auto generated by backend" readOnly className="w-full border rounded-xl p-3 bg-slate-100 text-slate-500 font-medium" />
+                    <input
+                      name="tokenNumber"
+                      value={petForm.tokenNumber || "TK-101"}
+                      onChange={handlePetChange}
+                      className="w-full border border-slate-200 rounded-lg py-1.5 px-3 bg-slate-50 text-slate-700 font-mono font-bold text-xs outline-none"
+                    />
                   </div>
 
                   <div className="md:col-span-2">

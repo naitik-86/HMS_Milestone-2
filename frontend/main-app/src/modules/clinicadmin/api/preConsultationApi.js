@@ -38,6 +38,11 @@ export const getDashboard = async () => {
     return res.data;
 };
 
+export const deletePreConsultationVisit = async (visitId) => {
+    const res = await API.delete(`${BASE_URL}/${visitId}`);
+    return res.data;
+};
+
 // /* GET SINGLE PENDING PET */
 // export const getPendingPetById = async (id) => {
 //     const res = await API.get(`${BASE_URL}/${id}`);

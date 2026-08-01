@@ -147,11 +147,29 @@ exports.createSubscriptionPayment = async (req, res) => {
       });
     }
 
-    // Find matching subscription
-    const plan = await SubscriptionPlan.findOne({
-      billingCycle: clinic.subscriptionType,
-      status: "Active",
-    });
+   const billingCycleMap = {
+      Monthly: "Monthly",
+      Quarterly: "Quarterly",
+      "6_MONTHS": "Half-Yearly",
+      "12_MONTHS": "Annual",
+    };
+
+    const billingCycle =
+      billingCycleMap[clinic.subscriptionType] ||
+      clinic.subscriptionType;
+
+    // Same drift issue as getSubscriptionDetails above: clinic.subscriptionType
+    // can point at a billing cycle with no currently-active plan - prefer the
+    // clinic's own assigned plan by name first, then fall back to cycle match.
+    const plan =
+      (await SubscriptionPlan.findOne({
+        subscriptionPlan: clinic.plan,
+        status: "Active",
+      })) ||
+      (await SubscriptionPlan.findOne({
+        billingCycle,
+        status: "Active",
+      }));
 
     if (!plan) {
       return res.status(404).json({
@@ -232,7 +250,7 @@ exports.getSubscriptionDetails = async (req, res) => {
 
     // 1. Get Clinic
     const clinic = await Clinic.findById(clinicId).select(
-      "name subscriptionType subscriptionStatus expiryDate"
+      "name plan subscriptionType subscriptionStatus expiryDate"
     );
 
     if (!clinic) {
@@ -243,13 +261,31 @@ exports.getSubscriptionDetails = async (req, res) => {
     }
 
     // 2. Find matching subscription plan
-    const plan = await SubscriptionPlan.findOne({
-      billingCycle: clinic.subscriptionType,
-      status: "Active",
-    }).select(
-      "subscriptionPlan billingCycle price featureLimits modules"
-    );
+    const billingCycleMap = {
+      Monthly: "Monthly",
+      Quarterly: "Quarterly",
+      "6_MONTHS": "Half-Yearly",
+      "12_MONTHS": "Annual",
+    };
 
+    const billingCycle =
+      billingCycleMap[clinic.subscriptionType] ||
+      clinic.subscriptionType;
+
+    // clinic.subscriptionType can drift out of sync with which plans are
+    // actually Active (e.g. billing cycle changed since the clinic was set
+    // up) - prefer the clinic's own assigned plan by name first, and only
+    // fall back to any active plan on that billing cycle, same as the
+    // fallback already used in getSubscriptionStatus/paymentSuccess above.
+    const plan =
+      (await SubscriptionPlan.findOne({
+        subscriptionPlan: clinic.plan,
+        status: "Active",
+      }).select("subscriptionPlan billingCycle price featureLimits modules")) ||
+      (await SubscriptionPlan.findOne({
+        billingCycle,
+        status: "Active",
+      }).select("subscriptionPlan billingCycle price featureLimits modules"));
     if (!plan) {
       return res.status(404).json({
         success: false,
@@ -333,16 +369,64 @@ exports.paymentSuccess = async (req, res) => {
     }
 
     // Add subscription duration
-    switch (subscription.planId.billingCycle) {
-      case "6_MONTHS":
-        planEndRenewalDate.setMonth(planEndRenewalDate.getMonth() + 6);
-        break;
+    const latestPlanBillingCycle = clinic.subscriptionType === "12_MONTHS"
+        ? "Annual"
+        : clinic.subscriptionType === "6_MONTHS"
+        ? "Half-Yearly"
+        : clinic.subscriptionType;
 
-      case "12_MONTHS":
-        planEndRenewalDate.setFullYear(
-          planEndRenewalDate.getFullYear() + 1
-        );
-        break;
+    // Prefer a plan matching the clinic's assigned plan name, not just its
+    // billing cycle - with more than one plan sharing a cycle (e.g. Basic
+    // Annual and Enterprise Annual), matching on cycle alone could silently
+    // move a clinic onto a different plan's pricing. Match by name alone
+    // (not also requiring the cycle) since clinic.subscriptionType can drift
+    // out of sync with which cycle the assigned plan is actually Active on -
+    // the switch below uses latestPlan.billingCycle for the renewal math, so
+    // it still stays correct even when the matched cycle differs from
+    // subscriptionType's stale mapping.
+    const latestPlan =
+        (await SubscriptionPlan.findOne({
+            subscriptionPlan: clinic.plan,
+            status: "Active",
+        })) ||
+        (await SubscriptionPlan.findOne({
+            billingCycle: latestPlanBillingCycle,
+            status: "Active",
+        }));
+
+    if (!latestPlan) {
+        return res.status(404).send("Subscription plan not found");
+    }
+
+    // Update tracker with latest plan
+    subscription.planId = latestPlan._id;
+
+    // Calculate renewal date
+    switch (latestPlan.billingCycle) {
+
+        case "Monthly":
+            planEndRenewalDate.setMonth(
+                planEndRenewalDate.getMonth() + 1
+            );
+            break;
+
+        case "Quarterly":
+            planEndRenewalDate.setMonth(
+                planEndRenewalDate.getMonth() + 3
+            );
+            break;
+
+        case "Half-Yearly":
+            planEndRenewalDate.setMonth(
+                planEndRenewalDate.getMonth() + 6
+            );
+            break;
+
+        case "Annual":
+            planEndRenewalDate.setFullYear(
+                planEndRenewalDate.getFullYear() + 1
+            );
+            break;
     }
 
     // Add remaining trial days
@@ -371,9 +455,12 @@ exports.paymentSuccess = async (req, res) => {
 
     return res.redirect(`${process.env.FRONTEND_URL}/clinic`);
   } catch (err) {
+    console.error("========== PAYMENT SUCCESS ERROR ==========");
     console.error(err);
-    return res.status(500).send("Something went wrong");
-  }
+    console.error(err.stack);
+
+    return res.status(500).send(err.stack);
+}
 };
 
 exports.paymentFailure = async (req, res) => {
@@ -430,9 +517,28 @@ exports.getSubscriptionStatus = async (req, res) => {
 
     // Create subscription on first login
     if (!subscription) {
-      const defaultPlan = await SubscriptionPlan.findOne({
-        billingCycle: clinic.subscriptionType,
-      });
+      // Clinic.subscriptionType is stored as a code (6_MONTHS, 12_MONTHS)
+      // but SubscriptionPlan.billingCycle uses human-readable labels
+      // (Half-Yearly, Annual) - same translation paymentSuccess uses below.
+      const billingCycle =
+        clinic.subscriptionType === "12_MONTHS"
+          ? "Annual"
+          : clinic.subscriptionType === "6_MONTHS"
+          ? "Half-Yearly"
+          : clinic.subscriptionType;
+
+      // Prefer a plan matching the clinic's assigned plan name, not just its
+      // billing cycle - see the same fix in paymentSuccess above for why.
+      const defaultPlan =
+        (await SubscriptionPlan.findOne({
+          subscriptionPlan: clinic.plan,
+          billingCycle,
+          status: "Active",
+        })) ||
+        (await SubscriptionPlan.findOne({
+          billingCycle,
+          status: "Active",
+        }));
 
       if (!defaultPlan) {
         return res.status(400).json({
@@ -443,16 +549,20 @@ exports.getSubscriptionStatus = async (req, res) => {
 
       const trialStartDate = new Date();
 
+      const trialDays = Math.max(
+        Number(clinic.trialDays ?? defaultPlan.trialPeriodDays ?? 0),
+        0
+      );
       const trialEndDate = new Date(trialStartDate);
       trialEndDate.setDate(
-        trialEndDate.getDate() + defaultPlan.trialPeriodDays
+        trialEndDate.getDate() + trialDays
       );
 
       subscription = await clinincSubscriptionTracker.create({
         clinicId: clinic._id,
         planId: defaultPlan._id,
 
-        status: "TRIAL",
+        status: trialDays > 0 ? "TRIAL" : "PAYMENT_REQUIRED",
 
         trialStartDate,
         trialEndDate,
@@ -576,17 +686,38 @@ const buildPlanPayload = (body) => {
       apiAccess: Boolean(body.apiAccessEnabled),
       whiteLabelBranding: Boolean(body.whiteLabelCustomBranding)
     },
-    subscriptionInvoice: 'Auto-generated PDF',
+    subscriptionInvoice: 'Shared manually by Super Admin',
     status: body.status || 'Active'
   };
 };
 
 exports.createPlan = async (req, res) => {
   try {
-    const count = await SubscriptionPlan.countDocuments();
+    const payload = buildPlanPayload(req.body);
+
+    // Without this, submitting the same plan name + billing cycle twice
+    // (e.g. an accidental double-click) silently inserted a second full
+    // document instead of erroring, which is how duplicate plans and
+    // orphaned clinic subscription references have happened before.
+    const existing = await SubscriptionPlan.findOne({
+      subscriptionPlan: payload.subscriptionPlan,
+      billingCycle: payload.billingCycle,
+      planType: payload.planType,
+    });
+
+    if (existing) {
+      return res.status(409).json({
+        success: false,
+        message: `A ${payload.subscriptionPlan} / ${payload.billingCycle} plan already exists. Edit that plan instead of creating a new one.`,
+      });
+    }
+
+    const lastPlan = await SubscriptionPlan.findOne({ planCode: /^PL\d+$/ }).sort({ planCode: -1 });
+    const lastNumber = lastPlan ? parseInt(lastPlan.planCode.slice(2), 10) || 0 : 0;
+
     const plan = await SubscriptionPlan.create({
-      ...buildPlanPayload(req.body),
-      planCode: `PL${String(count + 1).padStart(4, '0')}`
+      ...payload,
+      planCode: `PL${String(lastNumber + 1).padStart(4, '0')}`,
     });
 
     res.status(201).json({ success: true, data: plan });
@@ -606,9 +737,25 @@ exports.getPlans = async (req, res) => {
 
 exports.updatePlan = async (req, res) => {
   try {
+    const payload = buildPlanPayload(req.body);
+
+    const existing = await SubscriptionPlan.findOne({
+      _id: { $ne: req.params.id },
+      subscriptionPlan: payload.subscriptionPlan,
+      billingCycle: payload.billingCycle,
+      planType: payload.planType,
+    });
+
+    if (existing) {
+      return res.status(409).json({
+        success: false,
+        message: `A ${payload.subscriptionPlan} / ${payload.billingCycle} plan already exists. Edit that one instead.`,
+      });
+    }
+
     const plan = await SubscriptionPlan.findByIdAndUpdate(
       req.params.id,
-      buildPlanPayload(req.body),
+      payload,
       { new: true, runValidators: true }
     );
 
@@ -624,6 +771,15 @@ exports.updatePlan = async (req, res) => {
 
 exports.deletePlan = async (req, res) => {
   try {
+    const inUseCount = await clinincSubscriptionTracker.countDocuments({ planId: req.params.id });
+
+    if (inUseCount > 0) {
+      return res.status(409).json({
+        success: false,
+        message: `This plan is still assigned to ${inUseCount} clinic${inUseCount === 1 ? '' : 's'} and cannot be deleted. Move those clinics to another plan first.`,
+      });
+    }
+
     const plan = await SubscriptionPlan.findByIdAndDelete(req.params.id);
 
     if (!plan) {

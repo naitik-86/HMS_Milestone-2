@@ -98,45 +98,64 @@ export default function PetRegistrationWizard({ onClose, petData, onCompleted })
     { title: "Observation", desc: "Physical demeanour & notes" },
   ];
 
+  const pc = petData?.preConsultationId || petData || {};
+
   const [formData, setFormData] = useState({
     // Vitals
-    bodyTemperature: petData?.vitals?.temp || petData?.preConsultationId?.bodyTemperature || "",
-    heartRate: petData?.vitals?.heartRate || petData?.preConsultationId?.heartRate || "",
-    respiratoryRate: petData?.vitals?.respRate || petData?.preConsultationId?.respiratoryRate || "",
-    bloodPressure: petData?.vitals?.bp || petData?.preConsultationId?.bloodPressure || "",
-    spo2: petData?.vitals?.spo2 || petData?.preConsultationId?.spo2 || "",
-    bodyWeight: petData?.vitals?.weight || petData?.preConsultationId?.bodyWeight || "",
-    bcs: petData?.vitals?.bcs || petData?.preConsultationId?.bcs || "",
-    recordedBy: petData?.recordedBy || getLoggedInStaffName(),
+    bodyTemperature: pc.bodyTemperature || petData?.vitals?.temp || "",
+    heartRate: pc.heartRate || petData?.vitals?.heartRate || "",
+    respiratoryRate: pc.respiratoryRate || petData?.vitals?.respRate || "",
+    bloodPressure: {
+      systolic:
+        pc.bloodPressure?.systolic ||
+        petData?.vitals?.bp?.systolic ||
+        "",
+
+      diastolic:
+        pc.bloodPressure?.diastolic ||
+        petData?.vitals?.bp?.diastolic ||
+        "",
+    },
+    spo2: pc.spo2 || petData?.vitals?.spo2 || "",
+    bodyWeight: pc.bodyWeight || petData?.vitals?.weight || "",
+    bcs: pc.bcs || petData?.vitals?.bcs || "",
+    recordedBy: pc.recordedBy || petData?.recordedBy || getLoggedInStaffName(),
 
     // History
     durationOfIllness: {
-      value: "",
-      unit: "days",
+      value: pc.durationOfIllness?.value || "",
+      unit: pc.durationOfIllness?.unit || "days",
     },
-    onset: "Sudden",
-    progression: "Stable",
+    onset: pc.onset || "Sudden",
+    progression: pc.progression || "Stable",
     previousEpisodes: {
-      hasPreviousEpisodes: false,
-      description: "",
+      hasPreviousEpisodes: pc.previousEpisodes?.hasPreviousEpisodes ?? false,
+      description: pc.previousEpisodes?.description || "",
     },
-    recentTravel: false,
-    animalContact: false,
+    recentTravel: {
+      hasTravel: pc.recentTravel?.hasTravel ?? false,
+      description: pc.recentTravel?.description || "",
+    },
+
+    animalContact: {
+      hasContact: pc.animalContact?.hasContact ?? false,
+      description: pc.animalContact?.description || "",
+    },
 
     // Problem
-    primaryComplaint: petData?.reason || petData?.primaryReason || "",
-    associatedSymptoms: [],
-    severity: "Moderate",
+    primaryComplaint: "",
+    associatedSymptoms: pc.associatedSymptoms || [],
+    severity: "",
 
     // Observation
-    generalDemeanour: "Alert",
-    gaitAndPosture: "Normal",
-    visibleLesions: "",
-    eyesAbnormality: "",
-    noseAbnormality: "",
-    earAbnormality: "",
-    skinCondition: "",
-    staffNotes: "",
+    generalDemeanour: pc.generalDemeanour || "Alert",
+    gaitAndPosture: pc.gaitAndPosture || "Normal",
+    visibleLesions: pc.visibleLesions || "",
+    eyesAbnormality: pc.eyesAbnormality || "",
+    noseAbnormality: pc.noseAbnormality || "",
+    earAbnormality: pc.earAbnormality || "",
+    skinCondition: pc.skinCondition || "",
+    staffNotes: pc.staffNotes || "",
   });
 
   // Calculate overall percentage
@@ -213,27 +232,27 @@ export default function PetRegistrationWizard({ onClose, petData, onCompleted })
       <div className="bg-white rounded-none md:rounded-3xl w-full h-screen md:h-[94vh] md:max-w-5xl mx-auto shadow-2xl flex flex-col overflow-hidden border border-slate-200 animate-in fade-in zoom-in-95 duration-200">
         
         {/* Header with Patient Context */}
-        <div className="bg-slate-900 text-white p-5 md:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0">
+        <div className="bg-[#0C3D2E] text-white p-5 md:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-orange-500/20 border border-orange-500/30 flex items-center justify-center text-2xl shrink-0">
-              <Stethoscope className="w-6 h-6 text-orange-400" />
+            <div className="w-[48px] h-[48px] rounded-[12px] bg-[#F7931E] text-white flex items-center justify-center shrink-0">
+              <Stethoscope className="w-[22px] h-[22px]" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-xl md:text-2xl font-bold tracking-tight">Pre-Consultation Assessment</h2>
-                <span className="bg-orange-500 text-white font-mono text-xs font-bold px-2.5 py-0.5 rounded-md">
+                <h2 className="text-[18px] md:text-[22px] font-[900] tracking-tight text-white">Pre-Consultation Assessment</h2>
+                <span className="bg-[#F7931E] text-white font-mono text-xs font-bold px-2.5 py-0.5 rounded-full">
                   {tokenNumber}
                 </span>
               </div>
-              <p className="text-slate-300 text-xs md:text-sm mt-0.5">
-                Patient: <span className="text-white font-semibold">{petName}</span> ({species}) • Owner: <span className="text-white font-semibold">{ownerName}</span>
+              <p className="text-emerald-100/80 text-xs md:text-sm mt-0.5 font-medium">
+                Patient: <span className="text-white font-bold">{petName}</span> ({species}) • Owner: <span className="text-white font-bold">{ownerName}</span>
               </p>
             </div>
           </div>
 
           <button
             onClick={onClose}
-            className="self-end md:self-center w-10 h-10 rounded-2xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center font-bold transition-all"
+            className="self-end md:self-center w-9 h-9 rounded-[12px] bg-[#042B22] hover:bg-[#084D3E] text-white flex items-center justify-center font-bold transition-all border border-[#0A5243] cursor-pointer"
             title="Close"
           >
             <X className="w-5 h-5" />
@@ -241,16 +260,16 @@ export default function PetRegistrationWizard({ onClose, petData, onCompleted })
         </div>
 
         {/* Dynamic Stepper Bar */}
-        <div className="bg-slate-50 border-b border-slate-200 p-4 md:px-8 shrink-0">
+        <div className="bg-[#D9E8E3]/20 border-b border-[#0C3D2E]/15 p-4 md:px-8 shrink-0">
           {/* Progress Percent Bar */}
           <div className="mb-4">
-            <div className="flex justify-between items-center text-xs font-bold text-slate-600 mb-1.5">
+            <div className="flex justify-between items-center text-xs font-bold text-[#0C3D2E] mb-1.5">
               <span>Overall Progress</span>
-              <span className="text-orange-600 font-mono">{progressPercent}% Completed</span>
+              <span className="text-[#F7931E] font-mono">{progressPercent}% Completed</span>
             </div>
-            <div className="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden">
+            <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
               <div
-                className="h-full bg-gradient-to-r from-orange-500 to-amber-500 transition-all duration-300 rounded-full"
+                className="h-full bg-[#F7931E] transition-all duration-300 rounded-full"
                 style={{ width: `${progressPercent}%` }}
               />
             </div>
@@ -271,29 +290,29 @@ export default function PetRegistrationWizard({ onClose, petData, onCompleted })
                       setStep(stepNumber);
                     }
                   }}
-                  className={`flex flex-col items-center p-2 rounded-2xl border transition-all text-center ${
+                  className={`flex flex-col items-center p-2 rounded-[14px] border transition-all text-center cursor-pointer ${
                     isCurrent
-                      ? "bg-white border-orange-500 shadow-md ring-2 ring-orange-500/20"
+                      ? "bg-white border-[#F7931E] shadow-sm ring-2 ring-[#F7931E]/20"
                       : isDone
-                      ? "bg-orange-50/60 border-orange-200 text-orange-900"
+                      ? "bg-[#D9E8E3]/30 border-[#0C3D2E]/20 text-[#0C3D2E]"
                       : "bg-slate-100 border-slate-200 text-slate-400"
                   }`}
                 >
                   <div
-                    className={`w-7 h-7 md:w-8 md:h-8 rounded-xl flex items-center justify-center font-bold text-xs md:text-sm mb-1 ${
+                    className={`w-7 h-7 md:w-8 md:h-8 rounded-[10px] flex items-center justify-center font-bold text-xs md:text-sm mb-1 ${
                       isDone
-                        ? "bg-green-500 text-white"
+                        ? "bg-[#0C3D2E] text-white"
                         : isCurrent
-                        ? "bg-orange-500 text-white"
+                        ? "bg-[#F7931E] text-white"
                         : "bg-slate-200 text-slate-500"
                     }`}
                   >
                     {isDone ? <Check className="w-4 h-4 stroke-[3]" /> : stepNumber}
                   </div>
-                  <span className="text-[11px] md:text-xs font-bold truncate max-w-full">
+                  <span className="text-[11px] md:text-xs font-bold truncate max-w-full text-[#0C3D2E]">
                     {item.title}
                   </span>
-                  <span className="hidden md:block text-[10px] text-slate-400 truncate max-w-full font-normal">
+                  <span className="hidden md:block text-[10px] text-slate-500 truncate max-w-full font-normal">
                     {item.desc}
                   </span>
                 </button>
@@ -312,7 +331,7 @@ export default function PetRegistrationWizard({ onClose, petData, onCompleted })
 
         {/* Form Body Container */}
         <div ref={scrollRef} className="flex-1 overflow-y-auto bg-slate-50/50 p-4 md:p-8">
-          <div className="bg-white rounded-3xl p-5 md:p-8 border border-slate-200/80 shadow-xs max-w-4xl mx-auto">
+          <div className="bg-white rounded-[16px] p-5 md:p-8 border border-[#0C3D2E]/15 shadow-sm max-w-4xl mx-auto">
             {step === 1 && <VitalsForm formData={formData} setFormData={setFormData} />}
             {step === 2 && <BriefHistoryForm formData={formData} setFormData={setFormData} />}
             {step === 3 && <ProblemDescriptionForm formData={formData} setFormData={setFormData} />}
@@ -321,15 +340,15 @@ export default function PetRegistrationWizard({ onClose, petData, onCompleted })
         </div>
 
         {/* Navigation Footer Controls */}
-        <div className="bg-white border-t border-slate-200 p-4 md:px-8 flex items-center justify-between gap-4 shrink-0">
+        <div className="bg-white border-t border-[#0C3D2E]/15 p-4 md:px-8 flex items-center justify-between gap-4 shrink-0">
           <button
             type="button"
             onClick={handlePrevStep}
             disabled={step === 1}
-            className={`flex items-center gap-2 px-5 py-3 rounded-2xl font-semibold text-xs md:text-sm transition-all ${
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-[12px] font-bold text-xs md:text-sm transition-all cursor-pointer ${
               step === 1
                 ? "bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200"
-                : "bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300"
+                : "bg-white hover:bg-slate-50 text-[#0C3D2E] border border-[#0C3D2E]/15 shadow-xs"
             }`}
           >
             <ArrowLeft className="w-4 h-4" />
@@ -340,7 +359,7 @@ export default function PetRegistrationWizard({ onClose, petData, onCompleted })
             <button
               type="button"
               onClick={onClose}
-              className="px-5 py-3 rounded-2xl font-semibold text-xs md:text-sm text-slate-600 hover:bg-slate-100 border border-slate-300 transition-all"
+              className="px-5 py-2.5 rounded-[12px] font-bold text-xs md:text-sm text-slate-600 hover:bg-slate-100 border border-slate-300 transition-all cursor-pointer"
             >
               Cancel
             </button>
@@ -349,7 +368,7 @@ export default function PetRegistrationWizard({ onClose, petData, onCompleted })
               <button
                 type="button"
                 onClick={handleNextStep}
-                className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-7 py-3 rounded-2xl font-bold text-xs md:text-sm shadow-lg shadow-orange-500/25 transition-all"
+                className="flex items-center gap-2 bg-[#F7931E] hover:bg-[#E08319] text-white px-6 py-2.5 rounded-[12px] font-[700] text-xs md:text-sm shadow-sm transition-all duration-200 hover:-translate-y-[2px] cursor-pointer border-none"
               >
                 <span>Next Step</span>
                 <ArrowRight className="w-4 h-4" />
@@ -359,7 +378,7 @@ export default function PetRegistrationWizard({ onClose, petData, onCompleted })
                 type="button"
                 onClick={handleFinish}
                 disabled={isSubmitting}
-                className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-2xl font-bold text-xs md:text-sm shadow-lg shadow-green-600/25 transition-all"
+                className="flex items-center gap-2 bg-[#0C3D2E] hover:bg-[#042B22] text-white px-7 py-2.5 rounded-[12px] font-[700] text-xs md:text-sm shadow-sm transition-all duration-200 hover:-translate-y-[2px] cursor-pointer border-none"
               >
                 <Save className="w-4 h-4" />
                 <span>{isSubmitting ? "Saving..." : "Finish & Submit Assessment"}</span>
@@ -371,4 +390,4 @@ export default function PetRegistrationWizard({ onClose, petData, onCompleted })
       </div>
     </div>
   );
-}
+}

@@ -63,63 +63,76 @@ export default function Home() {
 /* ---------------- Hero ---------------- */
 function Hero() {
   return (
-    <section 
-      className="relative bg-white bg-cover bg-center bg-no-repeat overflow-hidden min-h-[600px] flex items-center"
-      style={{ 
-        backgroundImage: `url(${heroBanner})` 
+    <section
+      className="relative overflow-hidden min-h-[520px] md:min-h-[620px] lg:min-h-[700px] flex items-center bg-no-repeat bg-cover bg-[75%_center] lg:bg-center"
+      style={{
+        backgroundImage: `url(${heroBanner})`,
       }}
     >
-      <div className="max-w-7xl mx-auto w-full px-6 lg:px-10 py-20 lg:py-28 grid lg:grid-cols-12 gap-16 items-center">
-        {/* Left side text overlays onto the blank space of the banner */}
-        <div className="lg:col-span-7 space-y-6 text-left relative z-10">
-          <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-accent-soft text-accent font-semibold text-sm uppercase tracking-wider shadow-xs border border-accent/20">
-            <Zap className="w-3.5 h-3.5 fill-accent/20" /> Enterprise-Grade Veterinary Platform
+      {/* Mobile overlay only */}
+      <div className="absolute inset-0 bg-gradient-to-b from-white via-white/90 to-white/60 lg:hidden pointer-events-none" />
+
+      <div className="relative z-10 max-w-7xl mx-auto w-full px-5 sm:px-6 lg:px-10 py-14 sm:py-16 lg:py-24 grid lg:grid-cols-12 gap-8 lg:gap-16 items-center">
+        {/* Left Content */}
+        <div className="lg:col-span-7 text-center lg:text-left">
+          <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent-soft text-accent font-semibold text-xs sm:text-sm uppercase tracking-wider border border-accent/20 shadow-sm">
+            <Zap className="w-4 h-4 fill-accent/20" />
+            Enterprise-Grade Veterinary Platform
           </span>
-          
-          <h1 className="font-serif text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight text-ink leading-[1.1]">
+
+          <h1 className="mt-6 font-serif text-[2.5rem] sm:text-5xl lg:text-7xl font-bold leading-tight text-ink">
             Transform Your
             <br />
-            <span className="text-brand-dark relative inline-block">
+            <span className="relative inline-block text-brand-dark">
               Veterinary
-              <span className="absolute left-0 bottom-1 w-full h-2.5 bg-accent-soft/80 -z-10 rounded-xs" />
-            </span> Practice
+              <span className="absolute left-0 bottom-1 w-full h-2 bg-accent-soft/80 rounded-sm -z-10" />
+            </span>{" "}
+            Practice
           </h1>
-          
-          <p className="text-lg leading-relaxed text-ink-soft max-w-xl font-normal">
+
+          <p className="mt-6 text-base sm:text-lg leading-8 text-ink-soft max-w-lg mx-auto lg:mx-0">
             PAHMS is a complete multi-tenant SaaS platform designed to digitally
             manage veterinary clinics, pet hospitals, and animal healthcare
-            organizations — all from one centralized system.
+            organizations from one centralized system.
           </p>
 
-          <div className="pt-4 flex flex-wrap gap-4">
+          <div className="mt-8 flex flex-col sm:flex-row justify-center lg:justify-start gap-4">
             <Link
               to="/login"
-              className="group inline-flex items-center gap-2 bg-brand hover:bg-brand-dark text-white font-semibold px-8 py-4 rounded-xl shadow-md hover:shadow-lg transition-all duration-200 transform hover:-translate-y-0.5"
+              className="group inline-flex items-center justify-center gap-2 bg-brand hover:bg-brand-dark text-white font-semibold px-8 py-4 rounded-xl shadow-lg transition-all duration-300 hover:-translate-y-1"
             >
-              Get Started Free <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+              Get Started Free
+              <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
             </Link>
-            <button className="inline-flex items-center gap-2 bg-accent hover:bg-accent/90 text-white font-semibold px-8 py-4 rounded-xl shadow-md hover:shadow-lg transition-all duration-200 transform hover:-translate-y-0.5">
-              <Play className="w-4 h-4 fill-white" /> Learn More
-            </button>
+
+            <Link
+              to="/contact"
+              className="inline-flex items-center justify-center gap-2 bg-accent hover:bg-accent/90 text-white font-semibold px-8 py-4 rounded-xl shadow-lg transition-all duration-300 hover:-translate-y-1"
+            >
+              <Play className="w-4 h-4 fill-white" />
+              Learn More
+            </Link>
           </div>
 
-          <div className="pt-6 flex flex-wrap gap-6 text-sm">
-            <span className="inline-flex items-center gap-2 text-ink-soft font-medium bg-brand-soft border border-brand-light px-3 py-1.5 rounded-lg">
-              <Shield className="w-4 h-4 text-brand" /> HIPAA Compliant
+          <div className="mt-8 flex flex-wrap justify-center lg:justify-start gap-3">
+            <span className="inline-flex items-center gap-2 bg-brand-soft border border-brand-light px-4 py-2 rounded-lg text-sm text-ink-soft font-medium">
+              <Shield className="w-4 h-4 text-brand" />
+              HIPAA Compliant
             </span>
-            <span className="inline-flex items-center gap-2 text-ink-soft font-medium bg-accent-soft/60 border border-accent/20 px-3 py-1.5 rounded-lg">
-              <Heart className="w-4 h-4 text-accent fill-accent/20" /> 500+ Clinics Trust Us
+
+            <span className="inline-flex items-center gap-2 bg-accent-soft/70 border border-accent/20 px-4 py-2 rounded-lg text-sm text-ink-soft font-medium">
+              <Heart className="w-4 h-4 text-accent fill-accent/20" />
+              500+ Clinics Trust Us
             </span>
           </div>
         </div>
 
-        {/* Right side intentionally empty for background banner graphic */}
-        <div className="hidden lg:block lg:col-span-5 h-full min-h-[450px]" />
+        {/* Empty right side for desktop image */}
+        <div className="hidden lg:block lg:col-span-5 min-h-[500px]" />
       </div>
     </section>
   );
 }
-
 /* ---------------- Features ---------------- */
 const FEATURES = [
   { icon: Calendar, title: "Appointment Management", desc: "Smart scheduling with automated reminders, real-time availability, and drag-and-drop calendar.", tone: "brand" },
@@ -187,7 +200,7 @@ function Features() {
               </>
             ) : (
               <>
-                View More Features ({FEATURES.length - 8} More){" "}
+                View More Features {" "}
                 <ChevronDown className="w-4 h-4 text-accent" />
               </>
             )}

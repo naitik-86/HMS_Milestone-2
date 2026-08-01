@@ -64,7 +64,10 @@ const buildDoctorFormData = (doctorData = {}) => {
     }
 
     if (doctorData.degreeCertificates) {
-        formData.append("degreeCertificates", doctorData.degreeCertificates);
+        const certificates = Array.isArray(doctorData.degreeCertificates)
+            ? doctorData.degreeCertificates
+            : [doctorData.degreeCertificates];
+        certificates.forEach((file) => formData.append("degreeCertificates", file));
     }
 
     return formData;

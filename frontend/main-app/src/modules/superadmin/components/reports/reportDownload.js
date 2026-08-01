@@ -5,11 +5,7 @@ const COLORS = {
   title: [15, 23, 42],
   muted: [100, 116, 139],
   border: [226, 232, 240],
-  accent: [232, 99, 10],
-  indigo: [99, 102, 241],
-  green: [34, 197, 94],
-  amber: [245, 158, 11],
-  rose: [239, 68, 68],
+  accent: [12, 61, 46], // #0C3D2E
   slate: [51, 65, 85],
   soft: [248, 250, 252],
 };
@@ -93,35 +89,37 @@ const resolveColumnWidths = (columns, totalWidth) => {
 const renderTopBand = (doc) => {
   const pageWidth = doc.internal.pageSize.getWidth();
   doc.setFillColor(...COLORS.accent);
-  doc.rect(0, 0, pageWidth, 12, "F");
+  doc.rect(0, 0, pageWidth, 20, "F");
 };
 
-const renderTitle = (doc, title, subtitle, generatedAt) => {
+const renderCenteredHeader = (doc, title, subtitle, generatedAt) => {
   const pageWidth = doc.internal.pageSize.getWidth();
-
   renderTopBand(doc);
 
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(20);
+  doc.setFontSize(14);
+  doc.setTextColor(...COLORS.accent);
+  doc.text("PAHMS — Pet Animal Healthcare Management System", pageWidth / 2, 32, { align: "center" });
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(28);
   doc.setTextColor(...COLORS.title);
-  doc.text(title, PAGE_MARGIN, 22);
+  doc.text(title, pageWidth / 2, 48, { align: "center" });
 
   doc.setFont("helvetica", "normal");
+  doc.setFontSize(13);
+  doc.setTextColor(...COLORS.muted);
+  doc.text(subtitle, pageWidth / 2, 60, { align: "center" });
+
+  doc.setFont("helvetica", "italic");
   doc.setFontSize(10.5);
   doc.setTextColor(...COLORS.muted);
-  doc.text(subtitle, PAGE_MARGIN, 29);
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9.5);
-  doc.setTextColor(...COLORS.muted);
-  doc.text(`Generated at ${formatDateTime(generatedAt)}`, pageWidth - PAGE_MARGIN, 22, {
-    align: "right",
-  });
+  doc.text(`Generated at ${formatDateTime(generatedAt)}`, pageWidth / 2, 70, { align: "center" });
 
   doc.setDrawColor(...COLORS.border);
-  doc.line(PAGE_MARGIN, 34, pageWidth - PAGE_MARGIN, 34);
+  doc.line(PAGE_MARGIN, 80, pageWidth - PAGE_MARGIN, 80);
 
-  return 38;
+  return 90;
 };
 
 const renderSummarySection = (doc, items, startY) => {
@@ -134,16 +132,16 @@ const renderSummarySection = (doc, items, startY) => {
   let cursorY = startY;
 
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(13);
+  doc.setFontSize(14); // Slightly increased font size for headers
   doc.setTextColor(...COLORS.title);
-  doc.text("Summary", PAGE_MARGIN, cursorY);
+  doc.text("Summary Overview", PAGE_MARGIN, cursorY);
   cursorY += 7;
 
   items.forEach((item) => {
     const label = safeText(item.label);
     const value = safeText(item.value);
     const valueLines = doc.splitTextToSize(value, Math.max(maxWidth - labelWidth - 6, 40));
-    const rowHeight = Math.max(6, valueLines.length * 4.8 + 1);
+    const rowHeight = Math.max(7, valueLines.length * 5.2 + 2); // Increased row height
 
     if (cursorY + rowHeight > pageHeight - PAGE_MARGIN) {
       doc.addPage();
@@ -152,35 +150,36 @@ const renderSummarySection = (doc, items, startY) => {
     }
 
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(10);
+    doc.setFontSize(11); // Increased font size for summary items
     doc.setTextColor(...COLORS.title);
     doc.text(`${label}:`, PAGE_MARGIN, cursorY);
 
     doc.setFont("helvetica", "normal");
+    doc.setFontSize(11);
     doc.setTextColor(...COLORS.slate);
     doc.text(valueLines.join("\n"), PAGE_MARGIN + labelWidth, cursorY);
 
-    cursorY += rowHeight + 1.5;
+    cursorY += rowHeight + 2;
   });
 
-  return cursorY + 2;
+  return cursorY + 8;
 };
 
 const renderEmptyState = (doc, message, startY) => {
   const pageWidth = doc.internal.pageSize.getWidth();
   const width = pageWidth - PAGE_MARGIN * 2;
-  const height = 18;
+  const height = 22;
 
   doc.setFillColor(...COLORS.soft);
   doc.setDrawColor(...COLORS.border);
   doc.roundedRect(PAGE_MARGIN, startY, width, height, 3, 3, "FD");
 
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(10.5);
+  doc.setFontSize(11);
   doc.setTextColor(...COLORS.muted);
-  doc.text(safeText(message), PAGE_MARGIN + 4, startY + 11);
+  doc.text(safeText(message), PAGE_MARGIN + 4, startY + 13);
 
-  return startY + height + 4;
+  return startY + height + 6;
 };
 
 const renderTable = (doc, { title, subtitle, columns, rows, startY }) => {
@@ -188,12 +187,12 @@ const renderTable = (doc, { title, subtitle, columns, rows, startY }) => {
   const pageHeight = doc.internal.pageSize.getHeight();
   const tableWidth = pageWidth - PAGE_MARGIN * 2;
   const columnWidths = resolveColumnWidths(columns, tableWidth);
-  const headerHeight = 10;
+  const headerHeight = 12; // Increased table header height
   let cursorY = startY;
 
   if (title) {
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(13);
+    doc.setFontSize(14);
     doc.setTextColor(...COLORS.title);
     doc.text(title, PAGE_MARGIN, cursorY);
     cursorY += 6;
@@ -201,11 +200,11 @@ const renderTable = (doc, { title, subtitle, columns, rows, startY }) => {
 
   if (subtitle) {
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(9.5);
+    doc.setFontSize(10.5);
     doc.setTextColor(...COLORS.muted);
     const subtitleLines = doc.splitTextToSize(safeText(subtitle), tableWidth);
     doc.text(subtitleLines, PAGE_MARGIN, cursorY);
-    cursorY += subtitleLines.length * 4.2 + 2;
+    cursorY += subtitleLines.length * 4.5 + 3;
   }
 
   if (!rows.length) {
@@ -216,15 +215,15 @@ const renderTable = (doc, { title, subtitle, columns, rows, startY }) => {
     let xPosition = PAGE_MARGIN;
 
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(9);
+    doc.setFontSize(10); // Increased header font size
     doc.setTextColor(255, 255, 255);
 
     columns.forEach((column, index) => {
       const columnWidth = columnWidths[index];
-      doc.setFillColor(15, 23, 42);
-      doc.setDrawColor(15, 23, 42);
+      doc.setFillColor(...COLORS.accent);
+      doc.setDrawColor(...COLORS.accent);
       doc.rect(xPosition, yPosition, columnWidth, headerHeight, "FD");
-      doc.text(safeText(column.header), xPosition + 2, yPosition + 6.5);
+      doc.text(safeText(column.header), xPosition + 3, yPosition + 7.5); // Adjusted text offset for taller header
       xPosition += columnWidth;
     });
 
@@ -236,9 +235,10 @@ const renderTable = (doc, { title, subtitle, columns, rows, startY }) => {
   rows.forEach((row, rowIndex) => {
     const rowValues = columns.map((column) => safeText(column.value(row, rowIndex)));
     const rowLines = rowValues.map((value, index) =>
-      doc.splitTextToSize(value, Math.max(columnWidths[index] - 4, 12))
+      doc.splitTextToSize(value, Math.max(columnWidths[index] - 6, 12))
     );
-    const rowHeight = Math.max(...rowLines.map((lines) => Math.max(lines.length * 4.6 + 2, 8)), 8);
+    // Increased row height slightly to give a taller, more spacious table feel
+    const rowHeight = Math.max(...rowLines.map((lines) => Math.max(lines.length * 5 + 3, 10)), 10);
 
     if (cursorY + rowHeight > pageHeight - PAGE_MARGIN) {
       doc.addPage();
@@ -256,16 +256,16 @@ const renderTable = (doc, { title, subtitle, columns, rows, startY }) => {
       doc.rect(xPosition, cursorY, columnWidth, rowHeight, "FD");
 
       doc.setFont("helvetica", "normal");
-      doc.setFontSize(8.9);
+      doc.setFontSize(9.5); // Increased table cell font size
       doc.setTextColor(...COLORS.slate);
-      doc.text(rowLines[index].join("\n"), xPosition + 2, cursorY + 4.6);
+      doc.text(rowLines[index].join("\n"), xPosition + 3, cursorY + 5.5); // Adjusted vertical text offset
       xPosition += columnWidth;
     });
 
     cursorY += rowHeight;
   });
 
-  return cursorY + 3;
+  return cursorY + 4;
 };
 
 const getSummaryValue = (summary, key, fallback = 0) =>
@@ -302,7 +302,7 @@ const getReportBlueprint = ({ category, report, catalog }) => {
     case "clinic-registration":
       return {
         title: reportTitle,
-        subtitle: "Live clinic registration records from the backend clinic collection.",
+        subtitle: "Live clinic registration records from the PAHMS backend clinic collection.",
         summary: [
           { label: "Total clinics", value: clinics.length },
           { label: "Active clinics", value: activeClinicCount },
@@ -321,7 +321,7 @@ const getReportBlueprint = ({ category, report, catalog }) => {
     case "clinic-approved":
       return {
         title: reportTitle,
-        subtitle: "Clinics approved in the backend verification pipeline.",
+        subtitle: "Clinics approved in the PAHMS backend verification pipeline.",
         summary: [
           { label: "Approved clinics", value: approvedClinics.length },
           { label: "Active clinics", value: activeClinicCount },
@@ -339,7 +339,7 @@ const getReportBlueprint = ({ category, report, catalog }) => {
     case "clinic-rejected":
       return {
         title: reportTitle,
-        subtitle: "Rejected clinics and the backend rejection reason stored on each record.",
+        subtitle: "Rejected clinics and the rejection reason stored on each backend record.",
         summary: [
           { label: "Rejected clinics", value: rejectedClinics.length },
           { label: "Pending reviews", value: pendingClinics.length },
@@ -357,7 +357,7 @@ const getReportBlueprint = ({ category, report, catalog }) => {
     case "clinic-performance":
       return {
         title: reportTitle,
-        subtitle: "Appointment volume and revenue by clinic, derived from backend appointment data.",
+        subtitle: "Appointment volume and revenue by clinic derived from system activity.",
         summary: [
           { label: "Total revenue", value: formatCurrency(summary.totalPaymentCollected) },
           { label: "Total appointments", value: sumBy(clinicPerformance, (clinic) => clinic.appointmentCount) },
@@ -377,7 +377,7 @@ const getReportBlueprint = ({ category, report, catalog }) => {
     case "doctor-registration":
       return {
         title: reportTitle,
-        subtitle: "Registered veterinarians from the backend DoctorDetails collection.",
+        subtitle: "Registered veterinarians from the PAHMS DoctorDetails collection.",
         summary: [
           { label: "Total doctors", value: doctorRegistry.length },
           { label: "Active doctors", value: doctorRegistry.filter((doctor) => doctor.status === "Active").length },
@@ -427,7 +427,7 @@ const getReportBlueprint = ({ category, report, catalog }) => {
     case "doctor-activity":
       return {
         title: reportTitle,
-        subtitle: "Consultation and appointment activity grouped by doctor from backend appointments.",
+        subtitle: "Consultation and appointment activity grouped by registered veterinarian.",
         summary: [
           { label: "Appointments", value: sumBy(doctorActivity, (item) => item.appointments) },
           { label: "Completed", value: sumBy(doctorActivity, (item) => item.completedAppointments) },
@@ -448,7 +448,7 @@ const getReportBlueprint = ({ category, report, catalog }) => {
     case "doctor-consultation":
       return {
         title: reportTitle,
-        subtitle: "Revenue contribution per doctor using backend appointment and fee data.",
+        subtitle: "Revenue contribution per doctor using appointment and fee data.",
         summary: [
           { label: "Total revenue", value: formatCurrency(sumBy(doctorConsultation, (item) => item.revenue)) },
           { label: "Top doctor", value: doctorConsultation[0]?.doctorName || "-" },
@@ -473,7 +473,7 @@ const getReportBlueprint = ({ category, report, catalog }) => {
 
       return {
         title: reportTitle,
-        subtitle: "Monthly revenue trend from completed consultations in the backend.",
+        subtitle: "Monthly revenue trend from completed consultations in the system.",
         summary: [
           { label: "Total collected", value: formatCurrency(summary.totalPaymentCollected) },
           { label: "Months tracked", value: revenueTrend.length },
@@ -495,7 +495,7 @@ const getReportBlueprint = ({ category, report, catalog }) => {
 
       return {
         title: reportTitle,
-        subtitle: "Quarterly revenue grouped from backend appointment history.",
+        subtitle: "Quarterly revenue grouped from PAHMS appointment history.",
         summary: [
           { label: "Total collected", value: formatCurrency(summary.totalPaymentCollected) },
           { label: "Quarter groups", value: quarterlyRevenue.length },
@@ -513,7 +513,7 @@ const getReportBlueprint = ({ category, report, catalog }) => {
     case "revenue-annual":
       return {
         title: reportTitle,
-        subtitle: "Yearly revenue totals calculated from completed backend consultations.",
+        subtitle: "Yearly revenue totals calculated from completed consultations.",
         summary: [
           { label: "Total collected", value: formatCurrency(summary.totalPaymentCollected) },
           { label: "Years covered", value: yearlyRevenue.length },
@@ -530,7 +530,7 @@ const getReportBlueprint = ({ category, report, catalog }) => {
     case "plan-active":
       return {
         title: reportTitle,
-        subtitle: "Active subscription plans stored in the backend plan collection.",
+        subtitle: "Active subscription plans stored in the system plan collection.",
         summary: [
           { label: "Active plans", value: activePlans.length },
           { label: "Total plans", value: plans.length },
@@ -550,7 +550,7 @@ const getReportBlueprint = ({ category, report, catalog }) => {
     case "plan-expired":
       return {
         title: reportTitle,
-        subtitle: "Plans that are not currently active in the backend subscription collection.",
+        subtitle: "Plans that are not currently active in the subscription collection.",
         summary: [
           { label: "Expired plans", value: inactivePlans.length },
           { label: "Total plans", value: plans.length },
@@ -570,7 +570,7 @@ const getReportBlueprint = ({ category, report, catalog }) => {
     case "plan-renewal":
       return {
         title: reportTitle,
-        subtitle: "Upcoming plan renewals from backend subscription records.",
+        subtitle: "Upcoming plan renewals from PAHMS subscription records.",
         summary: [
           { label: "Plans due", value: plans.filter((plan) => plan.status === "Active").length },
           { label: "Total plans", value: plans.length },
@@ -590,7 +590,7 @@ const getReportBlueprint = ({ category, report, catalog }) => {
     case "verification-pending":
       return {
         title: reportTitle,
-        subtitle: "Clinics awaiting final verification steps in the backend.",
+        subtitle: "Clinics awaiting final verification steps in the portal.",
         summary: [
           { label: "Pending reviews", value: pendingClinics.length },
           { label: "Approved", value: getSummaryValue(verificationSummary, "APPROVED") },
@@ -626,7 +626,7 @@ const getReportBlueprint = ({ category, report, catalog }) => {
     case "verification-rejected":
       return {
         title: reportTitle,
-        subtitle: "Rejected clinic records with backend rejection reason details.",
+        subtitle: "Rejected clinic records with portal rejection reason details.",
         summary: [
           { label: "Rejected clinics", value: rejectedClinics.length },
           { label: "Pending reviews", value: pendingClinics.length },
@@ -644,7 +644,7 @@ const getReportBlueprint = ({ category, report, catalog }) => {
     case "module-coverage":
       return {
         title: reportTitle,
-        subtitle: "Plan module availability and coverage from backend subscription plans.",
+        subtitle: "Plan module availability and coverage from subscription definitions.",
         summary: [
           { label: "Total plans", value: plans.length },
           { label: "Lab-enabled plans", value: plans.filter((plan) => plan.modules?.lab).length },
@@ -666,7 +666,7 @@ const getReportBlueprint = ({ category, report, catalog }) => {
     case "storage-limits":
       return {
         title: reportTitle,
-        subtitle: "Storage and quota limits configured on backend subscription plans.",
+        subtitle: "Storage and quota limits configured on subscription tiers.",
         summary: [
           { label: "Total plans", value: plans.length },
           {
@@ -713,9 +713,9 @@ const getReportBlueprint = ({ category, report, catalog }) => {
     default:
       return {
         title: reportTitle,
-        subtitle: `${category?.title || "Report"} generated from backend data.`,
+        subtitle: `${category?.title || "Report"} generated from PAHMS data.`,
         summary: [{ label: "Records", value: 0 }],
-        columns: [{ header: "Record", width: 160, value: () => "No backend mapping configured for this report." }],
+        columns: [{ header: "Record", width: 160, value: () => "No mapping configured for this report." }],
         rows: [],
       };
   }
@@ -729,11 +729,11 @@ export const downloadReportSnapshot = ({ category, report, catalog }) => {
   const blueprint = getReportBlueprint({ category, report, catalog });
   const doc = new jsPDF("l", "mm", "a4");
   const stamp = new Date(catalog.generatedAt || Date.now()).toISOString().slice(0, 10);
-  const fileName = `${sanitizeFileNamePart(category?.title) || "report"}-${sanitizeFileNamePart(
+  const fileName = `pahms-${sanitizeFileNamePart(category?.title) || "report"}-${sanitizeFileNamePart(
     report?.key || report?.title || "export"
   )}-${stamp}.pdf`;
 
-  let cursorY = renderTitle(
+  let cursorY = renderCenteredHeader(
     doc,
     blueprint.title,
     blueprint.subtitle,
@@ -741,15 +741,15 @@ export const downloadReportSnapshot = ({ category, report, catalog }) => {
   );
 
   cursorY = renderSummarySection(doc, blueprint.summary || [], cursorY);
-  cursorY = renderTable(doc, { ...blueprint, startY: cursorY });
+  cursorY = renderTable(doc, { ...blueprint, startY: cursorY, title: null, subtitle: null });
 
   doc.setFont("helvetica", "italic");
   doc.setFontSize(9);
   doc.setTextColor(...COLORS.muted);
-  const footerText = `Source: backend super-admin report catalog. Generated ${formatDateTime(
+  const footerText = `PAHMS Super-Admin System Report. Generated on ${formatDateTime(
     catalog.generatedAt || new Date().toISOString()
   )}.`;
-  const footerY = Math.max(cursorY + 4, PAGE_MARGIN + 6);
+  const footerY = Math.max(cursorY + 6, PAGE_MARGIN + 6);
   doc.text(footerText, PAGE_MARGIN, footerY);
 
   doc.save(fileName);

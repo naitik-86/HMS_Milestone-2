@@ -5,7 +5,30 @@ export default function LabReportModal({
     onCompleteCase
 }) {
     if (!open) return null;
-    console.log("LabReportModal Report:", report);
+
+    const petName = report?.pet?.petName || report?.pet?.name || report?.petId?.name || report?.petName || "Patient";
+    const ownerName = report?.owner?.ownerName || report?.petId?.ownerId?.ownerName || report?.ownerName || "Owner";
+    const tokenNumber = report?.tokenNumber || report?.visit?.tokenNumber || report?.visitId?.tokenNumber || "N/A";
+
+    const handleDownloadPDF = async (fileUrl, testName, fileName) => {
+        if (!fileUrl) return;
+        try {
+            const response = await fetch(fileUrl);
+            const blob = await response.blob();
+            const blobUrl = window.URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = blobUrl;
+            const safeName = fileName || `${testName || "Lab_Report"}.pdf`;
+            link.download = safeName.endsWith(".pdf") ? safeName : `${safeName}.pdf`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(blobUrl);
+        } catch (error) {
+            console.error("Blob download error:", error);
+            window.open(fileUrl, "_blank");
+        }
+    };
 
     return (
         <>
@@ -19,7 +42,7 @@ export default function LabReportModal({
                                     Laboratory Reports & Diagnostic Results
                                 </h2>
                                 <p className="text-sm opacity-90 mt-1 font-medium">
-                                    {report?.petId?.name || "Pet"} • Owner: {report?.petId?.ownerId?.ownerName || "Owner"}
+                                    Pet: <span className="font-bold text-white">{petName}</span> • Owner: <span className="font-bold text-white">{ownerName}</span>
                                 </p>
                             </div>
 
@@ -38,17 +61,17 @@ export default function LabReportModal({
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
                                     <div>
                                         <p className="text-xs text-gray-500 font-medium">Token Number</p>
-                                        <p className="font-bold text-slate-800 text-base">{report?.visitId?.tokenNumber || "N/A"}</p>
+                                        <p className="font-bold text-slate-800 text-base">{tokenNumber}</p>
                                     </div>
 
                                     <div>
                                         <p className="text-xs text-gray-500 font-medium">Owner Name</p>
-                                        <p className="font-bold text-slate-800 text-base">{report?.petId?.ownerId?.ownerName || "N/A"}</p>
+                                        <p className="font-bold text-slate-800 text-base">{ownerName}</p>
                                     </div>
 
                                     <div>
                                         <p className="text-xs text-gray-500 font-medium">Pet Name</p>
-                                        <p className="font-bold text-slate-800 text-base">{report?.petId?.name || "N/A"}</p>
+                                        <p className="font-bold text-slate-800 text-base">{petName}</p>
                                     </div>
 
                                     <div>
@@ -78,14 +101,13 @@ export default function LabReportModal({
                                                 </p>
                                             </div>
                                             {item.fileUrl && (
-                                                <a
-                                                    href={item.fileUrl}
-                                                    target="_blank"
-                                                    rel="noreferrer"
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleDownloadPDF(item.fileUrl, item.testName, item.fileName)}
                                                     className="inline-flex items-center justify-center bg-orange-500 hover:bg-orange-600 text-white font-bold px-5 py-2.5 rounded-xl transition shadow-sm border-none text-xs cursor-pointer shrink-0"
                                                 >
-                                                    View PDF Report
-                                                </a>
+                                                    View / Download PDF
+                                                </button>
                                             )}
                                         </div>
                                     ))

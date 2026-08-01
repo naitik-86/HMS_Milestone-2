@@ -29,14 +29,27 @@ const treatmentSchema = new mongoose.Schema({
 const visitSchema = new mongoose.Schema({
     primaryReason: {
         type: String,
-        enum: ["Treatment", "Vaccination", "Checkup", "Certificate"]
+        enum: ["Treatment", "Vaccination", "Checkup", "Certificate"],
+        required: true
     },
 
-    assignedDoctor: String,
-    complaint: String,
+    assignedDoctor: {
+        type: String,
+        required: true
+    },
+    complaint: {
+        type: String,
+        required: true
+    },
     tokenNumber: String,
-    appointmentDate: Date,
-    appointmentTime: String,
+    appointmentDate: {
+        type: Date,
+        required: true
+    },
+    appointmentTime: {
+        type: String,
+        required: true
+    },
     status: {
         type: String,
         default: "Pending"
@@ -55,7 +68,7 @@ const ownerSchema = new mongoose.Schema(
         mobileNumber: {
             type: String,
             required: true,
-            unique: true,
+            trim: true,
             match: /^[6-9]\d{9}$/
         },
         isMobileVerified: {
@@ -74,6 +87,8 @@ const ownerSchema = new mongoose.Schema(
         },
 
         ownerIdType: String,
+        ownerOtherIdType: String,
+        ownerIdNumber: String,
         email: {
             type: String,
             trim: true,
@@ -90,6 +105,8 @@ const ownerSchema = new mongoose.Schema(
     {
         timestamps: true
     });
+
+ownerSchema.index({ clinicId: 1, mobileNumber: 1 }, { unique: true });
 
 module.exports = mongoose.model(
     "PetRegistration",

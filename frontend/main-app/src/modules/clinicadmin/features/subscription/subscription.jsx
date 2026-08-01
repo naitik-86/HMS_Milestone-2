@@ -61,7 +61,7 @@ const Subscription = () => {
           </span>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-5 mt-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mt-8">
           <div className="bg-slate-50 rounded-2xl p-5">
             <Calendar className="text-orange-500 mb-2" />
             <p className="text-sm text-slate-500">Billing Cycle</p>
@@ -83,7 +83,7 @@ const Subscription = () => {
       </div>
 
       {/* Features + Limits */}
-      <div className="grid lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Features */}
         <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-6">
           <h2 className="text-xl font-bold mb-5 text-slate-800">

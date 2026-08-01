@@ -7,31 +7,36 @@ import {
   LogOut,
   Menu,
   X,
-  Sparkles,
-  ShieldCheck,
   UserCheck,
+  Building2,
+  Mail,
 } from "lucide-react";
+import { getSessionProfile } from "../../../../shared/utils/sessionProfile";
 
 export default function LabSidebar() {
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const profile = getSessionProfile("LAB_TECHNICIAN", "Lab Specialist");
 
   const menus = [
     {
       id: "/clinic/lab",
       label: "Dashboard",
       icon: <LayoutDashboard className="w-5 h-5" />,
+      exact: true,
     },
     {
       id: "/clinic/lab/pending-pets",
       label: "Pending Requisitions",
       icon: <FlaskConical className="w-5 h-5" />,
+      exact: false,
     },
     {
       id: "/clinic/lab/upload",
       label: "Lab Reports",
       icon: <FileText className="w-5 h-5" />,
+      exact: false,
     },
   ];
 
@@ -99,7 +104,10 @@ export default function LabSidebar() {
           {/* Navigation Links */}
           <div className="p-4 space-y-1.5 mt-2">
             {menus.map((item) => {
-              const isActive = location.pathname === item.id;
+              // FIX Bug 1: exact match for dashboard index, startsWith for child routes
+              const isActive = item.exact
+                ? location.pathname === item.id
+                : location.pathname.startsWith(item.id);
 
               return (
                 <button
@@ -130,9 +138,13 @@ export default function LabSidebar() {
               <UserCheck className="w-5 h-5" />
             </div>
             <div className="overflow-hidden">
-              <p className="font-bold text-xs text-white truncate">Lab Specialist</p>
-              <p className="text-[10px] text-emerald-400 font-semibold flex items-center gap-1 mt-0.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Authorized Staff
+              <p className="font-bold text-xs text-white truncate">{profile.name}</p>
+              <p className="text-[10px] text-orange-300 font-bold uppercase tracking-wide truncate mt-0.5">{profile.role}</p>
+              <p className="mt-1 flex items-center gap-1 text-[10px] text-emerald-100/75 truncate">
+                <Building2 className="h-3 w-3 shrink-0" /> {profile.clinicName}
+              </p>
+              <p className="mt-1 flex items-center gap-1 text-[10px] text-emerald-100/75 truncate" title={profile.email}>
+                <Mail className="h-3 w-3 shrink-0" /> {profile.email}
               </p>
             </div>
           </div>

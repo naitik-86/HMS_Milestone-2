@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { Search, Filter, RefreshCw, Eye, Download } from "lucide-react";
-import { getCompletedPets } from "../../../api/doctorModuleApi";
+import { Search, Filter, RefreshCw, Eye, Download, PawPrint, CheckCircle2, CalendarDays, Stethoscope, Trash2 } from "lucide-react";
+import { deletePatient, getCompletedPets } from "../../../api/doctorModuleApi";
 import { generateCaseReportPDF } from "./generateCaseReportPDF";
 import toast from "react-hot-toast";
 
@@ -39,13 +39,18 @@ export default function CompletedPets() {
     }
   };
 
-  const getSpeciesIcon = (species) => {
-    const s = (species || "").toLowerCase();
-    if (s.includes("cat")) return "🐱";
-    if (s.includes("bird") || s.includes("parrot")) return "🦜";
-    if (s.includes("rabbit")) return "🐇";
-    return "🐶";
+  const handleDelete = async (item) => {
+    if (!window.confirm("Delete this completed visit and its linked records? This cannot be undone.")) return;
+    try {
+      await deletePatient(item._id);
+      toast.success("Visit record deleted");
+      fetchCompletedPets();
+    } catch (error) {
+      toast.error(error?.response?.data?.message || "Failed to delete visit record");
+    }
   };
+
+  const getSpeciesIcon = () => <PawPrint className="size-5 text-[#F7931E]" />;
 
   const normalizeCaseData = (item) => {
     if (!item) return null;
@@ -107,7 +112,7 @@ export default function CompletedPets() {
   const activeCase = normalizeCaseData(selectedCase);
 
   return (
-    <div className="space-y-6 pt-16 md:pt-4">
+    <div className="space-y-6">
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
         <div className="bg-white rounded-3xl p-5 border border-slate-200/80 shadow-xs flex items-center justify-between">
@@ -116,7 +121,7 @@ export default function CompletedPets() {
             <h2 className="text-3xl font-extrabold text-slate-800 mt-1">{loading ? "..." : stats.today}</h2>
           </div>
           <div className="w-13 h-13 rounded-2xl bg-green-50 text-green-600 border border-green-100 flex items-center justify-center text-2xl font-bold">
-            ✅
+            <CheckCircle2 className="size-6" />
           </div>
         </div>
 
@@ -126,7 +131,7 @@ export default function CompletedPets() {
             <h2 className="text-3xl font-extrabold text-slate-800 mt-1">{loading ? "..." : stats.thisWeek}</h2>
           </div>
           <div className="w-13 h-13 rounded-2xl bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center text-2xl font-bold">
-            📅
+            <CalendarDays className="size-6" />
           </div>
         </div>
 
@@ -136,7 +141,7 @@ export default function CompletedPets() {
             <h2 className="text-3xl font-extrabold text-slate-800 mt-1">{loading ? "..." : stats.total}</h2>
           </div>
           <div className="w-13 h-13 rounded-2xl bg-purple-50 text-purple-600 border border-purple-100 flex items-center justify-center text-2xl font-bold">
-            🩺
+            <Stethoscope className="size-6" />
           </div>
         </div>
       </div>
@@ -185,10 +190,10 @@ export default function CompletedPets() {
               className="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-11 pr-4 py-2.5 text-xs focus:outline-none focus:border-orange-500 appearance-none cursor-pointer"
             >
               <option value="ALL">All Species</option>
-              <option value="DOG">Dog 🐶</option>
-              <option value="CAT">Cat 🐱</option>
-              <option value="BIRD">Bird 🦜</option>
-              <option value="RABBIT">Rabbit 🐇</option>
+              <option value="DOG">Dog</option>
+              <option value="CAT">Cat</option>
+              <option value="BIRD">Bird</option>
+              <option value="RABBIT">Rabbit</option>
             </select>
           </div>
         </div>
@@ -236,7 +241,7 @@ export default function CompletedPets() {
                     )}
                   </div>
 
-                  <div className="pt-2 border-t border-slate-100 grid grid-cols-2 gap-2 text-xs">
+                  <div className="pt-2 border-t border-slate-100 grid grid-cols-3 gap-2 text-xs">
                     <button
                       onClick={() => setSelectedCase(item)}
                       className="w-full bg-slate-900 hover:bg-slate-800 text-white py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer"
@@ -249,6 +254,7 @@ export default function CompletedPets() {
                     >
                       <Download className="w-3.5 h-3.5" /> Download
                     </button>
+                    <button onClick={() => handleDelete(item)} className="grid place-items-center rounded-xl border border-rose-200 bg-rose-50 text-rose-600 transition hover:bg-rose-100" title="Delete visit"><Trash2 className="size-4" /></button>
                   </div>
                 </div>
               );
@@ -302,14 +308,14 @@ export default function CompletedPets() {
                 <span>📊 1. Clinical Vitals</span>
               </h4>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-slate-700 font-medium">
-                <div>Temp: <span className="font-bold">{activeCase.vitals.bodyTemperature || activeCase.vitals.temperature || "N/A"} °F</span></div>
-                <div>Weight: <span className="font-bold">{activeCase.vitals.bodyWeight || activeCase.vitals.weight || "N/A"} kg</span></div>
-                <div>Heart Rate: <span className="font-bold">{activeCase.vitals.heartRate || activeCase.vitals.pulseRate || "N/A"} bpm</span></div>
+                <div>Temp: <span className="font-bold">{activeCase.vitals.bodyTemperature || activeCase.vitals.temperature ? `${activeCase.vitals.bodyTemperature || activeCase.vitals.temperature} °F` : "N/A"}</span></div>
+                <div>Weight: <span className="font-bold">{activeCase.vitals.bodyWeight || activeCase.vitals.weight ? `${activeCase.vitals.bodyWeight || activeCase.vitals.weight} kg` : "N/A"}</span></div>
+                <div>Heart Rate: <span className="font-bold">{activeCase.vitals.heartRate || activeCase.vitals.pulseRate ? `${activeCase.vitals.heartRate || activeCase.vitals.pulseRate} bpm` : "N/A"}</span></div>
                 <div>Resp Rate: <span className="font-bold">{activeCase.vitals.respiratoryRate || "N/A"}</span></div>
                 <div>BP: <span className="font-bold">{activeCase.vitals.bloodPressure || "N/A"}</span></div>
-                <div>SpO2: <span className="font-bold">{activeCase.vitals.spo2 !== undefined && activeCase.vitals.spo2 !== "" ? `${activeCase.vitals.spo2}%` : "N/A"}</span></div>
+                <div>SpO2: <span className="font-bold">{activeCase.vitals.spo2 !== undefined && activeCase.vitals.spo2 !== null && activeCase.vitals.spo2 !== "" ? `${activeCase.vitals.spo2}%` : "N/A"}</span></div>
                 <div>BCS: <span className="font-bold">{activeCase.vitals.bcs ? `${activeCase.vitals.bcs}/5` : "N/A"}</span></div>
-                <div>Recorded By: <span className="font-bold">{activeCase.vitals.recordedBy || "Duty Staff"}</span></div>
+                <div>Recorded By: <span className="font-bold">{activeCase.vitals.recordedBy || "N/A"}</span></div>
               </div>
             </div>
 
@@ -324,20 +330,22 @@ export default function CompletedPets() {
                 <div>Water Intake: <span className="font-bold">{activeCase.history.waterIntake || "N/A"}</span></div>
                 <div>Behavioral Habits: <span className="font-bold">{activeCase.history.behaviour || "N/A"}</span></div>
                 <div>Exercise Level: <span className="font-bold">{activeCase.history.exercise || "N/A"}</span></div>
-                <div>Vaccinations Verified: <span className="font-bold text-emerald-700">{activeCase.history.vaccinationStatus || "Verified"}</span></div>
-                <div className="sm:col-span-2">Allergies Verified: <span className="font-bold text-rose-700">{activeCase.history.allergies || "No Known Allergies"}</span></div>
+                <div>Vaccinations Status: <span className="font-bold">{activeCase.history.vaccinationStatus || "N/A"}</span></div>
+                <div className="sm:col-span-2">Allergies: <span className="font-bold">{activeCase.history.allergies || "N/A"}</span></div>
               </div>
 
-              {Array.isArray(activeCase.history.medicationsConfirmed) && activeCase.history.medicationsConfirmed.length > 0 && (
-                <div className="mt-2 pt-2 border-t border-slate-200 space-y-1">
-                  <p className="font-bold text-slate-700">Confirmed Medications History:</p>
-                  {activeCase.history.medicationsConfirmed.map((m, idx) => (
+              <div className="mt-2 pt-2 border-t border-slate-200 space-y-1">
+                <p className="font-bold text-slate-700">Confirmed Medications History:</p>
+                {Array.isArray(activeCase.history.medicationsConfirmed) && activeCase.history.medicationsConfirmed.length > 0 ? (
+                  activeCase.history.medicationsConfirmed.map((m, idx) => (
                     <div key={idx} className="bg-white p-2 rounded-xl border border-slate-200 text-slate-600">
-                      • <span className="font-bold text-slate-800">{m.drug}</span> | Dose: {m.dose || 'N/A'} | Freq: {m.frequency || 'N/A'} | Since: {m.since || 'N/A'}
+                      • <span className="font-bold text-slate-800">{m.drug || 'N/A'}</span> | Dose: {m.dose || 'N/A'} | Freq: {m.frequency || 'N/A'} | Since: {m.since || 'N/A'}
                     </div>
-                  ))}
-                </div>
-              )}
+                  ))
+                ) : (
+                  <p className="text-slate-500 italic">N/A</p>
+                )}
+              </div>
             </div>
 
             {/* 3. Clinical Observations */}
@@ -346,30 +354,70 @@ export default function CompletedPets() {
                 🔬 3. Clinical Observations
               </h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-slate-700">
-                <div>Cardiovascular: <span className="font-bold">{activeCase.clinicalObservation.cardiovascular || "Normal"}</span></div>
-                <div>Respiratory: <span className="font-bold">{activeCase.clinicalObservation.respiratory || "Normal"}</span></div>
-                <div>Digestive: <span className="font-bold">{activeCase.clinicalObservation.digestive || "Normal"}</span></div>
-                <div>Musculoskeletal: <span className="font-bold">{activeCase.clinicalObservation.musculoskeletal || "Normal"}</span></div>
-                <div>Neurological: <span className="font-bold">{activeCase.clinicalObservation.neurological || "Normal"}</span></div>
-                <div>Skin & Coat: <span className="font-bold">{activeCase.clinicalObservation.skin || "Normal"}</span></div>
-                <div>Eyes: <span className="font-bold">{activeCase.clinicalObservation.eyes || "Normal"}</span></div>
-                <div>Ears: <span className="font-bold">{activeCase.clinicalObservation.ears || "Normal"}</span></div>
+                <div>Cardiovascular: <span className="font-bold">{activeCase.clinicalObservation.cardiovascular || "N/A"}</span></div>
+                <div>Respiratory: <span className="font-bold">{activeCase.clinicalObservation.respiratory || "N/A"}</span></div>
+                <div>Digestive: <span className="font-bold">{activeCase.clinicalObservation.digestive || "N/A"}</span></div>
+                <div>Musculoskeletal: <span className="font-bold">{activeCase.clinicalObservation.musculoskeletal || "N/A"}</span></div>
+                <div>Neurological: <span className="font-bold">{activeCase.clinicalObservation.neurological || "N/A"}</span></div>
+                <div>Urogenital: <span className="font-bold">{activeCase.clinicalObservation.urogenital || "N/A"}</span></div>
+                <div>Skin & Coat: <span className="font-bold">{activeCase.clinicalObservation.skin || "N/A"}</span></div>
+                <div>Eyes: <span className="font-bold">{activeCase.clinicalObservation.eyes || "N/A"}</span></div>
+                <div>Ears: <span className="font-bold">{activeCase.clinicalObservation.ears || "N/A"}</span></div>
+                <div>Lymph Nodes: <span className="font-bold">{activeCase.clinicalObservation.lymphNodes || "N/A"}</span></div>
               </div>
-              {activeCase.clinicalObservation.doctorNotes && (
-                <p className="pt-1"><span className="font-bold text-slate-800">Doctor Notes:</span> {activeCase.clinicalObservation.doctorNotes}</p>
-              )}
+              <p className="pt-1"><span className="font-bold text-slate-800">Doctor Notes:</span> {activeCase.clinicalObservation.doctorNotes || "N/A"}</p>
             </div>
 
-            {/* 4. Diagnosis */}
-            <div className="p-4 bg-emerald-50/60 rounded-2xl border border-emerald-200 space-y-2 text-xs">
+            {/* 4. Diagnosis & Lab Requisition */}
+            <div className="p-4 bg-emerald-50/60 rounded-2xl border border-emerald-200 space-y-3 text-xs">
               <h4 className="font-bold text-emerald-900 uppercase tracking-wider text-xs">
-                🔍 4. Diagnosis & Assessment
+                🔍 4. Diagnosis & Lab Diagnostics
               </h4>
               <div className="space-y-1">
-                <p><span className="font-bold text-slate-800">Confirmed Diagnosis:</span> <span className="font-bold text-emerald-800">{activeCase.diagnosis.confirmedDiagnosis || activeCase.diagnosis.provisionalDiagnosis || "Wellness Check"}</span></p>
-                {activeCase.diagnosis.provisionalDiagnosis && <p><span className="font-bold text-slate-700">Provisional Diagnosis:</span> {activeCase.diagnosis.provisionalDiagnosis}</p>}
-                {activeCase.diagnosis.differentialDiagnosis && <p><span className="font-bold text-slate-700">Differential Diagnosis:</span> {activeCase.diagnosis.differentialDiagnosis}</p>}
+                <p><span className="font-bold text-slate-800">Confirmed Diagnosis:</span> <span className="font-bold text-emerald-800">{activeCase.diagnosis.confirmedDiagnosis || "N/A"}</span></p>
+                <p><span className="font-bold text-slate-700">Provisional Diagnosis:</span> {activeCase.diagnosis.provisionalDiagnosis || "N/A"}</p>
+                <p><span className="font-bold text-slate-700">Differential Diagnosis:</span> {activeCase.diagnosis.differentialDiagnosis || "N/A"}</p>
+                <p>
+                  <span className="font-bold text-slate-700">Lab Requisition Tests:</span>{" "}
+                  {Array.isArray(activeCase.labRequisition.tests) && activeCase.labRequisition.tests.length > 0
+                    ? activeCase.labRequisition.tests.map(t => typeof t === "string" ? t : (t.testName || t.name || "")).filter(Boolean).join(", ")
+                    : (activeCase.labRequisition.tests || "N/A")}
+                </p>
+                <p>
+                  <span className="font-bold text-slate-700">Lab Requisition Sample Type:</span>{" "}
+                  {Array.isArray(activeCase.labRequisition.sampleType) && activeCase.labRequisition.sampleType.length > 0
+                    ? activeCase.labRequisition.sampleType.map(s => typeof s === "string" ? s : (s.name || s.label || "")).filter(Boolean).join(", ")
+                    : (activeCase.labRequisition.sampleType || "N/A")}
+                </p>
               </div>
+
+              {/* Uploaded Lab Reports Sub-card */}
+              {(activeCase.labReport?.reports || activeCase.consultationDetails?.labReport?.reports) && (
+                <div className="pt-2 border-t border-emerald-200 space-y-2">
+                  <p className="font-extrabold text-slate-800 uppercase text-[10px]">Uploaded Diagnostic Report PDFs:</p>
+                  <div className="space-y-2">
+                    {(activeCase.labReport?.reports || activeCase.consultationDetails?.labReport?.reports).map((r, idx) => (
+                      <div key={idx} className="bg-white p-3 rounded-xl border border-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-slate-700">
+                        <div>
+                          <p className="font-bold text-orange-600">{r.testName || `Lab Report #${idx + 1}`}</p>
+                          <p className="text-[11px] text-slate-400">File: {r.fileName || "Uploaded PDF Document"}</p>
+                        </div>
+                        {r.fileUrl && (
+                          <a
+                            href={r.fileUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            download={`${r.fileName || r.testName || "Lab_Report"}.pdf`}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs transition cursor-pointer shrink-0 border-none"
+                          >
+                            <span>📄</span> View / Download PDF
+                          </a>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* 5. Treatment & Prescription */}
@@ -379,112 +427,103 @@ export default function CompletedPets() {
               </h4>
 
               {/* Medications Prescribed Multi-row */}
-              {Array.isArray(activeCase.treatment.medicationsList) && activeCase.treatment.medicationsList.length > 0 ? (
-                <div className="space-y-1.5">
-                  <p className="font-bold text-slate-700">Medications Prescribed:</p>
+              <div className="space-y-1.5">
+                <p className="font-bold text-slate-700">Medications Prescribed:</p>
+                {Array.isArray(activeCase.treatment.medicationsList) && activeCase.treatment.medicationsList.length > 0 ? (
                   <div className="grid gap-2">
                     {activeCase.treatment.medicationsList.map((m, idx) => (
                       <div key={idx} className="bg-white p-2.5 rounded-xl border border-slate-200 grid grid-cols-2 sm:grid-cols-6 gap-2 text-slate-700 font-medium">
-                        <div><span className="text-[10px] text-slate-400 block font-bold">DRUG</span>{m.drugName}</div>
-                        <div><span className="text-[10px] text-slate-400 block font-bold">DOSE</span>{m.dose || '-'}</div>
-                        <div><span className="text-[10px] text-slate-400 block font-bold">ROUTE</span>{m.route || '-'}</div>
-                        <div><span className="text-[10px] text-slate-400 block font-bold">FREQ</span>{m.frequency || '-'}</div>
-                        <div><span className="text-[10px] text-slate-400 block font-bold">DURATION</span>{m.duration || '-'}</div>
-                        <div><span className="text-[10px] text-slate-400 block font-bold">INSTRUCTION</span>{m.instruction || '-'}</div>
+                        <div><span className="text-[10px] text-slate-400 block font-bold">DRUG</span>{m.drugName || 'N/A'}</div>
+                        <div><span className="text-[10px] text-slate-400 block font-bold">DOSE</span>{m.dose || 'N/A'}</div>
+                        <div><span className="text-[10px] text-slate-400 block font-bold">ROUTE</span>{m.route || 'N/A'}</div>
+                        <div><span className="text-[10px] text-slate-400 block font-bold">FREQ</span>{m.frequency || 'N/A'}</div>
+                        <div><span className="text-[10px] text-slate-400 block font-bold">DURATION</span>{m.duration || 'N/A'}</div>
+                        <div><span className="text-[10px] text-slate-400 block font-bold">INSTRUCTION</span>{m.instruction || 'N/A'}</div>
                       </div>
                     ))}
                   </div>
-                </div>
-              ) : activeCase.treatment.medicines ? (
-                <div>
-                  <p className="font-bold text-slate-700">Medications Prescribed:</p>
+                ) : activeCase.treatment.medicines ? (
                   <p className="text-slate-600 bg-white p-2.5 rounded-xl border border-slate-200 whitespace-pre-wrap">{activeCase.treatment.medicines}</p>
-                </div>
-              ) : (
-                <p className="text-slate-500 italic">No oral/topical medications prescribed.</p>
-              )}
+                ) : (
+                  <p className="text-slate-500 italic">N/A</p>
+                )}
+              </div>
 
               {/* In Clinic Procedures Multi-row */}
-              {Array.isArray(activeCase.treatment.proceduresList) && activeCase.treatment.proceduresList.length > 0 ? (
-                <div className="space-y-1.5 pt-2">
-                  <p className="font-bold text-slate-700">In Clinic Procedures Done:</p>
+              <div className="space-y-1.5 pt-2">
+                <p className="font-bold text-slate-700">In Clinic Procedures Done:</p>
+                {Array.isArray(activeCase.treatment.proceduresList) && activeCase.treatment.proceduresList.length > 0 ? (
                   <div className="grid gap-2">
                     {activeCase.treatment.proceduresList.map((p, idx) => (
                       <div key={idx} className="bg-white p-2.5 rounded-xl border border-slate-200 grid grid-cols-3 gap-2 text-slate-700 font-medium">
-                        <div><span className="text-[10px] text-slate-400 block font-bold">PROCEDURE</span>{p.procedure}</div>
-                        <div><span className="text-[10px] text-slate-400 block font-bold">DESCRIPTION</span>{p.description || '-'}</div>
-                        <div><span className="text-[10px] text-slate-400 block font-bold">OUTCOME</span>{p.outcome || '-'}</div>
+                        <div><span className="text-[10px] text-slate-400 block font-bold">PROCEDURE</span>{p.procedure || 'N/A'}</div>
+                        <div><span className="text-[10px] text-slate-400 block font-bold">DESCRIPTION</span>{p.description || 'N/A'}</div>
+                        <div><span className="text-[10px] text-slate-400 block font-bold">OUTCOME</span>{p.outcome || 'N/A'}</div>
                       </div>
                     ))}
                   </div>
-                </div>
-              ) : activeCase.treatment.procedures ? (
-                <div className="pt-2">
-                  <p className="font-bold text-slate-700">In Clinic Procedures Done:</p>
+                ) : activeCase.treatment.procedures ? (
                   <p className="text-slate-600 bg-white p-2.5 rounded-xl border border-slate-200">{activeCase.treatment.procedures}</p>
-                </div>
-              ) : null}
+                ) : (
+                  <p className="text-slate-500 italic">N/A</p>
+                )}
+              </div>
 
               {/* Vaccination Administered */}
-              {Array.isArray(activeCase.treatment.vaccinationsList) && activeCase.treatment.vaccinationsList.length > 0 ? (
-                <div className="space-y-1.5 pt-2">
-                  <p className="font-bold text-slate-700">Vaccination Administered:</p>
+              <div className="space-y-1.5 pt-2">
+                <p className="font-bold text-slate-700">Vaccination Administered:</p>
+                {Array.isArray(activeCase.treatment.vaccinationsList) && activeCase.treatment.vaccinationsList.length > 0 ? (
                   <div className="grid gap-2">
                     {activeCase.treatment.vaccinationsList.map((v, idx) => (
                       <div key={idx} className="bg-white p-2.5 rounded-xl border border-slate-200 grid grid-cols-5 gap-2 text-slate-700 font-medium">
-                        <div><span className="text-[10px] text-slate-400 block font-bold">VACCINE</span>{v.vaccine}</div>
-                        <div><span className="text-[10px] text-slate-400 block font-bold">BATCH NO</span>{v.batchNumber || '-'}</div>
-                        <div><span className="text-[10px] text-slate-400 block font-bold">DOSE</span>{v.dose || '-'}</div>
-                        <div><span className="text-[10px] text-slate-400 block font-bold">ROUTE</span>{v.route || '-'}</div>
-                        <div><span className="text-[10px] text-slate-400 block font-bold">NEXT DUE</span>{v.nextDueDate || '-'}</div>
+                        <div><span className="text-[10px] text-slate-400 block font-bold">VACCINE</span>{v.vaccine || 'N/A'}</div>
+                        <div><span className="text-[10px] text-slate-400 block font-bold">BATCH NO</span>{v.batchNumber || 'N/A'}</div>
+                        <div><span className="text-[10px] text-slate-400 block font-bold">DOSE</span>{v.dose || 'N/A'}</div>
+                        <div><span className="text-[10px] text-slate-400 block font-bold">ROUTE</span>{v.route || 'N/A'}</div>
+                        <div><span className="text-[10px] text-slate-400 block font-bold">NEXT DUE</span>{v.nextDueDate || 'N/A'}</div>
                       </div>
                     ))}
                   </div>
-                </div>
-              ) : activeCase.treatment.vaccinations ? (
-                <div className="pt-2">
-                  <p className="font-bold text-slate-700">Vaccination Administered:</p>
+                ) : activeCase.treatment.vaccinations ? (
                   <p className="text-slate-600 bg-white p-2.5 rounded-xl border border-slate-200">{activeCase.treatment.vaccinations}</p>
-                </div>
-              ) : null}
+                ) : (
+                  <p className="text-slate-500 italic">N/A</p>
+                )}
+              </div>
 
               {/* Deworming & Fluids */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-                {activeCase.treatment.hasDeworming && Array.isArray(activeCase.treatment.dewormingList) && activeCase.treatment.dewormingList.length > 0 ? (
-                  <div className="bg-white p-3 rounded-xl border border-slate-200 space-y-1">
-                    <p className="font-bold text-slate-700">🪱 Deworming Administered:</p>
-                    {activeCase.treatment.dewormingList.map((d, idx) => (
-                      <p key={idx} className="text-slate-600">• {d.product} ({d.dose || 'N/A'}) - Date: {d.date || 'N/A'}</p>
-                    ))}
-                  </div>
-                ) : activeCase.treatment.deworming ? (
-                  <div className="bg-white p-3 rounded-xl border border-slate-200 space-y-1">
-                    <p className="font-bold text-slate-700">🪱 Deworming Administered:</p>
+                <div className="bg-white p-3 rounded-xl border border-slate-200 space-y-1">
+                  <p className="font-bold text-slate-700">🪱 Deworming Administered:</p>
+                  {Array.isArray(activeCase.treatment.dewormingList) && activeCase.treatment.dewormingList.length > 0 ? (
+                    activeCase.treatment.dewormingList.map((d, idx) => (
+                      <p key={idx} className="text-slate-600">• {d.product || 'N/A'} (Dose: {d.dose || 'N/A'}, Date: {d.date || 'N/A'})</p>
+                    ))
+                  ) : activeCase.treatment.deworming ? (
                     <p className="text-slate-600">• {activeCase.treatment.deworming}</p>
-                  </div>
-                ) : null}
+                  ) : (
+                    <p className="text-slate-500 italic">N/A</p>
+                  )}
+                </div>
 
-                {activeCase.treatment.hasFluids && Array.isArray(activeCase.treatment.fluidsList) && activeCase.treatment.fluidsList.length > 0 ? (
-                  <div className="bg-white p-3 rounded-xl border border-slate-200 space-y-1">
-                    <p className="font-bold text-slate-700">💧 Fluids / IV Given:</p>
-                    {activeCase.treatment.fluidsList.map((f, idx) => (
-                      <p key={idx} className="text-slate-600">• {f.type} (Vol: {f.volume || 'N/A'}, Rate: {f.rate || 'N/A'})</p>
-                    ))}
-                  </div>
-                ) : activeCase.treatment.fluids ? (
-                  <div className="bg-white p-3 rounded-xl border border-slate-200 space-y-1">
-                    <p className="font-bold text-slate-700">💧 Fluids / IV Given:</p>
+                <div className="bg-white p-3 rounded-xl border border-slate-200 space-y-1">
+                  <p className="font-bold text-slate-700">💧 Fluids / IV Given:</p>
+                  {Array.isArray(activeCase.treatment.fluidsList) && activeCase.treatment.fluidsList.length > 0 ? (
+                    activeCase.treatment.fluidsList.map((f, idx) => (
+                      <p key={idx} className="text-slate-600">• {f.type || 'N/A'} (Vol: {f.volume || 'N/A'}, Rate: {f.rate || 'N/A'})</p>
+                    ))
+                  ) : activeCase.treatment.fluids ? (
                     <p className="text-slate-600">• {activeCase.treatment.fluids}</p>
-                  </div>
-                ) : null}
+                  ) : (
+                    <p className="text-slate-500 italic">N/A</p>
+                  )}
+                </div>
               </div>
 
-              {activeCase.treatment.treatmentNotes && (
-                <div className="pt-2">
-                  <p className="font-bold text-slate-700">Treatment Notes:</p>
-                  <p className="text-slate-600 bg-white p-2.5 rounded-xl border border-slate-200">{activeCase.treatment.treatmentNotes}</p>
-                </div>
-              )}
+              <div className="pt-2">
+                <p className="font-bold text-slate-700">Treatment Notes:</p>
+                <p className="text-slate-600 bg-white p-2.5 rounded-xl border border-slate-200">{activeCase.treatment.treatmentNotes || "N/A"}</p>
+              </div>
             </div>
 
             {/* 6. Suggestions & Discharge Advice */}
@@ -493,15 +532,13 @@ export default function CompletedPets() {
                 📋 6. Discharge Advice & Follow-Up
               </h4>
               <div className="space-y-1 text-slate-700">
-                <p><span className="font-bold text-slate-800">Prognosis:</span> {activeCase.suggestion.prognosis || "Good"}</p>
-                {activeCase.suggestion.dietAdvice && <p><span className="font-bold text-slate-800">Dietary Advice:</span> {activeCase.suggestion.dietAdvice}</p>}
-                {activeCase.suggestion.activityRestriction && <p><span className="font-bold text-slate-800">Activity Restriction:</span> {activeCase.suggestion.activityRestriction}</p>}
-                {activeCase.suggestion.homeCare && <p><span className="font-bold text-slate-800">Home Care:</span> {activeCase.suggestion.homeCare}</p>}
-                {activeCase.suggestion.preventiveCare && <p><span className="font-bold text-slate-800">Preventive Care:</span> {activeCase.suggestion.preventiveCare}</p>}
-                {(activeCase.suggestion.followUpDate || activeCase.treatment?.followUp) && (
-                  <p><span className="font-bold text-slate-800">Follow-Up Required / Date:</span> {activeCase.suggestion.followUpDate || activeCase.treatment?.followUp}</p>
-                )}
-                {activeCase.suggestion.finalNotes && <p><span className="font-bold text-slate-800">Final Notes:</span> {activeCase.suggestion.finalNotes}</p>}
+                <p><span className="font-bold text-slate-800">Prognosis:</span> {activeCase.suggestion.prognosis || "N/A"}</p>
+                <p><span className="font-bold text-slate-800">Dietary Advice:</span> {activeCase.suggestion.dietAdvice || "N/A"}</p>
+                <p><span className="font-bold text-slate-800">Activity Restriction:</span> {activeCase.suggestion.activityRestriction || "N/A"}</p>
+                <p><span className="font-bold text-slate-800">Home Care:</span> {activeCase.suggestion.homeCare || "N/A"}</p>
+                <p><span className="font-bold text-slate-800">Preventive Care:</span> {activeCase.suggestion.preventiveCare || "N/A"}</p>
+                <p><span className="font-bold text-slate-800">Follow-Up Required / Date:</span> {activeCase.suggestion.followUpDate || activeCase.treatment?.followUp || "N/A"}</p>
+                <p><span className="font-bold text-slate-800">Final Notes:</span> {activeCase.suggestion.finalNotes || "N/A"}</p>
               </div>
             </div>
 

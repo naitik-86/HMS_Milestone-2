@@ -22,17 +22,22 @@ router.get(
 
 router.post(
     "/",
+    authorize("CLINIC_ADMIN"),
     upload.single("profilePhoto"),
     staffController.createStaff
 );
 
-router.get("/", staffController.getAllStaff);
+router.get("/managers", authorize("CLINIC_ADMIN"), staffController.getManagers);
+router.get("/contact-availability", authorize("CLINIC_ADMIN"), staffController.checkStaffContactAvailability);
+router.get("/:id", authorize("CLINIC_ADMIN"), staffController.getStaffById);
 
-router.get("/managers", staffController.getManagers);
-router.get("/:id", staffController.getStaffById);
+router.put(
+    "/:id",
+    authorize("CLINIC_ADMIN"),
+    upload.single("profilePhoto"),
+    staffController.updateStaff
+);
 
-router.put("/:id", upload.single("profilePhoto"), staffController.updateStaff);
-
-router.delete("/:id", staffController.deleteStaff);
+router.delete("/:id", authorize("CLINIC_ADMIN"), staffController.deleteStaff);
 
 module.exports = router;

@@ -12,6 +12,11 @@ const DASHBOARD_PATHS = {
   PRE_CONSULTATION_STAFF: "/clinic/preconsultation",
   PARA_MEDICAL: "/clinic/preconsultation",
   LAB_TECHNICIAN: "/clinic/lab",
+  GROOMER: "/coming-soon",
+  KENNEL: "/coming-soon",
+  KENNEL_STAFF: "/coming-soon",
+  PHARMACIST: "/coming-soon",
+  PHARMACY: "/coming-soon",
   OWNER: "/clinic/owner",
 };
 

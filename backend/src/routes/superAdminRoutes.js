@@ -4,12 +4,17 @@ const router = express.Router();
 const { authorize } = require('../middlewares/auth');
 const {
     createClinic,
+    checkClinicContactAvailability,
+    getNextClinicCodePreview,
+    sendClinicAdminOtp,
+    verifyClinicAdminOtp,
     getAllClinics,
     updateClinic, // <--- 1. ADDED IMPORT HERE
     deleteClinic,
     updateSubscription,
     getAdminDashboard,
     updateClinicVerification,
+    updateClinicActivity,
     uploadClinicDocuments,
     getVeterinarians,
     deleteVeterinarian,
@@ -25,10 +30,15 @@ const {
 } = require('../controllers/subscriptionPlanController');
 
 const upload = require('../middlewares/upload');
+const uploadClinicDocumentsToCloudinary = require('../middlewares/uploadClinicDocuments');
 
 router.use(authorize('SUPER_ADMIN'));
 
 router.post('/clinics', createClinic);
+router.get('/clinics/contact-availability', checkClinicContactAvailability);
+router.get('/clinics/next-code', getNextClinicCodePreview);
+router.post('/clinics/admin-otp/send', sendClinicAdminOtp);
+router.post('/clinics/admin-otp/verify', verifyClinicAdminOtp);
 router.get('/clinics', getAllClinics);
 router.put('/clinics/:id', updateClinic); // <--- 2. ADDED ROUTE HERE
 router.delete('/clinics/:id', deleteClinic);
@@ -63,10 +73,11 @@ router.put('/plans/:id', updatePlan);
 router.delete('/plans/:id', deletePlan);
 
 router.put('/clinics/:id/verification', updateClinicVerification);
+router.put('/clinics/:id/activity', updateClinicActivity);
 
 router.post(
     '/clinics/:id/documents',
-    upload.fields([
+    uploadClinicDocumentsToCloudinary.fields([
         { name: 'clinicLogo', maxCount: 1 },
         { name: 'vetCouncilCertificate', maxCount: 1 },
         { name: 'tradeLicense', maxCount: 1 },

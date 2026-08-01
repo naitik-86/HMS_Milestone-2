@@ -30,7 +30,7 @@ function ReportList({ category, catalog, catalogLoading = false }) {
     return (
         <div className="space-y-4">
             {catalogLoading ? (
-                <div className="rounded-2xl border border-orange-100 bg-orange-50 px-4 py-3 text-sm text-orange-700">
+                <div className="rounded-2xl border border-[#F7931E]/20 bg-[#FFF4E5] px-4 py-3 text-xs font-bold text-[#F7931E]">
                     Loading backend report data...
                 </div>
             ) : null}
@@ -41,6 +41,7 @@ function ReportList({ category, catalog, catalogLoading = false }) {
                     className="
                         bg-white
                         border
+                        border-gray-100
                         rounded-2xl
                         p-4 md:p-5
                         flex
@@ -49,26 +50,28 @@ function ReportList({ category, catalog, catalogLoading = false }) {
                         sm:items-center
                         sm:justify-between
                         gap-4
+                        shadow-xs
                         hover:shadow-md
-                        hover:border-orange-200
+                        hover:border-[#F7931E]/40
                         transition-all
+                        duration-200
                     "
                 >
                     {/* Left */}
-                    <div className="flex items-center gap-3 min-w-0 flex-1">
-                        <div className="w-11 h-11 rounded-xl bg-orange-100 flex items-center justify-center shrink-0">
+                    <div className="flex items-center gap-3.5 min-w-0 flex-1">
+                        <div className="w-11 h-11 rounded-2xl bg-[#FFF4E5] flex items-center justify-center shrink-0">
                             <FileText
                                 size={20}
-                                className="text-orange-500"
+                                className="text-[#F7931E]"
                             />
                         </div>
 
                         <div className="min-w-0">
-                            <h3 className="font-medium text-sm md:text-base text-slate-800 break-words">
+                            <h3 className="font-bold text-sm md:text-base text-[#0C3D2E] break-words tracking-tight">
                                 {report.title}
                             </h3>
 
-                            <p className="text-xs text-slate-500 mt-1">
+                            <p className="text-xs font-medium text-gray-400 mt-0.5">
                                 Download a backend-backed PDF report
                             </p>
                         </div>
@@ -86,21 +89,24 @@ function ReportList({ category, catalog, catalogLoading = false }) {
                             items-center
                             justify-center
                             gap-2
-                            bg-orange-500
-                            hover:bg-orange-600
+                            bg-[#F7931E]
+                            hover:bg-[#e08319]
                             text-white
                             px-5
                             py-2.5
                             rounded-xl
-                            text-sm
-                            font-medium
-                            transition
+                            text-xs
+                            font-bold
+                            transition-all
+                            duration-200
+                            shadow-xs
                             shrink-0
-                            disabled:opacity-70
+                            cursor-pointer
+                            disabled:opacity-60
                             disabled:cursor-not-allowed
                         "
-                        >
-                        <Download size={16} />
+                    >
+                        <Download size={15} />
                         {downloadingReport === report.key ? "Preparing..." : "Export PDF"}
                     </button>
                 </div>

@@ -1,294 +1,32 @@
-import { useState, useEffect } from "react";
-import { NavLink, useNavigate, useLocation } from "react-router-dom";
-import {
-  CheckCircle2,
-  Clock3,
-  LayoutDashboard,
-  History,
-  LogOut,
-  Menu,
-  Stethoscope,
-  X,
-  ChevronLeft,
-  ChevronRight,
-  Clock,
-  User,
-  Activity
-} from "lucide-react";
-import { getPendingPets } from "../../../api/doctorModuleApi";
+import { useState } from "react";
+import { NavLink, useNavigate } from "react-router-dom";
+import { CheckCircle2, Clock3, History, LayoutDashboard, LogOut, Mail, Menu, ShieldCheck, User, X } from "lucide-react";
+import { getSessionProfile } from "../../../../../shared/utils/sessionProfile";
 
-export default function DoctorSidebar({ isCollapsed = false, toggleCollapse }) {
+const menuItems = [
+  { name: "Dashboard", path: "", icon: LayoutDashboard, end: true },
+  { name: "Pending Patients", path: "pending", icon: Clock3 },
+  { name: "Completed Cases", path: "completed", icon: CheckCircle2 },
+  { name: "Patient History", path: "history", icon: History },
+];
+
+export default function DoctorSidebar() {
   const [isOpen, setIsOpen] = useState(false);
-  const [doctorStatus, setDoctorStatus] = useState("Online"); // "Online" | "In Consultation" | "Away"
-  const [time, setTime] = useState(new Date());
-  const [pendingCount, setPendingCount] = useState(0);
   const navigate = useNavigate();
-  const location = useLocation();
+  const profile = getSessionProfile("DOCTOR", "Doctor");
 
-  // Update clock every second
-  useEffect(() => {
-    const timer = setInterval(() => setTime(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
+  const logout = () => { localStorage.clear(); sessionStorage.clear(); navigate("/login", { replace: true }); };
 
-  // Fetch pending queue count for sidebar badge widget
-  useEffect(() => {
-    const fetchQueueCount = async () => {
-      try {
-        const res = await getPendingPets();
-        setPendingCount(res?.data?.length || 0);
-      } catch (err) {
-        console.error("Silent error fetching doctor queue count:", err);
-      }
-    };
-    fetchQueueCount();
-    const interval = setInterval(fetchQueueCount, 30000);
-    return () => clearInterval(interval);
-  }, [location.pathname]);
-
-  const menuItems = [
-    { name: "Dashboard", path: "", icon: LayoutDashboard },
-    { name: "Pending Patients", path: "pending", icon: Clock3 },
-    { name: "Completed Cases", path: "completed", icon: CheckCircle2 },
-    { name: "Patient History", path: "history", icon: History },
-  ];
-
-  const handleLogout = () => {
-    localStorage.clear();
-    sessionStorage.clear();
-    setIsOpen(false);
-    navigate("/login", { replace: true });
-  };
-
-  const cycleStatus = () => {
-    if (doctorStatus === "Online") setDoctorStatus("In Consultation");
-    else if (doctorStatus === "In Consultation") setDoctorStatus("Away");
-    else setDoctorStatus("Online");
-  };
-
-  const formattedTime = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-  const formattedDate = time.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
-
-  return (
-    <>
-      {/* MOBILE TOP HEADER BAR */}
-      {!isOpen && (
-        <div className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-[#090d16] border-b border-slate-800/80 z-[999] flex items-center justify-between px-4 shadow-md">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-orange-500 to-amber-500 flex items-center justify-center font-bold text-white text-sm shadow-[0_0_10px_rgba(249,115,22,0.3)]">
-              <Stethoscope className="h-4 w-4 text-white" />
-            </div>
-            <span className="text-white font-bold text-lg tracking-wide">
-              PetVitals <span className="text-orange-400 text-xs font-semibold uppercase px-2 py-0.5 rounded-full bg-orange-500/10 border border-orange-500/20 ml-1">Doctor</span>
-            </span>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => setIsOpen(true)}
-            aria-label="Open doctor menu"
-            className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-800/60 border border-slate-700/50 text-white transition hover:bg-slate-800"
-          >
-            <Menu className="h-5 w-5" />
-          </button>
-        </div>
-      )}
-
-      {/* MOBILE BACKDROP */}
-      {isOpen && (
-        <div
-          onClick={() => setIsOpen(false)}
-          className="lg:hidden fixed inset-0 z-[1000] bg-black/70 backdrop-blur-xs transition-opacity duration-300"
-        />
-      )}
-
-      {/* SIDEBAR MAIN CONTAINER */}
-      <aside
-        className={`
-          fixed top-0 left-0 h-screen bg-[#090d16] text-slate-100 flex flex-col 
-          border-r border-slate-800/60 shadow-2xl z-[1001]
-          transition-all duration-300 ease-in-out
-          ${isOpen ? "translate-x-0" : "-translate-x-full"}
-          lg:translate-x-0
-          ${isCollapsed ? "lg:w-20" : "lg:w-72"}
-        `}
-      >
-        {/* COLLAPSE TOGGLE BUTTON FOR DESKTOP */}
-        {toggleCollapse && (
-          <button
-            onClick={toggleCollapse}
-            className="hidden lg:flex absolute top-8 -right-3 w-6 h-6 rounded-full bg-slate-900 border border-slate-800 hover:border-slate-700 items-center justify-center text-slate-400 hover:text-white cursor-pointer z-50 shadow-md hover:scale-110 transition-all duration-200"
-            aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-          >
-            {isCollapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronLeft className="h-3.5 w-3.5" />}
-          </button>
-        )}
-
-        {/* LOGO AREA */}
-        <div className={`relative p-5 border-b border-slate-900 flex items-center ${isCollapsed ? "justify-center" : "justify-between"}`}>
-          {isOpen && (
-            <button
-              type="button"
-              onClick={() => setIsOpen(false)}
-              className="lg:hidden absolute top-4 right-4 w-9 h-9 rounded-xl bg-slate-800/50 hover:bg-slate-700/50 flex items-center justify-center text-white transition border border-slate-700/50"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          )}
-
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 shrink-0 rounded-xl bg-gradient-to-tr from-orange-500 to-amber-500 flex items-center justify-center font-bold text-white text-base shadow-[0_0_15px_rgba(249,115,22,0.3)]">
-              <Stethoscope className="h-5 w-5 text-white" />
-            </div>
-
-            {!isCollapsed && (
-              <div className="flex flex-col">
-                <span className="font-bold text-lg tracking-wide text-white leading-tight">
-                  PetVitals
-                </span>
-                <span className="text-[10px] font-bold text-orange-400 uppercase tracking-widest leading-none mt-0.5">
-                  Doctor Station
-                </span>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* NAV LINKS */}
-        <div className="flex-1 px-3 py-4 space-y-1.5 overflow-y-auto no-scrollbar">
-          {menuItems.map((item) => {
-            const IconComponent = item.icon;
-
-            return (
-              <NavLink
-                key={item.name}
-                to={item.path}
-                end={item.path === ""}
-                onClick={() => setIsOpen(false)}
-                className={({ isActive }) => `
-                  group relative flex items-center gap-3 px-3.5 py-3 rounded-xl transition-all duration-200
-                  ${isActive
-                    ? "bg-gradient-to-r from-orange-600/20 to-orange-500/10 text-orange-400 font-semibold border-l-2 border-orange-500 shadow-[inset_4px_0_12px_rgba(249,115,22,0.05)]"
-                    : "text-slate-400 hover:text-slate-200 hover:bg-slate-900/50 border-l-2 border-transparent"
-                  }
-                  ${isCollapsed ? "justify-center" : ""}
-                `}
-              >
-                <IconComponent className="h-5 w-5 shrink-0 transition-transform duration-200 group-hover:scale-105" />
-
-                {!isCollapsed && (
-                  <span className="text-sm font-medium tracking-wide">
-                    {item.name}
-                  </span>
-                )}
-
-                {/* Collapsed Tooltip */}
-                {isCollapsed && (
-                  <div className="absolute left-full ml-3 px-3 py-1.5 bg-slate-950 text-white text-xs font-semibold rounded-lg shadow-xl border border-slate-800 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50 pointer-events-none">
-                    {item.name}
-                  </div>
-                )}
-              </NavLink>
-            );
-          })}
-
-          {/* DYNAMIC TIME WIDGET */}
-          {!isCollapsed && (
-            <div className="mt-8 mx-2 p-3.5 rounded-2xl bg-slate-950/40 border border-slate-900/60 flex flex-col gap-2">
-              <div className="flex items-center gap-2 text-slate-400 text-xs font-medium">
-                <Clock className="h-3.5 w-3.5 text-orange-500 animate-pulse" />
-                <span>Clinical Clock</span>
-              </div>
-              <div className="text-white text-lg font-bold font-mono tracking-wider leading-none">
-                {formattedTime}
-              </div>
-              <div className="text-slate-500 text-[11px] font-medium">
-                <span>{formattedDate}</span>
-              </div>
-            </div>
-          )}
-
-          {/* LIVE WAITING PATIENTS WIDGET */}
-          {!isCollapsed && (
-            <div className="mx-2 mt-4 p-3.5 rounded-2xl bg-slate-950/40 border border-slate-900/60 space-y-2">
-              <div className="flex items-center justify-between text-slate-400 text-xs font-semibold">
-                <div className="flex items-center gap-1.5">
-                  <Activity className="h-3.5 w-3.5 text-orange-400" />
-                  <span>Waiting Patients</span>
-                </div>
-                <span className="flex h-2 w-2 relative">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-orange-500"></span>
-                </span>
-              </div>
-
-              <div className="bg-slate-900/40 p-2.5 rounded-xl border border-slate-900 flex items-center justify-between">
-                <span className="text-xs text-slate-400 font-medium">Pre-consulted:</span>
-                <span className="text-base font-extrabold text-orange-400 font-mono">{pendingCount}</span>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* BOTTOM USER PROFILE & LOGOUT */}
-        <div className="p-3 border-t border-slate-900 space-y-3 bg-[#070a11]">
-          <div className={`
-            flex items-center gap-3 rounded-xl transition-all duration-200
-            ${isCollapsed ? "justify-center" : "bg-slate-900/30 border border-slate-900/80 p-2.5"}
-          `}>
-            <div className="relative shrink-0">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-slate-700 to-slate-600 flex items-center justify-center font-bold text-white text-sm border border-slate-700">
-                <User className="h-5 w-5 text-slate-300" />
-              </div>
-              <span className={`
-                absolute -bottom-1 -right-1 flex h-3 w-3 rounded-full border-2 border-[#090d16]
-                ${doctorStatus === "Online" ? "bg-emerald-500" : doctorStatus === "In Consultation" ? "bg-blue-500" : "bg-amber-500"}
-              `}>
-                <span className={`
-                  animate-ping absolute inline-flex h-full w-full rounded-full opacity-75
-                  ${doctorStatus === "Online" ? "bg-emerald-400" : doctorStatus === "In Consultation" ? "bg-blue-400" : "bg-amber-400"}
-                `}></span>
-              </span>
-            </div>
-
-            {!isCollapsed && (
-              <div className="flex-1 min-w-0">
-                <h4 className="font-semibold text-sm text-slate-100 truncate">
-                  Doctor Staff
-                </h4>
-                <button
-                  onClick={cycleStatus}
-                  className="flex items-center gap-1 mt-0.5 text-[10px] font-bold tracking-wide uppercase text-left hover:text-slate-100 transition-colors"
-                >
-                  <span className={doctorStatus === "Online" ? "text-emerald-400" : doctorStatus === "In Consultation" ? "text-blue-400" : "text-amber-400"}>
-                    {doctorStatus}
-                  </span>
-                  <span className="text-slate-500">• Switch</span>
-                </button>
-              </div>
-            )}
-          </div>
-
-          <button
-            type="button"
-            onClick={handleLogout}
-            className={`
-              group flex items-center gap-3 w-full rounded-xl py-3 px-3.5 text-sm font-semibold
-              text-red-400/90 transition-all duration-200 hover:text-red-400
-              hover:bg-red-500/10 active:bg-red-500/20 border border-transparent hover:border-red-500/20
-              ${isCollapsed ? "justify-center" : ""}
-            `}
-          >
-            <LogOut className="h-5 w-5 shrink-0 transition-transform duration-200 group-hover:-translate-x-0.5" />
-
-            {!isCollapsed && (
-              <span className="tracking-wide">
-                Logout Doctor
-              </span>
-            )}
-          </button>
-        </div>
-      </aside>
-    </>
-  );
+  return <>
+    <div className="fixed inset-x-0 top-0 z-[999] flex h-16 items-center justify-between border-b border-white/10 bg-[#0C3D2E] px-4 md:hidden">
+      <div className="flex items-center gap-2"><ShieldCheck size={22} className="text-[#F7931E]" /><span className="text-lg font-bold text-white">Care<span className="text-[#F7931E]">Desk</span></span></div>
+      <button onClick={() => setIsOpen(true)} className="grid size-10 place-items-center rounded-xl bg-white/10 text-white" aria-label="Open navigation"><Menu size={20} /></button>
+    </div>
+    {isOpen && <button aria-label="Close navigation" onClick={() => setIsOpen(false)} className="fixed inset-0 z-[1000] bg-black/50 md:hidden" />}
+    <aside className={`fixed inset-y-0 left-0 z-[1001] flex h-screen w-[260px] flex-col bg-[#0C3D2E] text-white shadow-xl transition-transform duration-300 ${isOpen ? "translate-x-0" : "-translate-x-full"} md:translate-x-0`}>
+      <div className="flex h-[122px] items-center justify-between px-5"><div className="flex items-center gap-3"><ShieldCheck size={25} className="text-[#F7931E]" /><div><p className="text-lg font-bold">Care<span className="text-[#F7931E]">Desk</span></p><p className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/45">Doctor station</p></div></div>{isOpen && <button onClick={() => setIsOpen(false)} className="grid size-9 place-items-center rounded-lg bg-white/10 md:hidden" aria-label="Close navigation"><X size={17} /></button>}</div>
+      <nav className="flex-1 px-4 py-4"><p className="mb-3 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-white/35">Consultation</p><div className="space-y-1.5">{menuItems.map(({ name, path, icon: Icon, end }) => <NavLink key={name} to={path} end={end} onClick={() => setIsOpen(false)} className={({ isActive }) => `flex items-center gap-3 rounded-xl px-4 py-3 text-xs font-bold transition ${isActive ? "bg-[#F7931E] text-white shadow-sm" : "text-white/65 hover:bg-white/8 hover:text-white"}`}><Icon size={18} />{name}</NavLink>)}</div></nav>
+      <div className="mx-4 border-t border-white/15" /><div className="p-4"><button onClick={logout} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-xs font-bold text-rose-200 transition hover:bg-rose-400/10"><LogOut size={17} />Logout</button><div className="mt-2 flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 p-3"><span className="grid size-9 place-items-center rounded-full bg-[#F7931E] text-white"><User size={17} /></span><div className="min-w-0"><p className="truncate text-xs font-bold">{profile.name}</p><p className="mt-0.5 flex items-center gap-1 truncate text-[10px] text-white/45"><Mail size={11} />{profile.email}</p></div></div></div>
+    </aside>
+  </>;
 }

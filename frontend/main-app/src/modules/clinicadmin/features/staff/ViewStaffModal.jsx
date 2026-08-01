@@ -223,6 +223,25 @@ export default function ViewStaffModal({
                                 ))}
                         </div>
                     </div>
+                    {/* Uploaded Documents */}
+{staff.personalInfo?.profilePhoto && (
+    <div className="bg-gray-50 rounded-2xl p-6">
+        <h3 className="font-bold text-lg mb-5">
+            Uploaded Documents
+        </h3>
+
+        <div className="flex flex-col gap-2">
+            
+                <a href={staff.personalInfo.profilePhoto}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm font-medium text-[#E8630A] hover:underline"
+            >
+                🖼 View Profile Photo
+            </a>
+        </div>
+    </div>
+)}
 
                     {/* Footer */}
                     <div className="mt-8 border-t border-gray-200 pt-6 flex items-center justify-end gap-4">

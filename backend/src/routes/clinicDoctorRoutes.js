@@ -28,5 +28,7 @@ router.put(
     doctorController.updateDoctor
 );
 router.delete('/:id', doctorController.deleteDoctor);
+router.post('/:id/verify', doctorController.verifyDoctor);
+router.post('/:id/reject', doctorController.rejectDoctor);
 
 module.exports = router;

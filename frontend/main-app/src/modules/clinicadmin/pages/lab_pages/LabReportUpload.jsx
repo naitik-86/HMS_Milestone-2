@@ -10,7 +10,6 @@ import {
   ShieldCheck,
   FileText,
   Clock,
-  User,
   PawPrint,
   Loader2,
 } from "lucide-react";
@@ -44,11 +43,12 @@ export default function LabReports() {
       setReports(reportList);
       setFilteredReports(reportList);
 
+      // FIX Bug 6: use ?? instead of || so 0 values are preserved correctly
       setStats({
-        total: res?.totalReports || reportList.length,
-        today: res?.todayReports || reportList.length,
-        completed: res?.completedReports || reportList.filter((r) => r.status === "Completed").length,
-        critical: res?.criticalReports || reportList.filter((r) => r.status === "Critical").length,
+        total:     res?.totalReports     ?? reportList.length,
+        today:     res?.todayReports     ?? 0,
+        completed: res?.completedReports ?? reportList.filter((r) => r.status === "Completed").length,
+        critical:  res?.criticalReports  ?? reportList.filter((r) => r.status === "Critical").length,
       });
     } catch (err) {
       console.error(err);
@@ -59,7 +59,6 @@ export default function LabReports() {
 
   useEffect(() => {
     const value = search.toLowerCase().trim();
-
     setFilteredReports(
       reports.filter(
         (item) =>
@@ -81,7 +80,8 @@ export default function LabReports() {
   return (
     <div className="min-h-screen bg-slate-100 p-4 sm:p-6 lg:p-8 flex justify-center">
       <div className="w-full max-w-7xl bg-white rounded-3xl shadow-2xl shadow-slate-200/80 border border-slate-200/70 overflow-hidden flex flex-col">
-        {/* Sleek Dark Header Hero Section */}
+
+        {/* Header */}
         <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 p-6 sm:p-8 text-white flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-800">
           <div>
             <div className="flex items-center gap-3">
@@ -102,15 +102,16 @@ export default function LabReports() {
         </div>
 
         <div className="p-6 sm:p-8 space-y-8 flex-1">
+
           {/* Stat Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
-            <StatCard title="Total Lab Reports" value={stats.total} icon={<FlaskConical className="w-6 h-6" />} color="orange" />
-            <StatCard title="Today's Uploads" value={stats.today} icon={<Calendar className="w-6 h-6" />} color="blue" />
-            <StatCard title="Critical Findings" value={stats.critical} icon={<AlertTriangle className="w-6 h-6" />} color="red" />
-            <StatCard title="Completed Tests" value={stats.completed} icon={<CheckCircle2 className="w-6 h-6" />} color="emerald" />
+            <StatCard title="Total Lab Reports"  value={stats.total}     icon={<FlaskConical className="w-6 h-6" />}   color="orange"  />
+            <StatCard title="Today's Uploads"    value={stats.today}     icon={<Calendar className="w-6 h-6" />}       color="blue"    />
+            <StatCard title="Critical Findings"  value={stats.critical}  icon={<AlertTriangle className="w-6 h-6" />}  color="red"     />
+            <StatCard title="Completed Tests"    value={stats.completed} icon={<CheckCircle2 className="w-6 h-6" />}   color="emerald" />
           </div>
 
-          {/* Search Input Bar */}
+          {/* Search */}
           <div className="bg-slate-50 p-4 sm:p-5 rounded-2xl border border-slate-200/80">
             <div className="relative">
               <Search className="w-5 h-5 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
@@ -233,10 +234,10 @@ export default function LabReports() {
 
 function StatCard({ title, value, icon, color }) {
   const styles = {
-    orange: "bg-orange-500/10 text-orange-600 border-orange-200",
+    orange:  "bg-orange-500/10 text-orange-600 border-orange-200",
     emerald: "bg-emerald-500/10 text-emerald-600 border-emerald-200",
-    red: "bg-red-500/10 text-red-600 border-red-200",
-    blue: "bg-blue-500/10 text-blue-600 border-blue-200",
+    red:     "bg-red-500/10 text-red-600 border-red-200",
+    blue:    "bg-blue-500/10 text-blue-600 border-blue-200",
   };
 
   return (

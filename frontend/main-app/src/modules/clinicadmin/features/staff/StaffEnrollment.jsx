@@ -4,6 +4,7 @@ import ViewStaffModal from "./ViewStaffModal";
 import { roles, departments, employmentTypes, staffData } from '../../data/staff';
 import Loader from '../../../../shared/components/Loader';
 import { Eye, Pencil, Trash2 } from "lucide-react";
+import { Plus, Users } from "lucide-react";
 import {
   createStaff,
   updateStaff,
@@ -11,11 +12,19 @@ import {
   getManagers,
   getStaff,
   getStaffById,
+  checkStaffContactAvailability,
 } from '../../api/staffApi';
+import {
+  BANK_OPTIONS,
+  getBankRule,
+  formatAccountLength,
+  getMaxAccountLength,
+} from '../../../../shared/constants/bankAccountRules';
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const phoneRegex = /^\d{10}$/;
 const ifscRegex = /^[A-Z]{4}0[A-Z0-9]{6}$/;
+const upiRegex = /^[\w.-]{2,256}@[a-zA-Z]{2,64}$/;
 const digitsOnly = (value, max = 10) => value.replace(/\D/g, "").slice(0, max);
 const isFutureDate = (value) => value && new Date(value) > new Date();
 const isImageFile = (file) => file?.type?.startsWith("image/");
@@ -26,7 +35,30 @@ function EnrollForm({ onClose, onSave, editData, mode, staff, isSubmitting, }) {
   const isEdit = mode === 'edit';
 
   const isFutureDate = (value) => value && new Date(value) > new Date();
+  
+  const isLessThan15Years = (value) => {
+    if (!value || value.length !== 10) return false;
 
+    const dob = new Date(value);
+
+    if (Number.isNaN(dob.getTime())) return false;
+
+    const today = new Date();
+
+    let age = today.getFullYear() - dob.getFullYear();
+
+    const monthDiff = today.getMonth() - dob.getMonth();
+
+    if (
+      monthDiff < 0 ||
+      (monthDiff === 0 && today.getDate() < dob.getDate())
+    ) {
+      age--;
+    }
+
+    return age < 15;
+  };
+  
   const isPastOrToday = (value) => {
     if (!value) return false;
 
@@ -41,6 +73,8 @@ function EnrollForm({ onClose, onSave, editData, mode, staff, isSubmitting, }) {
 
   const [step, setStep] = useState(1);
   const [managerOptions, setManagerOptions] = useState([]);
+  const [contactErrors, setContactErrors] = useState({ email: '', mobileNumber: '' });
+  const [checkingAvailability, setCheckingAvailability] = useState(false);
   const [form, setForm] = useState({
     fullName: '',
     profilePhoto: null,
@@ -79,7 +113,7 @@ function EnrollForm({ onClose, onSave, editData, mode, staff, isSubmitting, }) {
   });
 
 
-  const validateStep = () => {
+  const validateStep = async () => {
     if (step === 1) {
       const emergencyNumber = form.emergencyContacts[0]?.contactNumber?.trim();
 
@@ -99,8 +133,18 @@ function EnrollForm({ onClose, onSave, editData, mode, staff, isSubmitting, }) {
         return false;
       }
 
+      if (!/^[A-Za-z\s]+$/.test(form.fullName.trim())) {
+        alert("Full name must contain only alphabets and spaces");
+        return false;
+      }
+
       if (isFutureDate(form.dateOfBirth)) {
         alert("Date of birth cannot be a future date");
+        return false;
+      }
+
+      if (isLessThan15Years(form.dateOfBirth)) {
+        alert("Staff member must be at least 15 years old.");
         return false;
       }
 
@@ -114,9 +158,56 @@ function EnrollForm({ onClose, onSave, editData, mode, staff, isSubmitting, }) {
         return false;
       }
 
+      // Re-check availability right now rather than trusting the onBlur
+      // result in state - clicking Next can fire before that async check
+      // resolves, which previously let a duplicate slip through to the
+      // final save instead of being caught here.
+      setCheckingAvailability(true);
+      const [emailError, mobileError] = await Promise.all([
+        checkContact('email'),
+        checkContact('mobileNumber'),
+      ]);
+      setCheckingAvailability(false);
+
+      if (emailError || mobileError) {
+        alert(emailError || mobileError);
+        return false;
+      }
+
+      const emergencyName = form.emergencyContacts[0]?.contactPersonName?.trim();
+      if (emergencyName && emergencyName.length < 3) {
+        alert("Emergency contact person name must be at least 3 characters");
+        return false;
+      }
+
       if (emergencyNumber && !phoneRegex.test(emergencyNumber)) {
         alert("Emergency contact number must be exactly 10 digits");
         return false;
+      }
+
+      if (emergencyNumber && phoneRegex.test(emergencyNumber)) {
+        // Same rule as the staff's own mobile number: must not already
+        // belong to another clinic/staff/user record.
+        if (
+          emergencyNumber === form.mobileNumber.trim() &&
+          !(isEdit && editData?.personalInfo?.mobileNumber?.trim() === emergencyNumber)
+        ) {
+          // Matches the staff member's own number being entered - already
+          // covered by the mobileNumber check above, no separate lookup needed.
+        } else if (
+          isEdit &&
+          editData?.personalInfo?.emergencyContacts?.[0]?.contactNumber?.trim() === emergencyNumber
+        ) {
+          // Unchanged from the saved record - no need to re-check.
+        } else {
+          setCheckingAvailability(true);
+          const result = await checkStaffContactAvailability({ mobileNumber: emergencyNumber });
+          setCheckingAvailability(false);
+          if (!result.available) {
+            alert(result.message || "This phone number is already being used.");
+            return false;
+          }
+        }
       }
     }
 
@@ -127,11 +218,6 @@ function EnrollForm({ onClose, onSave, editData, mode, staff, isSubmitting, }) {
         !form.dateOfJoining
       ) {
         alert("Please fill all required fields in Work & Access");
-        return false;
-      }
-
-      if (isFutureDate(form.dateOfJoining)) {
-        alert("Date of joining cannot be a future date");
         return false;
       }
     }
@@ -152,26 +238,56 @@ function EnrollForm({ onClose, onSave, editData, mode, staff, isSubmitting, }) {
         return false;
       }
 
-      if (!/^\d{9,18}$/.test(form.accountNumber.trim())) {
-        alert("Account number must be 9 to 18 digits");
+      if (form.accountHolderName.trim().length < 3) {
+        alert("Account holder name must be at least 3 characters.");
         return false;
       }
 
-      if (!ifscRegex.test(form.ifscCode.trim().toUpperCase())) {
+      const bankRule = getBankRule(form.bankName);
+      const accountNumber = form.accountNumber.trim();
+
+      if (bankRule?.accountLengths) {
+        if (!bankRule.accountLengths.includes(accountNumber.length)) {
+          alert(`Account number for ${form.bankName} must be ${formatAccountLength(bankRule)}.`);
+          return false;
+        }
+      } else if (
+        accountNumber.length < (bankRule?.minAccountLength || 9) ||
+        accountNumber.length > (bankRule?.maxAccountLength || 18)
+      ) {
+        alert(`Account number must be ${formatAccountLength(bankRule)}.`);
+        return false;
+      }
+
+      const ifscCode = form.ifscCode.trim().toUpperCase();
+
+      if (!ifscRegex.test(ifscCode)) {
         alert("Please enter a valid IFSC code");
+        return false;
+      }
+
+      if (bankRule?.ifscPrefix && !ifscCode.startsWith(bankRule.ifscPrefix)) {
+        alert(`IFSC for ${form.bankName} should start with ${bankRule.ifscPrefix}.`);
+        return false;
+      }
+
+      if (form.upiId.trim() && !upiRegex.test(form.upiId.trim())) {
+        alert("Please enter a valid UPI ID (e.g. name@bank)");
         return false;
       }
     }
 
     if (step === 4) {
-      if (!form.accountExpiryDate) {
-        alert("Please select account expiry date");
-        return false;
-      }
+      if (form.employmentType === 'Contract') {
+        if (!form.accountExpiryDate) {
+          alert("Please select account expiry date for contract staff");
+          return false;
+        }
 
-      if (isPastOrToday(form.accountExpiryDate)) {
-        alert("Account expiry date must be a future date.");
-        return false;
+        if (isPastOrToday(form.accountExpiryDate)) {
+          alert("Account expiry date must be a future date.");
+          return false;
+        }
       }
     }
 
@@ -317,6 +433,38 @@ function EnrollForm({ onClose, onSave, editData, mode, staff, isSubmitting, }) {
     else update('modules', [...current, m]);
   };
 
+  const checkContact = async (field) => {
+    if (isView) return '';
+
+    const value = field === 'email' ? form.email.trim() : form.mobileNumber.trim();
+    const isValidFormat = field === 'email' ? emailRegex.test(value) : phoneRegex.test(value);
+    if (!isValidFormat) return '';
+
+    if (isEdit) {
+      const originalValue = field === 'email'
+        ? editData?.personalInfo?.email
+        : editData?.personalInfo?.mobileNumber;
+      if (originalValue && originalValue.trim() === value) {
+        setContactErrors(prev => ({ ...prev, [field]: '' }));
+        return '';
+      }
+    }
+
+    try {
+      const result = await checkStaffContactAvailability(
+        field === 'email' ? { email: value } : { mobileNumber: value }
+      );
+      const message = result.available
+        ? ''
+        : result.message || `This ${field === 'email' ? 'email' : 'phone number'} is already being used.`;
+      setContactErrors(prev => ({ ...prev, [field]: message }));
+      return message;
+    } catch (err) {
+      console.error(err);
+      return '';
+    }
+  };
+
   const steps = [
     { label: 'Personal Information', short: 'Personal Info' },
     { label: 'Work & Access Assignment', short: 'Work & Access' },
@@ -425,7 +573,15 @@ function EnrollForm({ onClose, onSave, editData, mode, staff, isSubmitting, }) {
                 return (
                   <button
                     key={i}
-                    onClick={() => !isView && setStep(num)}
+                    onClick={() => {
+                      // Only allow jumping to the current step or one already
+                      // passed - jumping ahead must go through "Next" so each
+                      // intervening step's validation (including the async
+                      // duplicate email/phone check) actually runs, instead of
+                      // skipping straight to Security and only finding out at
+                      // final save.
+                      if (!isView && num <= step) setStep(num);
+                    }}
                     className="px-5 py-2 rounded-full text-sm font-semibold transition-all cursor-pointer"
                     style={{
                       backgroundColor: isActive ? '#E8630A' : isDone ? '#FEF3EB' : '#F3F4F6',
@@ -457,7 +613,7 @@ function EnrollForm({ onClose, onSave, editData, mode, staff, isSubmitting, }) {
                         className={isView ? inputDisabled : inputBase}
                         disabled={isView}
                         value={form.fullName}
-                        onChange={e => update('fullName', e.target.value)}
+                        onChange={e => update('fullName', lettersOnly(e.target.value))}
                         placeholder="e.g. John Doe"
                       />
                     </div>
@@ -484,7 +640,26 @@ function EnrollForm({ onClose, onSave, editData, mode, staff, isSubmitting, }) {
                       disabled={isView}
                       type="date"
                       value={form.dateOfBirth}
-                      onChange={e => update('dateOfBirth', e.target.value)}
+                      max={new Date().toISOString().split("T")[0]}
+                      onChange={(e) => {
+                        update("dateOfBirth", e.target.value);
+                      }}
+                      onBlur={(e) => {
+                        const value = e.target.value;
+
+                        if (!value || value.length !== 10) return;
+
+                        if (isFutureDate(value)) {
+                          alert("Date of birth cannot be a future date.");
+                          update("dateOfBirth", "");
+                          return;
+                        }
+
+                        if (isLessThan15Years(value)) {
+                          alert("Staff member must be at least 15 years old.");
+                          update("dateOfBirth", "");
+                        }
+                      }}
                     />
                   </div>
 
@@ -496,9 +671,16 @@ function EnrollForm({ onClose, onSave, editData, mode, staff, isSubmitting, }) {
                       type="tel"
                       value={form.mobileNumber}
                       maxLength={10}
-                      onChange={e => update('mobileNumber', digitsOnly(e.target.value))}
+                      onChange={e => {
+                        update('mobileNumber', digitsOnly(e.target.value));
+                        setContactErrors(prev => ({ ...prev, mobileNumber: '' }));
+                      }}
+                      onBlur={() => checkContact('mobileNumber')}
                       placeholder="e.g. 9876543210"
                     />
+                    {contactErrors.mobileNumber && (
+                      <p className="mt-1 text-xs text-red-500">{contactErrors.mobileNumber}</p>
+                    )}
                   </div>
 
                   <div>
@@ -508,9 +690,16 @@ function EnrollForm({ onClose, onSave, editData, mode, staff, isSubmitting, }) {
                       disabled={isView}
                       type="email"
                       value={form.email}
-                      onChange={e => update('email', e.target.value)}
+                      onChange={e => {
+                        update('email', e.target.value);
+                        setContactErrors(prev => ({ ...prev, email: '' }));
+                      }}
+                      onBlur={() => checkContact('email')}
                       placeholder="e.g. john@clinic.com"
                     />
+                    {contactErrors.email && (
+                      <p className="mt-1 text-xs text-red-500">{contactErrors.email}</p>
+                    )}
                   </div>
 
                   <div>
@@ -599,7 +788,7 @@ function EnrollForm({ onClose, onSave, editData, mode, staff, isSubmitting, }) {
                           update("emergencyContacts", [
                             {
                               ...form.emergencyContacts[0],
-                              contactPersonName: e.target.value
+                              contactPersonName: lettersOnly(e.target.value)
                             }
                           ])
                         }
@@ -691,6 +880,7 @@ function EnrollForm({ onClose, onSave, editData, mode, staff, isSubmitting, }) {
                         className={isView ? inputDisabled : inputBase}
                         disabled={isView}
                         type="date"
+                        max="9999-12-31"
                         value={form.dateOfJoining}
                         onChange={e => update('dateOfJoining', e.target.value)}
                       />
@@ -767,13 +957,21 @@ function EnrollForm({ onClose, onSave, editData, mode, staff, isSubmitting, }) {
                     <label className={labelClass}>
                       Bank Name <span className="text-[#E8630A]">*</span>
                     </label>
-                    <input
+                    <select
                       className={isView ? inputDisabled : inputBase}
                       disabled={isView}
                       value={form.bankName}
-                      onChange={(e) => update("bankName", e.target.value)}
-                      placeholder="Enter Bank Name"
-                    />
+                      onChange={(e) => {
+                        const rule = getBankRule(e.target.value);
+                        update("bankName", e.target.value);
+                        update("accountNumber", form.accountNumber.slice(0, getMaxAccountLength(rule)));
+                      }}
+                    >
+                      <option value="">Select</option>
+                      {BANK_OPTIONS.map((bank) => (
+                        <option key={bank}>{bank}</option>
+                      ))}
+                    </select>
                   </div>
 
                   <div>
@@ -803,11 +1001,14 @@ function EnrollForm({ onClose, onSave, editData, mode, staff, isSubmitting, }) {
                       disabled={isView}
                       value={form.accountNumber}
                       onChange={(e) =>
-                        update("accountNumber", digitsOnly(e.target.value, 18))
+                        update("accountNumber", digitsOnly(e.target.value, getMaxAccountLength(getBankRule(form.bankName))))
                       }
-                      maxLength={18}
+                      maxLength={getMaxAccountLength(getBankRule(form.bankName))}
                       placeholder="Enter Account Number"
                     />
+                    <p className="mt-1 text-xs text-gray-400">
+                      Expected Length: {formatAccountLength(getBankRule(form.bankName))}
+                    </p>
                   </div>
 
                   <div>
@@ -876,22 +1077,27 @@ function EnrollForm({ onClose, onSave, editData, mode, staff, isSubmitting, }) {
                     <label className={labelClass}>Temporary Password</label>
                     <input className={inputReadonly} value="••••••••••••" readOnly />
                   </div>
-                  <input
-                    className={isView ? inputDisabled : inputBase}
-                    disabled={isView}
-                    type="date"
-                    value={form.accountExpiryDate}
-                    onChange={(e) => {
-                      const value = e.target.value;
+                  {form.employmentType === 'Contract' && (
+                    <div>
+                      <label className={labelClass}>Account Expiry<span className="text-[#E8630A]">*</span></label>
+                      <input
+                        className={isView ? inputDisabled : inputBase}
+                        disabled={isView}
+                        type="date"
+                        value={form.accountExpiryDate}
+                        onChange={(e) => {
+                          const value = e.target.value;
 
-                      if (isPastOrToday(value)) {
-                        alert("Account expiry date must be a future date.");
-                        return;
-                      }
+                          if (isPastOrToday(value)) {
+                            alert("Account expiry date must be a future date.");
+                            return;
+                          }
 
-                      update("accountExpiryDate", value);
-                    }}
-                  />
+                          update("accountExpiryDate", value);
+                        }}
+                      />
+                    </div>
+                  )}
                 </div>
 
                 <div className="mt-8 space-y-4 max-w-xl">
@@ -978,9 +1184,9 @@ function EnrollForm({ onClose, onSave, editData, mode, staff, isSubmitting, }) {
             </button>
 
             <button
-              disabled={isSubmitting}
-              onClick={() => {
-                if (isSubmitting) return;
+              disabled={isSubmitting || checkingAvailability}
+              onClick={async () => {
+                if (isSubmitting || checkingAvailability) return;
 
                 if (isView) {
                   onClose();
@@ -988,29 +1194,29 @@ function EnrollForm({ onClose, onSave, editData, mode, staff, isSubmitting, }) {
                 }
 
                 if (step < 4) {
-                  const isValid = validateStep();
+                  const isValid = await validateStep();
                   if (isValid) {
                     setStep(step + 1);
                   }
                 } else {
-                  const isValid = validateStep();
+                  const isValid = await validateStep();
                   if (isValid) {
                     onSave(form);
                   }
                 }
               }}
               className={`px-8 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors
-    ${isSubmitting ? "opacity-70 cursor-not-allowed" : "cursor-pointer"}`}
+    ${isSubmitting || checkingAvailability ? "opacity-70 cursor-not-allowed" : "cursor-pointer"}`}
               style={{
-                backgroundColor: isSubmitting ? "#C77B45" : "#E8630A",
+                backgroundColor: isSubmitting || checkingAvailability ? "#C77B45" : "#E8630A",
                 border: "none",
               }}
               onMouseEnter={(e) => {
-                if (!isSubmitting)
+                if (!isSubmitting && !checkingAvailability)
                   e.currentTarget.style.backgroundColor = "#D05A09";
               }}
               onMouseLeave={(e) => {
-                if (!isSubmitting)
+                if (!isSubmitting && !checkingAvailability)
                   e.currentTarget.style.backgroundColor = "#E8630A";
               }}
             >
@@ -1037,6 +1243,30 @@ function EnrollForm({ onClose, onSave, editData, mode, staff, isSubmitting, }) {
                     />
                   </svg>
                   Submitting...
+                </span>
+              ) : checkingAvailability ? (
+                <span className="flex items-center gap-2">
+                  <svg
+                    className="animate-spin h-4 w-4 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                    />
+                  </svg>
+                  Checking...
                 </span>
               ) : isView ? (
                 "Close"
@@ -1251,20 +1481,52 @@ export default function StaffEnrollment() {
           />
         )}
 
-      {/* Title Header */}
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4 mb-8 lg:mb-10">
-        <div>
-          <h1 className="font-['Syne'] text-3xl sm:text-4xl font-extrabold text-[#1A1D2E] mb-2">Staff Directory</h1>
-          <p className="text-gray-500 text-base">Manage clinic personnel, access levels, and account credentials.</p>
-        </div>
-        <button
-          onClick={handleOpenCreate}
-          className="px-7 py-3.5 bg-[#E8630A] text-white text-[15px] font-semibold rounded-xl hover:bg-[#d05a09] transition-colors cursor-pointer"
-          style={{ border: 'none' }}
-        >
-          + Enroll New Staff
-        </button>
-      </div>
+    {/* Staff Header */}
+<div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between bg-[#D9E8E3]/25 p-5 md:p-6 rounded-2xl shadow-sm border border-[#0C3D2E]/15 transition-all mb-8 lg:mb-10">
+
+  {/* LEFT SECTION */}
+  <div className="flex items-center gap-3.5">
+    <div className="w-12 h-12 rounded-xl bg-[#0C3D2E] text-white flex items-center justify-center shrink-0 shadow-sm">
+      <Users size={22} />
+    </div>
+
+    <div>
+      <h1 className="text-xl md:text-2xl font-black text-[#0C3D2E] tracking-tight">
+        Staff Management
+      </h1>
+
+      <p className="text-xs md:text-sm font-semibold text-[#0C3D2E]/70 mt-0.5">
+        Manage clinic personnel, access levels, and account credentials
+      </p>
+    </div>
+  </div>
+
+
+  {/* RIGHT BUTTON */}
+  <button
+    type="button"
+    onClick={handleOpenCreate}
+    className="
+      w-full md:w-auto 
+      flex items-center justify-center gap-2
+      bg-[#F7931E]
+      hover:bg-[#e08319]
+      text-white
+      px-5 py-2.5
+      rounded-xl
+      font-bold
+      text-xs
+      shadow-sm
+      transition-all duration-200
+      transform hover:-translate-y-0.5
+      cursor-pointer
+    "
+  >
+    <Plus size={16} />
+    Enroll New Staff
+  </button>
+
+</div>
 
       {/* Filters Bar */}
       <div className="flex flex-col sm:flex-row gap-4 mb-8 p-4 sm:p-6 bg-gray-50 rounded-2xl border border-[#EAE5DC]">

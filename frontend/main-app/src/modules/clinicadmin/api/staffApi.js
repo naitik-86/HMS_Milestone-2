@@ -28,6 +28,14 @@ export const getManagers = async () => {
     return res.data;
 };
 
+export const checkStaffContactAvailability = async ({ email, mobileNumber }) => {
+    const res = await API.get(`${BASE_URL}/contact-availability`, {
+        params: { email, phone: mobileNumber },
+    });
+
+    return res.data;
+};
+
 export const createStaff = async (
     staffData
 ) => {
@@ -178,7 +186,14 @@ const buildStaffFormData = (staff) => {
     return formData;
 };
 /* GET ONLY DOCTOR STAFF */
-export const getDoctorStaff = async () => {
-    const res = await API.get("/clinic/staff/doctor-list");
+export const getDoctorStaff = async (excludeDoctorId) => {
+    const res = await API.get("/clinic/staff/doctor-list", {
+        params: excludeDoctorId ? { excludeDoctorId } : undefined,
+    });
+    return res.data?.data || [];
+};
+
+export const getLabTechnicianStaff = async () => {
+    const res = await API.get(`${BASE_URL}?role=${encodeURIComponent("Lab Technician")}&limit=1000`);
     return res.data?.data || [];
 };

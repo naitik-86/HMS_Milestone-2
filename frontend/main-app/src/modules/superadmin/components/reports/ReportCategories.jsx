@@ -16,43 +16,44 @@ export default function ReportCategories({
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
             {categories.map((category) => {
                 const Icon = category.icon;
+                const isSelected = selected?.id === category.id;
 
                 return (
                     <button
                         key={category.id}
+                        type="button"
                         onClick={() => setSelected(category)}
                         className={`
                             text-left
-                            bg-white
                             border
                             rounded-2xl
                             p-4 md:p-6
-                            shadow-sm
+                            shadow-xs
                             transition-all
                             duration-200
                             w-full
+                            cursor-pointer
 
                             ${
-                                selected?.id === category.id
-                                    ? "border-orange-500 ring-2 ring-orange-100"
-                                    : "hover:border-orange-300 hover:shadow-md"
+                                isSelected
+                                    ? "border-[#0C3D2E] ring-2 ring-[#0C3D2E]/10 bg-[#D9E8E3]/40"
+                                    : "bg-[#EEF6F3] border-[#0C3D2E]/15 hover:border-[#F7931E]/40 hover:shadow-md"
                             }
                         `}
                     >
                         <div className="flex items-start gap-3 md:gap-4">
-                            <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-orange-100 flex items-center justify-center shrink-0">
-                                <Icon
-                                    size={22}
-                                    className="text-orange-600"
-                                />
+                            <div className={`w-12 h-12 md:w-14 md:h-14 rounded-2xl flex items-center justify-center shrink-0 transition-colors shadow-xs ${
+                                isSelected ? "bg-[#0C3D2E] text-white" : "bg-[#FFF4E5] text-[#F7931E]"
+                            }`}>
+                                <Icon size={22} />
                             </div>
 
                             <div className="min-w-0 flex-1">
-                                <h3 className="font-semibold text-base md:text-lg text-black">
+                                <h3 className="font-bold text-base md:text-lg text-[#0C3D2E] tracking-tight">
                                     {category.title}
                                 </h3>
 
-                                <p className="text-xs md:text-sm text-gray-500 mt-1 break-words">
+                                <p className="text-xs md:text-sm font-semibold text-[#0C3D2E]/70 mt-1 break-words leading-relaxed">
                                     {category.description}
                                 </p>
                             </div>

@@ -342,6 +342,7 @@
 const User = require("../models/User");
 const SuperAdmin = require("../models/SuperAdmin");
 const ClinicAdmin = require("../models/ClinicAdmin");
+const Clinic = require("../models/Clinic");
 const LoginOtp = require('../models/LoginOtp');
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
@@ -349,8 +350,15 @@ const jwt = require("jsonwebtoken");
 const { generateOTP } = require('../utils/otpService');
 const { sendOtpMultiChannel, createOtpPair } = require('../utils/sendOtpMultiChannel');
 const sendEmail = require('../utils/emailService');
+const { passwordResetOtpEmail } = require('../utils/emailTemplates');
+const lockoutService = require('../utils/lockoutService');
+const passwordPolicy = require('../utils/passwordPolicy');
+const { getClinicGateError } = require('../utils/clinicStatus');
 
 const Staff = require("../models/Staff");
+
+const normalizePhone = (value) =>
+  typeof value === "string" ? value.replace(/\D/g, "") : "";
 
 const GOOGLE_TOKENINFO_URL = "https://oauth2.googleapis.com/tokeninfo";
 
@@ -415,52 +423,88 @@ const comparePasswordWithWhitespaceFallback = async (plainPassword, hashedPasswo
   return false;
 };
 
+const assertClinicIsActive = async (clinicId) => {
+  const clinic = await Clinic.findById(clinicId).select('isActive verificationStatus');
+  const gateError = getClinicGateError(clinic);
+  if (gateError) {
+    const error = new Error(gateError.message);
+    error.statusCode = 403;
+    error.code = gateError.code;
+    throw error;
+  }
+};
+
+// Invalidates any still-valid unconsumed LOGIN OTPs for this account before
+// a new one is issued - otherwise multiple valid OTPs can coexist (e.g. an
+// old one from a prior login attempt still verifies after a fresh one was
+// sent), since the verify endpoints match ANY unconsumed unexpired OTP
+// equal to what was submitted, not just the newest.
+const invalidatePriorLoginOtps = async (userType, userId) => {
+  await LoginOtp.updateMany(
+    { userType, purpose: "LOGIN", userId, isConsumed: false },
+    { isConsumed: true }
+  );
+};
+
 const createOtpChallengeForLogin = async ({ account, accountType, email }) => {
   const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+  const otpLockFields = accountType === "STAFF" ? account.accountInfo : account;
+
+  if (lockoutService.isLocked(otpLockFields, 'otp')) {
+    const error = new Error(lockoutService.LOCK_MESSAGE.otp);
+    error.statusCode = 403;
+    throw error;
+  }
 
   if (accountType === "SUPER_ADMIN") {
     const mobile = process.env.SUPER_ADMIN_MOBILE;
-    if (!mobile) {
-      const error = new Error("SUPER_ADMIN_MOBILE is not configured in .env");
-      error.statusCode = 500;
-      throw error;
-    }
+    const otpEmail = generateOTP();
 
-    const { otpEmail, otpMobile } = createOtpPair();
+    await invalidatePriorLoginOtps("SUPER_ADMIN", account._id);
 
-    await LoginOtp.create({
+    // Create LoginOtp with only email if mobile is not configured
+    const otpData = {
       userType: "SUPER_ADMIN",
       userId: account._id,
       email: account.email,
-      mobile,
       otpEmail,
-      otpMobile,
       expiresAt,
-    });
+    };
 
+    // Add mobile OTP only if SUPER_ADMIN_MOBILE is configured
+    if (mobile) {
+      const otpMobile = generateOTP();
+      otpData.mobile = mobile;
+      otpData.otpMobile = otpMobile;
+    }
+
+    await LoginOtp.create(otpData);
+
+    // Send OTP via email (and SMS if mobile is configured)
     await sendOtpMultiChannel({
       email: account.email,
-      mobile,
+      ...(mobile && { mobile, otpMobile: otpData.otpMobile }),
       otpEmail,
-      otpMobile,
       emailSender: sendEmail,
     });
 
     return {
-      message: "OTP sent to registered email and mobile. Verify to login.",
+      message: "OTP sent to registered email. Verify to login.",
+      otpExpiresAt: expiresAt,
       role: "SUPER_ADMIN",
       user: {
         id: account._id,
         email: account.email,
-        mobile,
         role: "SUPER_ADMIN",
       },
     };
   }
 
   if (accountType === "CLINIC_ADMIN") {
-    const otpEmail = email === "admin@clinic.com" ? "123456" : generateOTP();
+    await assertClinicIsActive(account.clinicId);
+    const otpEmail = generateOTP();
 
+    await invalidatePriorLoginOtps("CLINIC_ADMIN", account._id);
     await LoginOtp.create({
       userType: "CLINIC_ADMIN",
       userId: account._id,
@@ -475,11 +519,15 @@ const createOtpChallengeForLogin = async ({ account, accountType, email }) => {
       emailSender: sendEmail,
     });
 
+    const clinic = await Clinic.findById(account.clinicId).select("adminDetails.adminName").lean();
+
     return {
       message: "OTP sent to registered email. Verify to login.",
+      otpExpiresAt: expiresAt,
       role: "CLINIC_ADMIN",
       user: {
         id: account._id,
+        name: clinic?.adminDetails?.adminName || undefined,
         email: account.email,
         role: "CLINIC_ADMIN",
         clinicId: account.clinicId || account.clinic,
@@ -488,6 +536,7 @@ const createOtpChallengeForLogin = async ({ account, accountType, email }) => {
   }
 
   if (accountType === "STAFF") {
+    await assertClinicIsActive(account.clinicId);
     if (!account.accountInfo.accountActive) {
       const error = new Error("Account is inactive");
       error.statusCode = 403;
@@ -497,6 +546,7 @@ const createOtpChallengeForLogin = async ({ account, accountType, email }) => {
     const { otpEmail, otpMobile } = createOtpPair();
     const mobile = account.personalInfo.mobileNumber;
 
+    await invalidatePriorLoginOtps("STAFF", account._id);
     await LoginOtp.create({
       userType: "STAFF",
       userId: account._id,
@@ -517,6 +567,7 @@ const createOtpChallengeForLogin = async ({ account, accountType, email }) => {
 
     return {
       message: "OTP sent to registered email and mobile. Verify to login.",
+      otpExpiresAt: expiresAt,
       role: account.employmentInfo.role,
       user: {
         id: account._id,
@@ -552,6 +603,56 @@ const findOtpLoginAccountByEmail = async (email) => {
   return null;
 };
 
+exports.resendLoginOtp = async (req, res) => {
+  try {
+    const email = String(req.body?.email || '').trim().toLowerCase();
+    if (!email) {
+      return res.status(400).json({ success: false, message: 'Email is required.' });
+    }
+
+    const match = await findOtpLoginAccountByEmail(email);
+    if (!match) {
+      return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+
+    const latestOtp = await LoginOtp.findOne({
+      userId: match.account._id,
+      userType: match.accountType,
+      purpose: 'LOGIN',
+      isConsumed: false,
+    }).sort({ createdAt: -1 });
+
+    const elapsedMs = latestOtp ? Date.now() - latestOtp.createdAt.getTime() : Infinity;
+    if (elapsedMs < 30 * 1000) {
+      const retryAfter = Math.ceil((30 * 1000 - elapsedMs) / 1000);
+      return res.status(429).json({
+        success: false,
+        message: `Please wait ${retryAfter} seconds before requesting another OTP.`,
+        retryAfter,
+      });
+    }
+
+    // A newly issued code replaces every outstanding login code for this account.
+    await LoginOtp.updateMany(
+      { userId: match.account._id, userType: match.accountType, purpose: 'LOGIN', isConsumed: false },
+      { $set: { isConsumed: true } }
+    );
+
+    const challenge = await createOtpChallengeForLogin({
+      account: match.account,
+      accountType: match.accountType,
+      email,
+    });
+
+    return res.status(200).json({ success: true, ...challenge });
+  } catch (error) {
+    return res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.message || 'Unable to resend OTP.',
+    });
+  }
+};
+
 /* ==========================================
    UNIVERSAL LOGIN (EMAIL + PASSWORD)
 ========================================== */
@@ -559,6 +660,7 @@ const findOtpLoginAccountByEmail = async (email) => {
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
+    const phone = typeof req.body?.phone === 'string' ? req.body.phone.trim() : '';
 
     if (!email || !password) {
       return res.status(400).json({
@@ -573,57 +675,32 @@ exports.login = async (req, res) => {
     const admin = await SuperAdmin.findOne({ email: email.toLowerCase() }).select("+password");
 
     if (admin) {
+      if (lockoutService.isLocked(admin, 'password')) {
+        return res.status(403).json({
+          success: false,
+          message: lockoutService.LOCK_MESSAGE.password,
+        });
+      }
+
       const isMatch = await bcrypt.compare(password, admin.password);
 
       if (!isMatch) {
+        await lockoutService.registerFailedAttempt(admin, admin, 'password');
         return res.status(401).json({
           success: false,
           message: "Invalid credentials",
         });
       }
 
-      // 2FA OTP Generation for Super Admin
-      const { otpEmail, otpMobile } = createOtpPair();
+      await lockoutService.resetAttempts(admin, admin, 'password');
 
-      const mobile = process.env.SUPER_ADMIN_MOBILE;
-      if (!mobile) {
-        return res.status(500).json({
-          success: false,
-          message: "SUPER_ADMIN_MOBILE is not configured in .env",
-        });
-      }
-
-      const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes expiry
-
-      await LoginOtp.create({
-        userType: 'SUPER_ADMIN',
-        userId: admin._id,
+      const challenge = await createOtpChallengeForLogin({
+        account: admin,
+        accountType: "SUPER_ADMIN",
         email: admin.email,
-        mobile,
-        otpEmail,
-        otpMobile,
-        expiresAt,
       });
 
-      // Send both OTPs via Email and WhatsApp/SMS
-      await sendOtpMultiChannel({
-        email: admin.email,
-        mobile,
-        otpEmail,
-        otpMobile,
-        emailSender: sendEmail,
-      });
-
-      return res.status(200).json({
-        success: true,
-        message: "OTP sent to registered email and mobile. Verify to login.",
-        role: "SUPER_ADMIN",
-        user: {
-          id: admin._id,
-          email: admin.email,
-          role: 'SUPER_ADMIN'
-        },
-      });
+      return res.status(200).json({ success: true, ...challenge });
     }
 
     /* =========================
@@ -632,46 +709,40 @@ exports.login = async (req, res) => {
     const clinicAdmin = await ClinicAdmin.findOne({ email: email.toLowerCase() }).select("+password");
 
     if (clinicAdmin) {
+      await assertClinicIsActive(clinicAdmin.clinicId);
+
+      if (lockoutService.isLocked(clinicAdmin, 'password')) {
+        return res.status(403).json({
+          success: false,
+          message: lockoutService.LOCK_MESSAGE.password,
+        });
+      }
+
       const isMatch = await bcrypt.compare(password, clinicAdmin.password);
 
-      if (!isMatch) {
+      let phoneMatches = true;
+      if (phone) {
+        const clinicForPhone = await Clinic.findById(clinicAdmin.clinicId).select('adminDetails.adminPhone').lean();
+        phoneMatches = normalizePhone(phone) === normalizePhone(clinicForPhone?.adminDetails?.adminPhone);
+      }
+
+      if (!isMatch || !phoneMatches) {
+        await lockoutService.registerFailedAttempt(clinicAdmin, clinicAdmin, 'password');
         return res.status(401).json({
           success: false,
           message: "Invalid credentials",
         });
       }
 
-      // 2FA OTP Generation for Clinic Admin (with Developer Testing Bypass)
-      const otpEmail = (email.toLowerCase() === 'admin@clinic.com') ? '123456' : generateOTP();
-      const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes expiry
+      await lockoutService.resetAttempts(clinicAdmin, clinicAdmin, 'password');
 
-      await LoginOtp.create({
-        userType: 'CLINIC_ADMIN',
-        userId: clinicAdmin._id,
+      const challenge = await createOtpChallengeForLogin({
+        account: clinicAdmin,
+        accountType: "CLINIC_ADMIN",
         email: clinicAdmin.email,
-        otpEmail,
-        expiresAt,
       });
 
-      // Send Email OTP (keep developer bypass OTP generation, but do not skip sending)
-      await sendOtpMultiChannel({
-        email: clinicAdmin.email,
-        otpEmail,
-        emailSender: sendEmail,
-      });
-
-
-      return res.status(200).json({
-        success: true,
-        message: "OTP sent to registered email. Verify to login.",
-        role: "CLINIC_ADMIN",
-        user: {
-          id: clinicAdmin._id,
-          email: clinicAdmin.email,
-          role: "CLINIC_ADMIN",
-          clinicId: clinicAdmin.clinicId || clinicAdmin.clinic
-        },
-      });
+      return res.status(200).json({ success: true, ...challenge });
     }
 
     /* =========================
@@ -683,6 +754,7 @@ exports.login = async (req, res) => {
     });
 
     if (staff) {
+      await assertClinicIsActive(staff.clinicId);
 
       if (!staff.accountInfo.accountActive) {
         return res.status(403).json({
@@ -691,58 +763,39 @@ exports.login = async (req, res) => {
         });
       }
 
+      if (lockoutService.isLocked(staff.accountInfo, 'password')) {
+        return res.status(403).json({
+          success: false,
+          message: lockoutService.LOCK_MESSAGE.password,
+        });
+      }
+
       const isMatch = await bcrypt.compare(
         password,
         staff.accountInfo.password
       );
 
-      if (!isMatch) {
+      if (!isMatch || normalizePhone(phone) !== normalizePhone(staff.personalInfo.mobileNumber)) {
+        await lockoutService.registerFailedAttempt(staff, staff.accountInfo, 'password');
         return res.status(401).json({
           success: false,
           message: "Invalid credentials",
         });
       }
 
-      // 2FA OTP Generation for Staff
-      const { otpEmail, otpMobile } = createOtpPair();
-      const mobile = staff.personalInfo.mobileNumber;
-      const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes expiry
+      await lockoutService.resetAttempts(staff, staff.accountInfo, 'password');
 
-      await LoginOtp.create({
-        userType: 'STAFF', 
-        userId: staff._id,
+      const challenge = await createOtpChallengeForLogin({
+        account: staff,
+        accountType: "STAFF",
         email: staff.personalInfo.email,
-        mobile: mobile,
-        otpEmail,
-        otpMobile,
-        expiresAt,
       });
 
-      // Send both OTPs via Email and WhatsApp/SMS
-      await sendOtpMultiChannel({
-        email: staff.personalInfo.email,
-        mobile: mobile,
-        otpEmail,
-        otpMobile,
-        emailSender: sendEmail,
-      });
-
-      return res.status(200).json({
-        success: true,
-        message: "OTP sent to registered email and mobile. Verify to login.",
-        role: staff.employmentInfo.role,
-        user: {
-          id: staff._id,
-          name: staff.personalInfo.fullName,
-          email: staff.personalInfo.email,
-          role: staff.employmentInfo.role,
-          clinicId: staff.clinicId,
-        },
-      });
+      return res.status(200).json({ success: true, ...challenge });
     }
 
     /* =========================
-       4. CHECK NORMAL USERS 
+       4. CHECK NORMAL USERS
     ========================= */
     const user = await User.findOne({ email: email.toLowerCase() }).select("+password");
 
@@ -760,14 +813,29 @@ exports.login = async (req, res) => {
       });
     }
 
+    if (lockoutService.isLocked(user, 'password')) {
+      return res.status(403).json({
+        success: false,
+        message: lockoutService.LOCK_MESSAGE.password,
+      });
+    }
+
     const isMatch = await bcrypt.compare(password, user.password);
 
-    if (!isMatch) {
+    if (!isMatch || normalizePhone(phone) !== normalizePhone(user.mobile)) {
+      await lockoutService.registerFailedAttempt(user, user, 'password');
       return res.status(401).json({
         success: false,
         message: "Invalid credentials",
       });
     }
+
+    await lockoutService.resetAttempts(user, user, 'password');
+
+    user.lastLoginAt = new Date();
+    user.lastLoginIp = req.headers['x-forwarded-for'] || req.ip || null;
+    user.lastLoginDevice = req.headers['user-agent'] || null;
+    await user.save();
 
     const requiresPasswordReset = Boolean(user.forcePasswordReset);
 
@@ -800,6 +868,14 @@ exports.login = async (req, res) => {
 
   } catch (error) {
     console.error("LOGIN ERROR:", error);
+
+    if (error.statusCode) {
+      return res.status(error.statusCode).json({
+        success: false,
+        message: error.message,
+      });
+    }
+
     return res.status(500).json({
       success: false,
       message: "An internal server error occurred during login.",
@@ -830,8 +906,33 @@ exports.requestPasswordReset = async (req, res) => {
     if (!email) return res.status(400).json({ success: false, message: 'Email is required' });
 
     const match = await findPasswordResetAccount(email);
-    // Do not disclose whether an account exists.
-    if (!match) return res.json({ success: true, message: 'If an account exists, a reset OTP has been sent.' });
+    if (!match) {
+      return res.status(404).json({
+        success: false,
+        message: 'No account is registered with this email address.',
+      });
+    }
+
+    const latestOtp = await LoginOtp.findOne({
+      userType: match.type,
+      purpose: 'PASSWORD_RESET',
+      userId: match.account._id,
+      isConsumed: false,
+    }).sort({ createdAt: -1 });
+    const elapsedMs = latestOtp ? Date.now() - latestOtp.createdAt.getTime() : Infinity;
+    if (elapsedMs < 30 * 1000) {
+      const retryAfter = Math.ceil((30 * 1000 - elapsedMs) / 1000);
+      return res.status(429).json({
+        success: false,
+        message: `Please wait ${retryAfter} seconds before requesting another OTP.`,
+        retryAfter,
+      });
+    }
+
+    await LoginOtp.updateMany(
+      { userType: match.type, purpose: 'PASSWORD_RESET', userId: match.account._id, isConsumed: false },
+      { $set: { isConsumed: true } }
+    );
 
     const otpEmail = generateOTP();
     await LoginOtp.create({
@@ -845,9 +946,9 @@ exports.requestPasswordReset = async (req, res) => {
     await sendEmail({
       email,
       subject: 'Reset your HMS password',
-      message: `Your password reset OTP is ${otpEmail}. It is valid for 10 minutes.`,
+      ...passwordResetOtpEmail(otpEmail),
     });
-    return res.json({ success: true, message: 'If an account exists, a reset OTP has been sent.' });
+    return res.json({ success: true, message: 'A password reset OTP has been sent to your registered email.' });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message || 'Unable to send reset OTP' });
   }
@@ -859,15 +960,33 @@ exports.resetPassword = async (req, res) => {
     const otp = String(req.body?.otp || '').trim();
     const newPassword = String(req.body?.newPassword || '');
     if (!email || !otp || !newPassword) return res.status(400).json({ success: false, message: 'Email, OTP, and new password are required' });
-    if (newPassword.length < 8) return res.status(400).json({ success: false, message: 'New password must be at least 8 characters' });
+    if (!passwordPolicy.isStrongPassword(newPassword)) {
+      return res.status(400).json({ success: false, message: passwordPolicy.REQUIREMENTS_MESSAGE });
+    }
 
     const match = await findPasswordResetAccount(email);
     if (!match) return res.status(400).json({ success: false, message: 'Invalid or expired reset OTP' });
+
+    const lockFields = match.type === 'STAFF' ? match.account.accountInfo : match.account;
+    if (lockoutService.isLocked(lockFields, 'otp')) {
+      return res.status(403).json({ success: false, message: lockoutService.LOCK_MESSAGE.otp });
+    }
+
     const otpRecord = await LoginOtp.findOne({
       userType: match.type, purpose: 'PASSWORD_RESET', userId: match.account._id,
       email, otpEmail: otp, isConsumed: false, expiresAt: { $gt: new Date() },
     }).sort({ createdAt: -1 });
-    if (!otpRecord) return res.status(400).json({ success: false, message: 'Invalid or expired reset OTP' });
+    if (!otpRecord) {
+      await lockoutService.registerFailedAttempt(match.account, lockFields, 'otp');
+      return res.status(400).json({ success: false, message: 'Invalid or expired reset OTP' });
+    }
+
+    const currentPasswordHash = match.type === 'STAFF'
+      ? match.account.accountInfo.password
+      : match.account.password;
+    if (currentPasswordHash && await bcrypt.compare(newPassword, currentPasswordHash)) {
+      return res.status(400).json({ success: false, message: 'New password must be different from your current password' });
+    }
 
     const password = await bcrypt.hash(newPassword, 10);
     if (match.type === 'STAFF') {
@@ -877,6 +996,7 @@ exports.resetPassword = async (req, res) => {
       match.account.password = password;
       if ('forcePasswordReset' in match.account) match.account.forcePasswordReset = false;
     }
+    await lockoutService.resetAttempts(match.account, lockFields, 'otp');
     await match.account.save();
     otpRecord.isConsumed = true;
     otpRecord.verifiedAt = new Date();
@@ -897,6 +1017,13 @@ exports.changePassword = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: "Current password and new password are required",
+      });
+    }
+
+    if (!passwordPolicy.isStrongPassword(newPassword)) {
+      return res.status(400).json({
+        success: false,
+        message: passwordPolicy.REQUIREMENTS_MESSAGE,
       });
     }
 
@@ -927,6 +1054,13 @@ exports.changePassword = async (req, res) => {
         });
       }
 
+      if (await comparePasswordWithWhitespaceFallback(newPassword, admin.password)) {
+        return res.status(400).json({
+          success: false,
+          message: "New password must be different from your current password",
+        });
+      }
+
       admin.password = hashedNewPassword;
       await admin.save();
 
@@ -951,6 +1085,13 @@ exports.changePassword = async (req, res) => {
         return res.status(401).json({
           success: false,
           message: "Current password is incorrect",
+        });
+      }
+
+      if (await comparePasswordWithWhitespaceFallback(newPassword, admin.password)) {
+        return res.status(400).json({
+          success: false,
+          message: "New password must be different from your current password",
         });
       }
 
@@ -981,6 +1122,13 @@ exports.changePassword = async (req, res) => {
         });
       }
 
+      if (await comparePasswordWithWhitespaceFallback(newPassword, storedPassword)) {
+        return res.status(400).json({
+          success: false,
+          message: "New password must be different from your current password",
+        });
+      }
+
       staff.accountInfo.password = hashedNewPassword;
       staff.accountInfo.forcePasswordReset = false;
       staff.accountInfo.temporaryPassword = "";
@@ -1005,6 +1153,13 @@ exports.changePassword = async (req, res) => {
         return res.status(401).json({
           success: false,
           message: "Current password is incorrect",
+        });
+      }
+
+      if (await comparePasswordWithWhitespaceFallback(newPassword, storedPassword)) {
+        return res.status(400).json({
+          success: false,
+          message: "New password must be different from your current password",
         });
       }
 

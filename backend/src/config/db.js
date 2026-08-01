@@ -1,17 +1,26 @@
 const mongoose = require('mongoose');
+const dns = require('dns');
 
 const connectDB = async () => {
-  try {
-    // Ensure you have MONGO_URI in your .env file
-    const uri = process.env.MONGO_URI;
-    if (!uri) {
-      console.warn('MONGO_URI is not set. Server will start without DB connection.');
-      return;
-    }
+  const uri = process.env.MONGO_URI;
 
+  if (!uri) {
+    console.warn('MONGO_URI is not set. Server will start without DB connection.');
+    return;
+  }
+
+  const dnsServers = (process.env.MONGO_DNS_SERVERS || '8.8.8.8,1.1.1.1')
+    .split(',')
+    .map((server) => server.trim())
+    .filter(Boolean);
+
+  if (uri.startsWith('mongodb+srv://') && dnsServers.length > 0) {
+    dns.setServers(dnsServers);
+  }
+
+  try {
     const conn = await mongoose.connect(uri, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
+      serverSelectionTimeoutMS: 10000,
     });
 
     console.log(`MongoDB Connected: ${conn.connection.host}`);

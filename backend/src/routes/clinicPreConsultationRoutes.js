@@ -10,7 +10,8 @@ const {
     getHistoryPets,
     getSinglePreConsultation,
     updatePreConsultation,
-    completePreConsultation
+    completePreConsultation,
+    deletePreConsultationVisit
 } = require("../controllers/preConsultationController");
 
 router.use(authorize("PRE_CONSULTATION_STAFF", "CLINIC_ADMIN"));
@@ -35,6 +36,8 @@ router.post("/", savePreConsultation);
 
 // Update Pre Consultation
 router.put("/:id", updatePreConsultation);
+
+router.delete("/:id", deletePreConsultationVisit);
 
 router.patch(
     "/:id/complete",

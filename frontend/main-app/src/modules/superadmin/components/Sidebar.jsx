@@ -49,11 +49,10 @@ export default function Sidebar({ isOpen = false, onClose }) {
     const menu = [
         { name: "Dashboard", path: "/superadmin", icon: LayoutDashboard, end: true },
         { name: "Clinics", path: "/superadmin/clinics", icon: Building2 },
-        { name: "Veterinarian", path: "/superadmin/Veterinarian", icon: Users},
+        { name: "Veterinarian", path: "/superadmin/Veterinarian", icon: Users },
         { name: "Plans", path: "/superadmin/plans", icon: ClipboardList },
         { name: "Verification", path: "/superadmin/verification", icon: ShieldCheck, disabled: true },
         { name: "Reports", path: "/superadmin/reports", icon: BarChart3 },
-        // { name: "Basic Reports", path: "/superadmin/reports/basic", icon: BarChart3 },
         { name: "Settings", path: "/superadmin/settings", icon: Settings, disabled: true },
     ];
 
@@ -77,36 +76,42 @@ export default function Sidebar({ isOpen = false, onClose }) {
 
     return (
         <>
+            {/* Mobile Backdrop */}
             <div
-                className={`fixed inset-0 z-40 bg-black/40 transition-opacity duration-200 lg:hidden ${isOpen ? "opacity-100" : "pointer-events-none opacity-0"
-                    }`}
+                className={`fixed inset-0 z-40 bg-black/60 backdrop-blur-xs transition-opacity duration-200 lg:hidden ${
+                    isOpen ? "opacity-100" : "pointer-events-none opacity-0"
+                }`}
                 onClick={onClose}
             />
 
+            {/* Sidebar Drawer */}
             <aside
-                className={`fixed inset-y-0 left-0 z-50 h-screen w-65 shrink-0 transform bg-gradient-to-b from-[#020617] to-[#0f172a] text-white transition-transform duration-300 ease-out lg:sticky lg:top-0 lg:z-auto lg:translate-x-0 ${isOpen ? "translate-x-0" : "-translate-x-full"
-                    } flex flex-col justify-between px-4 py-5`}
+                className={`fixed inset-y-0 left-0 z-50 h-screen w-65 shrink-0 transform bg-[#0C3D2E] text-white transition-transform duration-300 ease-out lg:sticky lg:top-0 lg:z-auto lg:translate-x-0 ${
+                    isOpen ? "translate-x-0" : "-translate-x-full"
+                } flex flex-col justify-between px-4 py-5 shadow-xl`}
             >
                 <div>
-                    <div className="flex items-center justify-between gap-3">
-                        <h2 className="flex items-center gap-2 text-lg font-semibold">
-                            <ShieldCheck size={20} className="text-orange-500" />
+                    {/* Header */}
+                    <div className="flex items-center justify-between gap-3 px-2 pt-1">
+                        <h2 className="flex items-center gap-2.5 text-lg font-bold tracking-tight text-white">
+                            <ShieldCheck size={24} className="text-[#F7931E]" />
                             <span>
-                                Super<span className="text-orange-500">Admin</span>
+                                Super<span className="text-[#F7931E]">Admin</span>
                             </span>
                         </h2>
 
                         <button
                             type="button"
                             onClick={onClose}
-                            className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/10 text-white transition-colors hover:bg-white/15 lg:hidden"
+                            className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 text-white/80 transition-colors hover:bg-white/20 hover:text-white lg:hidden"
                             aria-label="Close super admin menu"
                         >
-                            <X size={20} />
+                            <X size={18} />
                         </button>
                     </div>
 
-                    <nav className="mt-8">
+                    {/* Navigation Links */}
+                    <nav className="mt-8 space-y-1.5">
                         {menu.map((item) => {
                             const Icon = item.icon;
 
@@ -114,14 +119,14 @@ export default function Sidebar({ isOpen = false, onClose }) {
                                 return (
                                     <div
                                         key={item.name}
-                                        className="flex items-center justify-between px-4 py-3 rounded-lg text-sm mb-2 text-slate-500 cursor-not-allowed opacity-60"
+                                        className="flex items-center justify-between px-4 py-3 rounded-xl text-xs font-semibold text-white/40 cursor-not-allowed"
                                     >
                                         <div className="flex items-center gap-3">
                                             <Icon size={18} />
                                             {item.name}
                                         </div>
 
-                                        <span className="rounded-full bg-orange-500/20 px-2 py-0.5 text-[10px] font-medium text-orange-400">
+                                        <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-bold text-[#F7931E] border border-[#F7931E]/30">
                                             Soon
                                         </span>
                                     </div>
@@ -135,9 +140,10 @@ export default function Sidebar({ isOpen = false, onClose }) {
                                     end={item.end}
                                     onClick={onClose}
                                     className={({ isActive }) =>
-                                        `flex items-center gap-3 px-4 py-3 rounded-lg text-sm mb-2 transition-all ${isActive
-                                            ? "bg-gradient-to-r from-orange-500 to-orange-400 text-white"
-                                            : "text-slate-300 hover:bg-slate-800"
+                                        `flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all duration-200 ${
+                                            isActive
+                                                ? "bg-[#F7931E] text-white shadow-xs"
+                                                : "text-white/70 hover:bg-white/10 hover:text-white"
                                         }`
                                     }
                                 >
@@ -149,23 +155,24 @@ export default function Sidebar({ isOpen = false, onClose }) {
                     </nav>
                 </div>
 
-                <div className="space-y-4">
+                {/* Footer Section */}
+                <div className="space-y-3 pt-4 border-t border-white/10">
                     <button
                         onClick={handleLogout}
-                        className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-lg text-sm text-red-400 hover:bg-red-200/10 transition"
+                        className="w-full flex items-center justify-center gap-2.5 px-4 py-2.5 rounded-xl text-xs font-bold text-rose-300 hover:bg-rose-500/10 hover:text-rose-200 transition-colors cursor-pointer"
                     >
-                        <LogOut size={18} />
+                        <LogOut size={16} />
                         Logout
                     </button>
 
-                    <div className="border-t border-slate-700 pt-4 flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center font-bold">
+                    <div className="flex items-center gap-3 px-3 py-2 bg-white/5 rounded-xl border border-white/10">
+                        <div className="w-9 h-9 rounded-full bg-[#F7931E] text-white flex items-center justify-center font-black text-xs shadow-xs shrink-0">
                             {adminInitial}
                         </div>
 
                         <div className="min-w-0">
-                            <p className="text-sm">Super Admin</p>
-                            <p className="truncate text-xs text-slate-400">
+                            <p className="text-xs font-bold text-white leading-snug">Super Admin</p>
+                            <p className="truncate text-[11px] font-medium text-white/50">
                                 {adminEmail || "Email unavailable"}
                             </p>
                         </div>

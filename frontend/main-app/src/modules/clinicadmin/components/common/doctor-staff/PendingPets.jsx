@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
-import { AlertCircle, Stethoscope, Clock, CheckCircle2, ShieldAlert, Plus, Trash2, Check } from "lucide-react";
+import { AlertCircle, Stethoscope, Clock, CheckCircle2, ShieldAlert, Plus, Trash2, Check, Eye, Pencil } from "lucide-react";
 import LabReportModal from "./LabReportModal";
 import PreConsultationReportModal from "./PreConsultReportModal";
 import CaseCompletionModal from "./CaseCompletionModal";
@@ -9,6 +9,7 @@ import {
   updatePatient,
   getPreConsultationByVisit,
   getLabReportByVisit,
+  deletePatient,
 } from "../../../api/doctorModuleApi";
 
 export default function PendingPets() {
@@ -21,6 +22,17 @@ export default function PendingPets() {
   const [validationError, setValidationError] = useState("");
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [completedCaseData, setCompletedCaseData] = useState(null);
+
+  const handleDelete = async (pet) => {
+    if (!window.confirm("Delete this visit and all linked consultation records? This cannot be undone.")) return;
+    try {
+      await deletePatient(pet._id);
+      toast.success("Visit record deleted");
+      await fetchPendingPets();
+    } catch (error) {
+      toast.error(error?.response?.data?.message || "Failed to delete visit record");
+    }
+  };
 
   const steps = [
     "History",
@@ -183,6 +195,81 @@ export default function PendingPets() {
   useEffect(() => {
     fetchPendingPets();
   }, []);
+
+  useEffect(() => {
+    if (selectedPet) {
+      setFormData({
+        history: {
+          dietType: selectedPet.history?.dietType || "",
+          dietFrequency: selectedPet.history?.dietFrequency || "",
+          waterIntake: selectedPet.history?.waterIntake || "",
+          behaviour: selectedPet.history?.behaviour || "",
+          exercise: selectedPet.history?.exercise || "",
+          currentMedication: selectedPet.history?.currentMedication || "",
+          vaccinationStatus: selectedPet.history?.vaccinationStatus || "",
+          allergies: selectedPet.history?.allergies || "",
+          medicationsConfirmed: Array.isArray(selectedPet.history?.medicationsConfirmed) ? selectedPet.history.medicationsConfirmed : [],
+        },
+
+        clinicalObservation: {
+          cardiovascular: selectedPet.clinicalObservation?.cardiovascular || "",
+          respiratory: selectedPet.clinicalObservation?.respiratory || "",
+          digestive: selectedPet.clinicalObservation?.digestive || "",
+          musculoskeletal: selectedPet.clinicalObservation?.musculoskeletal || "",
+          neurological: selectedPet.clinicalObservation?.neurological || "",
+          urogenital: selectedPet.clinicalObservation?.urogenital || "",
+          skin: selectedPet.clinicalObservation?.skin || "",
+          eyes: selectedPet.clinicalObservation?.eyes || "",
+          ears: selectedPet.clinicalObservation?.ears || "",
+          nose: selectedPet.clinicalObservation?.nose || "",
+          throat: selectedPet.clinicalObservation?.throat || "",
+          lymphNodes: selectedPet.clinicalObservation?.lymphNodes || "",
+          doctorNotes: selectedPet.clinicalObservation?.doctorNotes || "",
+        },
+
+        diagnosis: {
+          provisionalDiagnosis: selectedPet.diagnosis?.provisionalDiagnosis || "",
+          differentialDiagnosis: selectedPet.diagnosis?.differentialDiagnosis || "",
+          confirmedDiagnosis: selectedPet.diagnosis?.confirmedDiagnosis || "",
+          raiseLab: selectedPet.diagnosis?.raiseLab || false,
+        },
+
+        labRequisition: {
+          tests: Array.isArray(selectedPet.labRequisition?.tests) ? selectedPet.labRequisition.tests : [],
+          sampleType: Array.isArray(selectedPet.labRequisition?.sampleType) ? selectedPet.labRequisition.sampleType : [],
+          instructions: selectedPet.labRequisition?.instructions || "",
+          labOrderId: selectedPet.labRequisition?.labOrderId || "",
+        },
+
+        treatment: {
+          medicationsList: Array.isArray(selectedPet.treatment?.medicationsList) ? selectedPet.treatment.medicationsList : [],
+          medicines: selectedPet.treatment?.medicines || "",
+          proceduresList: Array.isArray(selectedPet.treatment?.proceduresList) ? selectedPet.treatment.proceduresList : [],
+          procedures: selectedPet.treatment?.procedures || "",
+          vaccinationsList: Array.isArray(selectedPet.treatment?.vaccinationsList) ? selectedPet.treatment.vaccinationsList : [],
+          vaccinations: selectedPet.treatment?.vaccinations || "",
+          dewormingList: Array.isArray(selectedPet.treatment?.dewormingList) ? selectedPet.treatment.dewormingList : [],
+          deworming: selectedPet.treatment?.deworming || "",
+          fluidsList: Array.isArray(selectedPet.treatment?.fluidsList) ? selectedPet.treatment.fluidsList : [],
+          fluids: selectedPet.treatment?.fluids || "",
+          followUp: selectedPet.treatment?.followUp || "",
+          treatmentNotes: selectedPet.treatment?.treatmentNotes || "",
+        },
+
+        suggestion: {
+          dietAdvice: selectedPet.suggestion?.dietAdvice || "",
+          activityRestriction: selectedPet.suggestion?.activityRestriction || "",
+          homeCare: selectedPet.suggestion?.homeCare || "",
+          preventiveCare: selectedPet.suggestion?.preventiveCare || "",
+          prognosis: selectedPet.suggestion?.prognosis || "",
+          followUpDate: selectedPet.suggestion?.followUpDate || "",
+          finalNotes: selectedPet.suggestion?.finalNotes || "",
+        },
+      });
+    } else {
+      setFormData(initialFormData);
+    }
+  }, [selectedPet]);
 
   const fetchPendingPets = async () => {
     try {
@@ -422,8 +509,9 @@ export default function PendingPets() {
                     <button
                       onClick={() => handleViewPreConsultation(pet._id)}
                       className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all"
+                      title="View vitals"
                     >
-                      📋 Vitals
+                      <Eye className="size-4" />
                     </button>
 
                     <button
@@ -440,8 +528,9 @@ export default function PendingPets() {
                         setShowModal(true);
                       }}
                       className="px-3 py-2 bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-xs"
+                      title="Edit consultation"
                     >
-                      🩺 Consult
+                      <Pencil className="size-4" />
                     </button>
                   </div>
                 </div>
@@ -508,35 +597,50 @@ export default function PendingPets() {
                       <td className="py-4 px-6 font-mono text-slate-600 text-xs">{phone}</td>
 
                       <td className="py-4 px-6">
-                        <span className="bg-emerald-100 text-emerald-800 text-xs font-bold px-3 py-1 rounded-full border border-emerald-200">
-                          {pet.status || "Vitals Ready"}
-                        </span>
+                        {pet.hasLabReport || pet.workflow?.labCompleted ? (
+                          <span className="bg-emerald-100 text-emerald-800 text-xs font-bold px-3 py-1 rounded-full border border-emerald-200 inline-flex items-center gap-1">
+                            <span>📄</span> Lab Report Uploaded
+                          </span>
+                        ) : pet.isSentToLab || pet.status === "LAB_TEST_RAISED" ? (
+                          <span className="bg-amber-100 text-amber-800 text-xs font-bold px-3 py-1 rounded-full border border-amber-200 inline-flex items-center gap-1">
+                            <span>🔬</span> Sent to Lab (Awaiting)
+                          </span>
+                        ) : (
+                          <span className="bg-blue-100 text-blue-800 text-xs font-bold px-3 py-1 rounded-full border border-blue-200">
+                            {pet.status || "Vitals Ready"}
+                          </span>
+                        )}
                       </td>
 
                       <td className="py-4 px-6">
                         <button
                           onClick={() => handleViewPreConsultation(pet._id)}
-                          className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-orange-50 text-orange-700 border border-orange-200/80 hover:bg-orange-500 hover:text-white transition-all text-xs font-bold shadow-2xs"
+                          className="grid size-9 place-items-center rounded-xl border border-[#0C3D2E]/15 bg-white text-[#0C3D2E] transition hover:bg-[#D9E8E3]/40"
+                          title="View vitals"
                         >
-                          📋 <span>View Vitals</span>
+                          <Eye className="size-4" />
                         </button>
                       </td>
 
                       <td className="py-4 px-6">
-                        {pet?.workflow?.labCompleted ? (
+                        {pet.hasLabReport || pet.workflow?.labCompleted || pet.labReport ? (
                           <button
                             onClick={() => handleViewLabReports(pet._id)}
-                            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-blue-50 text-blue-700 border border-blue-200/80 hover:bg-blue-600 hover:text-white transition-all text-xs font-bold shadow-2xs"
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white transition-all text-xs font-bold shadow-xs cursor-pointer"
                           >
-                            🧪 <span>Lab Report</span>
+                            🧪 <span>View Lab Report</span>
                           </button>
+                        ) : pet.isSentToLab || pet.status === "LAB_TEST_RAISED" ? (
+                          <span className="text-amber-700 font-semibold text-xs flex items-center gap-1">
+                            ⏳ In Lab Processing
+                          </span>
                         ) : (
-                          <span className="text-slate-400 text-xs italic">No Lab Reports</span>
+                          <span className="text-slate-400 text-xs italic">No Lab Order</span>
                         )}
                       </td>
 
                       <td className="py-4 px-6 text-center">
-                        <button
+                        <div className="flex items-center justify-center gap-2"><button
                           onClick={() => {
                             setSelectedPet(pet);
                             setFormData({
@@ -550,10 +654,10 @@ export default function PendingPets() {
                             setShowModal(true);
                           }}
                           className="rounded-xl bg-orange-500 hover:bg-orange-600 px-4 py-2.5 text-xs font-bold text-white transition-all shadow-md shadow-orange-500/20 inline-flex items-center gap-1.5"
+                          title="Edit consultation"
                         >
-                          <Stethoscope className="w-3.5 h-3.5" />
-                          <span>Examine & Consult</span>
-                        </button>
+                          <Pencil className="size-4" />
+                        </button><button onClick={() => handleDelete(pet)} className="grid size-9 place-items-center rounded-xl border border-rose-200 bg-rose-50 text-rose-600 transition hover:bg-rose-100" title="Delete visit"><Trash2 className="size-4" /></button></div>
                       </td>
                     </tr>
                   );
@@ -641,16 +745,16 @@ export default function PendingPets() {
                   return (
                     <button
                       key={index}
-                      disabled={isLabDisabled}
+                      disabled={isLabDisabled || (!isDone && !isCurrent)}
                       onClick={() => {
                         if (isLabDisabled) {
                           toast.error("Lab requisition is not enabled for this case (Raise Lab is unchecked).");
                           return;
                         }
-                        setStep(stepNum);
+                        toast.info("Use Next/Previous buttons to navigate through steps.");
                       }}
                       className={`flex items-center gap-1.5 p-2.5 rounded-xl border text-left transition-all ${
-                        isLabDisabled
+                        isLabDisabled || (!isDone && !isCurrent)
                           ? "bg-red-50 text-red-400 border-red-200 cursor-not-allowed opacity-80"
                           : isCurrent
                           ? "bg-slate-900 text-white border-slate-900 shadow-sm"
@@ -733,12 +837,25 @@ export default function PendingPets() {
                       </label>
                       <input
                         type="number"
-                        min="0"
+                        min="1"
+                        max="10"
+                        step="1"
                         value={formData.history.dietFrequency || ""}
-                        onChange={(e) => handleChange("history", "dietFrequency", e.target.value)}
-                        placeholder="Enter meals per day"
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === "") {
+                            handleChange("history", "dietFrequency", "");
+                          } else {
+                            const num = parseInt(val, 10);
+                            if (!isNaN(num) && num >= 1 && num <= 10 && Number.isInteger(num)) {
+                              handleChange("history", "dietFrequency", val);
+                            }
+                          }
+                        }}
+                        placeholder="Enter meals per day (1-10)"
                         className="w-full h-12 rounded-2xl border border-slate-300 bg-white px-4 text-sm outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-100 font-medium"
                       />
+                      <p className="text-xs text-slate-500 mt-1">Must be a whole number between 1 and 10</p>
                     </div>
 
                     {/* 3. Water Intake (dropdown) */}
@@ -1577,6 +1694,22 @@ export default function PendingPets() {
 
                   </div>
 
+                  {/* Raise Lab Requisition Button */}
+                  {formData.diagnosis.raiseLab && (formData.labRequisition.tests.length > 0 || formData.labRequisition.instructions.trim()) && (
+                    <div className="mt-8 p-4 rounded-2xl border border-amber-200 bg-amber-50">
+                      <p className="text-sm text-amber-800 mb-4 font-medium">
+                        ✓ Lab tests selected. Click below to finalize and send the requisition to the laboratory.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={sendToLab}
+                        className="w-full px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm transition-all shadow-md shadow-blue-600/20 flex items-center justify-center gap-2"
+                      >
+                        <span>🧪</span> Raise & Send Lab Requisition
+                      </button>
+                    </div>
+                  )}
+
                 </div>
               )}
               {step === 5 && (
@@ -1589,6 +1722,17 @@ export default function PendingPets() {
                       Prescribe medications, record in-clinic procedures, vaccinations, deworming, and IV fluids
                     </p>
                   </div>
+
+                  {(!formData.treatment.medicines?.trim() && !formData.treatment.procedures?.trim() && !formData.treatment.treatmentNotes?.trim()) && (
+                    <div className="p-4 rounded-2xl border border-red-200 bg-red-50">
+                      <p className="text-sm text-red-700 font-bold flex items-center gap-2">
+                        <span>⚠️</span> At least one treatment detail is required
+                      </p>
+                      <p className="text-xs text-red-600 mt-2">
+                        Please fill in Medicines, Procedures, or Treatment Notes before proceeding to the next step.
+                      </p>
+                    </div>
+                  )}
 
                   <div className="space-y-6">
                     {/* 1. Medications Prescribed */}
@@ -2475,7 +2619,12 @@ export default function PendingPets() {
 
               {step < 6 ? (
                 <button
+                  disabled={step === 4 && formData.diagnosis.raiseLab && selectedPet?.status === "LAB_TEST_RAISED"}
                   onClick={() => {
+                    if (step === 4 && formData.diagnosis.raiseLab && selectedPet?.status === "LAB_TEST_RAISED") {
+                      toast.error("Awaiting lab report. Lab tests have been raised and are being processed.");
+                      return;
+                    }
                     if (!validateStep(step)) return;
                     if (step === 3 && !formData.diagnosis.raiseLab) {
                       setStep(5);
@@ -2483,7 +2632,11 @@ export default function PendingPets() {
                       setStep((prev) => Math.min(prev + 1, 6));
                     }
                   }}
-                  className="px-6 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs transition-all shadow-md shadow-orange-500/20"
+                  className={`px-6 py-2.5 rounded-xl font-bold text-xs transition-all ${
+                    step === 4 && formData.diagnosis.raiseLab && selectedPet?.status === "LAB_TEST_RAISED"
+                      ? "bg-slate-300 text-slate-500 cursor-not-allowed"
+                      : "bg-orange-500 hover:bg-orange-600 text-white shadow-md shadow-orange-500/20"
+                  }`}
                 >
                   Next Step →
                 </button>

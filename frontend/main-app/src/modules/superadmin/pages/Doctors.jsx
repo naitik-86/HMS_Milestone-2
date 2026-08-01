@@ -123,16 +123,18 @@ export default function Doctors() {
 
     return (
         <div className="p-4 sm:p-6 space-y-6">
+            {/* VETERINARIAN HEADER */}
             <AddDoctor onCreated={handleCreated} />
 
-            <div className="rounded-2xl border border-gray-200 bg-white px-4 py-4 shadow-sm sm:px-6">
+            {/* SEARCH & FILTER BAR WITH ORANGE STATS CARD BG (PRESERVED ORIGINAL TEXT STYLES) */}
+            <div className="rounded-2xl border border-[#F7931E]/30 bg-[#FFF4E5] px-5 py-4 shadow-xs sm:px-6">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                        <h2 className="text-base font-semibold text-gray-800">
+                        <h2 className="text-base font-bold text-[#0C3D2E] tracking-tight">
                             Live Veterinarian Registry
                         </h2>
 
-                        <p className="mt-1 text-sm text-gray-500">
+                        <p className="mt-0.5 text-xs md:text-sm font-medium text-gray-400">
                             Search and manage veterinarians synced from the backend.
                         </p>
                     </div>
@@ -142,22 +144,23 @@ export default function Doctors() {
                             Search veterinarians
                         </label>
 
-                        <div className="flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2">
-                            <Search size={18} className="text-gray-400" />
+                        <div className="flex items-center gap-2.5 rounded-xl border border-gray-200 bg-white px-3.5 py-2 transition-all focus-within:border-[#F7931E] focus-within:ring-1 focus-within:ring-[#F7931E] shadow-2xs">
+                            <Search size={18} className="text-gray-400 shrink-0" />
 
                             <input
                                 id="veterinarian-search"
                                 type="search"
                                 value={searchInput}
                                 onChange={(event) => setSearchInput(event.target.value)}
-                                placeholder="Search by name, mobile, city, or specialization"
-                                className="w-full bg-transparent text-sm outline-none placeholder:text-gray-400"
+                                placeholder="Search by name, mobile, city, or specialization..."
+                                className="w-full bg-transparent text-xs sm:text-sm font-medium outline-none text-gray-800 placeholder:text-gray-400"
                             />
                         </div>
                     </div>
                 </div>
             </div>
 
+            {/* DOCTORS TABLE */}
             <DoctorsTable
                 doctors={doctors}
                 loading={loading}
@@ -170,6 +173,7 @@ export default function Doctors() {
                 updatingStatusId={updatingStatusId}
             />
 
+            {/* VIEW DETAILS MODAL */}
             {viewDoctor && (
                 <DoctorDetailsModal
                     doctor={viewDoctor}
@@ -182,6 +186,7 @@ export default function Doctors() {
                 />
             )}
 
+            {/* EDIT MODAL */}
             {editDoctor && (
                 <DoctorModal
                     mode="edit"

@@ -1,8 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
+import { ChevronDown, Check } from "lucide-react";
 
 import DoctorForm from "./DoctorForm";
 import Stepper from "../Stepper";
 import { getPlans } from "../../../api/planApi";
+import { showToast } from "../../../../../shared/components/toast";
 
 const SOLO_DOCTOR_PLAN_NAMES = new Set(["Solo Basic", "Solo Pro"]);
 const DEFAULT_SOLO_DOCTOR_PLAN_OPTIONS = ["Solo Basic", "Solo Pro"];
@@ -21,6 +23,77 @@ const tabs = [
     ["bank", "Banking & Plan"],
 ];
 
+const STATUS_OPTIONS = ["Submitted", "Pending", "Approved", "Rejected"];
+
+/**
+ * Custom Status Dropdown Component (Pill Style)
+ * Bypasses native browser select elements to eliminate OS grey highlight boxes.
+ */
+export function StatusDropdown({ value = "Pending", onChange }) {
+    const [isOpen, setIsOpen] = useState(false);
+    const dropdownRef = useRef(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                setIsOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
+    const handleSelect = (option) => {
+        onChange?.(option);
+        setIsOpen(false);
+    };
+
+    return (
+        <div ref={dropdownRef} className="relative inline-block text-left min-w-[130px]">
+            {/* Main Pill Button */}
+            <button
+                type="button"
+                onClick={() => setIsOpen((prev) => !prev)}
+                className="w-full flex items-center justify-between gap-2 bg-[#D9E8E3] hover:bg-[#c8ded8] text-[#0C3D2E] font-bold text-xs px-3.5 py-1.5 rounded-full transition-all cursor-pointer border border-[#0C3D2E]/10 shadow-2xs"
+            >
+                <span>{value}</span>
+                <ChevronDown
+                    size={14}
+                    className={`text-[#0C3D2E] transition-transform duration-200 ${
+                        isOpen ? "rotate-180" : ""
+                    }`}
+                />
+            </button>
+
+            {/* Dropdown Popup */}
+            {isOpen && (
+                <div className="absolute left-0 right-0 z-50 mt-1 bg-[#D9E8E3] border border-[#0C3D2E]/15 rounded-2xl shadow-xl p-1 overflow-hidden animate-in fade-in-50 zoom-in-95 duration-100">
+                    <div className="flex flex-col gap-0.5">
+                        {STATUS_OPTIONS.map((option) => {
+                            const isSelected = option === value;
+                            return (
+                                <button
+                                    key={option}
+                                    type="button"
+                                    onClick={() => handleSelect(option)}
+                                    className={`w-full flex items-center justify-between px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                                        isSelected
+                                            ? "bg-[#0C3D2E] text-white"
+                                            : "text-[#0C3D2E] hover:bg-[#0C3D2E]/10"
+                                    }`}
+                                >
+                                    <span>{option}</span>
+                                    {isSelected && <Check size={13} className="text-white" />}
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
 const toDateInputValue = (value) => {
     if (!value) return "";
 
@@ -32,15 +105,21 @@ const toDateInputValue = (value) => {
 
 const buildQualifications = (doctor) => {
     const qualifications = Array.isArray(doctor?.qualifications) ? doctor.qualifications : [];
+    const degreeCertificates = Array.isArray(doctor?.degreeCertificates) ? doctor.degreeCertificates : [];
 
     if (!qualifications.length) {
         return [{ degree: "", institution: "", year: "" }];
     }
 
-    return qualifications.map((qualification) => ({
+    // degreeCertificates is stored as a flat array parallel to qualifications
+    // (index-matched), not nested per-row - without this, the previously
+    // uploaded certificate never made it back into the Upload field on
+    // edit, so it looked like it had vanished.
+    return qualifications.map((qualification, index) => ({
         degree: qualification?.degree || "",
         institution: qualification?.institution || "",
         year: String(qualification?.year || ""),
+        certificate: degreeCertificates[index] || null,
     }));
 };
 
@@ -86,6 +165,7 @@ const buildFormState = (doctor) => ({
 
 export default function DoctorModal({ onClose, onCreated, onSaved, mode = "create", doctor = null }) {
     const [activeTab, setActiveTab] = useState("personal");
+    const [status, setStatus] = useState(doctor?.status || "Pending");
     const [planOptions, setPlanOptions] = useState([]);
     const [plansLoaded, setPlansLoaded] = useState(false);
 
@@ -157,6 +237,7 @@ export default function DoctorModal({ onClose, onCreated, onSaved, mode = "creat
         setActiveTab("personal");
         setForm(buildFormState(doctor));
         setQualifications(buildQualifications(doctor));
+        setStatus(doctor?.status || "Pending");
     }, [doctor, mode]);
 
     const title = mode === "edit" ? "Edit Veterinarian" : "Add Veterinarian";
@@ -164,16 +245,31 @@ export default function DoctorModal({ onClose, onCreated, onSaved, mode = "creat
         ? "Update the veterinarian profile and save the changes."
         : "Complete the details to register a new veterinarian.";
 
-    return (
-        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-0 sm:p-4">
-            <div className="bg-white w-full sm:w-[95%] h-screen sm:h-[95vh] rounded-none sm:rounded-3xl shadow-xl flex flex-col overflow-hidden">
-                <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center px-4 sm:px-8 py-4 bg-white">
-                    <div>
-                        <h2 className="text-2xl sm:text-3xl font-bold bg-linear-to-r from-orange-500 to-orange-700 bg-clip-text text-transparent">
-                            {title}
-                        </h2>
+    const handleStatusChange = (newStatus) => {
+        setStatus(newStatus);
+        showToast({
+            type: "info",
+            title: "Status Updated",
+            description: `Veterinarian status set to ${newStatus}.`,
+        });
+    };
 
-                        <p className="text-slate-500 text-sm mt-1">
+    return (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center px-2 py-[max(2rem,env(safe-area-inset-top))] pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:p-4">
+            <div className="bg-white w-full sm:w-[95%] h-[calc(100svh-3.25rem)] max-h-[calc(100svh-3.25rem)] sm:h-[95vh] sm:max-h-[95vh] rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-gray-100">
+
+                {/* HEADER WITH MATCHING MINT GREEN BG */}
+                <div className="flex items-start justify-between gap-3 px-4 sm:px-8 py-4 sm:py-5 bg-[#EEF6F3] border-b border-[#0C3D2E]/15">
+                    <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                            <h2 className="text-xl sm:text-3xl font-bold text-[#0C3D2E] tracking-tight">
+                                {title}
+                            </h2>
+                            <span className="px-3 py-0.5 rounded-full text-xs font-bold border border-[#0C3D2E]/20 bg-[#D9E8E3] text-[#0C3D2E]">
+                                {status}
+                            </span>
+                        </div>
+                        <p className="text-[#0C3D2E]/70 text-xs sm:text-sm mt-0.5 font-semibold">
                             {description}
                         </p>
                     </div>
@@ -181,24 +277,43 @@ export default function DoctorModal({ onClose, onCreated, onSaved, mode = "creat
                     <button
                         type="button"
                         onClick={onClose}
-                        className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-orange-50 text-slate-500 hover:text-orange-500 transition border-none bg-transparent"
+                        className="w-9 h-9 sm:w-10 sm:h-10 shrink-0 rounded-full hover:bg-[#0C3D2E]/10 text-gray-400 hover:text-[#0C3D2E] flex items-center justify-center transition-colors font-bold cursor-pointer"
                         aria-label="Close veterinarian onboarding"
                     >
-                        X
+                        ✕
                     </button>
                 </div>
 
-                <Stepper
-                    tabs={tabs}
-                    activeTab={activeTab}
-                />
+                {/* WORKFLOW STATUS BAR WITH MATCHING MINT GREEN BG */}
+                <div className="bg-[#EEF6F3] px-4 sm:px-8 py-3 border-b border-[#0C3D2E]/15 flex flex-wrap items-center justify-between gap-3">
+                    <span className="text-xs font-bold uppercase tracking-wider text-[#0C3D2E]">
+                        Workflow Status:
+                    </span>
 
-                <div className="flex-1 overflow-y-auto px-3 sm:px-6 pb-6">
+                    <div className="flex items-center gap-2">
+                        <StatusDropdown
+                            value={status}
+                            onChange={handleStatusChange}
+                        />
+                    </div>
+                </div>
+
+                {/* STEPPER CONTAINER WITH MATCHING MINT GREEN BG */}
+                <div className="bg-[#EEF6F3] border-b border-[#0C3D2E]/15">
+                    <Stepper
+                        tabs={tabs}
+                        activeTab={activeTab}
+                        setActiveTab={setActiveTab}
+                    />
+                </div>
+
+                {/* FORM */}
+                <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 sm:px-6 pt-2 pb-4 bg-slate-50/50">
                     <DoctorForm
                         activeTab={activeTab}
                         tabs={tabs}
                         setActiveTab={setActiveTab}
-                        form={form}
+                        form={{ ...form, status }}
                         setForm={setForm}
                         qualifications={qualifications}
                         setQualifications={setQualifications}

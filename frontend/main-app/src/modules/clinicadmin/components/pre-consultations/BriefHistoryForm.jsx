@@ -25,16 +25,23 @@ export default function BriefHistoryForm({ formData, setFormData }) {
 
           <input
             type="number"
+            min="0"
+            step="1"
             value={formData.durationOfIllness?.value || ""}
-            onChange={(e) =>
+            onChange={(e) => {
+              const value = e.target.value;
+
               setFormData((prev) => ({
                 ...prev,
                 durationOfIllness: {
                   ...prev.durationOfIllness,
-                  value: e.target.value === "" ? "" : Number(e.target.value),
+                  value:
+                    value === ""
+                      ? ""
+                      : Math.max(0, Number(value)), // Prevent negative values
                 },
-              }))
-            }
+              }));
+            }}
             placeholder="Enter Duration Number"
             className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm md:text-base outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-100"
           />
@@ -103,47 +110,153 @@ export default function BriefHistoryForm({ formData, setFormData }) {
         </div>
 
         {/* Recent Travel */}
-        <div>
-          <label className="block mb-2 font-medium text-slate-700">
-            Recent Travel
-          </label>
+        <div className="lg:col-span-2 bg-slate-50 border border-slate-200 rounded-2xl p-4 md:p-5">
+          <div className="flex items-center justify-between gap-4 mb-2">
+            <div>
+              <label className="block font-semibold text-slate-800 text-sm md:text-base">
+                Recent Travel
+              </label>
+              <p className="text-xs text-slate-500">
+                Has the pet travelled recently? If yes, mention where and when.
+              </p>
+            </div>
 
-          <select
-            name="recentTravel"
-            value={formData.recentTravel ? "yes" : "no"}
-            onChange={(e) =>
-              setFormData((prev) => ({
-                ...prev,
-                recentTravel: e.target.value === "yes",
-              }))
-            }
-            className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm md:text-base outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-100 font-medium"
-          >
-            <option value="no">No</option>
-            <option value="yes">Yes</option>
-          </select>
+            <div className="flex items-center bg-slate-200 p-1 rounded-xl shrink-0">
+              <button
+                type="button"
+                onClick={() =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    recentTravel: {
+                      hasTravel: false,
+                      description: "",
+                    },
+                  }))
+                }
+                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  !formData.recentTravel?.hasTravel
+                    ? "bg-white text-slate-800 shadow-xs"
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                No
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    recentTravel: {
+                      ...prev.recentTravel,
+                      hasTravel: true,
+                    },
+                  }))
+                }
+                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  formData.recentTravel?.hasTravel
+                    ? "bg-orange-500 text-white shadow-xs"
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                Yes
+              </button>
+            </div>
+          </div>
+
+          {formData.recentTravel?.hasTravel && (
+            <textarea
+              rows={3}
+              placeholder="Enter travel history..."
+              value={formData.recentTravel?.description || ""}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  recentTravel: {
+                    ...prev.recentTravel,
+                    hasTravel: true,
+                    description: e.target.value,
+                  },
+                }))
+              }
+              className="w-full mt-3 border border-slate-200 rounded-xl p-3 bg-white outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-100 resize-none"
+            />
+          )}
         </div>
 
-        {/* Animal Contact */}
-        <div>
-          <label className="block mb-2 font-medium text-slate-700">
-            Any Contact With Any Animal
-          </label>
+        {/* Contact With Other Animals */}
+        <div className="lg:col-span-2 bg-slate-50 border border-slate-200 rounded-2xl p-4 md:p-5">
+          <div className="flex items-center justify-between gap-4 mb-2">
+            <div>
+              <label className="block font-semibold text-slate-800 text-sm md:text-base">
+                Contact With Other Animals
+              </label>
+              <p className="text-xs text-slate-500">
+                Has the pet had recent contact with other animals?
+              </p>
+            </div>
 
-          <select
-            name="animalContact"
-            value={formData.animalContact ? "yes" : "no"}
-            onChange={(e) =>
-              setFormData((prev) => ({
-                ...prev,
-                animalContact: e.target.value === "yes",
-              }))
-            }
-            className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm md:text-base outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-100 font-medium"
-          >
-            <option value="no">No</option>
-            <option value="yes">Yes</option>
-          </select>
+            <div className="flex items-center bg-slate-200 p-1 rounded-xl shrink-0">
+              <button
+                type="button"
+                onClick={() =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    animalContact: {
+                      hasContact: false,
+                      description: "",
+                    },
+                  }))
+                }
+                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  !formData.animalContact?.hasContact
+                    ? "bg-white text-slate-800 shadow-xs"
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                No
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    animalContact: {
+                      ...prev.animalContact,
+                      hasContact: true,
+                    },
+                  }))
+                }
+                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  formData.animalContact?.hasContact
+                    ? "bg-orange-500 text-white shadow-xs"
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                Yes
+              </button>
+            </div>
+          </div>
+
+          {formData.animalContact?.hasContact && (
+            <textarea
+              rows={3}
+              placeholder="Describe the contact with other animals..."
+              value={formData.animalContact?.description || ""}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  animalContact: {
+                    ...prev.animalContact,
+                    hasContact: true,
+                    description: e.target.value,
+                  },
+                }))
+              }
+              className="w-full mt-3 border border-slate-200 rounded-xl p-3 bg-white outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-100 resize-none"
+            />
+          )}
         </div>
 
         {/* Previous Similar Episodes with Toggle + Textarea */}

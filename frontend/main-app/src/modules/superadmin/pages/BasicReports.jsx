@@ -14,88 +14,50 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
+import { Building2, CheckCircle2, AlertCircle, IndianRupee } from "lucide-react";
 import {
   downloadSuperAdminBasicReport,
   fetchSuperAdminBasicReports,
   shareSuperAdminBasicReport,
 } from "./basicReportsApi";
 
-const ACCENT = "#E8630A";
-const INDIGO = "#6366F1";
-const GREEN = "#22C55E";
-const COLORS = [INDIGO, ACCENT, GREEN, "#F59E0B"];
+const PRIMARY_GREEN = "#0C3D2E";
+const ORANGE_ACCENT = "#F7931E";
+const LIGHT_GREEN = "#10B981";
+const AMBER_GOLD = "#F59E0B";
 
-const Card = ({ children, style = {} }) => (
-  <div
-    style={{
-      background: "#fff",
-      border: "1px solid #E8ECF0",
-      borderRadius: 16,
-      padding: 22,
-      boxShadow: "0 1px 4px rgba(15,23,42,0.05)",
-      ...style,
-    }}
-  >
+const CHART_COLORS = [PRIMARY_GREEN, ORANGE_ACCENT, LIGHT_GREEN, AMBER_GOLD];
+
+const Card = ({ children, className = "" }) => (
+  <div className={`bg-white border border-gray-100 rounded-2xl p-5 md:p-6 shadow-xs ${className}`}>
     {children}
   </div>
 );
 
-const KPI = ({ label, value, color, sub, badge = "●" }) => (
-  <Card>
-    <div
-      style={{
-        display: "flex",
-        alignItems: "flex-start",
-        justifyContent: "space-between",
-        gap: 12,
-      }}
-    >
-      <div>
-        <div
-          style={{
-            fontSize: 12,
-            fontWeight: 700,
-            color: "#94A3B8",
-            textTransform: "uppercase",
-            letterSpacing: "0.06em",
-          }}
-        >
-          {label}
+const KPI = ({ label, value, sub, theme = "mint", icon: Icon }) => {
+  const isOrange = theme === "orange";
+  const cardBg = isOrange ? "bg-[#FFF4E5] border-[#F7931E]/30" : "bg-[#EEF6F3] border-[#0C3D2E]/20";
+  const iconBoxBg = isOrange ? "bg-[#F7931E] text-white" : "bg-[#0C3D2E] text-white";
+
+  return (
+    <div className={`flex flex-col justify-between p-4 rounded-2xl border ${cardBg} shadow-2xs transition-all`}>
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center gap-3.5">
+          <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 shadow-xs ${iconBoxBg}`}>
+            <Icon size={20} />
+          </div>
+          <div>
+            <div className="text-[11px] font-bold uppercase tracking-wider text-gray-500">{label}</div>
+            <div className="text-2xl font-black text-[#0C3D2E] tracking-tight mt-0.5">{value}</div>
+          </div>
         </div>
-        <div
-          style={{
-            marginTop: 10,
-            fontSize: 28,
-            fontWeight: 900,
-            color: "#0F172A",
-            letterSpacing: "-0.03em",
-            lineHeight: 1,
-          }}
-        >
-          {value}
-        </div>
-        {sub ? <div style={{ marginTop: 8, fontSize: 13, color: "#64748B" }}>{sub}</div> : null}
+        <span className="text-gray-300 text-xs tracking-widest font-bold">•••</span>
       </div>
-      <div
-        style={{
-          width: 44,
-          height: 44,
-          borderRadius: 14,
-          background: `${color}14`,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontWeight: 900,
-          fontSize: badge === "₹" ? 16 : 13,
-          color,
-          flexShrink: 0,
-        }}
-      >
-        {badge}
-      </div>
+
+      {sub ? <div className="mt-3 text-xs font-semibold text-[#0C3D2E]/70">{sub}</div> : null}
     </div>
-  </Card>
-);
+  );
+};
 
 const formatDownloadName = (format) => {
   const stamp = new Date().toISOString().slice(0, 10);
@@ -306,190 +268,125 @@ export default function BasicReports() {
   };
 
   const actionButtons = [
-    { format: "pdf", label: "Download PDF", color: ACCENT },
-    { format: "xls", label: "Download Excel", color: INDIGO },
-    { format: "csv", label: "Download CSV", color: GREEN },
+    { format: "pdf", label: "Download PDF", bgClass: "bg-[#F7931E] hover:bg-[#e08319]" },
+    { format: "xls", label: "Download Excel", bgClass: "bg-[#0C3D2E] hover:bg-[#08281E]" },
+    { format: "csv", label: "Download CSV", bgClass: "bg-emerald-600 hover:bg-emerald-700" },
   ];
 
   return (
-    <div
-      style={{
-        background: "#F8F9FB",
-        minHeight: "100vh",
-        padding: "28px 32px",
-        maxWidth: 1200,
-        margin: "0 auto",
-        fontFamily: '"Inter","Plus Jakarta Sans",system-ui,sans-serif',
-        color: "#0F172A",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "flex-start",
-          gap: 16,
-          flexWrap: "wrap",
-          marginBottom: 22,
-        }}
-      >
+    <div className="bg-slate-50/50 min-h-screen p-4 sm:p-6 md:p-8 max-w-7xl mx-auto text-gray-800">
+      {/* Header with Mint Background Style Matching Clinic Management */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 bg-[#EEF6F3] p-5 md:p-6 rounded-2xl shadow-xs border border-[#0C3D2E]/15 transition-all">
         <div>
-          <h1 style={{ fontSize: 22, fontWeight: 900, margin: 0 }}>Basic Reports</h1>
-          <p style={{ margin: "6px 0 0", fontSize: 13, color: "#64748B" }}>
+          <h1 className="text-xl md:text-2xl font-black text-[#0C3D2E] tracking-tight">
+            Basic Reports
+          </h1>
+          <p className="text-xs md:text-sm font-semibold text-[#0C3D2E]/70 mt-0.5">
             Live database-backed analytics for the super admin.
           </p>
-          <div style={{ marginTop: 8, fontSize: 12, color: "#94A3B8" }}>
+          <div className="mt-2 text-xs font-semibold text-[#F7931E]">
             {generatedAtLabel ? `Last refreshed: ${generatedAtLabel}` : "Refreshing live data from the database."}
           </div>
         </div>
       </div>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-          gap: 16,
-          marginBottom: 16,
-        }}
-      >
-        <Card>
-          <div style={{ fontSize: 14, fontWeight: 800, color: "#0F172A", marginBottom: 12 }}>
-            Export report
-          </div>
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            {actionButtons.map((button) => {
-              const isBusy = downloadingFormat === button.format || sharing;
+      {/* Action Sections: Export & Share with Pure White Backgrounds Restored */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mb-6">
+        {/* Export Card */}
+        <Card className="flex flex-col justify-between">
+          <div>
+            <div className="text-sm font-bold text-[#0C3D2E] mb-3">
+              Export report
+            </div>
+            <div className="flex flex-wrap gap-2.5">
+              {actionButtons.map((button) => {
+                const isBusy = downloadingFormat === button.format || sharing;
 
-              return (
-                <button
-                  key={button.label}
-                  type="button"
-                  onClick={() => handleDownload(button.format)}
-                  disabled={isBusy}
-                  style={{
-                    background: button.color,
-                    color: "#fff",
-                    border: "none",
-                    borderRadius: 12,
-                    padding: "10px 16px",
-                    fontSize: 13,
-                    fontWeight: 700,
-                    cursor: isBusy ? "not-allowed" : "pointer",
-                    opacity: isBusy ? 0.7 : 1,
-                  }}
-                >
-                  {downloadingFormat === button.format ? "Preparing..." : button.label}
-                </button>
-              );
-            })}
+                return (
+                  <button
+                    key={button.label}
+                    type="button"
+                    onClick={() => handleDownload(button.format)}
+                    disabled={isBusy}
+                    className={`
+                      ${button.bgClass}
+                      text-white
+                      px-4 py-2.5
+                      rounded-xl
+                      text-xs font-bold
+                      transition-all duration-200
+                      shadow-xs
+                      cursor-pointer
+                      disabled:opacity-60 disabled:cursor-not-allowed
+                    `}
+                  >
+                    {downloadingFormat === button.format ? "Preparing..." : button.label}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="mt-3 text-xs font-medium text-gray-400">
+              Each export is generated from the latest data stored in the database.
+            </p>
           </div>
-          <div style={{ marginTop: 12, fontSize: 12, color: "#64748B" }}>
-            Each export is generated from the latest data stored in the database.
-          </div>
+
           {downloadFeedback?.message ? (
             <div
-              style={{
-                marginTop: 12,
-                fontSize: 13,
-                fontWeight: 600,
-                color: downloadFeedback.type === "success" ? "#166534" : "#B91C1C",
-              }}
+              className={`mt-3 text-xs font-bold ${
+                downloadFeedback.type === "success" ? "text-emerald-700" : "text-rose-600"
+              }`}
             >
               {downloadFeedback.message}
             </div>
           ) : null}
         </Card>
 
+        {/* Share Form Card */}
         <Card>
           <form onSubmit={handleShare}>
-            <div style={{ fontSize: 14, fontWeight: 800, color: "#0F172A", marginBottom: 12 }}>
+            <div className="text-sm font-bold text-[#0C3D2E] mb-3">
               Share by email
             </div>
 
-            <div style={{ display: "grid", gap: 12 }}>
-              <label style={{ fontSize: 12, fontWeight: 700, color: "#0F172A" }}>
+            <div className="grid gap-3">
+              <label className="text-xs font-semibold text-[#0C3D2E]">
                 Recipient email(s)
                 <input
                   type="text"
                   value={shareEmail}
                   onChange={(event) => setShareEmail(event.target.value)}
                   placeholder="admin@example.com, accounts@example.com"
-                  style={{
-                    width: "100%",
-                    marginTop: 6,
-                    border: "1px solid #D7DDE5",
-                    borderRadius: 10,
-                    padding: "10px 12px",
-                    fontSize: 14,
-                    outline: "none",
-                    background: "#fff",
-                  }}
+                  className="w-full mt-1.5 border border-gray-200 rounded-xl px-3 py-2 text-xs font-medium outline-hidden focus:border-[#0C3D2E] bg-white"
                 />
               </label>
 
-              <label style={{ fontSize: 12, fontWeight: 700, color: "#0F172A" }}>
+              <label className="text-xs font-semibold text-[#0C3D2E]">
                 Subject
                 <input
                   type="text"
                   value={shareSubject}
                   onChange={(event) => setShareSubject(event.target.value)}
-                  style={{
-                    width: "100%",
-                    marginTop: 6,
-                    border: "1px solid #D7DDE5",
-                    borderRadius: 10,
-                    padding: "10px 12px",
-                    fontSize: 14,
-                    outline: "none",
-                    background: "#fff",
-                  }}
+                  className="w-full mt-1.5 border border-gray-200 rounded-xl px-3 py-2 text-xs font-medium outline-hidden focus:border-[#0C3D2E] bg-white"
                 />
               </label>
 
-              <label style={{ fontSize: 12, fontWeight: 700, color: "#0F172A" }}>
+              <label className="text-xs font-semibold text-[#0C3D2E]">
                 Message
                 <textarea
                   value={shareMessage}
                   onChange={(event) => setShareMessage(event.target.value)}
-                  rows={4}
-                  style={{
-                    width: "100%",
-                    marginTop: 6,
-                    border: "1px solid #D7DDE5",
-                    borderRadius: 10,
-                    padding: "10px 12px",
-                    fontSize: 14,
-                    outline: "none",
-                    resize: "vertical",
-                    background: "#fff",
-                    fontFamily: "inherit",
-                  }}
+                  rows={3}
+                  className="w-full mt-1.5 border border-gray-200 rounded-xl px-3 py-2 text-xs font-medium outline-hidden focus:border-[#0C3D2E] bg-white resize-y"
                 />
               </label>
 
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
-                  gap: 12,
-                  alignItems: "end",
-                }}
-              >
-                <label style={{ fontSize: 12, fontWeight: 700, color: "#0F172A" }}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
+                <label className="text-xs font-semibold text-[#0C3D2E]">
                   Report format
                   <select
                     value={shareFormat}
                     onChange={(event) => setShareFormat(event.target.value)}
-                    style={{
-                      width: "100%",
-                      marginTop: 6,
-                      border: "1px solid #D7DDE5",
-                      borderRadius: 10,
-                      padding: "10px 12px",
-                      fontSize: 14,
-                      outline: "none",
-                      background: "#fff",
-                    }}
+                    className="w-full mt-1.5 border border-gray-200 rounded-xl px-3 py-2 text-xs font-medium outline-hidden focus:border-[#0C3D2E] bg-white cursor-pointer"
                   >
                     <option value="pdf">PDF</option>
                     <option value="xls">Excel</option>
@@ -500,18 +397,7 @@ export default function BasicReports() {
                 <button
                   type="submit"
                   disabled={sharing}
-                  style={{
-                    background: ACCENT,
-                    color: "#fff",
-                    border: "none",
-                    borderRadius: 12,
-                    padding: "11px 16px",
-                    fontSize: 13,
-                    fontWeight: 700,
-                    cursor: sharing ? "not-allowed" : "pointer",
-                    opacity: sharing ? 0.75 : 1,
-                    height: 42,
-                  }}
+                  className="w-full bg-[#F7931E] hover:bg-[#e08319] text-white rounded-xl px-4 py-2.5 text-xs font-bold transition-all duration-200 shadow-xs cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed h-[36px]"
                 >
                   {sharing ? "Sharing..." : "Share report"}
                 </button>
@@ -520,96 +406,83 @@ export default function BasicReports() {
 
             {shareFeedback?.message ? (
               <div
-                style={{
-                  marginTop: 12,
-                  fontSize: 13,
-                  fontWeight: 600,
-                  color: shareFeedback.type === "success" ? "#166534" : "#B91C1C",
-                }}
+                className={`mt-3 text-xs font-bold ${
+                  shareFeedback.type === "success" ? "text-emerald-700" : "text-rose-600"
+                }`}
               >
                 {shareFeedback.message}
               </div>
             ) : null}
 
-            <div style={{ marginTop: 12, fontSize: 12, color: "#64748B" }}>
+            <p className="mt-2 text-[11px] font-medium text-gray-400">
               You can separate multiple emails with commas or semicolons.
-            </div>
+            </p>
           </form>
         </Card>
       </div>
 
       {loading ? (
-        <Card>Loading platform analytics...</Card>
+        <Card className="py-12 text-center text-sm font-medium text-gray-400">
+          Loading platform analytics...
+        </Card>
       ) : error ? (
-        <Card>
-          <div style={{ fontWeight: 800, color: "#B91C1C" }}>Error</div>
-          <div style={{ marginTop: 8, color: "#64748B", fontSize: 13 }}>{error}</div>
+        <Card className="border-rose-100 bg-rose-50/50">
+          <div className="font-bold text-rose-700 text-sm">Error</div>
+          <div className="mt-1 text-xs text-rose-600 font-medium">{error}</div>
         </Card>
       ) : (
         <>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-              gap: 16,
-              marginBottom: 16,
-            }}
-          >
+          {/* KPI Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6">
             <KPI
-              label="Total clinics"
+              label="TOTAL CLINICS"
               value={totalClinics}
-              color={INDIGO}
               sub="Registered clinics in the system"
-              badge="TC"
+              theme="mint"
+              icon={Building2}
             />
             <KPI
-              label="Active clinics"
+              label="ACTIVE CLINICS"
               value={activeClinics}
-              color={GREEN}
               sub="Clinics with active subscriptions"
-              badge="AC"
+              theme="orange"
+              icon={CheckCircle2}
             />
             <KPI
-              label="Inactive clinics"
+              label="INACTIVE CLINICS"
               value={inactiveClinics}
-              color={ACCENT}
               sub="Suspended or expired clinics"
-              badge="IC"
+              theme="mint"
+              icon={AlertCircle}
             />
             <KPI
-              label="Total payment collected"
+              label="TOTAL PAYMENT COLLECTED"
               value={`₹${fmtINR.format(totalPaymentCollected)}`}
-              color={ACCENT}
               sub="Completed consultation revenue"
-              badge="₹"
+              theme="orange"
+              icon={IndianRupee}
             />
           </div>
 
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(450px, 1fr))",
-              gap: 16,
-              marginBottom: 16,
-            }}
-          >
-            <Card style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          {/* Charts Row 1: Revenue Trend (Green BG) & Clinic Onboarding Rate (White BG) */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mb-6">
+            <div className="bg-[#EEF6F3] border border-[#0C3D2E]/15 rounded-2xl p-5 md:p-6 shadow-xs flex flex-col gap-4">
               <div>
-                <div style={{ fontSize: 14, fontWeight: 800, color: "#0F172A" }}>Revenue Trend</div>
-                <div style={{ fontSize: 12, color: "#64748B" }}>Monthly payment collection overview</div>
+                <div className="text-sm font-bold text-[#0C3D2E]">Revenue Trend</div>
+                <div className="text-xs font-semibold text-[#0C3D2E]/70 mt-0.5">Monthly payment collection overview</div>
               </div>
-              <div style={{ height: 250, width: "100%" }}>
+              <div className="h-64 w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={revenueData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#EEF0F3" vertical={false} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#0C3D2E]/10" vertical={false} />
                     <XAxis
                       dataKey="month"
-                      tick={{ fontSize: 12, fill: "#94A3B8" }}
+                      tick={{ fontSize: 11, fill: "#0C3D2E" }}
                       axisLine={false}
                       tickLine={false}
                     />
                     <YAxis
-                      tick={{ fontSize: 12, fill: "#94A3B8" }}
+                      tick={{ fontSize: 11, fill: "#0C3D2E" }}
                       axisLine={false}
                       tickLine={false}
                       tickFormatter={(value) => `₹${Math.round(Number(value || 0) / 1000)}k`}
@@ -618,58 +491,53 @@ export default function BasicReports() {
                     <Line
                       type="monotone"
                       dataKey="revenue"
-                      stroke={ACCENT}
+                      stroke={ORANGE_ACCENT}
                       strokeWidth={3}
-                      dot={{ r: 4 }}
+                      dot={{ r: 4, fill: ORANGE_ACCENT }}
                       activeDot={{ r: 6 }}
                     />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
-            </Card>
+            </div>
 
-            <Card style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <Card className="flex flex-col gap-4">
               <div>
-                <div style={{ fontSize: 14, fontWeight: 800, color: "#0F172A" }}>Clinic Onboarding Rate</div>
-                <div style={{ fontSize: 12, color: "#64748B" }}>New clinics registered per month</div>
+                <div className="text-sm font-bold text-[#0C3D2E]">Clinic Onboarding Rate</div>
+                <div className="text-xs font-medium text-gray-400 mt-0.5">New clinics registered per month</div>
               </div>
-              <div style={{ height: 250, width: "100%" }}>
+              <div className="h-64 w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={clinicTrendData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#EEF0F3" vertical={false} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
                     <XAxis
                       dataKey="month"
-                      tick={{ fontSize: 12, fill: "#94A3B8" }}
+                      tick={{ fontSize: 11, fill: "#94A3B8" }}
                       axisLine={false}
                       tickLine={false}
                     />
                     <YAxis
-                      tick={{ fontSize: 12, fill: "#94A3B8" }}
+                      tick={{ fontSize: 11, fill: "#94A3B8" }}
                       axisLine={false}
                       tickLine={false}
                       allowDecimals={false}
                     />
-                    <Tooltip formatter={(value) => [value, "New clinics"]} cursor={{ fill: "#F8F9FB" }} />
-                    <Bar dataKey="clinics" fill={INDIGO} radius={[4, 4, 0, 0]} barSize={40} />
+                    <Tooltip formatter={(value) => [value, "New clinics"]} cursor={{ fill: "#F8FAFC" }} />
+                    <Bar dataKey="clinics" fill={PRIMARY_GREEN} radius={[6, 6, 0, 0]} barSize={36} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
             </Card>
           </div>
 
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(450px, 1fr))",
-              gap: 16,
-            }}
-          >
-            <Card style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          {/* Charts Row 2: Clinic Status Distribution (Orange BG) & Data Summary (White BG) */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mb-6">
+            <div className="bg-[#FFF4E5] border border-[#F7931E]/30 rounded-2xl p-5 md:p-6 shadow-xs flex flex-col gap-4">
               <div>
-                <div style={{ fontSize: 14, fontWeight: 800, color: "#0F172A" }}>Clinic Status Distribution</div>
-                <div style={{ fontSize: 12, color: "#64748B" }}>Breakdown by subscription states</div>
+                <div className="text-sm font-bold text-[#0C3D2E]">Clinic Status Distribution</div>
+                <div className="text-xs font-semibold text-[#0C3D2E]/70 mt-0.5">Breakdown by subscription states</div>
               </div>
-              <div style={{ height: 250, width: "100%" }}>
+              <div className="h-64 w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
@@ -682,7 +550,7 @@ export default function BasicReports() {
                       dataKey="value"
                     >
                       {clinicDistribution.map((entry, index) => (
-                        <Cell key={`cell-${entry.name || index}`} fill={COLORS[index % COLORS.length]} />
+                        <Cell key={`cell-${entry.name || index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
                       ))}
                     </Pie>
                     <Tooltip formatter={(value) => [value, "Clinics"]} />
@@ -690,39 +558,39 @@ export default function BasicReports() {
                       verticalAlign="middle"
                       align="right"
                       layout="vertical"
-                      wrapperStyle={{ fontSize: 12, color: "#64748B" }}
+                      wrapperStyle={{ fontSize: "11px", color: "#0C3D2E" }}
                     />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
-            </Card>
+            </div>
 
-            <Card style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <Card className="flex flex-col gap-4">
               <div>
-                <div style={{ fontSize: 14, fontWeight: 800, color: "#0F172A" }}>Data Summary & Details</div>
-                <div style={{ fontSize: 12, color: "#64748B" }}>What these metrics represent</div>
+                <div className="text-sm font-bold text-[#0C3D2E]">Data Summary & Details</div>
+                <div className="text-xs font-medium text-gray-400 mt-0.5">What these metrics represent</div>
               </div>
 
-              <div style={{ display: "flex", flexDirection: "column", gap: 14, marginTop: 8 }}>
-                <div style={{ padding: 12, background: "#EEF2FF", borderRadius: 8, borderLeft: `4px solid ${INDIGO}` }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: INDIGO }}>Clinic Acquisition</div>
-                  <div style={{ fontSize: 12, color: "#475569", marginTop: 4 }}>
+              <div className="flex flex-col gap-3.5 mt-2">
+                <div className="p-3.5 bg-[#EEF6F3] rounded-2xl border border-[#0C3D2E]/15 border-l-4 border-l-[#0C3D2E] shadow-2xs">
+                  <div className="text-xs font-bold text-[#0C3D2E]">Clinic Acquisition</div>
+                  <div className="text-xs text-gray-600 font-medium mt-1 leading-relaxed">
                     The bar chart illustrates monthly growth. The current total base stands at{" "}
-                    <strong>{totalClinics}</strong> clinics system-wide.
+                    <strong className="text-[#0C3D2E] font-bold">{totalClinics}</strong> clinics system-wide.
                   </div>
                 </div>
 
-                <div style={{ padding: 12, background: "#FFF7ED", borderRadius: 8, borderLeft: `4px solid ${ACCENT}` }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: ACCENT }}>Financial Performance</div>
-                  <div style={{ fontSize: 12, color: "#475569", marginTop: 4 }}>
+                <div className="p-3.5 bg-[#FFF4E5]/60 rounded-2xl border border-[#F7931E]/20 border-l-4 border-l-[#F7931E] shadow-2xs">
+                  <div className="text-xs font-bold text-[#F7931E]">Financial Performance</div>
+                  <div className="text-xs text-gray-600 font-medium mt-1 leading-relaxed">
                     The line chart tracks the revenue stream. Platform aggregate revenue is currently{" "}
-                    <strong>₹{fmtINR.format(totalPaymentCollected)}</strong>.
+                    <strong className="text-[#F7931E] font-bold">₹{fmtINR.format(totalPaymentCollected)}</strong>.
                   </div>
                 </div>
 
-                <div style={{ padding: 12, background: "#F0FDF4", borderRadius: 8, borderLeft: `4px solid ${GREEN}` }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: GREEN }}>Account Health</div>
-                  <div style={{ fontSize: 12, color: "#475569", marginTop: 4 }}>
+                <div className="p-3.5 bg-[#EEF6F3] rounded-2xl border border-[#0C3D2E]/15 border-l-4 border-l-emerald-600 shadow-2xs">
+                  <div className="text-xs font-bold text-emerald-800">Account Health</div>
+                  <div className="text-xs text-gray-600 font-medium mt-1 leading-relaxed">
                     The donut chart segments the active, suspended and expired clinic states so you can spot churn at a glance.
                   </div>
                 </div>
@@ -732,8 +600,8 @@ export default function BasicReports() {
         </>
       )}
 
-      <div style={{ marginTop: 12, fontSize: 12, color: "#94A3B8" }}>
-        Reports are generated live from <code>/super-admin-reports/basic</code>, with download and email sharing available above.
+      <div className="mt-4 text-xs font-medium text-gray-400 text-center sm:text-left">
+        Reports are generated live from <code className="bg-gray-100 px-1.5 py-0.5 rounded-md text-[#0C3D2E] font-semibold">/super-admin-reports/basic</code>, with download and email sharing available above.
       </div>
     </div>
   );

@@ -118,7 +118,7 @@ const Dashboard = () => {
             icon: Building2,
         },
         {
-            label: "Total Doctors",
+            label: "Total Veterinarians",
             value: formatNumber(dashboardData.totalDoctors),
             change: `+${formatNumber(dashboardData.newDoctorsThisMonth)} this month`,
             bg: "#22c55e",
@@ -141,8 +141,8 @@ const Dashboard = () => {
     ];
 
     const clinicSummary = {
-        newClinicsThisWeek: dashboardData.newClinicsThisWeek || 0,
-        newClinicsThisMonth: dashboardData.newClinicsThisMonth || 0,
+        totalClinics: dashboardData.totalClinics || 0,
+        submittedClinics: Number(verificationSummary.SUBMITTED || 0),
         activeClinics: dashboardData.activeClinics || 0,
         pendingReviews,
     };

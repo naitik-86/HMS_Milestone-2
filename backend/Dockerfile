@@ -15,7 +15,9 @@ ENV NODE_ENV=production
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-RUN useradd --system --uid 1001 appuser
+RUN useradd --system --uid 1001 appuser \
+    && mkdir -p /app/uploads \
+    && chown -R appuser:appuser /app/uploads
 USER appuser
 
 EXPOSE 5000

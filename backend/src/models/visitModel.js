@@ -144,6 +144,17 @@ const visitSchema = new mongoose.Schema(
         },
 
 
+        primaryReason: {
+            type: String,
+            enum: ["Treatment", "Vaccination", "Checkup", "Certificate"]
+        },
+
+        assignedDoctor: String,
+
+        appointmentDate: Date,
+
+        appointmentTime: String,
+
         chiefComplaint: String,
 
         notes: String,

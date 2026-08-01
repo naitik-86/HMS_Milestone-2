@@ -122,6 +122,19 @@ const doctorSchema = new mongoose.Schema(
             enum: ["Active", "Inactive"],
             default: "Active",
         },
+
+        isVerified: {
+            type: Boolean,
+            default: false,
+        },
+
+        verifiedAt: Date,
+
+        verifiedBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "ClinicAdmin",
+        },
+
         staff: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Staff",

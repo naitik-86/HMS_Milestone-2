@@ -67,8 +67,9 @@ exports.getPendingPets = async (req, res) => {
 
         const visits = await Visit.find({
             clinicId,
-            currentStage: "DOCTOR",
-            status: "WAITING",
+            "workflow.preConsultationCompleted": true,
+            "workflow.doctorCompleted": { $ne: true },
+            status: { $ne: "CANCELLED" },
         })
             .populate("preConsultationId")
             .sort({ createdAt: -1 });
@@ -78,6 +79,16 @@ exports.getPendingPets = async (req, res) => {
             "pets._id": {
                 $in: visits.map((visit) => visit.petId),
             },
+        });
+
+        // Fetch lab reports associated with these visits
+        const visitIds = visits.map((v) => v._id);
+        const labReports = await LabReport.find({ visitId: { $in: visitIds } });
+        const labReportMap = {};
+        labReports.forEach((r) => {
+            if (r.visitId) {
+                labReportMap[r.visitId.toString()] = r;
+            }
         });
 
         // Create a lookup map: petId -> { owner, pet }
@@ -92,14 +103,18 @@ exports.getPendingPets = async (req, res) => {
             });
         });
 
-        // Attach owner & pet to each visit
+        // Attach owner, pet, and labReport status to each visit
         const data = visits.map((visit) => {
             const details = ownerPetMap[visit.petId.toString()];
+            const labRep = labReportMap[visit._id.toString()] || null;
 
             return {
                 ...visit.toObject(),
                 owner: details?.owner || null,
                 pet: details?.pet || null,
+                labReport: labRep,
+                hasLabReport: !!labRep,
+                isSentToLab: visit.currentStage === "LAB" || visit.status === "LAB_TEST_RAISED",
             };
         });
 
@@ -113,6 +128,29 @@ exports.getPendingPets = async (req, res) => {
             success: false,
             message: error.message,
         });
+    }
+};
+
+// Delete a visit and records that belong exclusively to that visit.
+exports.deletePatient = async (req, res) => {
+    try {
+        const clinicId = req.user.clinicId;
+        const visit = await Visit.findOne({ _id: req.params.id, clinicId });
+
+        if (!visit) {
+            return res.status(404).json({ success: false, message: "Visit record not found" });
+        }
+
+        await Promise.all([
+            DoctorConsultation.deleteMany({ clinicId, $or: [{ visitId: visit._id }, ...(visit.doctorConsultationId ? [{ _id: visit.doctorConsultationId }] : [])] }),
+            PreConsultation.deleteMany({ clinicId, $or: [{ visitId: visit._id }, ...(visit.preConsultationId ? [{ _id: visit.preConsultationId }] : [])] }),
+            LabReport.deleteMany({ clinicId, visitId: visit._id }),
+        ]);
+        await Visit.deleteOne({ _id: visit._id, clinicId });
+
+        return res.status(200).json({ success: true, message: "Visit record deleted successfully" });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: error.message });
     }
 };
 
@@ -189,9 +227,66 @@ exports.getCompletedPets = async (req, res) => {
             });
         });
 
+        // Lookup consultations & pre-consultations
+        const visitIds = visits.map((v) => v._id);
+        const preConsultIds = visits.map((v) => v.preConsultationId).filter(Boolean);
+        const docConsultIds = visits.map((v) => v.doctorId).filter(Boolean);
+
+        const [consultations, preConsultations, labReports] = await Promise.all([
+            DoctorConsultation.find({
+                $or: [
+                    { visitId: { $in: visitIds } },
+                    { _id: { $in: docConsultIds } }
+                ]
+            }),
+            PreConsultation.find({
+                $or: [
+                    { visitId: { $in: visitIds } },
+                    { _id: { $in: preConsultIds } }
+                ]
+            }),
+            LabReport.find({ visitId: { $in: visitIds } })
+        ]);
+
+        const consultMapByVisit = {};
+        const consultMapById = {};
+        consultations.forEach(c => {
+            if (c.visitId) consultMapByVisit[c.visitId.toString()] = c.toObject();
+            if (c._id) consultMapById[c._id.toString()] = c.toObject();
+        });
+
+        const preConsultMapByVisit = {};
+        const preConsultMapById = {};
+        preConsultations.forEach(pc => {
+            if (pc.visitId) preConsultMapByVisit[pc.visitId.toString()] = pc.toObject();
+            if (pc._id) preConsultMapById[pc._id.toString()] = pc.toObject();
+        });
+
+        const labReportMapByVisit = {};
+        labReports.forEach(lr => {
+            if (lr.visitId) labReportMapByVisit[lr.visitId.toString()] = lr.toObject();
+        });
+
         const completedVisitsWithDetails = visits.map((visit) => {
             const details = ownerPetMap[visit.petId?.toString()];
             const rawObj = visit.toObject();
+            const consult = consultMapByVisit[visit._id.toString()] || consultMapById[visit.doctorId?.toString()] || {};
+            const preConsult = preConsultMapByVisit[visit._id.toString()] || preConsultMapById[visit.preConsultationId?.toString()] || {};
+            const labRep = labReportMapByVisit[visit._id.toString()] || null;
+
+            const vitals = {
+                bodyTemperature: preConsult.bodyTemperature ?? consult.vitals?.bodyTemperature,
+                temperature: preConsult.bodyTemperature ?? consult.vitals?.temperature,
+                bodyWeight: preConsult.bodyWeight ?? consult.vitals?.bodyWeight ?? consult.petWeight,
+                weight: preConsult.bodyWeight ?? consult.vitals?.weight ?? consult.petWeight,
+                heartRate: preConsult.heartRate ?? consult.vitals?.heartRate,
+                pulseRate: preConsult.heartRate ?? consult.vitals?.pulseRate,
+                respiratoryRate: preConsult.respiratoryRate ?? consult.vitals?.respiratoryRate,
+                bloodPressure: preConsult.bloodPressure ?? consult.vitals?.bloodPressure,
+                spo2: preConsult.spo2 ?? consult.vitals?.spo2,
+                bcs: preConsult.bcs ?? consult.vitals?.bcs,
+                recordedBy: preConsult.recordedBy ?? consult.vitals?.recordedBy,
+            };
 
             return {
                 ...rawObj,
@@ -199,6 +294,17 @@ exports.getCompletedPets = async (req, res) => {
                 pet: details?.pet || null,
                 ownerId: details?.owner || rawObj.ownerId || null,
                 petId: details?.pet || rawObj.petId || null,
+                vitals,
+                history: consult.history || {},
+                clinicalObservation: consult.clinicalObservation || {},
+                diagnosis: consult.diagnosis || {},
+                labRequisition: consult.labRequisition || {},
+                treatment: consult.treatment || {},
+                suggestion: consult.suggestion || {},
+                consultationDetails: consult,
+                preConsultationId: preConsult,
+                labReport: labRep,
+                hasLabReport: !!labRep,
             };
         });
 
@@ -266,14 +372,9 @@ exports.getHistory = async (req, res) => {
             clinicId
         })
             .populate({
-                path: "petId",
-                select:
-                    "name species breed gender dob age color uniquePetId photoUrl rfidTag identificationMarks isSterilised"
-            })
-            .populate({
                 path: "ownerId",
                 select:
-                    "ownerName mobileNumber email address city district state pincode"
+                    "ownerName mobileNumber email address city district state pincode pets"
             })
             .populate({
                 path: "doctorId",
@@ -282,6 +383,14 @@ exports.getHistory = async (req, res) => {
             .sort({
                 createdAt: -1
             });
+
+        // petId refs a top-level "Pet" collection that's never populated -
+        // the real pet data is an embedded subdocument on the owner
+        // (ownerId/PetRegistration), keyed by that same petId.
+        const historyWithPets = history.map((visit) => ({
+            ...visit.toObject(),
+            pet: visit.ownerId?.pets?.id(visit.petId) || null,
+        }));
 
         return res.status(200).json({
 
@@ -295,7 +404,7 @@ exports.getHistory = async (req, res) => {
                     doctorCompleted
                 },
 
-                records: history
+                records: historyWithPets
 
             }
 
@@ -477,47 +586,56 @@ exports.updatePatient = async (req, res) => {
 
 exports.getLabReportByVisit = async (req, res) => {
     try {
-
         const { id } = req.params;
         const clinicId = req.user.clinicId;
 
         const labReport = await LabReport.findOne({
             visitId: id,
             clinicId,
-        }).populate({
-            path: "petId",
-            select: "name species breed ownerId",
-            populate: {
-                path: "ownerId",
-                select: "ownerName"
-            }
         })
-            .populate({
-                path: "visitId",
-                select: "tokenNumber"
-            });
+            .populate("petId")
+            .populate("visitId");
+
         if (!labReport) {
             return res.status(404).json({
                 success: false,
                 message: "Lab report not found.",
+                hasLabReport: false
             });
         }
+
+        const visit = await Visit.findById(id);
+        let owner = null;
+        let pet = null;
+
+        if (visit && visit.petId) {
+            const ownerDoc = await PetRegistration.findOne({ "pets._id": visit.petId });
+            if (ownerDoc) {
+                owner = ownerDoc;
+                pet = ownerDoc.pets.id(visit.petId);
+            }
+        }
+
+        const responseData = {
+            ...labReport.toObject(),
+            pet: pet || labReport.petId || null,
+            owner: owner || null,
+            tokenNumber: visit?.tokenNumber || labReport.visitId?.tokenNumber || "N/A"
+        };
 
         return res.status(200).json({
             success: true,
             message: "Lab report fetched successfully.",
-            data: labReport,
+            data: responseData,
             hasLabReport: true
         });
 
     } catch (error) {
-
         return res.status(500).json({
             success: false,
             message: error.message,
             hasLabReport: false
         });
-
     }
 };
 
@@ -530,18 +648,10 @@ exports.getPreConsultationByVisit = async (req, res) => {
         const preConsultation = await PreConsultation.findOne({
             visitId: id,
             clinicId,
-        }).populate({
-            path: "petId",
-            select: "name species breed"
         })
-            .populate({
-                path: "visitId",
-                select: "tokenNumber"
-            })
-            .populate({
-                path: "ownerId",
-                select: "ownerName"
-            });
+            .populate("petId")
+            .populate("visitId")
+            .populate("ownerId");
 
         if (!preConsultation) {
             return res.status(404).json({
@@ -606,5 +716,65 @@ exports.createPatient = async (req, res) => {
             success: false,
             message: error.message
         });
+    }
+};
+
+// ======================================================
+// Download Lab Report Proxy (Forces PDF Download)
+// ======================================================
+const axios = require("axios");
+
+// Deliberately unauthenticated (links inside generated PDFs can't carry an
+// Authorization header), but that means url must be tightly restricted to
+// our own file storage - otherwise this becomes an open SSRF proxy that
+// lets anyone make the server fetch arbitrary URLs, including AWS's
+// instance-metadata endpoint (a well-known path to stealing the EC2
+// instance's IAM credentials).
+const ALLOWED_DOWNLOAD_HOSTS = [/\.cloudinary\.com$/i, /\.amazonaws\.com$/i];
+
+const isAllowedDownloadUrl = (rawUrl) => {
+    let parsed;
+    try {
+        parsed = new URL(rawUrl);
+    } catch {
+        return false;
+    }
+
+    return (
+        parsed.protocol === "https:" &&
+        ALLOWED_DOWNLOAD_HOSTS.some((pattern) => pattern.test(parsed.hostname))
+    );
+};
+
+exports.downloadLabFile = async (req, res) => {
+    try {
+        const { url, name } = req.query;
+        if (!url) {
+            return res.status(400).send("Missing file URL.");
+        }
+
+        if (!isAllowedDownloadUrl(url)) {
+            return res.status(400).send("URL is not an allowed file host.");
+        }
+
+        const safeFilename = (name || "Lab_Report").replace(/[^a-zA-Z0-9_\-]/g, "_");
+        const finalFilename = safeFilename.toLowerCase().endsWith(".pdf") ? safeFilename : `${safeFilename}.pdf`;
+
+        const response = await axios({
+            method: "get",
+            url: url,
+            responseType: "stream"
+        });
+
+        res.setHeader("Content-Type", "application/pdf");
+        res.setHeader("Content-Disposition", `attachment; filename="${finalFilename}"`);
+
+        response.data.pipe(res);
+    } catch (error) {
+        console.error("Lab file download proxy error:", error.message);
+        if (req.query.url) {
+            return res.redirect(req.query.url);
+        }
+        return res.status(500).send("Failed to download lab report PDF file.");
     }
 };

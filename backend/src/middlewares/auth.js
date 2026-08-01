@@ -1,4 +1,6 @@
 const jwt = require("jsonwebtoken");
+const Clinic = require('../models/Clinic');
+const { getClinicGateError } = require('../utils/clinicStatus');
 // console.log("AUTH FILE LOADED");
 
 const protect = async (req, res, next) => {
@@ -35,6 +37,14 @@ const protect = async (req, res, next) => {
     console.log("Decoded:", decoded)
 
     req.user = decoded;
+
+    if (decoded.clinicId) {
+      const clinic = await Clinic.findById(decoded.clinicId).select('isActive verificationStatus');
+      const gateError = getClinicGateError(clinic);
+      if (gateError) {
+        return res.status(403).json({ success: false, ...gateError });
+      }
+    }
 
     next();
 

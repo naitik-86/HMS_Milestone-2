@@ -62,12 +62,12 @@ const PetOwnerHistory = () => {
   const pet = history?.petProfile;
 
     return (
-        <div className="min-h-screen bg-slate-50">
+        <div className="pet-owner-theme min-h-screen bg-slate-50">
             <PetOwnerSidebar />
 
            <div className="ml-0 lg:ml-[280px] pt-[80px] lg:pt-8 p-4 md:p-6 lg:p-8 min-w-0">
                 {/* Header */}
-                <div className="mb-8 rounded-[32px] bg-gradient-to-r from-slate-950 via-blue-900 to-blue-600 p-5 md:p-8 text-white shadow-2xl">
+                <div className="mb-8 rounded-[32px] bg-gradient-to-r from-[#063D31] via-[#075443] to-[#0A5243] p-5 md:p-8 text-white shadow-2xl">
                     <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold">
                         Pet Medical Records
                     </h1>
@@ -109,7 +109,7 @@ const PetOwnerHistory = () => {
 
                 {/* Profile */}
                 <div className="mb-8 overflow-hidden rounded-3xl bg-white shadow-xl">
-                    <div className="bg-gradient-to-r from-orange-500 to-blue-600 p-6">
+                    <div className="bg-gradient-to-r from-[#F97316] to-[#EA580C] p-6">
                         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
                             <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/20 text-3xl">
                                 🐾
@@ -234,7 +234,7 @@ const PetOwnerHistory = () => {
   </div>
 
   {/* Vaccination */}
-  <div className="rounded-3xl bg-gradient-to-r from-blue-500 to-blue-700 p-6 text-white shadow-xl">
+  <div className="rounded-3xl bg-gradient-to-r from-[#063D31] to-[#0A5243] p-6 text-white shadow-xl">
     <h2 className="text-xl font-bold">
       Next Vaccination
     </h2>

@@ -6,6 +6,7 @@ const apiRoutes = require("./routes/index")
 const express = require('express');
 const cors = require('cors');
 const connectDB = require('./config/db');
+const path = require('path');
 // Import Main API Router
 // const apiRoutes = require('./routes/api');
 // const apiv2Routes = require('./routes/api_v2')
@@ -26,32 +27,42 @@ const allowedOrigins = (process.env.ALLOWED_ORIGINS || '')
   .map((o) => o.trim())
   .filter(Boolean);
 
+// PayU (and any other payment gateway) redirects the browser back to these
+// two routes via a cross-origin form POST from its own domain - that Origin
+// will never be in our allowlist, and unlike a same-page fetch/XHR this is a
+// full top-level navigation, so blocking it just shows the visitor a raw
+// JSON error instead of letting paymentSuccess's res.redirect(...) run.
+const corsExemptPaths = [
+  '/api/v1/subscription/payment-success',
+  '/api/v1/subscription/payment-failure',
+];
+
 // Global Middlewares
-app.use(cors({
+app.use(cors(function (req, callback) {
+  if (corsExemptPaths.includes(req.path)) {
+    return callback(null, { origin: true, credentials: true });
+  }
 
-  origin: function (origin, callback) {
-    console.log("Origin:", origin);
+  const origin = req.headers.origin;
+  console.log("Origin:", origin);
 
-
-    if (!origin || origin === "null") {
-      return callback(null, true);
-    }
-    // Allow any localhost origin for development
-    if (/^http:\/\/localhost:\d+$/.test(origin) || /^http:\/\/127\.0\.0\.1:\d+$/.test(origin)) {
-      return callback(null, true);
-    }
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-    return callback(new Error('Not allowed by CORS'));
-  },
-  credentials: true
+  if (!origin || origin === "null") {
+    return callback(null, { origin: true, credentials: true });
+  }
+  // Allow any localhost origin for development
+  if (/^http:\/\/localhost:\d+$/.test(origin) || /^http:\/\/127\.0\.0\.1:\d+$/.test(origin)) {
+    return callback(null, { origin: true, credentials: true });
+  }
+  if (allowedOrigins.includes(origin)) {
+    return callback(null, { origin: true, credentials: true });
+  }
+  return callback(new Error('Not allowed by CORS'));
 })); // Allow requests from React Web and React Native Mobile
-app.use(express.json()); // Parse incoming JSON payloads
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: "50mb" })); // Parse incoming JSON payloads up to 50mb
+app.use(express.urlencoded({ limit: "50mb", extended: true }));
+app.use('/uploads', express.static(path.resolve(__dirname, '..', 'uploads')));
 
 // Mount Routes
-
 app.use('/api/v1', apiRoutes); // single address for all api -> inside apiRoutes we will match the respective routes and connect further to its own respective routes file
 
 

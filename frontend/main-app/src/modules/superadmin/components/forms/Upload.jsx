@@ -25,20 +25,20 @@ export default function Upload({
 
     return (
         <div className="w-full">
-            <label className={`block mb-2 text-sm font-medium ${hasError ? "text-red-600" : "text-slate-700"}`}>
+            <label className={`block mb-2 text-xs sm:text-sm font-semibold uppercase tracking-wider ${hasError ? "text-red-600" : "text-gray-600"}`}>
                 {label}
                 {requiredField && (
-                    <span className="text-red-500"> *</span>
+                    <span className="text-red-600 ml-1">*</span>
                 )}
             </label>
 
             <label
                 className={`
                     w-full
-                    h-12
-                    border
+                    min-h-[48px] sm:min-h-[52px]
+                    border-2
                     border-dashed
-                    rounded-lg
+                    rounded-lg sm:rounded-xl
                     bg-white
                     transition-all
                     duration-200
@@ -46,15 +46,19 @@ export default function Upload({
                     flex
                     items-center
                     justify-center
-                    px-4
-                    ${hasError ? "border-red-400" : "border-slate-300 hover:border-orange-500"}
+                    px-3 sm:px-4
+                    py-2 sm:py-3
+                    ${hasError
+                        ? "border-red-500 bg-red-50/30 hover:bg-red-50/50"
+                        : "border-gray-300 hover:border-orange-500 hover:bg-orange-50/20"
+                    }
                 `}
             >
                 {!value ? (
-                    <div className="flex items-center gap-2 text-slate-500">
+                    <div className="flex items-center gap-2 text-gray-500">
                         <svg
                             xmlns="http://www.w3.org/2000/svg"
-                            className="w-5 h-5 text-orange-500"
+                            className="w-4 h-4 sm:w-5 sm:h-5 text-orange-500 flex-shrink-0"
                             fill="none"
                             viewBox="0 0 24 24"
                             stroke="currentColor"
@@ -67,7 +71,7 @@ export default function Upload({
                             />
                         </svg>
 
-                        <span className="text-sm font-medium">
+                        <span className="text-xs sm:text-sm font-medium">
                             Upload File
                         </span>
                     </div>
@@ -78,12 +82,12 @@ export default function Upload({
                                 <img
                                     src={previewUrl}
                                     alt="preview"
-                                    className="w-8 h-8 rounded object-cover border"
+                                    className="w-7 h-7 sm:w-8 sm:h-8 rounded object-cover border border-gray-200"
                                 />
                             )}
 
                             <div className="min-w-0">
-                                <p className="truncate text-sm font-medium text-green-600">
+                                <p className="truncate text-xs sm:text-sm font-semibold text-green-600">
                                     {fileName}
                                 </p>
                             </div>
@@ -97,13 +101,15 @@ export default function Upload({
                             }}
                             className="
                                 text-red-500
-                                hover:text-red-600
-                                text-base
-                                font-semibold
+                                hover:text-red-700
+                                text-lg sm:text-xl
+                                font-bold
+                                flex-shrink-0
+                                transition-colors
                             "
                             aria-label={`Remove ${label}`}
                         >
-                            X
+                            ✕
                         </button>
                     </div>
                 )}
@@ -117,7 +123,7 @@ export default function Upload({
             </label>
 
             {hasError && (
-                <p className="mt-1 text-xs text-red-600">
+                <p className="mt-1.5 text-xs sm:text-sm font-semibold text-red-600">
                     {error}
                 </p>
             )}

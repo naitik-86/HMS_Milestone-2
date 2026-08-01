@@ -47,7 +47,10 @@ const Payment = ({
         try {
             const data = await getSubscriptionStatus();
 
-            const status = data.subscription.status;
+            // Live response has subscription fields flattened under data.data
+            // (data.data.subscriptionStatus), not a separate subscription key -
+            // see the same fix in ProtectedRoute.jsx.
+            const status = data?.data?.subscriptionStatus;
 
             if (status === "ACTIVE") {
                 navigate("/clinic");

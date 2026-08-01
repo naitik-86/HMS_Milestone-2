@@ -12,7 +12,17 @@ export default function PreConsultationReportModal({
   const ownerName = data?.ownerId?.ownerName || data?.ownerName || "Owner";
   const recordedBy = data?.recordedBy || "Staff";
   const severity = data?.severity || "NORMAL";
-
+  const associatedSymptoms = Array.isArray(data?.associatedSymptoms)
+    ? data.associatedSymptoms.filter(Boolean).join(", ")
+    : typeof data?.associatedSymptoms === "string"
+      ? data.associatedSymptoms
+      : "-";
+  let bpDisplay = "-"; // Default if no data
+  if (data?.bloodPressure && typeof data.bloodPressure === 'object') {
+    const s = data.bloodPressure.systolic || '--';
+    const d = data.bloodPressure.diastolic || '--';
+    bpDisplay = `${s}/${d} mmHg`;
+  }
   const getSeverityBadge = (sev) => {
     const s = (sev || "").toUpperCase();
     if (s.includes("SEVERE") || s.includes("HIGH") || s.includes("CRITICAL")) {
@@ -71,8 +81,8 @@ export default function PreConsultationReportModal({
         <div className="p-6 md:p-8 overflow-y-auto space-y-6 flex-1">
           
           {/* Patient Overview Card */}
-          <div className="bg-gradient-to-r from-orange-50/80 via-white to-slate-50 border border-orange-100 rounded-3xl p-5 md:p-6 shadow-2xs">
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-xs">
+          <div className="bg-gradient-to-r from-orange-50/80 via-white to-slate-50 border border-orange-100 rounded-3xl p-5 md:p-6 shadow-2xs space-y-4">
+            <div className="grid grid-cols-2 md:grid-cols-6 gap-4 text-xs">
               <div>
                 <p className="text-slate-400 font-bold uppercase tracking-wider text-[10px]">Token ID</p>
                 <p className="font-extrabold text-slate-900 text-sm mt-0.5 font-mono">{tokenNumber}</p>
@@ -84,18 +94,39 @@ export default function PreConsultationReportModal({
               </div>
 
               <div>
-                <p className="text-slate-400 font-bold uppercase tracking-wider text-[10px]">Owner Name</p>
-                <p className="font-semibold text-slate-800 text-xs mt-0.5">{ownerName}</p>
+                <p className="text-slate-400 font-bold uppercase tracking-wider text-[10px]">Species & Breed</p>
+                <p className="font-bold text-slate-900 text-xs mt-0.5">{data?.petId?.species || data?.species || "Dog"} • {data?.petId?.breed || data?.breed || "N/A"}</p>
               </div>
 
               <div>
-                <p className="text-slate-400 font-bold uppercase tracking-wider text-[10px]">Triage Staff</p>
-                <p className="font-semibold text-slate-800 text-xs mt-0.5">{recordedBy}</p>
+                <p className="text-slate-400 font-bold uppercase tracking-wider text-[10px]">Gender & Age</p>
+                <p className="font-bold text-slate-900 text-xs mt-0.5">{data?.petId?.gender || data?.gender || "N/A"} • {data?.petId?.age ? `${data.petId.age} yrs` : (data?.age ? `${data.age} yrs` : "N/A")}</p>
+              </div>
+
+              <div>
+                <p className="text-slate-400 font-bold uppercase tracking-wider text-[10px]">Owner Name & Phone</p>
+                <p className="font-semibold text-slate-800 text-xs mt-0.5">{ownerName}</p>
+                <p className="font-mono text-slate-500 text-[11px]">{data?.ownerId?.mobileNumber || data?.mobileNumber || "N/A"}</p>
               </div>
 
               <div>
                 <p className="text-slate-400 font-bold uppercase tracking-wider text-[10px]">Severity Level</p>
                 <div className="mt-1">{getSeverityBadge(severity)}</div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs border-t border-orange-100/80 pt-3">
+              <div className="p-2.5 bg-white rounded-xl border border-orange-100">
+                <span className="text-[10px] font-bold text-slate-400 uppercase block">Microchip RFID Tag / Color</span>
+                <span className="font-mono font-bold text-slate-900 mt-0.5 block">{data?.petId?.rfid || data?.petId?.rfidTag || data?.rfid || "Not Provided"} • {data?.petId?.color || data?.color || "N/A"}</span>
+              </div>
+              <div className="p-2.5 bg-white rounded-xl border border-orange-100">
+                <span className="text-[10px] font-bold text-slate-400 uppercase block">Identification Area & Marks</span>
+                <span className="font-bold text-slate-900 mt-0.5 block">{data?.petId?.identificationArea || data?.petId?.identificationMarks || data?.identificationMarks || "Not Provided"}</span>
+              </div>
+              <div className="p-2.5 bg-white rounded-xl border border-orange-100">
+                <span className="text-[10px] font-bold text-orange-600 uppercase block">Reception Primary Reason & Complaint</span>
+                <span className="font-bold text-slate-900 mt-0.5 block">{data?.visitId?.primaryReason || data?.primaryReason || "General Checkup"} - <span className="italic font-normal">{data?.visitId?.chiefComplaint || data?.primaryComplaint || "Triage Assessment"}</span></span>
               </div>
             </div>
           </div>
@@ -131,7 +162,7 @@ export default function PreConsultationReportModal({
 
               <VitalCard
                 label="Blood Pressure"
-                value={data?.bloodPressure || "-"}
+                value={bpDisplay} // <--- Use the variable we created in Step 1
                 icon="🩺"
                 color="bg-purple-50 text-purple-700 border-purple-100"
               />
@@ -200,7 +231,7 @@ export default function PreConsultationReportModal({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
               <SectionBox title="Primary Complaint" value={data?.primaryComplaint} highlight />
               <SectionBox title="General Demeanour" value={data?.generalDemeanour} />
-              <SectionBox title="Associated Symptoms" value={data?.associatedSymptoms?.length ? data.associatedSymptoms.join(", ") : "-"} />
+              <SectionBox title="Associated Symptoms" value={associatedSymptoms} />
               <SectionBox title="Gait & Posture" value={data?.gaitAndPosture} />
               <SectionBox title="Visible Lesions" value={data?.visibleLesions} />
               <SectionBox title="Staff Triage Notes" value={data?.staffNotes} highlight />
@@ -250,4 +281,4 @@ function SectionBox({ title, value, highlight }) {
       <p className="text-slate-600">{value || "-"}</p>
     </div>
   );
-}
+}

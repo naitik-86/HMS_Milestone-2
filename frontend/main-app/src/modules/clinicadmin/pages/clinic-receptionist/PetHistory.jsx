@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getPetHistory } from "../../api/receptionApi";
+import { deletePet, deletePetVisit, getPetHistory } from "../../api/receptionApi";
+import { Eye, Trash2 } from "lucide-react";
 
 export default function PetHistory() {
   console.log("PetHistory Rendered");
@@ -32,6 +33,21 @@ export default function PetHistory() {
   useEffect(() => {
     fetchPetHistory();
   }, []);
+
+  const handleDelete = async (visit) => {
+    const message = visit.visitId
+      ? "Delete this visit record? This cannot be undone."
+      : "This pet has no visits. Delete the pet record instead? This cannot be undone.";
+    if (!window.confirm(message)) return;
+
+    try {
+      if (visit.visitId) await deletePetVisit(visit.ownerId, visit.petId, visit.visitId);
+      else await deletePet(visit.ownerId, visit.petId);
+      fetchPetHistory();
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
   const filteredVisits = visits.filter(
     (visit) =>
@@ -188,25 +204,7 @@ export default function PetHistory() {
 
                       <td className="p-4">{visit.age}</td>
 
-                      <td className="p-4">
-                        <button
-                          onClick={() =>
-                            navigate(
-                              `/reception/pet/${visit.ownerId}/${visit.petId}`,
-                            )
-                          }
-                          className="
-                    bg-orange-500
-                    hover:bg-orange-600
-                    text-white
-                    px-4
-                    py-2
-                    rounded-xl
-                    "
-                        >
-                          View
-                        </button>
-                      </td>
+                      <td className="p-4"><div className="flex items-center gap-2"><button onClick={() => navigate(`/reception/pet/${visit.ownerId}/${visit.petId}`)} className="grid size-9 place-items-center rounded-lg border border-[#0C3D2E]/15 bg-white text-[#0C3D2E] transition hover:bg-[#D9E8E3]/40" title="View record"><Eye className="size-4" /></button><button onClick={() => handleDelete(visit)} className="grid size-9 place-items-center rounded-lg border border-rose-200 bg-rose-50 text-rose-600 transition hover:bg-rose-100" title="Delete record"><Trash2 className="size-4" /></button></div></td>
                     </tr>
                   ))
                 )}

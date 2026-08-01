@@ -1,12 +1,113 @@
 const PetRegistration = require("../models/PetRegistration");
 const Visit = require("../models/visitModel");
 const { generateOTP } = require("../utils/otpService");
+const registrationOtps = new Map();
 
 const normalizeSpecies = (species = "") => {
     const value = species.toString().trim().toUpperCase();
     return value === "RABBIT" || value === "BIRD" || value === "CAT" || value === "DOG"
         ? value
         : "OTHER";
+};
+
+const normalizeMobileNumber = (mobileNumber = "") =>
+    String(mobileNumber || "").replace(/\D/g, "").slice(-10);
+
+const generateGuaranteedUniquePetId = async (requestedId, offset = 0) => {
+    let candidate = requestedId?.trim();
+
+    const isTaken = async (id) => {
+        if (!id) return true;
+        const found = await PetRegistration.findOne({ "pets.uniquePetId": id });
+        return !!found;
+    };
+
+    if (!candidate || candidate.toUpperCase() === "PET-AUTO" || (await isTaken(candidate))) {
+        try {
+            const totalPetsAgg = await PetRegistration.aggregate([
+                { $unwind: "$pets" },
+                { $count: "count" }
+            ]);
+            let nextNumber = (totalPetsAgg[0]?.count || 0) + 101 + offset;
+
+            candidate = `PET-${String(nextNumber).padStart(3, "0")}`;
+            while (await isTaken(candidate)) {
+                nextNumber++;
+                candidate = `PET-${String(nextNumber).padStart(3, "0")}`;
+            }
+        } catch (e) {
+            candidate = `PET-${Date.now().toString().slice(-4)}${offset + 1}`;
+        }
+    }
+
+    return candidate;
+};
+
+const generateGuaranteedTokenNumber = async (requestedToken, offset = 0) => {
+    let candidate = requestedToken?.trim();
+
+    if (candidate && candidate.toUpperCase().startsWith("TQ-")) {
+        candidate = candidate.replace(/^TQ-/i, "TK-");
+    }
+
+    const isTaken = async (token) => {
+        if (!token) return true;
+        const found = await PetRegistration.findOne({ "pets.visits.tokenNumber": token });
+        return !!found;
+    };
+
+    if (!candidate || candidate.toUpperCase() === "TK-AUTO" || (await isTaken(candidate))) {
+        try {
+            const totalVisitsAgg = await PetRegistration.aggregate([
+                { $unwind: "$pets" },
+                { $unwind: "$pets.visits" },
+                { $count: "count" }
+            ]);
+            let nextNumber = (totalVisitsAgg[0]?.count || 0) + 101 + offset;
+
+            candidate = `TK-${String(nextNumber).padStart(3, "0")}`;
+            while (await isTaken(candidate)) {
+                nextNumber++;
+                candidate = `TK-${String(nextNumber).padStart(3, "0")}`;
+            }
+        } catch (e) {
+            candidate = `TK-${Date.now().toString().slice(-4)}${offset + 1}`;
+        }
+    }
+
+    return candidate;
+};
+
+const hasNumericValue = (value = "") => /\d/.test(String(value || ""));
+
+const validateNameField = (value, label) => {
+    if (!String(value || "").trim()) {
+        return `${label} is required`;
+    }
+
+    if (hasNumericValue(value)) {
+        return `${label} cannot contain numbers`;
+    }
+
+    return "";
+};
+
+const validateVisitDetails = (visitData = {}, label = "Visit") => {
+    const requiredFields = [
+        ["primaryReason", "primary reason"],
+        ["complaint", "complaint"],
+        ["appointmentDate", "appointment date"],
+        ["appointmentTime", "appointment time"],
+        ["assignedDoctor", "assigned doctor"],
+    ];
+
+    for (const [field, fieldLabel] of requiredFields) {
+        if (!String(visitData?.[field] || "").trim()) {
+            return `${label} ${fieldLabel} is required`;
+        }
+    }
+
+    return "";
 };
 
 
@@ -22,13 +123,16 @@ const sendRegistrationOtp = async (req, res) => {
             });
         }
 
-        const otp = generateOTP();
-        console.log(`[New Registration OTP] Mobile: ${cleanMobile}, OTP: ${otp}`);
+        // Temporary fixed OTP requested for the reception registration flow.
+        const otp = "123456";
+        registrationOtps.set(cleanMobile, { otp: String(otp), expiresAt: Date.now() + 5 * 60 * 1000 });
+        console.log("\n========================================");
+        console.log(`🔑 [NEW REGISTRATION OTP] Mobile: ${cleanMobile} => OTP: ${otp}`);
+        console.log("========================================\n");
 
         return res.status(200).json({
             success: true,
-            message: "OTP sent successfully",
-            data: { otp },
+            message: "OTP sent successfully. Please check backend terminal to view OTP.",
         });
     } catch (error) {
         console.error("sendRegistrationOtp Error:", error);
@@ -48,6 +152,8 @@ const createRegistration = async (req, res) => {
             ownerName,
             visitType,
             ownerIdType,
+            ownerOtherIdType,
+            ownerIdNumber,
             email,
             address,
             state,
@@ -62,11 +168,26 @@ const createRegistration = async (req, res) => {
         console.log(req.body);
 
         const clinicId = req.user.clinicId;
+        const cleanMobile = normalizeMobileNumber(mobileNumber);
 
+        if (!cleanMobile || !/^[6-9]\d{9}$/.test(cleanMobile)) {
+            return res.status(400).json({
+                success: false,
+                message: "Valid 10 digit Indian mobile number starting with 6-9 is required",
+            });
+        }
+
+        const ownerNameError = validateNameField(ownerName, "Owner name");
+        if (ownerNameError) {
+            return res.status(400).json({
+                success: false,
+                message: ownerNameError,
+            });
+        }
 
         let owner = await PetRegistration.findOne({
             clinicId,
-            mobileNumber,
+            mobileNumber: cleanMobile,
         });
 
         if (owner) {
@@ -81,13 +202,42 @@ const createRegistration = async (req, res) => {
             ? req.body.pets
             : pet ? [pet] : [];
 
+        for (let i = 0; i < petsInput.length; i++) {
+            const currentPet = petsInput[i] || {};
+            const petNameError = validateNameField(
+                currentPet.petName || currentPet.name,
+                `Pet #${i + 1} name`
+            );
+
+            if (petNameError) {
+                return res.status(400).json({
+                    success: false,
+                    message: petNameError,
+                });
+            }
+
+            const visitDetailsError = validateVisitDetails(
+                currentPet.visit || visit,
+                `Pet #${i + 1} visit`
+            );
+
+            if (visitDetailsError) {
+                return res.status(400).json({
+                    success: false,
+                    message: visitDetailsError,
+                });
+            }
+        }
+
         // New Owner
         owner = new PetRegistration({
             clinicId,
-            mobileNumber,
+            mobileNumber: cleanMobile,
             ownerName,
             visitType,
             ownerIdType,
+            ownerOtherIdType,
+            ownerIdNumber,
             email,
             address,
             state,
@@ -99,8 +249,9 @@ const createRegistration = async (req, res) => {
 
         for (let i = 0; i < petsInput.length; i++) {
             const currentPet = petsInput[i];
-            const uniquePetId = `PET-${Date.now()}-${i}`;
-            const tokenNumber = `TK-${Date.now()}-${i}`;
+            const uniquePetId = await generateGuaranteedUniquePetId(currentPet?.uniquePetId, i);
+            const rawToken = currentPet?.tokenNumber?.trim() || currentPet?.visit?.tokenNumber?.trim();
+            const tokenNumber = await generateGuaranteedTokenNumber(rawToken, i);
 
             const petData = {
                 ...currentPet,
@@ -145,6 +296,10 @@ const createRegistration = async (req, res) => {
                     petId: createdPet._id,
                     receptionistId: req.user?._id,
                     tokenNumber: tokenNum,
+                    primaryReason: petVisitInfo?.primaryReason,
+                    assignedDoctor: petVisitInfo?.assignedDoctor,
+                    appointmentDate: petVisitInfo?.appointmentDate,
+                    appointmentTime: petVisitInfo?.appointmentTime,
                     chiefComplaint: petVisitInfo?.complaint || petVisitInfo?.primaryReason || "New Patient Intake Assessment",
                     notes: petVisitInfo?.notes || "",
                     currentStage: "PRE_CONSULTATION",
@@ -169,6 +324,13 @@ const createRegistration = async (req, res) => {
         
     } catch (error) {
         console.error(error);
+
+        if (error?.code === 11000) {
+            return res.status(409).json({
+                success: false,
+                message: "This mobile number is already registered for this clinic",
+            });
+        }
 
         return res.status(500).json({
             success: false,
@@ -253,8 +415,12 @@ const updateOwner = async (req, res) => {
         const clinicId = req.user.clinicId;
         const allowedFields = [
             "ownerName",
+            "mobileNumber",
+            "alternateNumber",
             "visitType",
             "ownerIdType",
+            "ownerOtherIdType",
+            "ownerIdNumber",
             "email",
             "address",
             "state",
@@ -269,6 +435,16 @@ const updateOwner = async (req, res) => {
                 updateData[field] = req.body[field];
             }
         });
+
+        if (updateData.ownerName !== undefined) {
+            const ownerNameError = validateNameField(updateData.ownerName, "Owner name");
+            if (ownerNameError) {
+                return res.status(400).json({
+                    success: false,
+                    message: ownerNameError,
+                });
+            }
+        }
 
         const owner = await PetRegistration.findOneAndUpdate(
             { _id: req.params.ownerId, clinicId },
@@ -313,6 +489,16 @@ const addPet = async (req, res) => {
             });
         }
 
+        const petNameError = validateNameField(req.body.petName || req.body.name, "Pet name");
+        if (petNameError) {
+            return res.status(400).json({
+                success: false,
+                message: petNameError,
+            });
+        }
+
+        const uniquePetId = await generateGuaranteedUniquePetId(req.body.uniquePetId);
+
         owner.pets.push({
             ...req.body,
             name: req.body.name || req.body.petName,
@@ -321,7 +507,7 @@ const addPet = async (req, res) => {
             ownerId: owner._id,
             isSterilised: req.body.sterilized === true || req.body.sterilized === "Yes",
             sterilized: req.body.sterilized === true || req.body.sterilized === "Yes",
-            uniquePetId: `PET-${Date.now()}`,
+            uniquePetId,
         });
 
         await owner.save();
@@ -365,10 +551,21 @@ const updatePet = async (req, res) => {
             });
         }
 
+        if (req.body.petName !== undefined || req.body.name !== undefined) {
+            const petNameError = validateNameField(req.body.petName || req.body.name, "Pet name");
+            if (petNameError) {
+                return res.status(400).json({
+                    success: false,
+                    message: petNameError,
+                });
+            }
+        }
+
         const allowedFields = [
             "petName",
             "name",
             "species",
+            "otherSpecies",
             "breed",
             "dob",
             "age",
@@ -378,6 +575,8 @@ const updatePet = async (req, res) => {
             "identificationMarks",
             "rfid",
             "rfidTag",
+            "photoUrl",
+            "photoName",
         ];
 
         allowedFields.forEach((field) => {
@@ -395,6 +594,13 @@ const updatePet = async (req, res) => {
             const sterilized = req.body.sterilized === true || req.body.sterilized === "Yes";
             pet.sterilized = sterilized;
             pet.isSterilised = sterilized;
+        }
+
+        if (req.body.history) {
+            pet.history = {
+                ...(pet.history || {}),
+                ...req.body.history
+            };
         }
 
         await owner.save();
@@ -440,6 +646,14 @@ const addVisit = async (req, res) => {
             });
         }
 
+        const visitDetailsError = validateVisitDetails(req.body);
+        if (visitDetailsError) {
+            return res.status(400).json({
+                success: false,
+                message: visitDetailsError,
+            });
+        }
+
         pet.visits.push({
             ...req.body,
             tokenNumber: `TK-${Date.now()}`,
@@ -458,6 +672,10 @@ const addVisit = async (req, res) => {
                 petId: pet._id,
                 receptionistId: req.user?._id,
                 tokenNumber: tokenNum,
+                primaryReason: req.body.primaryReason,
+                assignedDoctor: req.body.assignedDoctor,
+                appointmentDate: req.body.appointmentDate,
+                appointmentTime: req.body.appointmentTime,
                 chiefComplaint: req.body.complaint || req.body.primaryReason || "Patient Intake Assessment",
                 notes: req.body.notes || "",
                 currentStage: "PRE_CONSULTATION",
@@ -589,6 +807,7 @@ const getPetHistory = async (req, res) => {
                             : new Date(owner.createdAt).toLocaleDateString(),
 
                         tokenNumber: visit.tokenNumber || "-",
+                        visitId: visit._id,
                         appointmentTime: visit.appointmentTime || "-",
                         complaint: visit.complaint || "-",
                     });
@@ -699,6 +918,90 @@ const getPetDetails = async (req, res) => {
     }
 };
 
+const deletePet = async (req, res) => {
+    try {
+        const { ownerId, petId } = req.params;
+        const owner = await PetRegistration.findOne({ _id: ownerId, clinicId: req.user.clinicId });
+        const pet = owner?.pets?.id(petId);
+
+        if (!pet) {
+            return res.status(404).json({ success: false, message: "Pet record not found" });
+        }
+
+        pet.deleteOne();
+        await owner.save();
+        return res.status(200).json({ success: true, message: "Pet record deleted successfully" });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+const verifyRegistrationOtp = async (req, res) => {
+    const cleanMobile = String(req.body.mobileNumber || "").replace(/\D/g, "").slice(-10);
+    const otp = String(req.body.otp || "").trim();
+    const entry = registrationOtps.get(cleanMobile);
+
+    if (!entry || entry.expiresAt < Date.now() || entry.otp !== otp) {
+        return res.status(400).json({ success: false, message: "Invalid or expired OTP" });
+    }
+
+    registrationOtps.delete(cleanMobile);
+    return res.status(200).json({ success: true, message: "OTP verified successfully" });
+};
+
+const deletePetVisit = async (req, res) => {
+    try {
+        const { ownerId, petId, visitId } = req.params;
+        const owner = await PetRegistration.findOne({ _id: ownerId, clinicId: req.user.clinicId });
+        const pet = owner?.pets?.id(petId);
+        const visit = pet?.visits?.id(visitId);
+
+        if (!visit) {
+            return res.status(404).json({ success: false, message: "Visit record not found" });
+        }
+
+        visit.deleteOne();
+        await owner.save();
+        return res.status(200).json({ success: true, message: "Visit record deleted successfully" });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+const updatePetVisit = async (req, res) => {
+    try {
+        const { ownerId, petId, visitId } = req.params;
+        const owner = await PetRegistration.findOne({ _id: ownerId, clinicId: req.user.clinicId });
+        const pet = owner?.pets?.id(petId);
+        const visit = pet?.visits?.id(visitId);
+
+        if (!visit) {
+            return res.status(404).json({ success: false, message: "Visit record not found" });
+        }
+
+        const updatedVisit = {
+            primaryReason: req.body.primaryReason ?? visit.primaryReason,
+            complaint: req.body.complaint ?? visit.complaint,
+            appointmentDate: req.body.appointmentDate ?? visit.appointmentDate,
+            appointmentTime: req.body.appointmentTime ?? visit.appointmentTime,
+            assignedDoctor: req.body.assignedDoctor ?? visit.assignedDoctor,
+        };
+        const visitDetailsError = validateVisitDetails(updatedVisit);
+        if (visitDetailsError) {
+            return res.status(400).json({ success: false, message: visitDetailsError });
+        }
+
+        ["primaryReason", "complaint", "appointmentDate", "appointmentTime", "assignedDoctor", "tokenNumber", "status"].forEach((field) => {
+            if (req.body[field] !== undefined) visit[field] = req.body[field];
+        });
+
+        await owner.save();
+        return res.status(200).json({ success: true, message: "Visit updated successfully", data: visit });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};
+
 const getDashboardStats = async (req, res) => {
     try {
         const clinicId = req.user.clinicId;
@@ -742,6 +1045,7 @@ const getDashboardStats = async (req, res) => {
 };
 module.exports = {
     sendRegistrationOtp,
+    verifyRegistrationOtp,
     createRegistration,
     searchCustomer,
     getOwnerDetails,
@@ -753,5 +1057,8 @@ module.exports = {
     getPetHistoryByID,
     getDashboardStats,
     getPetDetails,
-    getExistingCustomers
+    getExistingCustomers,
+    deletePet,
+    deletePetVisit,
+    updatePetVisit
 };

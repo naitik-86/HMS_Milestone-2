@@ -13,7 +13,9 @@ export default function SubscriptionPlanCard({
 }) {
     const navigate = useNavigate();
     const features = [];
-
+    const handleContactAdmin = () => {
+        navigate("/contact");
+    };
     if (plan.modules.lab) features.push("Lab Module");
     if (plan.modules.grooming) features.push("Grooming");
     if (plan.modules.kennel) features.push("Kennel");
@@ -147,12 +149,13 @@ export default function SubscriptionPlanCard({
             {/* Button */}
 
             <button
-
+                onClick={handleContactAdmin}
                 disabled={isCurrent && status !== "TRIAL"}
-                className={`mt-8 w-full rounded-xl py-3 text-sm font-semibold transition-all ${isCurrent && status !== "TRIAL"
-                    ? "cursor-not-allowed border border-orange-200 bg-orange-50 text-orange-600"
-                    : "bg-slate-900 text-white hover:bg-slate-800"
-                    }`}
+                className={`mt-8 w-full rounded-xl py-3 text-sm font-semibold transition-all ${
+                    isCurrent && status !== "TRIAL"
+                        ? "cursor-not-allowed border border-orange-200 bg-orange-50 text-orange-600"
+                        : "bg-slate-900 text-white hover:bg-slate-800"
+                }`}
             >
                 {isCurrent && status !== "TRIAL"
                     ? "Current Plan"

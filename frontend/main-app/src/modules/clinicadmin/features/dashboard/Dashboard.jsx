@@ -1,4 +1,11 @@
 import { useEffect, useRef, useState } from "react";
+import { MoreVertical } from "lucide-react";
+import {
+  Users,
+  UserCheck,
+  CalendarDays,
+  IndianRupee,
+} from "lucide-react";
 import Loader from "../../../../shared/components/Loader";
 import {
   BarChart,
@@ -31,12 +38,12 @@ const DEFAULT_DASHBOARD = {
 };
 
 const ROLE_COLORS = {
-  Doctor: "#6366F1",
-  "Lab Technician": "#22C55E",
-  Groomer: "#A855F7",
-  "Kennel Staff": "#F97316",
-  Receptionist: "#EC4899",
-  default: "#64748B",
+  Doctor: "#2D7C6B",
+  "Lab Technician": "#E8A145",
+  Groomer: "#7B5BA8",
+  "Kennel Staff": "#D67C3D",
+  Receptionist: "#D64D7B",
+  default: "#8B9BA8",
 };
 
 const formatINR = (value) =>
@@ -45,12 +52,12 @@ const formatINR = (value) =>
   }).format(Number(value) || 0);
 
 const getStatusClass = (status = "") => {
-  if (status === "In Progress") return "bg-yellow-100 text-yellow-700";
-  if (status === "Pending") return "bg-red-50 text-red-600";
-  if (status === "Completed") return "bg-green-50 text-green-600";
-  if (status === "Cancelled") return "bg-slate-100 text-slate-500";
-  if (status === "Lab Pending") return "bg-orange-50 text-orange-600";
-  return "bg-slate-100 text-slate-600";
+  if (status === "In Progress") return "bg-amber-100 text-amber-700";
+  if (status === "Pending") return "bg-red-100 text-red-700";
+  if (status === "Completed") return "bg-green-100 text-green-700";
+  if (status === "Cancelled") return "bg-gray-100 text-gray-600";
+  if (status === "Lab Pending") return "bg-orange-100 text-orange-700";
+  return "bg-gray-100 text-gray-600";
 };
 
 const getInitials = (name = "") =>
@@ -61,30 +68,6 @@ const getInitials = (name = "") =>
     .map((part) => part[0]?.toUpperCase() || "")
     .join("") || "NA";
 
-function StatCard({ icon, label, value, change, accent }) {
-  return (
-    <div className="bg-white p-5 rounded-2xl border border-[#EAE5DC] flex-1 min-w-0 shadow-sm">
-      <div className="flex items-start justify-between mb-4">
-        <div
-          className="w-[46px] h-[46px] rounded-xl flex items-center justify-center text-[11px] font-extrabold tracking-[0.14em]"
-          style={{ backgroundColor: `${accent}22`, color: accent }}
-        >
-          {icon}
-        </div>
-      </div>
-      <div className="text-[#9CA3AF] text-[11px] font-semibold tracking-widest uppercase mb-1.5">
-        {label}
-      </div>
-      <div className="font-syne text-3xl font-extrabold text-[#1A1D2E] leading-none">
-        {value}
-      </div>
-      <div className="mt-2.5 flex items-center gap-1">
-        <span className="text-[#22C55E] text-xs font-semibold">{change}</span>
-      </div>
-    </div>
-  );
-}
-
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
 
@@ -93,9 +76,9 @@ const CustomTooltip = ({ active, payload, label }) => {
   const isRevenue = item?.dataKey === "revenue";
 
   return (
-    <div className="bg-white border border-[#EAE5DC] rounded-lg p-2 px-3.5 shadow-md">
-      <p className="text-[#9CA3AF] text-xs">{label}</p>
-      <p className="text-[#E8630A] text-sm font-bold">
+    <div className="bg-white border border-gray-200 rounded-lg p-3 px-4 shadow-md">
+      <p className="text-gray-500 text-xs">{label}</p>
+      <p className="text-gray-900 text-sm font-bold">
         {isRevenue ? `INR ${formatINR(value)}` : value}
       </p>
     </div>
@@ -130,12 +113,62 @@ const normalizeDashboard = (payload = {}) => {
     todayAppointments: Array.isArray(data?.todayAppointments) ? data.todayAppointments : [],
   };
 };
+const CARD_THEMES = {
+  green: {
+    cardBg:
+      "bg-[#D9E8E3]/35 border-[#0C3D2E]/15 hover:border-[#0C3D2E]/40",
+    iconBg: "bg-[#0C3D2E] text-white shadow-sm",
+    labelColor: "text-[#0C3D2E]/80",
+    valueColor: "text-[#0C3D2E]",
+    badgeBg: "bg-[#0C3D2E]/10 text-[#0C3D2E]",
+  },
+
+  orange: {
+    cardBg:
+      "bg-[#FFF4E5] border-[#F7931E]/20 hover:border-[#F7931E]/50",
+    iconBg: "bg-[#F7931E] text-white shadow-sm",
+    labelColor: "text-amber-900/80",
+    valueColor: "text-[#0C3D2E]",
+    badgeBg: "bg-[#F7931E]/15 text-[#F7931E]",
+  },
+};
 
 export default function Dashboard() {
   const [dashboard, setDashboard] = useState(DEFAULT_DASHBOARD);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const mountedRef = useRef(false);
+
+  const cards = [
+    {
+      label: "Total Staff",
+      value: dashboard.metrics.totalStaff,
+      change: `+${dashboard.metrics.staffThisMonth} this month`,
+      theme: "green",
+      icon: Users,
+    },
+    {
+      label: "Active Doctors",
+      value: dashboard.metrics.activeDoctors,
+      change: `+${dashboard.metrics.doctorJoiningsThisMonth} this month`,
+      theme: "orange",
+      icon: UserCheck,
+    },
+    {
+      label: "Today's Appointments",
+      value: dashboard.metrics.todayAppointments,
+      change: `${dashboard.metrics.pendingAppointments} waiting`,
+      theme: "green",
+      icon: CalendarDays,
+    },
+    {
+      label: "Monthly Revenue",
+      value: `₹${formatINR(dashboard.metrics.monthlyRevenue)}`,
+      change: "From completed visits",
+      theme: "orange",
+      icon: IndianRupee,
+    },
+  ];
 
   const loadDashboard = async () => {
     try {
@@ -173,19 +206,15 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6">
-        <div className="w-full max-w-md rounded-2xl border border-[#EAE5DC] bg-white shadow-sm px-8 py-10 flex flex-col items-center">
+      <div className="min-h-screen flex items-center justify-center p-6 bg-gray-100">
+        <div className="w-full max-w-md rounded-2xl bg-white shadow-sm px-8 py-10 flex flex-col items-center border border-gray-200">
           <Loader />
-
-
-          <h3 className="mt-6 text-lg font-semibold text-[#1A1D2E]">
-            Loading Clinic Dashboard
+          <h3 className="mt-6 text-lg font-semibold text-gray-900">
+            Loading Dashboard
           </h3>
-
           <p className="mt-2 text-sm text-gray-500 text-center">
             Please wait while we prepare your dashboard...
           </p>
-
         </div>
       </div>
     );
@@ -193,14 +222,14 @@ export default function Dashboard() {
 
   if (error) {
     return (
-      <div className="p-0 sm:p-2 lg:p-6">
-        <div className="rounded-2xl border border-red-200 bg-white p-6 shadow-sm">
+      <div className="p-4 sm:p-6">
+        <div className="rounded-2xl bg- p-6 shadow-sm border border-red-100">
           <div className="text-sm font-semibold text-red-600">Dashboard unavailable</div>
-          <p className="mt-2 text-sm text-slate-600">{error}</p>
+          <p className="mt-2 text-sm text-gray-600">{error}</p>
           <button
             type="button"
             onClick={loadDashboard}
-            className="mt-4 rounded-lg bg-[#E8630A] px-4 py-2 text-sm font-semibold text-white"
+            className="mt-4 rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600"
           >
             Try again
           </button>
@@ -210,100 +239,119 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="p-0 sm:p-2 lg:p-6 flex flex-col gap-5 animate-fade-in">
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        <StatCard
-          icon="STA"
-          label="Total Staff"
-          value={dashboard.metrics.totalStaff}
-          change={`${dashboard.metrics.staffThisMonth} this month`}
-          accent="#6366F1"
-        />
-        <StatCard
-          icon="DOC"
-          label="Active Doctors"
-          value={dashboard.metrics.activeDoctors}
-          change={`${dashboard.metrics.doctorJoiningsThisMonth} this month`}
-          accent="#22C55E"
-        />
-        <StatCard
-          icon="APT"
-          label="Today's Appts"
-          value={dashboard.metrics.todayAppointments}
-          change={`${dashboard.metrics.pendingAppointments} waiting`}
-          accent="#F97316"
-        />
-        <StatCard
-          icon="REV"
-          label="Monthly Revenue"
-          value={`INR ${formatINR(dashboard.metrics.monthlyRevenue)}`}
-          change="From completed visits"
-          accent="#A855F7"
-        />
-      </div>
+    <div className="p-4 sm:p-6 bg-gray-100 min-h-screen">
+      <h1 className="text-2xl font-bold text-gray-900 mb-6">Dashboard</h1>
 
-      <div className="grid grid-cols-1 xl:grid-cols-[1.5fr_1fr] gap-4">
-        <div className="bg-white p-6 rounded-2xl border border-[#EAE5DC] flex-[1.5] shadow-sm">
-          <div className="mb-4 flex justify-between items-center">
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <div className="w-0.5 h-4.5 bg-[#E8630A] rounded-full" />
-                <h3 className="font-syne text-[15px] font-bold text-[#1A1D2E]">
-                  Revenue Overview
-                </h3>
-              </div>
-              <p className="text-[#6B7280] text-xs pl-2.5">
-                Monthly revenue from completed appointments
-              </p>
-            </div>
-            <span className="bg-green-50 text-[#22C55E] text-xs font-semibold px-2.5 py-1 rounded-full border border-green-100">
-              Live
-            </span>
+    <div className="mb-6">
+  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+    {cards.map((card) => {
+      const Icon = card.icon;
+      const isGreen = card.theme === "green";
+
+      return (
+        <div
+          key={card.label}
+          className={`
+            rounded-2xl p-5 flex items-start gap-4
+            border transition-all duration-200
+            shadow-sm hover:shadow-md
+            ${
+              isGreen
+                ? "bg-[#D9E8E3]/40 border-[#0C3D2E]/10 hover:border-[#0C3D2E]/30"
+                : "bg-[#FFF4E5] border-[#F7931E]/20 hover:border-[#F7931E]/40"
+            }
+          `}
+        >
+          <div
+            className={`
+              w-12 h-12 rounded-xl flex items-center justify-center
+              ${
+                isGreen
+                  ? "bg-[#0C3D2E] text-white"
+                  : "bg-[#F7931E] text-white"
+              }
+            `}
+          >
+            <Icon size={22} />
           </div>
 
-          <ResponsiveContainer width="100%" height={180}>
-            <BarChart data={dashboard.revenueData} barSize={28}>
+          <div className="flex-1 min-w-0">
+
+            <div className="flex justify-between items-center">
+              <p className="text-xs font-medium text-gray-600 truncate">
+                {card.label}
+              </p>
+
+              <MoreVertical 
+                size={16} 
+                className="text-gray-400"
+              />
+            </div>
+
+
+            <h3 className="text-2xl font-bold mt-1 text-[#0C3D2E]">
+              {card.value}
+            </h3>
+
+
+            <p
+              className={`
+                text-xs font-medium mt-2
+                ${
+                  isGreen
+                    ? "text-[#0C3D2E]"
+                    : "text-[#F7931E]"
+                }
+              `}
+            >
+              {card.change}
+            </p>
+
+          </div>
+        </div>
+      );
+    })}
+  </div>
+</div>
+      <div className="grid grid-cols-1 xl:grid-cols-[1.5fr_1fr] gap-6 mb-6">
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
+          <h3 className="text-gray-900 font-bold text-base mb-1">Revenue Overview</h3>
+          <p className="text-gray-600 text-xs mb-5">Monthly revenue from completed appointments</p>
+
+          <ResponsiveContainer width="100%" height={200}>
+            <BarChart data={dashboard.revenueData} barSize={24}>
               <XAxis
                 dataKey="month"
-                tick={{ fill: "#6B7280", fontSize: 12 }}
+                tick={{ fill: "#9CA3AF", fontSize: 12 }}
                 axisLine={false}
                 tickLine={false}
               />
               <YAxis
-                tick={{ fill: "#6B7280", fontSize: 11 }}
+                tick={{ fill: "#9CA3AF", fontSize: 11 }}
                 axisLine={false}
                 tickLine={false}
-                tickFormatter={(value) => `INR ${(Number(value) / 1000).toFixed(0)}k`}
+                tickFormatter={(value) => `${(Number(value) / 1000).toFixed(0)}k`}
               />
-              <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(232,99,10,0.06)" }} />
-              <Bar dataKey="revenue" fill="#E8630A" radius={[6, 6, 0, 0]} />
+              <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(234, 179, 8, 0.05)" }} />
+              <Bar dataKey="revenue" fill="#E8A145" radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
 
-        <div className="bg-white p-6 rounded-2xl border border-[#EAE5DC] flex-1 shadow-sm">
-          <div className="mb-4">
-            <div className="flex items-center gap-2 mb-1">
-              <div className="w-0.5 h-4.5 bg-[#6366F1] rounded-full" />
-              <h3 className="font-syne text-[15px] font-bold text-[#1A1D2E]">
-                Weekly Appointments
-              </h3>
-            </div>
-            <p className="text-[#6B7280] text-xs pl-2.5">
-              Last 7 days from the clinic queue
-            </p>
-          </div>
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
+          <h3 className="text-gray-900 font-bold text-base mb-1">Weekly Appointments</h3>
+          <p className="text-gray-600 text-xs mb-5">Last 7 days from the clinic queue</p>
 
-          <ResponsiveContainer width="100%" height={180}>
+          <ResponsiveContainer width="100%" height={200}>
             <LineChart data={dashboard.appointmentTrend}>
               <XAxis
                 dataKey="day"
-                tick={{ fill: "#6B7280", fontSize: 12 }}
+                tick={{ fill: "#9CA3AF", fontSize: 12 }}
                 axisLine={false}
                 tickLine={false}
               />
               <YAxis
-                tick={{ fill: "#6B7280", fontSize: 11 }}
+                tick={{ fill: "#9CA3AF", fontSize: 11 }}
                 axisLine={false}
                 tickLine={false}
               />
@@ -311,9 +359,9 @@ export default function Dashboard() {
               <Line
                 type="monotone"
                 dataKey="appts"
-                stroke="#6366F1"
-                strokeWidth={2.5}
-                dot={{ fill: "#6366F1", r: 4 }}
+                stroke="#2D7C6B"
+                strokeWidth={2}
+                dot={{ fill: "#2D7C6B", r: 4 }}
                 activeDot={{ r: 6 }}
               />
             </LineChart>
@@ -321,74 +369,63 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-[1fr_1fr_1.2fr] gap-4">
-        <div className="bg-white p-6 rounded-2xl border border-[#EAE5DC] flex-1 shadow-sm">
-          <div className="flex items-center gap-2 mb-[18px]">
-            <div className="w-0.5 h-4.5 bg-[#E8630A] rounded-full" />
-            <h3 className="font-syne text-[15px] font-bold text-[#1A1D2E]">
-              Recent Staff Enrollments
-            </h3>
-          </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-[1fr_1fr_1.2fr] gap-6">
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
+          <h3 className="text-gray-900 font-bold text-base mb-4">Recent Staff Enrollments</h3>
 
           <div className="flex flex-col gap-3">
             {dashboard.recentEnrollments.length > 0 ? (
               dashboard.recentEnrollments.map((staff) => (
                 <div
                   key={staff.id}
-                  className="flex items-center justify-between p-2.5 bg-white rounded-xl border border-[#EAE5DC] hover:border-[#E8630A55] transition-colors"
+                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200 hover:border-gray-300 transition-colors"
                 >
                   <div className="flex items-center gap-3">
                     <div
-                      className="w-9 h-9 rounded-full border flex items-center justify-center text-[12px] font-bold"
+                      className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold"
                       style={{
                         backgroundColor: `${staff.color || ROLE_COLORS.default}22`,
-                        borderColor: `${staff.color || ROLE_COLORS.default}44`,
                         color: staff.color || ROLE_COLORS.default,
                       }}
                     >
                       {getInitials(staff.name)}
                     </div>
-                    <div>
-                      <div className="font-semibold text-[13px] text-[#1A1D2E]">
+                    <div className="min-w-0">
+                      <div className="font-semibold text-sm text-gray-900 truncate">
                         {staff.name}
                       </div>
-                      <div className="text-[11px] text-[#6B7280]">
+                      <div className="text-xs text-gray-500">
                         {staff.role} - {staff.dept}
                       </div>
                     </div>
                   </div>
-                  <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-green-50 text-green-600">
+                  <span className="text-xs font-semibold px-2 py-1 rounded-full bg-green-100 text-green-700">
                     {staff.status}
                   </span>
                 </div>
               ))
             ) : (
-              <div className="rounded-xl border border-dashed border-[#EAE5DC] p-4 text-center text-sm text-slate-500">
+              <div className="rounded-lg border border-dashed border-gray-300 p-4 text-center text-sm text-gray-500">
                 No recent staff enrollments found.
               </div>
             )}
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-2xl border border-[#EAE5DC] flex-1 shadow-sm">
-          <div className="flex items-center gap-2 mb-[18px]">
-            <div className="w-0.5 h-4.5 bg-[#6366F1] rounded-full" />
-            <h3 className="font-syne text-[15px] font-bold text-[#1A1D2E]">
-              Staff Role Distribution
-            </h3>
-          </div>
+        <div className="bg-white p-6 rounded-2xl shadow-sm">
+          <h3 className="text-gray-900 font-bold text-base mb-4">Staff Role Distribution</h3>
 
-          <div className="flex flex-col gap-3.5">
+          <div className="flex flex-col gap-4 mb-5">
             {dashboard.roleDistribution.length > 0 ? (
               dashboard.roleDistribution.map((role) => (
                 <div key={role.role}>
                   <div className="flex justify-between mb-1.5">
-                    <span className="text-[13px] text-gray-400">{role.role}</span>
-                    <span className="text-[13px] text-[#6B7280] font-semibold">
+                    <span className="text-xs text-gray-600 font-medium">{role.role}</span>
+                    <span className="text-xs text-gray-600 font-semibold">
                       {role.count} staff
                     </span>
                   </div>
-                  <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
+                  <div className="h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
                     <div
                       className="h-full rounded-full transition-all duration-500"
                       style={{
@@ -400,37 +437,32 @@ export default function Dashboard() {
                 </div>
               ))
             ) : (
-              <div className="rounded-xl border border-dashed border-[#EAE5DC] p-4 text-center text-sm text-slate-500">
+              <div className="rounded-lg border border-dashed border-gray-300 p-4 text-center text-sm text-gray-500">
                 No staff roles found yet.
               </div>
             )}
           </div>
 
-          <div className="mt-5 grid grid-cols-2 gap-2.5">
-            <div className="bg-white p-3 rounded-xl border border-[#EAE5DC]">
-              <div className="text-[#6B7280] text-[11px]">New Registrations</div>
-              <div className="font-syne text-xl font-bold text-[#E8630A] mt-0.5">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
+              <div className="text-gray-500 text-xs">New Registrations</div>
+              <div className="text-lg font-bold text-orange-600 mt-1">
                 {dashboard.metrics.newRegistrationsToday}
               </div>
             </div>
-            <div className="bg-white p-3 rounded-xl border border-[#EAE5DC]">
-              <div className="text-[#6B7280] text-[11px]">Pending Queue</div>
-              <div className="font-syne text-xl font-bold text-red-500 mt-0.5">
+            <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
+              <div className="text-gray-500 text-xs">Pending Queue</div>
+              <div className="text-lg font-bold text-red-600 mt-1">
                 {dashboard.metrics.pendingAppointments}
               </div>
             </div>
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-2xl border border-[#EAE5DC] flex-[1.2] shadow-sm">
-          <div className="flex items-center justify-between mb-[18px]">
-            <div className="flex items-center gap-2">
-              <div className="w-0.5 h-4.5 bg-[#F97316] rounded-full" />
-              <h3 className="font-syne text-[15px] font-bold text-[#1A1D2E]">
-                Today's Appointments
-              </h3>
-            </div>
-            <span className="bg-[#F9731626] text-[#F97316] text-[11px] font-bold px-2 py-0.5 rounded-full">
+        <div className="bg-white p-6 rounded-2xl shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-gray-900 font-bold text-base">Today's Appointments</h3>
+            <span className="bg-orange-100 text-orange-700 text-xs font-bold px-2.5 py-1 rounded-full">
               {dashboard.metrics.todayAppointments} total
             </span>
           </div>
@@ -440,21 +472,21 @@ export default function Dashboard() {
               dashboard.todayAppointments.map((appointment) => (
                 <div
                   key={appointment.id}
-                  className="flex gap-3 p-3 bg-white rounded-xl border border-[#EAE5DC] items-center"
+                  className="flex gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200 items-center"
                 >
-                  <div className="bg-white border border-[#EAE5DC] rounded-lg px-2 py-1 text-[11px] font-bold text-[#E8630A] whitespace-nowrap">
+                  <div className="bg-white border border-gray-200 rounded-lg px-2 py-1 text-xs font-bold text-orange-600 whitespace-nowrap">
                     {appointment.time}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-[12px] font-semibold text-[#1A1D2E] truncate">
+                    <div className="text-xs font-semibold text-gray-900 truncate">
                       {appointment.pet}
                     </div>
-                    <div className="text-[11px] text-[#6B7280]">
+                    <div className="text-xs text-gray-500">
                       {appointment.doctor} - {appointment.type}
                     </div>
                   </div>
                   <span
-                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap ${getStatusClass(
+                    className={`text-xs font-bold px-2 py-1 rounded-full whitespace-nowrap ${getStatusClass(
                       appointment.status
                     )}`}
                   >
@@ -463,7 +495,7 @@ export default function Dashboard() {
                 </div>
               ))
             ) : (
-              <div className="rounded-xl border border-dashed border-[#EAE5DC] p-4 text-center text-sm text-slate-500">
+              <div className="rounded-lg border border-dashed border-gray-300 p-4 text-center text-sm text-gray-500">
                 No appointments scheduled for today.
               </div>
             )}

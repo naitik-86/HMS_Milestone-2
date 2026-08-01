@@ -213,6 +213,14 @@ const staffSchema = new mongoose.Schema(
                 type: Boolean,
                 default: false,
             },
+
+            failedPasswordAttempts: { type: Number, default: 0 },
+            passwordLockUntil: { type: Date, default: null },
+            failedOtpAttempts: { type: Number, default: 0 },
+            otpLockUntil: { type: Date, default: null },
+            lastLoginAt: { type: Date, default: null },
+            lastLoginIp: { type: String, default: null },
+            lastLoginDevice: { type: String, default: null },
         },
 
         isDeleted: {

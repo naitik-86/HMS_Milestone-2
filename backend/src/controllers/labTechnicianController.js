@@ -1,22 +1,50 @@
 const LabTechnician = require("../models/LabTechnician");
-const cloudinary = require("../config/cloudinary");
 const Visit = require("../models/visitModel");
 const PetRegistration = require("../models/PetRegistration");
 const DoctorConsultation = require("../models/DoctorConsultationModdel");
 const LabReport = require("../models/LabReport");
 
-const uploadToCloudinary = async (file, folder) => {
-    const result = await cloudinary.uploader.upload(
-        file.path,
-        {
-            folder,
-        }
-    );
+const resolveUploadedFile = (file) => ({
+    public_id: file.key || file.filename,
+    url: file.location || (file.filename ? `/uploads/${file.filename}` : file.path),
+});
 
-    return {
-        public_id: result.public_id,
-        url: result.secure_url,
-    };
+const parseJsonArray = (value) => {
+    if (Array.isArray(value)) return value;
+    if (!value) return [];
+
+    try {
+        const parsed = JSON.parse(value);
+        return Array.isArray(parsed) ? parsed : [];
+    } catch {
+        return [];
+    }
+};
+
+const normalizeShift = (value) => {
+    if (value === "24h") return "24 Hours";
+    return value;
+};
+
+const handleLabTechnicianError = (res, error) => {
+    if (error?.code === 11000 && error?.keyPattern?.employeeId) {
+        return res.status(409).json({
+            success: false,
+            message: "Lab technician details already exist for this staff member.",
+        });
+    }
+
+    if (error?.name === "ValidationError") {
+        return res.status(400).json({
+            success: false,
+            message: error.message,
+        });
+    }
+
+    return res.status(500).json({
+        success: false,
+        message: error.message,
+    });
 };
 
 
@@ -473,9 +501,8 @@ exports.createLabTechnician = async (
             req.files.certificate
         ) {
             certificate =
-                await uploadToCloudinary(
-                    req.files.certificate[0],
-                    "lab-technicians/certificates"
+                resolveUploadedFile(
+                    req.files.certificate[0]
                 );
         }
 
@@ -484,18 +511,24 @@ exports.createLabTechnician = async (
             req.files.idProof
         ) {
             idProof =
-                await uploadToCloudinary(
-                    req.files.idProof[0],
-                    "lab-technicians/id-proofs"
+                resolveUploadedFile(
+                    req.files.idProof[0]
                 );
         }
         const clinicId = req.user.clinicId;
+        const employeeId = String(req.body.employeeId || "").trim();
+
+        if (!employeeId) {
+            return res.status(400).json({
+                success: false,
+                message: "Please select a lab technician staff member.",
+            });
+        }
 
         const technician =
             await LabTechnician.create({
                 clinicId,
-                employeeId:
-                    req.body.employeeId,
+                employeeId,
 
                 qualification:
                     req.body.qualification,
@@ -520,12 +553,11 @@ exports.createLabTechnician = async (
                     req.body.dateOfJoining,
 
                 specializedTests:
-                    JSON.parse(
-                        req.body.specializedTests ||
-                        "[]"
+                    parseJsonArray(
+                        req.body.specializedTests
                     ),
 
-                shift: req.body.shift,
+                shift: normalizeShift(req.body.shift),
 
                 shiftStart:
                     req.body.shiftStart,
@@ -562,10 +594,7 @@ exports.createLabTechnician = async (
             data: technician,
         });
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: error.message,
-        });
+        handleLabTechnicianError(res, error);
     }
 };
 
@@ -631,6 +660,53 @@ exports.updateLabTechnician =
     async (req, res) => {
         try {
             const clinicId = req.user.clinicId;
+            const updateData = {
+                employeeId: req.body.employeeId,
+                qualification: req.body.qualification,
+                diploma: req.body.diploma,
+                licenseNumber: req.body.licenseNumber,
+                experience: req.body.experience,
+                previousInstitution: req.body.previousInstitution,
+                dateOfJoining: req.body.dateOfJoining,
+                specializedTests: parseJsonArray(req.body.specializedTests),
+                shift: normalizeShift(req.body.shift),
+                shiftStart: req.body.shiftStart,
+                shiftEnd: req.body.shiftEnd,
+                weeklyDays: req.body.weeklyDays,
+                onCall: req.body.onCall,
+                instruments: req.body.instruments,
+                lims: req.body.lims,
+                status: req.body.status,
+                department: req.body.department,
+                supervisor: req.body.supervisor,
+                notes: req.body.notes,
+            };
+
+            Object.keys(updateData).forEach((key) => {
+                if (updateData[key] === undefined) {
+                    delete updateData[key];
+                }
+            });
+
+            if (
+                req.files &&
+                req.files.certificate
+            ) {
+                updateData.certificate =
+                    resolveUploadedFile(
+                        req.files.certificate[0]
+                    );
+            }
+
+            if (
+                req.files &&
+                req.files.idProof
+            ) {
+                updateData.idProof =
+                    resolveUploadedFile(
+                        req.files.idProof[0]
+                    );
+            }
 
             const technician =
                 await LabTechnician.findOneAndUpdate(
@@ -638,7 +714,7 @@ exports.updateLabTechnician =
                         _id: req.params.id,
                         clinicId,
                     },
-                    req.body,
+                    updateData,
                     {
                         new: true,
                         runValidators: true,
@@ -650,11 +726,7 @@ exports.updateLabTechnician =
                 data: technician,
             });
         } catch (error) {
-            res.status(500).json({
-                success: false,
-                message:
-                    error.message,
-            });
+            handleLabTechnicianError(res, error);
         }
     };
 exports.deleteLabTechnician =
@@ -743,5 +815,56 @@ exports.uploadLabResults = async (req, res) => {
         res.status(200).json({ success: true, labRecord: up });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+exports.verifyLabTechnician = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const adminId = req.user?._id;
+
+        const technician = await LabTechnician.findByIdAndUpdate(
+            id,
+            {
+                isVerified: true,
+                verifiedAt: new Date(),
+                verifiedBy: adminId,
+            },
+            { new: true }
+        );
+
+        if (!technician) {
+            return res.status(404).json({
+                success: false,
+                message: "Lab technician not found.",
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: "Lab technician verified successfully.",
+            technician,
+        });
+    } catch (error) {
+        handleLabTechnicianError(res, error);
+    }
+};
+
+exports.rejectLabTechnician = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        await LabTechnician.findByIdAndUpdate(
+            id,
+            { isVerified: false },
+            { new: true }
+        );
+
+        res.status(200).json({
+            success: true,
+            message: "Lab technician verification rejected.",
+        });
+    } catch (error) {
+        handleLabTechnicianError(res, error);
     }
 };

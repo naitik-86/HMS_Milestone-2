@@ -202,8 +202,8 @@ console.log("Clinic ID:", clinicId);
 
     const pendingVisits = await Visit.find({
       clinicId,
-      currentStage: "PRE_CONSULTATION",
-      status: "WAITING"
+      "workflow.preConsultationCompleted": { $ne: true },
+      status: { $ne: "CANCELLED" }
     });
 
 console.log("Pending Visits Count:", pendingVisits.length);
@@ -300,21 +300,18 @@ exports.getCompletedPets = async (req, res) => {
       clinicId,
       "workflow.preConsultationCompleted": true,
     })
-      .populate({
-        path: "petId",
-        select:
-          "name species breed gender age color uniquePetId petPhoto",
-      })
-      .populate({
-        path: "ownerId",
-        select:
-          "ownerName mobileNumber email address city district state pincode",
-      })
-      .populate({
-        path: "doctorId",
-        select: "name doctorId",
-      })
+      .populate("ownerId")
+      .populate("preConsultationId")
+      .populate("doctorId")
       .sort({ updatedAt: -1 });
+
+    // petId refs a top-level "Pet" collection that's never populated in
+    // this app - the real pet data is an embedded subdocument on the
+    // owner (ownerId/PetRegistration), keyed by that same petId.
+    const petsWithDetails = completedVisits.map((visit) => ({
+      ...visit.toObject(),
+      pet: visit.ownerId?.pets?.id(visit.petId) || null,
+    }));
 
     return res.status(200).json({
       success: true,
@@ -324,7 +321,7 @@ exports.getCompletedPets = async (req, res) => {
           completedThisWeek,
           totalCompleted,
         },
-        pets: completedVisits,
+        pets: petsWithDetails,
       },
     });
   } catch (error) {
@@ -374,23 +371,19 @@ exports.getHistoryPets = async (req, res) => {
     const records = await Visit.find({
       clinicId,
     })
-      .populate({
-        path: "petId",
-        select:
-          "name species breed gender dob age color photoUrl rfidTag identificationMarks isSterilised",
-      })
-      .populate({
-        path: "ownerId",
-        select:
-          "ownerName mobileNumber email address city district state pincode",
-      })
-      .populate({
-        path: "doctorId",
-        select: "name doctorId",
-      })
+      .populate("ownerId")
+      .populate("preConsultationId")
+      .populate("doctorId")
       .sort({
         createdAt: -1,
       });
+
+    // See getCompletedPets above - petId never resolves via the empty
+    // "Pet" collection, so resolve it from the owner's embedded pets[].
+    const recordsWithDetails = records.map((visit) => ({
+      ...visit.toObject(),
+      pet: visit.ownerId?.pets?.id(visit.petId) || null,
+    }));
 
     return res.status(200).json({
       success: true,
@@ -400,7 +393,7 @@ exports.getHistoryPets = async (req, res) => {
           thisMonth,
           archivedCases,
         },
-        records,
+        records: recordsWithDetails,
       },
     });
 
@@ -547,6 +540,36 @@ exports.updatePreConsultation = async (req, res) => {
     });
 }
 
+};
+
+// ===============================================
+// Delete a visit and its linked pre-consultation form
+// ===============================================
+exports.deletePreConsultationVisit = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const clinicId = req.user.clinicId;
+
+    const visit = await Visit.findOne({ _id: id, clinicId });
+
+    if (!visit) {
+      return res.status(404).json({ success: false, message: "Visit not found" });
+    }
+
+    await PreConsultation.deleteMany({
+      clinicId,
+      $or: [
+        { visitId: visit._id },
+        ...(visit.preConsultationId ? [{ _id: visit.preConsultationId }] : []),
+      ],
+    });
+
+    await Visit.deleteOne({ _id: visit._id, clinicId });
+
+    return res.status(200).json({ success: true, message: "Visit record deleted successfully" });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
 };
 exports.searchHistoryPets = async (req, res) => {
   try {

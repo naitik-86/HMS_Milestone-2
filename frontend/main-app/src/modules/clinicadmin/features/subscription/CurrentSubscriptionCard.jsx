@@ -9,12 +9,18 @@ export default function CurrentSubscriptionCard({ subscription }) {
     const sub = subscription;
     const plan = subscription.plan;
 
-
-    console.log("=========", subscription);
-
-
     const formatBillingCycle = (cycle) =>
         cycle.replace("_", " ").toLowerCase();
+
+    if (!plan) {
+        return (
+            <div className="rounded-2xl border border-orange-200 bg-white p-8 shadow-sm">
+                <p className="text-gray-600">
+                    No plan details available for this subscription.
+                </p>
+            </div>
+        );
+    }
 
     return (
         <div className="flex flex-col overflow-hidden rounded-2xl border border-orange-200 bg-white shadow-sm lg:flex-row">

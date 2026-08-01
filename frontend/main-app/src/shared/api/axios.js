@@ -21,6 +21,15 @@ API.interceptors.response.use(
     (res) => res,
     (err) => {
         console.error("API ERROR:", err.response?.data || err.message);
+        if (err.response?.data?.code === "CLINIC_INACTIVE") {
+            localStorage.removeItem("token");
+            localStorage.removeItem("user");
+            localStorage.removeItem("role");
+            localStorage.removeItem("passwordResetRequired");
+            localStorage.removeItem("totpRequired");
+            sessionStorage.clear();
+            if (window.location.pathname !== "/login") window.location.assign("/login");
+        }
         return Promise.reject(err);
     }
 );

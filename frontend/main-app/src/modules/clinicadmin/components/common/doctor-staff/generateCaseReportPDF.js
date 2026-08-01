@@ -14,11 +14,16 @@ export const generateCaseReportPDF = (data) => {
   const margin = 14;
   let y = 14;
 
-  const checkPageBreak = (neededHeight = 20) => {
+  const checkPageBreak = (neededHeight = 15) => {
     if (y + neededHeight > pageHeight - 15) {
       doc.addPage();
       y = 15;
     }
+  };
+
+  const formatVal = (val, suffix = "") => {
+    if (val === undefined || val === null || String(val).trim() === "") return "N/A";
+    return `${String(val).trim()}${suffix}`;
   };
 
   // Header Banner
@@ -76,7 +81,7 @@ export const generateCaseReportPDF = (data) => {
     data.petId?.name ||
     data.petId?.petName ||
     data.petName ||
-    "Patient";
+    "N/A";
   const species =
     data.pet?.species || data.petId?.species || data.species || "N/A";
   const breed = data.pet?.breed || data.petId?.breed || data.breed || "N/A";
@@ -104,17 +109,25 @@ export const generateCaseReportPDF = (data) => {
 
   y += 40;
 
+  // Helper for printing key-value pairs cleanly
+  const renderRow = (label, val, neededHeight = 6) => {
+    checkPageBreak(neededHeight);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8.5);
+    doc.setTextColor(15, 23, 42);
+    doc.text(`${label}: `, margin, y);
+
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(51, 65, 85);
+    const displayVal = formatVal(val);
+    const maxW = pageWidth - margin * 2 - 45;
+    const splitVal = doc.splitTextToSize(displayVal, maxW);
+    doc.text(splitVal, margin + 45, y);
+    y += Math.max(splitVal.length * 4.5, 5);
+  };
+
   // Section 1: Clinical Vitals
   const vitals = data.vitals || data.preConsultationId || {};
-  const temp = vitals.bodyTemperature || vitals.temperature || "N/A";
-  const weight = vitals.bodyWeight || vitals.weight || "N/A";
-  const hr = vitals.heartRate || vitals.pulseRate || "N/A";
-  const resp = vitals.respiratoryRate || "N/A";
-  const bp = vitals.bloodPressure || "N/A";
-  const spo2 = vitals.spo2 !== undefined && vitals.spo2 !== "" ? `${vitals.spo2}%` : "N/A";
-  const bcs = vitals.bcs ? `${vitals.bcs}/5` : "N/A";
-  const recBy = vitals.recordedBy || "Duty Staff";
-
   checkPageBreak(30);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(10);
@@ -126,24 +139,18 @@ export const generateCaseReportPDF = (data) => {
   doc.line(margin, y, pageWidth - margin, y);
   y += 6;
 
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8.5);
-  doc.setTextColor(51, 65, 85);
-  doc.text(`Temp: ${temp} °F/°C   |   Weight: ${weight} kg   |   Heart Rate: ${hr} bpm   |   Resp Rate: ${resp}`, margin, y);
-  y += 5;
-  doc.text(`Blood Pressure: ${bp}   |   SpO2: ${spo2}   |   BCS: ${bcs}   |   Recorded By: ${recBy}`, margin, y);
-  y += 9;
+  renderRow("Body Temperature", vitals.bodyTemperature || vitals.temperature ? `${vitals.bodyTemperature || vitals.temperature} °F` : null);
+  renderRow("Body Weight", vitals.bodyWeight || vitals.weight ? `${vitals.bodyWeight || vitals.weight} kg` : null);
+  renderRow("Heart / Pulse Rate", vitals.heartRate || vitals.pulseRate ? `${vitals.heartRate || vitals.pulseRate} bpm` : null);
+  renderRow("Respiratory Rate", vitals.respiratoryRate);
+  renderRow("Blood Pressure", vitals.bloodPressure);
+  renderRow("SpO2", vitals.spo2 !== undefined && vitals.spo2 !== null && vitals.spo2 !== "" ? `${vitals.spo2}%` : null);
+  renderRow("Body Condition Score (BCS)", vitals.bcs ? `${vitals.bcs}/5` : null);
+  renderRow("Vitals Recorded By", vitals.recordedBy);
+  y += 3;
 
-  // Section 2: History - Doctor Reviews
+  // Section 2: Medical History
   const history = data.history || {};
-  const dietType = history.dietType || "N/A";
-  const dietFreq = history.dietFrequency ? `${history.dietFrequency} meals/day` : "N/A";
-  const waterIntake = history.waterIntake || "N/A";
-  const behaviour = history.behaviour || "N/A";
-  const exercise = history.exercise || "N/A";
-  const vacVerified = history.vaccinationStatus || data.pet?.history?.vaccineName || "Verified";
-  const allergiesVerified = history.allergies || data.pet?.history?.allergies || "No Known Allergies";
-
   checkPageBreak(35);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(10);
@@ -153,41 +160,41 @@ export const generateCaseReportPDF = (data) => {
   doc.line(margin, y, pageWidth - margin, y);
   y += 6;
 
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8.5);
-  doc.setTextColor(51, 65, 85);
-  doc.text(`Diet Type: ${dietType}   |   Diet Frequency: ${dietFreq}   |   Water Intake: ${waterIntake}`, margin, y);
-  y += 5;
-  doc.text(`Behavioral Habits: ${behaviour}   |   Exercise Level: ${exercise}`, margin, y);
-  y += 5;
-  doc.text(`Vaccination Status Verified: ${vacVerified}`, margin, y);
-  y += 5;
-  doc.text(`Known Allergies Verified: ${allergiesVerified}`, margin, y);
-  y += 6;
+  renderRow("Diet Type", history.dietType);
+  renderRow("Diet Frequency", history.dietFrequency ? `${history.dietFrequency} meals/day` : null);
+  renderRow("Water Intake", history.waterIntake);
+  renderRow("Behavioral Habits", history.behaviour);
+  renderRow("Exercise Level", history.exercise);
+  renderRow("Vaccination Status", history.vaccinationStatus);
+  renderRow("Known Allergies", history.allergies);
 
-  // Confirmed Medications History Multi-rows
   const medConfirmed = Array.isArray(history.medicationsConfirmed) ? history.medicationsConfirmed : [];
+  checkPageBreak(12);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8.5);
+  doc.setTextColor(15, 23, 42);
+  doc.text("Confirmed Medications History: ", margin, y);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(51, 65, 85);
+
   if (medConfirmed.length > 0 && medConfirmed.some(m => m.drug)) {
-    checkPageBreak(20);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(8.5);
-    doc.text("Current Medications Confirmed:", margin, y);
-    y += 4;
-    doc.setFont("helvetica", "normal");
+    y += 4.5;
     medConfirmed.forEach(m => {
       if (m.drug) {
-        checkPageBreak(8);
-        doc.text(`• Drug: ${m.drug} | Dose: ${m.dose || 'N/A'} | Freq: ${m.frequency || 'N/A'} | Since: ${m.since || 'N/A'}`, margin + 3, y);
+        checkPageBreak(6);
+        doc.text(`• Drug: ${m.drug} | Dose: ${formatVal(m.dose)} | Freq: ${formatVal(m.frequency)} | Since: ${formatVal(m.since)}`, margin + 5, y);
         y += 4.5;
       }
     });
-    y += 2;
+  } else {
+    doc.text("N/A", margin + 45, y);
+    y += 5;
   }
-  y += 4;
+  y += 3;
 
   // Section 3: Clinical Observations
   const obs = data.clinicalObservation || {};
-  const obsKeys = [
+  const obsList = [
     { key: "cardiovascular", label: "Cardiovascular" },
     { key: "respiratory", label: "Respiratory" },
     { key: "digestive", label: "Digestive" },
@@ -200,50 +207,25 @@ export const generateCaseReportPDF = (data) => {
     { key: "lymphNodes", label: "Lymph Nodes" },
   ];
 
-  const recordedObs = obsKeys.filter(o => obs[o.key]);
-  const generalObsNotes = obs.doctorNotes || "";
+  checkPageBreak(30);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.setTextColor(15, 23, 42);
+  doc.text("3. CLINICAL OBSERVATIONS", margin, y);
+  y += 3;
+  doc.line(margin, y, pageWidth - margin, y);
+  y += 6;
 
-  if (recordedObs.length > 0 || generalObsNotes) {
-    checkPageBreak(30);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(10);
-    doc.setTextColor(15, 23, 42);
-    doc.text("3. CLINICAL OBSERVATIONS", margin, y);
-    y += 3;
-    doc.line(margin, y, pageWidth - margin, y);
-    y += 6;
-
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(8.5);
-    doc.setTextColor(51, 65, 85);
-
-    recordedObs.forEach(item => {
-      checkPageBreak(8);
-      doc.setFont("helvetica", "bold");
-      doc.text(`${item.label}: `, margin, y);
-      doc.setFont("helvetica", "normal");
-      doc.text(String(obs[item.key]), margin + 32, y);
-      y += 4.5;
-    });
-
-    if (generalObsNotes) {
-      checkPageBreak(12);
-      doc.setFont("helvetica", "bold");
-      doc.text("Doctor Observation Notes: ", margin, y);
-      doc.setFont("helvetica", "normal");
-      const splitObsNotes = doc.splitTextToSize(generalObsNotes, pageWidth - margin * 2 - 40);
-      doc.text(splitObsNotes, margin + 40, y);
-      y += Math.max(splitObsNotes.length * 4.5, 6);
-    }
-    y += 4;
-  }
+  obsList.forEach(item => {
+    renderRow(item.label, obs[item.key]);
+  });
+  renderRow("Doctor Observation Notes", obs.doctorNotes);
+  y += 3;
 
   // Section 4: Diagnosis & Lab Requisition
   const diag = data.diagnosis || {};
-  const confirmedDiag = diag.confirmedDiagnosis || diag.provisionalDiagnosis || "General Checkup & Wellness Consultation";
-  const diffDiag = diag.differentialDiagnosis || "";
-  const provDiag = diag.provisionalDiagnosis || "";
   const labReq = data.labRequisition || {};
+  const labRep = data.labReport || data.consultationDetails?.labReport || {};
 
   checkPageBreak(30);
   doc.setFont("helvetica", "bold");
@@ -254,45 +236,90 @@ export const generateCaseReportPDF = (data) => {
   doc.line(margin, y, pageWidth - margin, y);
   y += 6;
 
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(8.5);
-  doc.text("Confirmed Diagnosis: ", margin, y);
-  doc.setFont("helvetica", "normal");
-  const splitDiag = doc.splitTextToSize(confirmedDiag, pageWidth - margin * 2 - 40);
-  doc.text(splitDiag, margin + 40, y);
-  y += Math.max(splitDiag.length * 4.5, 5);
+  renderRow("Confirmed Diagnosis", diag.confirmedDiagnosis);
+  renderRow("Provisional Diagnosis", diag.provisionalDiagnosis);
+  renderRow("Differential Diagnosis", diag.differentialDiagnosis);
 
-  if (provDiag && provDiag !== confirmedDiag) {
-    checkPageBreak(10);
-    doc.setFont("helvetica", "bold");
-    doc.text("Provisional Diagnosis: ", margin, y);
-    doc.setFont("helvetica", "normal");
-    const splitProv = doc.splitTextToSize(provDiag, pageWidth - margin * 2 - 40);
-    doc.text(splitProv, margin + 40, y);
-    y += Math.max(splitProv.length * 4.5, 5);
+  // Safely extract test names from labReq.tests (handles array of strings or array of objects)
+  let testsList = [];
+  if (Array.isArray(labReq.tests)) {
+    testsList = labReq.tests
+      .map(t => typeof t === "string" ? t : (t.testName || t.name || ""))
+      .filter(Boolean);
+  } else if (typeof labReq.tests === "string" && labReq.tests.trim()) {
+    testsList = [labReq.tests.trim()];
   }
 
-  if (diffDiag) {
-    checkPageBreak(10);
-    doc.setFont("helvetica", "bold");
-    doc.text("Differential Diagnosis: ", margin, y);
-    doc.setFont("helvetica", "normal");
-    const splitDiff = doc.splitTextToSize(diffDiag, pageWidth - margin * 2 - 40);
-    doc.text(splitDiff, margin + 40, y);
-    y += Math.max(splitDiff.length * 4.5, 5);
+  // Also gather test names from uploaded lab reports if any
+  if (Array.isArray(labRep.reports)) {
+    labRep.reports.forEach(r => {
+      if (r.testName && !testsList.includes(r.testName)) {
+        testsList.push(r.testName);
+      }
+    });
   }
 
-  if (diag.raiseLab || (labReq.tests && labReq.tests.length > 0)) {
-    checkPageBreak(12);
-    doc.setFont("helvetica", "bold");
-    doc.text("Lab Requisition: ", margin, y);
-    doc.setFont("helvetica", "normal");
-    const testsStr = Array.isArray(labReq.tests) ? labReq.tests.join(", ") : "Raised";
-    const sampleStr = Array.isArray(labReq.sampleType) ? labReq.sampleType.join(", ") : "";
-    doc.text(`Tests: ${testsStr}${sampleStr ? ` | Samples: ${sampleStr}` : ""}`, margin + 35, y);
-    y += 5;
+  const testsStr = testsList.length > 0 ? testsList.join(", ") : null;
+
+  let sampleStr = null;
+  if (Array.isArray(labReq.sampleType)) {
+    sampleStr = labReq.sampleType.map(s => typeof s === "string" ? s : (s.name || s.label || "")).filter(Boolean).join(", ");
+  } else if (typeof labReq.sampleType === "string") {
+    sampleStr = labReq.sampleType;
   }
-  y += 4;
+
+  renderRow("Lab Requisition Tests", testsStr);
+  renderRow("Lab Sample Type", sampleStr);
+  renderRow("Lab Instructions", labReq.instructions);
+
+  // Render Uploaded Lab Reports & Download Links in PDF
+  if (Array.isArray(labRep.reports) && labRep.reports.length > 0) {
+    checkPageBreak(15);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8.5);
+    doc.setTextColor(15, 23, 42);
+    doc.text("Uploaded Lab Diagnostic Reports: ", margin, y);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(51, 65, 85);
+    y += 4.5;
+
+    labRep.reports.forEach((r, idx) => {
+      checkPageBreak(8);
+      const testTitle = r.testName || `Lab Report #${idx + 1}`;
+      const fileName = r.fileName || "Uploaded Attachment";
+      const fileUrl = r.fileUrl || "";
+
+      doc.setFont("helvetica", "bold");
+      doc.text(`${idx + 1}. ${testTitle}: `, margin + 5, y);
+      const titleWidth = doc.getTextWidth(`${idx + 1}. ${testTitle}: `);
+      
+      doc.setFont("helvetica", "normal");
+      doc.text(fileName, margin + 5 + titleWidth, y);
+      y += 4.5;
+
+      if (fileUrl) {
+        const backendOrigin = window.location.origin.includes("5173")
+          ? "http://localhost:5000"
+          : window.location.origin;
+
+        const safeName = (r.fileName || r.testName || "Lab_Report")
+          .replace(/\.[^/.]+$/, "")
+          .replace(/[^a-zA-Z0-9_\-]/g, "_");
+
+        const downloadProxyUrl = `${backendOrigin}/api/v1/doctorModule/download-lab-file?url=${encodeURIComponent(fileUrl)}&name=${encodeURIComponent(safeName)}`;
+
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(234, 88, 12); // Vibrant link color
+        const linkText = "   [Click to Download PDF Report]";
+        doc.textWithLink(linkText, margin + 5, y, { url: downloadProxyUrl });
+        const linkWidth = doc.getTextWidth(linkText);
+        doc.link(margin + 5, y - 3, linkWidth, 4, { url: downloadProxyUrl });
+        doc.setTextColor(51, 65, 85);
+        y += 5;
+      }
+    });
+  }
+  y += 3;
 
   // Section 5: Treatment & Prescription Administered
   const treatment = data.treatment || {};
@@ -312,260 +339,164 @@ export const generateCaseReportPDF = (data) => {
   y += 6;
 
   // 5.1 Medications Prescribed
+  checkPageBreak(12);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8.5);
+  doc.setTextColor(15, 23, 42);
+  doc.text("Medications Prescribed: ", margin, y);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(51, 65, 85);
+
   if (medsList.length > 0 && medsList.some(m => m.drugName)) {
-    checkPageBreak(25);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(9);
-    doc.setTextColor(15, 23, 42);
-    doc.text("Medications Prescribed:", margin, y);
-    y += 5;
-
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(8);
-    doc.setTextColor(51, 65, 85);
-
+    y += 4.5;
     medsList.forEach((m, idx) => {
       if (m.drugName) {
-        checkPageBreak(8);
-        doc.text(`${idx + 1}. Drug: ${m.drugName} | Dose: ${m.dose || '-'} | Route: ${m.route || '-'} | Freq: ${m.frequency || '-'} | Duration: ${m.duration || '-'} | Instruction: ${m.instruction || '-'}`, margin + 2, y);
+        checkPageBreak(6);
+        doc.text(`${idx + 1}. Drug: ${m.drugName} | Dose: ${formatVal(m.dose)} | Route: ${formatVal(m.route)} | Freq: ${formatVal(m.frequency)} | Duration: ${formatVal(m.duration)} | Instruction: ${formatVal(m.instruction)}`, margin + 5, y);
         y += 4.5;
       }
     });
-    y += 3;
   } else if (treatment.medicines) {
-    checkPageBreak(15);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(9);
-    doc.text("Medications Prescribed:", margin, y);
+    const splitMeds = doc.splitTextToSize(String(treatment.medicines), pageWidth - margin * 2 - 45);
+    doc.text(splitMeds, margin + 45, y);
+    y += Math.max(splitMeds.length * 4.5, 5);
+  } else {
+    doc.text("N/A", margin + 45, y);
     y += 5;
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(8);
-    const splitMeds = doc.splitTextToSize(String(treatment.medicines), pageWidth - margin * 2);
-    doc.text(splitMeds, margin, y);
-    y += splitMeds.length * 4.5 + 3;
   }
 
-  // 5.2 In Clinic Procedures Done
-  if (procList.length > 0 && procList.some(p => p.procedure)) {
-    checkPageBreak(20);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(9);
-    doc.setTextColor(15, 23, 42);
-    doc.text("In Clinic Procedures Done:", margin, y);
-    y += 5;
+  // 5.2 Procedures Done
+  checkPageBreak(12);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8.5);
+  doc.setTextColor(15, 23, 42);
+  doc.text("In Clinic Procedures Done: ", margin, y);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(51, 65, 85);
 
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(8);
+  if (procList.length > 0 && procList.some(p => p.procedure)) {
+    y += 4.5;
     procList.forEach((p, idx) => {
       if (p.procedure) {
-        checkPageBreak(8);
-        doc.text(`${idx + 1}. Procedure: ${p.procedure} | Description: ${p.description || '-'} | Outcome: ${p.outcome || '-'}`, margin + 2, y);
+        checkPageBreak(6);
+        doc.text(`${idx + 1}. Procedure: ${p.procedure} | Description: ${formatVal(p.description)} | Outcome: ${formatVal(p.outcome)}`, margin + 5, y);
         y += 4.5;
       }
     });
-    y += 3;
   } else if (treatment.procedures) {
-    checkPageBreak(15);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(9);
-    doc.text("Procedures Performed:", margin, y);
+    const splitProc = doc.splitTextToSize(String(treatment.procedures), pageWidth - margin * 2 - 45);
+    doc.text(splitProc, margin + 45, y);
+    y += Math.max(splitProc.length * 4.5, 5);
+  } else {
+    doc.text("N/A", margin + 45, y);
     y += 5;
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(8);
-    const splitProc = doc.splitTextToSize(String(treatment.procedures), pageWidth - margin * 2);
-    doc.text(splitProc, margin, y);
-    y += splitProc.length * 4.5 + 3;
   }
 
-  // 5.3 Vaccination Administered
-  if (vacList.length > 0 && vacList.some(v => v.vaccine)) {
-    checkPageBreak(20);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(9);
-    doc.setTextColor(15, 23, 42);
-    doc.text("Vaccination Administered:", margin, y);
-    y += 5;
+  // 5.3 Vaccinations Administered
+  checkPageBreak(12);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8.5);
+  doc.setTextColor(15, 23, 42);
+  doc.text("Vaccination Administered: ", margin, y);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(51, 65, 85);
 
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(8);
+  if (vacList.length > 0 && vacList.some(v => v.vaccine)) {
+    y += 4.5;
     vacList.forEach((v, idx) => {
       if (v.vaccine) {
-        checkPageBreak(8);
-        doc.text(`${idx + 1}. Vaccine: ${v.vaccine} | Batch No: ${v.batchNumber || '-'} | Dose: ${v.dose || '-'} | Route: ${v.route || '-'} | Next Due: ${v.nextDueDate || '-'}`, margin + 2, y);
+        checkPageBreak(6);
+        doc.text(`${idx + 1}. Vaccine: ${v.vaccine} | Batch No: ${formatVal(v.batchNumber)} | Dose: ${formatVal(v.dose)} | Route: ${formatVal(v.route)} | Next Due: ${formatVal(v.nextDueDate)}`, margin + 5, y);
         y += 4.5;
       }
     });
-    y += 3;
   } else if (treatment.vaccinations) {
-    checkPageBreak(12);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(9);
-    doc.text(`Vaccination Administered: ${treatment.vaccinations}`, margin, y);
-    y += 6;
+    doc.text(formatVal(treatment.vaccinations), margin + 45, y);
+    y += 5;
+  } else {
+    doc.text("N/A", margin + 45, y);
+    y += 5;
   }
 
   // 5.4 Deworming Administered
-  if (treatment.hasDeworming && dewList.length > 0 && dewList.some(d => d.product)) {
-    checkPageBreak(20);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(9);
-    doc.setTextColor(15, 23, 42);
-    doc.text("Deworming Administered:", margin, y);
-    y += 5;
+  checkPageBreak(12);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8.5);
+  doc.setTextColor(15, 23, 42);
+  doc.text("Deworming Administered: ", margin, y);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(51, 65, 85);
 
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(8);
+  if (dewList.length > 0 && dewList.some(d => d.product)) {
+    y += 4.5;
     dewList.forEach((d, idx) => {
       if (d.product) {
-        checkPageBreak(8);
-        doc.text(`${idx + 1}. Product: ${d.product} | Dose: ${d.dose || '-'} | Date: ${d.date || '-'}`, margin + 2, y);
+        checkPageBreak(6);
+        doc.text(`${idx + 1}. Product: ${d.product} | Dose: ${formatVal(d.dose)} | Date: ${formatVal(d.date)}`, margin + 5, y);
         y += 4.5;
       }
     });
-    y += 3;
   } else if (treatment.deworming) {
-    checkPageBreak(12);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(9);
-    doc.text(`Deworming Administered: ${treatment.deworming}`, margin, y);
-    y += 6;
+    doc.text(formatVal(treatment.deworming), margin + 45, y);
+    y += 5;
+  } else {
+    doc.text("N/A", margin + 45, y);
+    y += 5;
   }
 
   // 5.5 Fluids / IV Given
-  if (treatment.hasFluids && fluidList.length > 0 && fluidList.some(f => f.type)) {
-    checkPageBreak(20);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(9);
-    doc.setTextColor(15, 23, 42);
-    doc.text("Fluids / IV Given:", margin, y);
-    y += 5;
+  checkPageBreak(12);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8.5);
+  doc.setTextColor(15, 23, 42);
+  doc.text("Fluids / IV Given: ", margin, y);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(51, 65, 85);
 
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(8);
+  if (fluidList.length > 0 && fluidList.some(f => f.type)) {
+    y += 4.5;
     fluidList.forEach((f, idx) => {
       if (f.type) {
-        checkPageBreak(8);
-        doc.text(`${idx + 1}. Type: ${f.type} | Volume: ${f.volume || '-'} | Rate: ${f.rate || '-'}`, margin + 2, y);
+        checkPageBreak(6);
+        doc.text(`${idx + 1}. Type: ${f.type} | Volume: ${formatVal(f.volume)} | Rate: ${formatVal(f.rate)}`, margin + 5, y);
         y += 4.5;
       }
     });
-    y += 3;
   } else if (treatment.fluids) {
-    checkPageBreak(12);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(9);
-    doc.text(`Fluids / IV Given: ${treatment.fluids}`, margin, y);
-    y += 6;
+    doc.text(formatVal(treatment.fluids), margin + 45, y);
+    y += 5;
+  } else {
+    doc.text("N/A", margin + 45, y);
+    y += 5;
   }
 
-  if (treatment.treatmentNotes) {
-    checkPageBreak(15);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(9);
-    doc.text("Treatment Notes: ", margin, y);
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(8);
-    const splitTN = doc.splitTextToSize(treatment.treatmentNotes, pageWidth - margin * 2 - 35);
-    doc.text(splitTN, margin + 35, y);
-    y += Math.max(splitTN.length * 4.5, 6);
-  }
-  y += 4;
+  renderRow("Treatment Notes", treatment.treatmentNotes);
+  y += 3;
 
   // Section 6: Discharge Advice & Suggestions
   const suggestion = data.suggestion || {};
-  const dietAdvice = suggestion.dietAdvice || "";
-  const homeCare = suggestion.homeCare || "";
-  const activityRestriction = suggestion.activityRestriction || "";
-  const preventiveCare = suggestion.preventiveCare || "";
-  const followUpDate = suggestion.followUpDate || treatment.followUp || "";
-  const finalNotes = suggestion.finalNotes || "";
-  const prognosis = suggestion.prognosis || "";
 
-  if (dietAdvice || homeCare || activityRestriction || preventiveCare || followUpDate || finalNotes || prognosis) {
-    checkPageBreak(30);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(10);
-    doc.setTextColor(15, 23, 42);
-    doc.text("6. DISCHARGE ADVICE & FOLLOW-UP INSTRUCTIONS", margin, y);
-    y += 3;
-    doc.line(margin, y, pageWidth - margin, y);
-    y += 6;
+  checkPageBreak(30);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.setTextColor(15, 23, 42);
+  doc.text("6. DISCHARGE ADVICE & FOLLOW-UP INSTRUCTIONS", margin, y);
+  y += 3;
+  doc.line(margin, y, pageWidth - margin, y);
+  y += 6;
 
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(8.5);
-    doc.setTextColor(51, 65, 85);
-
-    if (prognosis) {
-      checkPageBreak(8);
-      doc.setFont("helvetica", "bold");
-      doc.text("Prognosis: ", margin, y);
-      doc.setFont("helvetica", "normal");
-      doc.text(prognosis, margin + 35, y);
-      y += 5;
-    }
-
-    if (dietAdvice) {
-      checkPageBreak(10);
-      doc.setFont("helvetica", "bold");
-      doc.text("Dietary Advice: ", margin, y);
-      doc.setFont("helvetica", "normal");
-      const splitDiet = doc.splitTextToSize(dietAdvice, pageWidth - margin * 2 - 35);
-      doc.text(splitDiet, margin + 35, y);
-      y += Math.max(splitDiet.length * 4.5, 5);
-    }
-
-    if (activityRestriction) {
-      checkPageBreak(10);
-      doc.setFont("helvetica", "bold");
-      doc.text("Activity Restriction: ", margin, y);
-      doc.setFont("helvetica", "normal");
-      const splitAct = doc.splitTextToSize(activityRestriction, pageWidth - margin * 2 - 35);
-      doc.text(splitAct, margin + 35, y);
-      y += Math.max(splitAct.length * 4.5, 5);
-    }
-
-    if (homeCare) {
-      checkPageBreak(10);
-      doc.setFont("helvetica", "bold");
-      doc.text("Home Care: ", margin, y);
-      doc.setFont("helvetica", "normal");
-      const splitHome = doc.splitTextToSize(homeCare, pageWidth - margin * 2 - 35);
-      doc.text(splitHome, margin + 35, y);
-      y += Math.max(splitHome.length * 4.5, 5);
-    }
-
-    if (preventiveCare) {
-      checkPageBreak(10);
-      doc.setFont("helvetica", "bold");
-      doc.text("Preventive Care: ", margin, y);
-      doc.setFont("helvetica", "normal");
-      const splitPrev = doc.splitTextToSize(preventiveCare, pageWidth - margin * 2 - 35);
-      doc.text(splitPrev, margin + 35, y);
-      y += Math.max(splitPrev.length * 4.5, 5);
-    }
-
-    if (followUpDate) {
-      checkPageBreak(8);
-      doc.setFont("helvetica", "bold");
-      doc.text("Follow-Up Required / Date: ", margin, y);
-      doc.setFont("helvetica", "normal");
-      doc.text(String(followUpDate), margin + 45, y);
-      y += 5;
-    }
-
-    if (finalNotes) {
-      checkPageBreak(10);
-      doc.setFont("helvetica", "bold");
-      doc.text("Final Doctor Notes: ", margin, y);
-      doc.setFont("helvetica", "normal");
-      const splitNotes = doc.splitTextToSize(finalNotes, pageWidth - margin * 2 - 35);
-      doc.text(splitNotes, margin + 35, y);
-      y += Math.max(splitNotes.length * 4.5, 5);
-    }
-  }
+  renderRow("Prognosis", suggestion.prognosis);
+  renderRow("Dietary Advice", suggestion.dietAdvice);
+  renderRow("Activity Restriction", suggestion.activityRestriction);
+  renderRow("Home Care", suggestion.homeCare);
+  renderRow("Preventive Care", suggestion.preventiveCare);
+  renderRow("Follow-Up Required / Date", suggestion.followUpDate || treatment.followUp);
+  renderRow("Final Doctor Notes", suggestion.finalNotes);
+  y += 5;
 
   // Doctor Signature Section
-  y = Math.max(y + 15, pageHeight - 35);
+  checkPageBreak(30);
+  y = Math.max(y + 10, pageHeight - 35);
   if (y > pageHeight - 30) {
     doc.addPage();
     y = pageHeight - 35;
@@ -573,7 +504,7 @@ export const generateCaseReportPDF = (data) => {
 
   doc.setLineWidth(0.4);
   doc.setDrawColor(148, 163, 184);
-  doc.line(pageWidth - margin - 55, y, pageWidth - margin, y);
+  doc.line(pageWidth - margin - 60, y, pageWidth - margin, y);
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
@@ -582,11 +513,11 @@ export const generateCaseReportPDF = (data) => {
     data.consultationDetails?.doctorName ||
     data.doctorName ||
     "Authorized Veterinarian";
-  doc.text(docName, pageWidth - margin - 55, y + 5);
+  doc.text(docName, pageWidth - margin - 60, y + 5);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
   doc.setTextColor(100, 116, 139);
-  doc.text("Doctor's Signature & Stamp", pageWidth - margin - 55, y + 9);
+  doc.text("Doctor's Signature & Stamp", pageWidth - margin - 60, y + 9);
 
   // Footer Note
   doc.setFont("helvetica", "normal");

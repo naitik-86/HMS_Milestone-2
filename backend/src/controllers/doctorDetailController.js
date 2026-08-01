@@ -1,5 +1,6 @@
 const Doctor = require("../models/DoctorDetails.js");
 const Staff = require("../models/Staff.js");
+const Clinic = require("../models/Clinic.js");
 
 const generateDoctorId = require("../utils/generateDoctorId.js");
 
@@ -29,6 +30,18 @@ const createDoctor = async (req, res) => {
         } = req.body;
 
         const clinicId = req.user.clinicId;
+
+        const clinicForLimit = await Clinic.findById(clinicId).select("licenseLimits");
+        const maxDoctors = clinicForLimit?.licenseLimits?.maxDoctors;
+        if (Number.isFinite(maxDoctors)) {
+            const currentDoctorCount = await Doctor.countDocuments({ clinicId });
+            if (currentDoctorCount >= maxDoctors) {
+                return res.status(403).json({
+                    success: false,
+                    message: `This clinic's plan allows a maximum of ${maxDoctors} veterinarian(s). Upgrade the plan to add more.`,
+                });
+            }
+        }
 
         if (!/^[A-Za-z0-9/-]{5,30}$/.test(registrationNumber || "")) {
             return res.status(400).json({
@@ -207,12 +220,22 @@ const getAllDoctors = async (req, res) => {
 
         const doctors = await Doctor.find({
             clinicId
-        }).sort({ createdAt: -1 });
+        })
+            .populate('staff', 'personalInfo.fullName')
+            .sort({ createdAt: -1 });
+
+        const doctorsWithLiveNames = doctors.map((doc) => {
+            const obj = doc.toObject();
+            if (obj.staff?.personalInfo?.fullName) {
+                obj.name = obj.staff.personalInfo.fullName;
+            }
+            return obj;
+        });
 
         return res.status(200).json({
             success: true,
-            count: doctors.length,
-            doctors,
+            count: doctorsWithLiveNames.length,
+            doctors: doctorsWithLiveNames,
         });
 
     } catch (error) {
@@ -390,8 +413,77 @@ const deleteDoctor = async (req, res) => {
     }
 };
 
+const verifyDoctor = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const adminId = req.user?._id;
+        const clinicId = req.user?.clinicId;
+
+        const doctor = await Doctor.findOneAndUpdate(
+            { _id: id, clinicId },
+            {
+                isVerified: true,
+                verifiedAt: new Date(),
+                verifiedBy: adminId,
+            },
+            { new: true }
+        );
+
+        if (!doctor) {
+            return res.status(404).json({
+                success: false,
+                message: "Doctor not found",
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "Doctor verified successfully",
+            doctor,
+        });
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
+
+const rejectDoctor = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const clinicId = req.user?.clinicId;
+
+        const doctor = await Doctor.findOneAndUpdate(
+            { _id: id, clinicId },
+            { isVerified: false },
+            { new: true }
+        );
+
+        if (!doctor) {
+            return res.status(404).json({
+                success: false,
+                message: "Doctor not found",
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "Doctor verification rejected",
+            doctor,
+        });
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
+
 exports.createDoctor = createDoctor;
 exports.getDoctorById = getDoctorById;
 exports.getAllDoctors = getAllDoctors;
 exports.updateDoctor = updateDoctor;
 exports.deleteDoctor = deleteDoctor;
+exports.verifyDoctor = verifyDoctor;
+exports.rejectDoctor = rejectDoctor;

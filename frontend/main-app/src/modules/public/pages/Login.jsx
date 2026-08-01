@@ -1,8 +1,14 @@
-import { Eye, EyeOff, LoaderCircle, LogIn, Mail, Lock, Phone } from "lucide-react";
+import { LoaderCircle, LogIn, Mail, Phone } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { authApi, googleLoginApi } from "../../auth/api/authApi";
 import API from "../../../shared/api/axios";
+import { getDashboardPathForRole, normalizeRole } from "../../../shared/utils/roleRedirects";
+import PasswordInput from "../../../shared/components/PasswordInput";
+
+// Must match the 30s cooldown window in resendLoginOtp, backend/src/controllers/authController.js
+const RESEND_COOLDOWN_SECONDS = 30;
+const OTP_VALIDITY_SECONDS = 5 * 60;
 
 export default function Login() {
   const navigate = useNavigate();
@@ -23,10 +29,13 @@ export default function Login() {
     useState(false);
 
 
-  const [otp, setOtp] = useState("");
+  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
+  const inputRefs = useRef([]);
+  const [otpExpiresAt, setOtpExpiresAt] = useState(null);
+  const [resendSeconds, setResendSeconds] = useState(0);
+  const [resendLoading, setResendLoading] = useState(false);
 
   const [googleLoading, setGoogleLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
   const [loginLoading, setLoginLoading] = useState(false);
 
   const openOtpVerification = useCallback((response, values = {}) => {
@@ -39,7 +48,7 @@ export default function Login() {
       localStorage.setItem("passwordResetRequired", response.requiresPasswordReset ? "true" : "false");
     }
 
-    localStorage.setItem("role", role);
+    localStorage.setItem("role", normalizeRole(role));
     localStorage.setItem("user", JSON.stringify(response.user || response.googleUser || {}));
     localStorage.setItem("userEmail", email);
 
@@ -48,9 +57,37 @@ export default function Login() {
       email: email || prev.email,
       phone: phone || prev.phone,
     }));
-    setOtp("");
+    setOtp(["", "", "", "", "", ""]);
+    setOtpExpiresAt(Date.now() + OTP_VALIDITY_SECONDS * 1000);
+    setResendSeconds(RESEND_COOLDOWN_SECONDS);
     setShowVerificationModal(true);
   }, []);
+
+  useEffect(() => {
+    if (resendSeconds <= 0) return undefined;
+    const timer = setInterval(() => {
+      setResendSeconds((seconds) => Math.max(0, seconds - 1));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [resendSeconds]);
+
+  const handleResendOtp = async () => {
+    setResendLoading(true);
+    try {
+      await API.post("/auth/resend-otp", { email: form.email });
+      setOtp(["", "", "", "", "", ""]);
+      setOtpExpiresAt(Date.now() + OTP_VALIDITY_SECONDS * 1000);
+      setResendSeconds(RESEND_COOLDOWN_SECONDS);
+    } catch (error) {
+      const data = error.response?.data;
+      if (data?.retryAfter) {
+        setResendSeconds(data.retryAfter);
+      }
+      alert(data?.message || "Unable to resend OTP");
+    } finally {
+      setResendLoading(false);
+    }
+  };
 
   const handleGoogleCredential = useCallback(async (credentialResponse) => {
     if (!credentialResponse?.credential) {
@@ -85,11 +122,8 @@ export default function Login() {
         return;
       }
 
-      if (role === "SUPER_ADMIN") navigate("/superadmin", { replace: true });
-      else if (role === "CLINIC_ADMIN") navigate("/clinic", { replace: true });
-      else if (role === "DOCTOR") navigate("/doctor/dashboard", { replace: true });
-      else if (role === "RECEPTIONIST") navigate("/clinic/reception", { replace: true });
-      else if (role === "PARA_MEDICAL") navigate("/clinic/pre-consultation", { replace: true });
+      const dashboardPath = getDashboardPathForRole(role);
+      if (dashboardPath) navigate(dashboardPath, { replace: true });
       return;
     }
 
@@ -171,9 +205,8 @@ export default function Login() {
       newErrors.email = "Enter a valid email";
     }
 
-    if (!form.phone.trim()) {
-      newErrors.phone = "Phone number is required";
-    } else if (!/^[6-9]\d{9}$/.test(form.phone)) {
+    // Phone is optional - only validated if provided
+    if (form.phone.trim() && !/^[6-9]\d{9}$/.test(form.phone)) {
       newErrors.phone =
         "Enter a valid 10-digit mobile number";
     }
@@ -200,6 +233,7 @@ export default function Login() {
       const response = await authApi({
         email: form.email,
         password: form.password,
+        phone: form.phone,
       });
 
       openOtpVerification(response, {
@@ -220,10 +254,34 @@ export default function Login() {
     }
   };
 
+  const handleOtpChange = (value, index) => {
+  if (!/^\d?$/.test(value)) return;
+
+  const newOtp = [...otp];
+  newOtp[index] = value;
+  setOtp(newOtp);
+
+  if (value && index < 5) {
+    inputRefs.current[index + 1]?.focus();
+  }
+};
+
+    const handleOtpKeyDown = (e, index) => {
+      if (e.key === "Backspace" && !otp[index] && index > 0) {
+        inputRefs.current[index - 1]?.focus();
+      }
+    };
+
   const handleContinue = async () => {
     const role = localStorage.getItem("role");
-    let verifyEndpoint = "";
-    if (!/^\d{6}$/.test(otp)) return alert("Please enter a valid 6 digit OTP");
+    let verifyEndpoint;
+   const otpValue = otp.join("");
+
+    if (!/^\d{6}$/.test(otpValue))
+    return alert("Please enter a valid 6 digit OTP");
+    if (otpExpiresAt && new Date(otpExpiresAt).getTime() <= Date.now()) {
+      return alert("OTP has expired. Please request a new OTP.");
+    }
 
     if (role === "SUPER_ADMIN") {
       verifyEndpoint = "/auth/superadmin/verify-otp";
@@ -232,7 +290,10 @@ export default function Login() {
     } else {
       verifyEndpoint = "/auth/staff/verify-otp";
     }
-    const payload = { email: form.email, otp };
+    const payload = {
+    email: form.email,
+    otp: otp.join("")
+  };
 
     // 2. Make Verification Call & Set Token
     // 2. Make Verification Call & Set Token
@@ -270,21 +331,10 @@ export default function Login() {
       console.warn("Dashboard redirect failed", e);
     }
 
-    // Fallbacks
-    if (role === "SUPER_ADMIN")
-      return navigate("/superadmin", { replace: true });
+    const fallbackPath = getDashboardPathForRole(role);
+    if (fallbackPath) return navigate(fallbackPath, { replace: true });
+    alert(`Login succeeded but no dashboard is configured for role: "${localStorage.getItem("role")}". Please contact support.`);
 
-    if (role === "CLINIC_ADMIN")
-      return navigate("/clinic", { replace: true });
-
-    if (role === "DOCTOR")
-      return navigate("/doctor/dashboard", { replace: true });
-
-    if (role === "RECEPTIONIST")
-      return navigate("/clinic/reception", { replace: true });
-
-    if (role === "PARA_MEDICAL")
-      return navigate("/clinic/pre-consultation", { replace: true });
   };
 
   return (
@@ -352,6 +402,7 @@ export default function Login() {
             value={form.email}
             onChange={handleChange}
             placeholder="you@example.com"
+            autoComplete="email"
             required
             className={`w-full rounded-xl pl-10 pr-4 py-3 focus:outline-none ${
               errors.email
@@ -417,35 +468,14 @@ export default function Login() {
           </Link>
         </div>
 
-        <div className="relative">
-          <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-
-          <input
-            type={showPassword ? "text" : "password"}
-            name="password"
-            value={form.password}
-            onChange={handleChange}
-            required
-            className={`w-full rounded-xl pl-10 pr-11 py-3 focus:outline-none ${
-              errors.password
-                ? "border border-red-500"
-                : "border border-slate-200 focus:border-green-600"
-            }`}
-          />
-          <button
-            type="button"
-            onClick={() => setShowPassword((visible) => !visible)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-green-700"
-            aria-label={showPassword ? "Hide password" : "Show password"}
-          >
-            {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-          </button>
-        </div>
-        {errors.password && (
-          <p className="text-red-500 text-sm mt-1">
-            {errors.password}
-          </p>
-        )}
+        <PasswordInput
+          name="password"
+          value={form.password}
+          onChange={handleChange}
+          autoComplete="current-password"
+          required
+          error={errors.password}
+        />
     <button
       type="submit"
       disabled={loginLoading}
@@ -460,6 +490,12 @@ export default function Login() {
         "Log in"
       )}
     </button>
+        <p className="mt-4 text-center text-sm text-slate-500">
+          Don&apos;t have an account?{" "}
+          <Link to="/create-account" className="font-medium text-green-700 hover:text-green-800">
+            Create Account
+          </Link>
+        </p>
       </form>
 
       {/* ================================= */}
@@ -468,38 +504,59 @@ export default function Login() {
 
       {showVerificationModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="w-full max-w-xl bg-white rounded-3xl p-6 border border-slate-200 shadow-xl">
-            <h2 className="text-2xl font-bold text-slate-900">
-              Verify Your Account
-            </h2>
+          <div className="w-full max-w-md bg-white rounded-3xl shadow-xl p-8">
+           <h2 className="text-3xl font-bold text-center">
+            OTP Authentication
+          </h2>
 
-            <p className="text-slate-500 mt-1 mb-6">
-              Enter the OTP sent to your registered email and mobile number.
-            </p>
+          <p className="text-center text-slate-500 mt-2 mb-6">
+            Enter the 6 digit OTP sent to your email.
+          </p>
 
             <label className="block text-sm font-semibold mb-2" htmlFor="login-otp">
               One-time password
             </label>
-            <input
-              id="login-otp"
-              type="text"
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              value={otp}
-              onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-              placeholder="Enter 6 digit OTP"
-              className="w-full border border-slate-200 rounded-xl px-4 py-3"
-            />
+           <div className="flex justify-center gap-3 mt-4">
+            {otp.map((digit, index) => (
+              <input
+                key={index}
+                ref={(el) => (inputRefs.current[index] = el)}
+                type="text"
+                maxLength={1}
+                inputMode="numeric"
+                value={digit}
+                onChange={(e) => handleOtpChange(e.target.value, index)}
+                onKeyDown={(e) => handleOtpKeyDown(e, index)}
+                className="w-12 h-12 rounded-xl border border-slate-300 text-center text-xl font-semibold focus:outline-none focus:ring-2 focus:ring-teal-500"
+              />
+            ))}
+          </div>
 
             {/* CONTINUE */}
+          <button
+          type="button"
+          onClick={handleContinue}
+          className="mt-8 w-full rounded-full bg-[#0C3D2E] hover:bg-[#092E23] text-white font-semibold py-3 transition"
+        >
+          Login
+        </button>
+           
 
-            <button
-              type="button"
-              onClick={handleContinue}
-              className="mt-7 w-full bg-green-700 hover:bg-green-800 text-white font-semibold py-3.5 rounded-xl"
-            >
-              Verify & Continue
-            </button>
+            <p className="mt-6 text-center text-sm text-slate-500">
+              Didn't receive an OTP?{" "}
+              <button
+                type="button"
+                onClick={handleResendOtp}
+                disabled={resendSeconds > 0 || resendLoading}
+                className="font-semibold text-teal-600 disabled:text-slate-400"
+              >
+                {resendLoading
+                  ? "Resending..."
+                  : resendSeconds > 0
+                  ? `Resend in ${resendSeconds}s`
+                  : "Resend"}
+              </button>
+            </p>
 
             <button
               type="button"

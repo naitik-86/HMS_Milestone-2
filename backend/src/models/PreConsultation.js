@@ -56,8 +56,14 @@ const preConsultationSchema = new mongoose.Schema(
     },
 
     bloodPressure: {
-      type: String,
-      trim: true,
+      systolic: {
+        type: Number,
+        min: 0,
+      },
+      diastolic: {
+        type: Number,
+        min: 0,
+      },
     },
 
     spo2: {
@@ -73,7 +79,7 @@ const preConsultationSchema = new mongoose.Schema(
     bcs: {
       type: Number,
       min: 1,
-      max: 5,
+      max: 9,
     },
 
     recordedBy: {
@@ -122,15 +128,28 @@ const preConsultationSchema = new mongoose.Schema(
     },
 
     recentTravel: {
-      type: Boolean,
-      default: false,
+      hasTravel: {
+        type: Boolean,
+        default: false,
+      },
+      description: {
+        type: String,
+        trim: true,
+        default: "",
+      },
     },
 
     animalContact: {
-      type: Boolean,
-      default: false,
+      hasContact: {
+        type: Boolean,
+        default: false,
+      },
+      description: {
+        type: String,
+        trim: true,
+        default: "",
+      },
     },
-
     // ======================================================
     // STEP 3 : PROBLEM DESCRIPTION
     // ======================================================

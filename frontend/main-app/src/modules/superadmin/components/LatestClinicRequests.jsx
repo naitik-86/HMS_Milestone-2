@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import {
     ClipboardCheck,
     Eye,
@@ -9,10 +9,12 @@ import {
     Pencil,
     Trash2,
     X,
+    ChevronDown,
+    Check,
 } from "lucide-react";
 import { showToast } from "../../../shared/components/toast";
 import { calculateEndDate, getTodayDate } from "../../../shared/utils/calculateEndDate ";
-import { deleteClinic, getClinics, updateClinic, updateClinicVerification, uploadClinicDocuments } from "../api/clinicApi";
+import { deleteClinic, getClinics, updateClinic, updateClinicActivity, updateClinicVerification, uploadClinicDocuments } from "../api/clinicApi";
 import ClinicForm from "./forms/clinicForm/ClinicForm";
 import Stepper from "./forms/Stepper";
 
@@ -25,19 +27,147 @@ const tabs = [
     ["plan", "Plan & Features"],
 ];
 
-const statusStyles = {
-    ACTIVE: "bg-green-100 text-green-700",
-    SUBMITTED: "bg-blue-100 text-blue-700",
-    UNDER_REVIEW: "bg-slate-100 text-slate-600",
-    DOCS_VERIFIED: "bg-blue-100 text-blue-600",
-    APPROVED: "bg-green-100 text-green-700",
-    REJECTED: "bg-red-100 text-red-600",
-    SUSPENDED: "bg-red-100 text-red-600",
-    EXPIRED: "bg-red-100 text-red-600",
+const tableGrid =
+    "md:grid-cols-[minmax(0,1.2fr)_minmax(72px,.65fr)_minmax(0,1.35fr)_minmax(0,1.25fr)_minmax(74px,.65fr)_minmax(120px,.8fr)_minmax(140px,.85fr)]";
+
+// Status configuration for 4 distinct visual states
+const STATUS_CONFIG = {
+    SUBMITTED: {
+        label: "Submitted",
+        pill: "bg-[#FFF4E5] text-[#F7931E] border-[#F7931E]/30 hover:bg-[#ffe3cc]",
+        icon: "text-[#F7931E]",
+        activeItem: "bg-[#F7931E] text-white",
+        hoverItem: "text-[#F7931E] hover:bg-[#FFF4E5]",
+    },
+    APPROVED: {
+        label: "Approved",
+        pill: "bg-[#D9E8E3] text-[#0C3D2E] border-[#0C3D2E]/20 hover:bg-[#c8ded8]",
+        icon: "text-[#0C3D2E]",
+        activeItem: "bg-[#0C3D2E] text-white",
+        hoverItem: "text-[#0C3D2E] hover:bg-[#D9E8E3]/50",
+    },
+    REJECTED: {
+        label: "Rejected",
+        pill: "bg-rose-100 text-rose-700 border-rose-200 hover:bg-rose-200",
+        icon: "text-rose-700",
+        activeItem: "bg-rose-600 text-white",
+        hoverItem: "text-rose-700 hover:bg-rose-50",
+    },
+    UNDER_REVIEW: {
+        label: "Pending",
+        pill: "bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200",
+        icon: "text-slate-600",
+        activeItem: "bg-slate-700 text-white",
+        hoverItem: "text-slate-700 hover:bg-slate-100",
+    },
 };
 
-const tableGrid =
-    "md:grid-cols-[minmax(0,1.2fr)_minmax(72px,.65fr)_minmax(0,1.35fr)_minmax(0,1.25fr)_minmax(74px,.65fr)_minmax(100px,.8fr)_minmax(140px,.85fr)]";
+const clinicStatusOptions = [
+    ["SUBMITTED", "Submitted"],
+    ["APPROVED", "Approved"],
+    ["UNDER_REVIEW", "Pending"],
+    ["REJECTED", "Rejected"],
+];
+
+/**
+ * 4-Color Status Dropdown Component with Smart Upward/Downward Positioning
+ */
+function TableStatusDropdown({ value, onChange, disabled, isOpenRow, setOpenRow,}) {
+    const [isOpen, setIsOpen] = useState(false);
+    const [openUpward, setOpenUpward] = useState(false);
+    const dropdownRef = useRef(null);
+    
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                setIsOpen(false);
+                setOpenRow(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
+    const toggleOpen = () => {
+        if (disabled) return;
+        
+        if (!isOpen && dropdownRef.current) {
+            const rect = dropdownRef.current.getBoundingClientRect();
+            const spaceBelow = window.innerHeight - rect.bottom;
+            // If space below is less than 170px, open upwards
+            setOpenUpward(spaceBelow < 170);
+        }
+        setIsOpen((prev) => {
+            const next = !prev;
+            setOpenRow(next);
+            return next;
+        });
+    };
+
+    const currentKey = STATUS_CONFIG[value] ? value : "SUBMITTED";
+    const currentTheme = STATUS_CONFIG[currentKey];
+
+    const handleSelect = (optionValue) => {
+        onChange(optionValue);
+        setIsOpen(false);
+    };
+
+    return (
+            <div
+                ref={dropdownRef}
+                className="relative z-[9999] w-full min-w-[115px]"
+            >
+            {/* Trigger Button */}
+            <button
+                type="button"
+                disabled={disabled}
+                onClick={toggleOpen}
+                className={`w-full flex items-center justify-between gap-1.5 font-bold text-xs px-3 py-1.5 rounded-full transition-all cursor-pointer border shadow-2xs disabled:opacity-60 disabled:cursor-not-allowed ${currentTheme.pill}`}
+            >
+                <span className="truncate">{currentTheme.label}</span>
+                <ChevronDown
+                    size={14}
+                    className={`shrink-0 transition-transform duration-200 ${currentTheme.icon} ${
+                        isOpen ? "rotate-180" : ""
+                    }`}
+                />
+            </button>
+
+            {/* Smart Dropdown Options Popup */}
+            {isOpen && (
+                <div
+                    className={`absolute left-0 right-0 z-50 bg-white border border-gray-100 rounded-2xl shadow-xl p-1 overflow-hidden animate-in fade-in-50 zoom-in-95 duration-100 ${
+                        openUpward ? "bottom-full mb-1" : "top-full mt-1"
+                    }`}
+                >
+                    <div className="flex flex-col gap-0.5">
+                        {clinicStatusOptions.map(([optVal, optLabel]) => {
+                            const isSelected = optVal === value;
+                            const optTheme = STATUS_CONFIG[optVal] || STATUS_CONFIG.SUBMITTED;
+
+                            return (
+                                <button
+                                    key={optVal}
+                                    type="button"
+                                    onClick={() => handleSelect(optVal)}
+                                    className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                                        isSelected
+                                            ? optTheme.activeItem
+                                            : optTheme.hoverItem
+                                    }`}
+                                >
+                                    <span className="truncate">{optLabel}</span>
+                                    {isSelected && <Check size={13} className="shrink-0 ml-1 text-white" />}
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
 
 const getClinicType = (clinic) =>
     clinic.facilityType ||
@@ -55,12 +185,8 @@ const getDisplayStatus = (clinic) => {
     return status === "UNDER_REVIEW" ? "Pending" : status;
 };
 
-const clinicStatusOptions = [
-    ["SUBMITTED", "Submitted"],
-    ["UNDER_REVIEW", "Pending"],
-    ["APPROVED", "Approved"],
-    ["REJECTED", "Rejected"],
-];
+const getClinicDisplayId = (clinic) =>
+    clinic?.clinicCode || (clinic?._id ? `CLINIC-${clinic._id.slice(-6).toUpperCase()}` : "N/A");
 
 // Safely format files and URLs for display
 const filePlaceholder = (file, fileName) => {
@@ -108,8 +234,8 @@ const valueOrDash = (value) => {
 };
 
 const DetailSection = ({ title, children }) => (
-    <section className="rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:p-5">
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+    <section className="rounded-2xl border border-gray-100 bg-slate-50/50 p-4 sm:p-5">
+        <h3 className="text-xs font-bold uppercase tracking-wider text-[#0C3D2E]">
             {title}
         </h3>
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -125,15 +251,15 @@ const DetailField = ({ label, value, wide = false }) => {
 
     return (
         <div className={wide ? "sm:col-span-2" : ""}>
-            <p className="text-xs uppercase tracking-wide text-slate-500">
+            <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">
                 {label}
             </p>
             {url && (url.startsWith('http') || url.startsWith('/')) ? (
-                <a href={url} target="_blank" rel="noreferrer" className="mt-1 text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline break-words block">
+                <a href={url} target="_blank" rel="noreferrer" className="mt-1 text-sm font-semibold text-[#F7931E] hover:text-[#e08319] hover:underline break-words block">
                     {displayValue}
                 </a>
             ) : (
-                <p className="mt-1 text-sm font-medium text-slate-800 break-words">
+                <p className="mt-1 text-sm font-semibold text-gray-800 break-words">
                     {displayValue}
                 </p>
             )}
@@ -153,33 +279,33 @@ const ClinicDocuments = ({ form }) => {
     ].filter(([, document]) => document?.url);
 
     return (
-        <section className="rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:p-5">
-            <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+        <section className="rounded-2xl border border-gray-100 bg-slate-50/50 p-4 sm:p-5">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-[#0C3D2E]">
                 Uploaded Documents
             </h3>
             {documents.length ? (
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
                     {documents.map(([label, document]) => (
-                        <div key={label} className="rounded-xl border border-slate-200 bg-white p-3">
-                            <p className="text-xs uppercase tracking-wide text-slate-500">{label}</p>
-                            <p className="mt-1 truncate text-sm font-medium text-slate-800" title={document.name}>
+                        <div key={label} className="rounded-xl border border-gray-100 bg-white p-3.5 shadow-xs">
+                            <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">{label}</p>
+                            <p className="mt-1 truncate text-sm font-semibold text-gray-800" title={document.name}>
                                 {document.name}
                             </p>
                             <a
                                 href={document.url}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="mt-3 inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700 transition hover:bg-blue-100"
+                                className="mt-3 inline-flex items-center gap-2 rounded-xl border border-[#F7931E]/20 bg-[#FFF4E5] px-3 py-1.5 text-xs font-bold text-[#F7931E] transition hover:bg-[#F7931E] hover:text-white"
                             >
-                                <FileText size={16} />
+                                <FileText size={15} />
                                 View document
-                                <ExternalLink size={14} />
+                                <ExternalLink size={13} />
                             </a>
                         </div>
                     ))}
                 </div>
             ) : (
-                <p className="mt-3 text-sm text-slate-500">No onboarding documents were uploaded.</p>
+                <p className="mt-3 text-sm text-gray-400">No onboarding documents were uploaded.</p>
             )}
         </section>
     );
@@ -207,6 +333,8 @@ const getClinicForm = (clinic = {}) => {
     const coordinates = clinic.location?.coordinates || [];
 
     return {
+        clinicCode: clinic.clinicCode || "",
+        createdAt: clinic.createdAt || "",
         clinicName: clinic.name || clinic.clinicName || details.clinicName || details.name || "",
         facilityType: getClinicType(clinic) || details.facilityType || "",
         year: clinic.year || clinic.establishedYear || clinic.yearOfEstablishment || details.establishedYear || details.yearOfEstablishment || "",
@@ -244,6 +372,10 @@ const getClinicForm = (clinic = {}) => {
         adminName: clinic.adminName || admin.fullName || admin.name || admin.adminName || "",
         designation: clinic.designation || clinic.adminDesignation || admin.designation || admin.role || "",
         adminPhone: clinic.adminPhone || admin.mobileNumber || admin.phone || admin.adminPhone || "",
+        // Treat the phone number already on file as pre-verified so
+        // editing an existing clinic doesn't force OTP re-verification
+        // unless the admin actually changes the number.
+        adminPhoneVerifiedNumber: clinic.adminPhone || admin.mobileNumber || admin.phone || admin.adminPhone || "",
         adminEmail: clinic.adminEmail || admin.emailAddress || admin.email || admin.adminEmail || clinic.contactEmail || "",
         govtIdType: clinic.govtIdType || admin.governmentIdType || admin.govtIdType || "Aadhar",
         govtIdNumber: clinic.govtIdNumber || admin.governmentIdNumber || admin.govtIdNumber || "",
@@ -256,10 +388,10 @@ const getClinicForm = (clinic = {}) => {
         discountCode: clinic.discountCode || plan.discountCode || "",
         notes: clinic.notes || plan.notes || "",
         
-        maxStaff: clinic.maxStaff || limits.maxStaff || "",
+        maxStaff: clinic.maxStaff || limits.maxStaff || limits.maxStaffAccounts || "",
         maxDoctors: clinic.maxDoctors || limits.maxDoctors || "",
-        maxPets: clinic.maxPets || limits.maxPets || "",
-        storageLimit: clinic.storageLimit || limits.storageLimit || limits.storageLimitGB || "",
+        maxPets: clinic.maxPets || limits.maxPets || limits.maxPetRecords || (limits.maxPetsUnlimited || limits.maxPetRecordsUnlimited ? "Unlimited" : ""),
+        storageLimit: clinic.storageLimit || limits.storageLimit || limits.storageLimitGb || limits.storageLimitGB || "",
 
         labModule: Boolean(clinic.labModule ?? features.labModule ?? false),
         groomingModule: Boolean(clinic.groomingModule ?? features.groomingModule ?? false),
@@ -281,7 +413,6 @@ const getClinicForm = (clinic = {}) => {
 };
 
 const getUpdatePayload = (form) => {
-    // FIX: Safely map UI plan names (Standard/Professional) to strict Backend Enums
     let mappedSubscriptionType = "FREE_TIER";
     const planStr = String(form.plan).toUpperCase();
     const billingStr = String(form.billing).toUpperCase();
@@ -313,7 +444,6 @@ const getUpdatePayload = (form) => {
             ? { type: "Point", coordinates: [Number(form.longitude), Number(form.latitude)] }
             : undefined,
 
-        // Apply mapped enum value instead of raw text
         subscriptionType: mappedSubscriptionType,
         plan: form.plan,
         billingCycle: form.billing,
@@ -327,6 +457,7 @@ const getUpdatePayload = (form) => {
             maxDoctors: form.maxDoctors,
             maxStaff: form.maxStaff,
             maxPets: form.maxPets,
+            maxPetsUnlimited: String(form.maxPets || "").trim().toLowerCase() === "unlimited",
             storageLimit: form.storageLimit,
         },
         taxDetails: {
@@ -375,7 +506,7 @@ const getUpdatePayload = (form) => {
     };
 };
 
-export default function LatestClinicApprovals() {
+export default function LatestClinicApprovals({ searchTerm = "" }) {
     const [clinics, setClinics] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedClinic, setSelectedClinic] = useState(null);
@@ -385,11 +516,13 @@ export default function LatestClinicApprovals() {
     const [saving, setSaving] = useState(false);
     const [deletingId, setDeletingId] = useState("");
     const [updatingStatusId, setUpdatingStatusId] = useState("");
+    const [openDropdownId, setOpenDropdownId] = useState(null);
 
     const fetchClinics = useCallback(async () => {
         setLoading(true);
         try {
-            const response = await getClinics();
+            const query = searchTerm.trim();
+            const response = await getClinics(query ? { search: query } : {});
             if (response.success) {
                 setClinics(response.data || []);
             }
@@ -403,7 +536,7 @@ export default function LatestClinicApprovals() {
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [searchTerm]);
 
     useEffect(() => {
         fetchClinics();
@@ -450,12 +583,12 @@ export default function LatestClinicApprovals() {
             const response = await updateClinic(selectedClinic._id, getUpdatePayload(updatedForm));
             await uploadClinicDocuments(selectedClinic._id, updatedForm);
             showToast({
-                type: "success",
-                title: "Clinic Updated",
-                description: response.message || "Clinic details updated successfully.",
+                type: response.emailWarning?.length ? "error" : "success",
+                title: response.emailWarning?.length ? "Clinic Updated, Email Not Sent" : "Clinic Updated",
+                description: response.emailWarning?.join(" ") || response.message || "Clinic details updated successfully.",
             });
             closeModal();
-            fetchClinics();
+            await fetchClinics();
         } catch (error) {
             console.error("Failed to update clinic", error);
             showToast({
@@ -522,19 +655,39 @@ export default function LatestClinicApprovals() {
         }
     };
 
+    const handleActivityChange = async (clinic) => {
+        if (!clinic?._id) return;
+        const nextIsActive = clinic.isActive === false;
+        const action = nextIsActive ? "activate" : "deactivate";
+        if (!window.confirm(`${action[0].toUpperCase()}${action.slice(1)} ${clinic.name || "this clinic"}?${nextIsActive ? "" : " All clinic users will be logged out and blocked from logging in."}`)) return;
+
+        setUpdatingStatusId(clinic._id);
+        try {
+            const response = await updateClinicActivity(clinic._id, nextIsActive);
+            setClinics((current) => current.map((item) =>
+                item._id === clinic._id ? { ...item, isActive: response.data?.isActive ?? nextIsActive } : item
+            ));
+            showToast({ type: "success", title: `Clinic ${nextIsActive ? "Activated" : "Deactivated"}`, description: response.message || `${clinic.name || "Clinic"} is now ${nextIsActive ? "active" : "inactive"}.` });
+        } catch (error) {
+            showToast({ type: "error", title: "Status Update Failed", description: error.response?.data?.message || "Unable to update clinic activity." });
+        } finally {
+            setUpdatingStatusId("");
+        }
+    };
+
     return (
         <>
-            <div className="overflow-hidden rounded-2xl border bg-white shadow">
-                <div className="flex flex-col gap-4 border-b bg-gray-50 p-4 sm:flex-row sm:items-center sm:justify-between md:p-6">
+            <div className="rounded-2xl border border-gray-100 bg-white shadow-xs">
+                <div className="flex flex-col gap-4 border-b border-gray-100 bg-slate-50/50 p-4 sm:flex-row sm:items-center sm:justify-between md:p-6 rounded-t-2xl">
                     <div className="flex items-center gap-3">
-                        <div className="rounded-xl bg-orange-100 p-2 text-orange-500">
+                        <div className="rounded-xl bg-[#FFF4E5] p-2.5 text-[#F7931E]">
                             <ClipboardCheck size={20} />
                         </div>
                         <div>
-                            <h2 className="text-base font-semibold text-gray-800 md:text-lg">
+                            <h2 className="text-base font-bold text-[#0C3D2E] md:text-lg tracking-tight">
                                 Latest Clinic Approvals
                             </h2>
-                            <p className="text-xs text-gray-500 md:text-sm">
+                            <p className="text-xs text-gray-400 md:text-sm font-medium">
                                 Review the most recent clinic registration requests.
                             </p>
                         </div>
@@ -542,7 +695,7 @@ export default function LatestClinicApprovals() {
                 </div>
 
                 <div>
-                    <div className={`hidden ${tableGrid} gap-3 border-b bg-gray-50 px-4 py-3 text-xs font-semibold text-gray-500 md:grid lg:px-6`}>
+                    <div className={`hidden ${tableGrid} gap-3 border-b border-gray-100 bg-slate-50/50 px-4 py-3 text-xs font-bold text-[#0C3D2E] md:grid lg:px-6`}>
                         <span>CLINIC</span>
                         <span>TYPE</span>
                         <span>LOCATION</span>
@@ -553,73 +706,91 @@ export default function LatestClinicApprovals() {
                     </div>
 
                     {loading ? (
-                        <div className="px-6 py-8 text-center text-gray-500">
+                        <div className="px-6 py-8 text-center text-sm font-medium text-gray-400">
                             Loading clinics...
                         </div>
                     ) : clinics.length === 0 ? (
-                        <div className="px-6 py-8 text-center text-gray-500">
+                        <div className="px-6 py-8 text-center text-sm font-medium text-gray-400">
                             No clinics found.
                         </div>
                     ) : (
-                        clinics.map((clinic) => {
-                            const status = getDisplayStatus(clinic);
+                        clinics.map((clinic, index) => {
                             const clinicType = getClinicType(clinic);
 
                             return (
                                 <div
                                     key={clinic._id}
-                                    className={`grid grid-cols-1 gap-3 border-b px-4 py-4 transition hover:bg-gray-50 ${tableGrid} md:items-center md:gap-3 lg:px-6`}
+                                    style={{
+                                        zIndex:
+                                            openDropdownId === clinic._id
+                                                ? 9999
+                                                : clinics.length - index,
+                                    }}
+                                    className={`relative grid grid-cols-1 gap-3 border-b border-gray-100 px-4 py-4 transition hover:bg-slate-50/80 ${tableGrid} md:items-center md:gap-3 lg:px-6`}
                                 >
                                     <div className="min-w-0">
-                                        <p className="truncate font-medium text-gray-800" title={clinic.name}>
+                                        <p className="truncate font-bold text-gray-800 text-sm" title={clinic.name}>
                                             {clinic.name || "Unnamed clinic"}
                                         </p>
-                                        <p className="truncate text-xs text-gray-400" title={clinic._id}>
-                                            {clinic._id?.slice(-6).toUpperCase() || "N/A"}
+                                        <p className="truncate text-xs text-gray-400 font-medium" title={getClinicDisplayId(clinic)}>
+                                            {getClinicDisplayId(clinic)}
                                         </p>
                                     </div>
 
-                                    <span className="truncate text-sm font-medium text-blue-600" title={clinicType}>
+                                    <span className="truncate text-xs font-semibold text-[#0C3D2E]" title={clinicType}>
                                         <span className="mr-2 text-xs font-semibold text-gray-400 md:hidden">Type:</span>
                                         {clinicType || "N/A"}
                                     </span>
 
-                                    <div className="flex min-w-0 items-center gap-2 text-gray-700" title={clinic.address}>
-                                        <MapPin size={14} className="shrink-0 text-orange-500" />
+                                    <div className="flex min-w-0 items-center gap-2 text-xs font-medium text-gray-600" title={clinic.address}>
+                                        <MapPin size={14} className="shrink-0 text-[#F7931E]" />
                                         <span className="truncate">{clinic.address || "N/A"}</span>
                                     </div>
 
-                                    <div className="flex min-w-0 items-center gap-2 text-gray-700" title={getContactEmail(clinic)}>
-                                        <Mail size={14} className="shrink-0 text-orange-500" />
+                                    <div className="flex min-w-0 items-center gap-2 text-xs font-medium text-gray-600" title={getContactEmail(clinic)}>
+                                        <Mail size={14} className="shrink-0 text-[#F7931E]" />
                                         <span className="truncate">{getContactEmail(clinic)}</span>
                                     </div>
 
-                                    <span className="truncate text-xs font-medium text-blue-600">
+                                    <span className="truncate text-xs font-semibold text-[#0C3D2E]">
                                         <span className="mr-2 font-semibold text-gray-400 md:hidden">Plan:</span>
                                         {getPlanValue(clinic).replace("_", " ")}
                                     </span>
 
-                                    <div className="flex items-center gap-2">
-                                        <select
-                                            value={clinic.verificationStatus || "SUBMITTED"}
-                                            onChange={(event) => handleStatusChange(clinic, event.target.value)}
-                                            disabled={updatingStatusId === clinic._id}
-                                            aria-label={`Update status for ${clinic.name || "clinic"}`}
-                                            className={`w-full rounded-lg px-2 py-1.5 text-xs font-semibold outline-none disabled:cursor-wait disabled:opacity-60 ${
-                                                statusStyles[clinic.verificationStatus] || "bg-gray-100 text-gray-600"
-                                            }`}
-                                        >
-                                            {clinicStatusOptions.map(([value, label]) => (
-                                                <option key={value} value={value}>{label}</option>
-                                            ))}
-                                        </select>
+                                    <div className="flex items-center">
+                                        {clinic.verificationStatus === "APPROVED" ? (
+                                            <button
+                                                type="button"
+                                                role="switch"
+                                                aria-checked={clinic.isActive !== false}
+                                                onClick={() => handleActivityChange(clinic)}
+                                                disabled={updatingStatusId === clinic._id}
+                                                className={`inline-flex items-center gap-2 rounded-full px-2 py-1 text-xs font-bold transition disabled:cursor-not-allowed disabled:opacity-60 ${clinic.isActive !== false ? "bg-emerald-100 text-emerald-800" : "bg-slate-200 text-slate-700"}`}
+                                                title="Toggle clinic active status"
+                                            >
+                                                <span className={`h-5 w-9 rounded-full p-0.5 transition ${clinic.isActive !== false ? "bg-emerald-600" : "bg-slate-500"}`}>
+                                                    <span className={`block h-4 w-4 rounded-full bg-white transition-transform ${clinic.isActive !== false ? "translate-x-4" : "translate-x-0"}`} />
+                                                </span>
+                                                {clinic.isActive !== false ? "Active" : "Inactive"}
+                                            </button>
+                                        ) : (
+                                            <TableStatusDropdown
+                                                value={clinic.verificationStatus || "SUBMITTED"}
+                                                onChange={(newStatus) => handleStatusChange(clinic, newStatus)}
+                                                disabled={updatingStatusId === clinic._id}
+                                                isOpenRow={openDropdownId === clinic._id}
+                                                setOpenRow={(open) =>
+                                                    setOpenDropdownId(open ? clinic._id : null)
+                                                }
+                                            />
+                                        )}
                                     </div>
 
                                     <div className="flex flex-wrap gap-2 md:justify-end">
                                         <button
                                             type="button"
                                             onClick={() => openClinicModal("view", clinic)}
-                                            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 text-blue-600 transition hover:bg-blue-100"
+                                            className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-gray-200 bg-white text-[#0C3D2E] transition hover:bg-[#D9E8E3]/40 cursor-pointer"
                                             title="View clinic"
                                         >
                                             <Eye size={16} />
@@ -627,7 +798,7 @@ export default function LatestClinicApprovals() {
                                         <button
                                             type="button"
                                             onClick={() => openClinicModal("edit", clinic)}
-                                            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-orange-200 bg-orange-50 text-orange-600 transition hover:bg-orange-100"
+                                            className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-[#F7931E]/30 bg-[#FFF4E5] text-[#F7931E] transition hover:bg-[#F7931E] hover:text-white cursor-pointer"
                                             title="Edit clinic"
                                         >
                                             <Pencil size={16} />
@@ -636,7 +807,7 @@ export default function LatestClinicApprovals() {
                                             type="button"
                                             onClick={() => handleDeleteClinic(clinic)}
                                             disabled={deletingId === clinic._id}
-                                            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-red-200 bg-red-50 text-red-600 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+                                            className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-rose-200 bg-rose-50 text-rose-600 transition hover:bg-rose-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
                                             title="Delete clinic"
                                         >
                                             <Trash2 size={16} />
@@ -681,29 +852,84 @@ function ClinicDetailsModal({ clinic, onClose, onEdit, onDelete }) {
 
     const form = getClinicForm(clinic);
     const status = getDisplayStatus(clinic);
+    const detailsScrollRef = useRef(null);
+    const detailsContentRef = useRef(null);
+    const [detailsMaxScroll, setDetailsMaxScroll] = useState(0);
+    const [detailsScrollLeft, setDetailsScrollLeft] = useState(0);
+    const [detailsViewportWidth, setDetailsViewportWidth] = useState(0);
+
+    useEffect(() => {
+        const updateScrollMetrics = () => {
+            const container = detailsScrollRef.current;
+            if (!container) return;
+
+            setDetailsMaxScroll(Math.max(container.scrollWidth - container.clientWidth, 0));
+            setDetailsScrollLeft(container.scrollLeft);
+            setDetailsViewportWidth(container.clientWidth);
+        };
+
+        updateScrollMetrics();
+
+        const observer = new ResizeObserver(updateScrollMetrics);
+        if (detailsContentRef.current) observer.observe(detailsContentRef.current);
+        if (detailsScrollRef.current) observer.observe(detailsScrollRef.current);
+
+        return () => observer.disconnect();
+    }, [clinic]);
+
+    const syncDetailsScroll = (event) => {
+        setDetailsScrollLeft(event.currentTarget.scrollLeft);
+    };
+
+    const handleVisibleScroll = (nextScrollLeft) => {
+        setDetailsScrollLeft(nextScrollLeft);
+
+        if (detailsScrollRef.current) {
+            detailsScrollRef.current.scrollLeft = nextScrollLeft;
+        }
+    };
+
+    const thumbWidthPercent = detailsMaxScroll
+        ? Math.max(24, Math.min(70, (detailsViewportWidth / (detailsViewportWidth + detailsMaxScroll)) * 100))
+        : 100;
+    const thumbLeftPercent = detailsMaxScroll
+        ? (detailsScrollLeft / detailsMaxScroll) * (100 - thumbWidthPercent)
+        : 0;
+
+    const handleScrollTrackClick = (event) => {
+        if (!detailsMaxScroll) return;
+
+        const rect = event.currentTarget.getBoundingClientRect();
+        const clickRatio = Math.min(Math.max((event.clientX - rect.left) / rect.width, 0), 1);
+        handleVisibleScroll(clickRatio * detailsMaxScroll);
+    };
 
     return (
-        <div className="fixed inset-0 z-[60] bg-black/50 px-4 py-6 sm:px-6 sm:py-10 flex items-center justify-center">
-            <div className="w-full max-w-5xl max-h-[92vh] overflow-hidden rounded-3xl bg-white shadow-2xl flex flex-col">
-                <div className="flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-5 sm:px-6">
+        <div className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-xs px-4 py-6 sm:px-6 sm:py-10 flex items-center justify-center">
+            <div className="w-full max-w-5xl max-h-[92vh] overflow-hidden rounded-3xl bg-white shadow-2xl flex flex-col border border-gray-100">
+                <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-6 py-5">
                     <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.25em] text-orange-500">
+                        <p className="text-xs font-bold uppercase tracking-widest text-[#F7931E]">
                             Clinic Profile
                         </p>
-                        <h2 className="mt-1 text-2xl font-bold text-slate-900">
+                        <h2 className="mt-1 text-2xl font-bold text-[#0C3D2E] tracking-tight">
                             {form.clinicName || "Unnamed Clinic"}
                         </h2>
-                        <p className="mt-1 text-sm text-slate-500">
-                            {clinic._id ? `CLINIC-${clinic._id.slice(-6).toUpperCase()}` : "-"}
+                        <p className="mt-0.5 text-xs font-semibold text-gray-400">
+                            {getClinicDisplayId(clinic)}
                         </p>
                     </div>
-                    <button onClick={onClose} className="rounded-full border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50">
-                        <X size={16} />
+                    <button onClick={onClose} className="w-9 h-9 rounded-full hover:bg-orange-50 text-gray-400 hover:text-[#F7931E] flex items-center justify-center transition-colors font-bold cursor-pointer">
+                        <X size={18} />
                     </button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto px-5 py-5 sm:px-6">
-                    <div className="grid gap-4">
+                <div
+                    ref={detailsScrollRef}
+                    onScroll={syncDetailsScroll}
+                    className="min-h-0 flex-1 overflow-auto overscroll-contain px-4 py-5 sm:px-6 sm:py-6 bg-slate-50/50"
+                >
+                    <div ref={detailsContentRef} className="grid min-w-[42rem] gap-4 sm:min-w-0">
                         <DetailSection title="Overview">
                             <DetailField label="Status" value={status} />
                             <DetailField label="Facility Type" value={form.facilityType} />
@@ -782,18 +1008,37 @@ function ClinicDetailsModal({ clinic, onClose, onEdit, onDelete }) {
                     </div>
                 </div>
 
-                <div className="flex flex-col gap-3 border-t border-slate-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-end sm:px-6">
+                <div className="border-t border-gray-100 bg-white px-6 py-3 sm:hidden">
+                    <button
+                        type="button"
+                        onClick={handleScrollTrackClick}
+                        disabled={!detailsMaxScroll}
+                        className="relative block h-5 w-full cursor-pointer rounded-full disabled:cursor-default"
+                        aria-label="Scroll clinic details horizontally"
+                    >
+                        <span className="absolute left-0 right-0 top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-slate-200" />
+                        <span
+                            className="absolute top-1/2 h-2.5 -translate-y-1/2 rounded-full bg-[#F7931E] shadow-[0_1px_4px_rgba(247,147,30,0.35)] transition-[left,width]"
+                            style={{
+                                left: `${thumbLeftPercent}%`,
+                                width: `${thumbWidthPercent}%`,
+                            }}
+                        />
+                    </button>
+                </div>
+
+                <div className="flex flex-col gap-3 border-t border-gray-100 px-6 py-4 sm:flex-row sm:items-center sm:justify-end bg-white">
                     {onDelete && (
-                        <button onClick={() => onDelete(clinic)} className="w-full rounded-xl border border-rose-200 bg-rose-50 px-5 py-3 text-sm font-semibold text-rose-700 transition hover:bg-rose-100 sm:w-auto">
+                        <button onClick={() => onDelete(clinic)} className="w-full rounded-xl border border-rose-200 bg-rose-50 px-5 py-2.5 text-xs font-bold text-rose-600 transition hover:bg-rose-600 hover:text-white sm:w-auto cursor-pointer">
                             Delete
                         </button>
                     )}
                     {onEdit && (
-                        <button onClick={() => onEdit(clinic)} className="w-full rounded-xl border border-orange-200 bg-orange-50 px-5 py-3 text-sm font-semibold text-orange-700 transition hover:bg-orange-100 sm:w-auto">
+                        <button onClick={() => onEdit(clinic)} className="w-full rounded-xl bg-[#F7931E] hover:bg-[#e08319] px-5 py-2.5 text-xs font-bold text-white transition sm:w-auto shadow-xs cursor-pointer">
                             Edit
                         </button>
                     )}
-                    <button onClick={onClose} className="w-full rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 sm:w-auto">
+                    <button onClick={onClose} className="w-full rounded-xl bg-[#0C3D2E] hover:bg-[#08281E] px-5 py-2.5 text-xs font-bold text-white transition sm:w-auto cursor-pointer">
                         Close
                     </button>
                 </div>
@@ -816,18 +1061,18 @@ function FullClinicModal({
     const isView = mode === "view";
 
     return (
-        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-0 sm:p-4">
-            <div className="bg-white w-full sm:w-[95%] h-screen sm:h-[95vh] rounded-none sm:rounded-3xl shadow-xl flex flex-col overflow-hidden">
-                <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center px-4 sm:px-8 py-4 bg-white">
-                    <div>
-                        <h2 className="text-2xl sm:text-3xl font-bold bg-linear-to-r from-orange-500 to-orange-700 bg-clip-text text-transparent">
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center px-2 py-[max(2rem,env(safe-area-inset-top))] pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:p-4">
+            <div className="bg-white w-full sm:w-[95%] h-[calc(100svh-3.25rem)] max-h-[calc(100svh-3.25rem)] sm:h-[95vh] sm:max-h-[95vh] rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-gray-100">
+                <div className="flex items-start justify-between gap-3 px-4 sm:px-6 py-4 sm:py-5 bg-white border-b border-gray-100">
+                    <div className="min-w-0">
+                        <h2 className="text-xl sm:text-3xl font-bold text-[#0C3D2E] tracking-tight">
                             {isView ? "View Clinic" : "Edit Clinic"}
                         </h2>
-                        <p className="text-slate-500 text-sm mt-1">
+                        <p className="text-gray-400 text-xs sm:text-sm mt-0.5 font-medium">
                             {isView ? "Complete clinic details in read-only mode." : "Update complete clinic details."}
                         </p>
                     </div>
-                    <button onClick={onClose} className="w-10 h-10 rounded-full hover:bg-orange-50 text-slate-500 hover:text-orange-500 inline-flex items-center justify-center">
+                    <button onClick={onClose} className="w-9 h-9 sm:w-10 sm:h-10 shrink-0 rounded-full hover:bg-orange-50 text-gray-400 hover:text-[#F7931E] flex items-center justify-center transition-colors font-bold cursor-pointer">
                         <X size={18} />
                     </button>
                 </div>
@@ -838,7 +1083,7 @@ function FullClinicModal({
                     setActiveTab={setActiveTab}
                 />
 
-                <div className="flex-1 overflow-y-auto px-3 sm:px-6 pb-6">
+                <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 sm:px-6 pt-2 pb-4 bg-slate-50/50">
                     <ClinicForm
                         activeTab={activeTab}
                         form={form}
@@ -849,8 +1094,6 @@ function FullClinicModal({
                         tabs={tabs}
                         onClose={onClose}
                         readOnly={isView}
-                        skipTabValidation
-                        skipSubmitValidation
                         submitLabel={saving ? "Saving..." : "Save Changes"}
                         onSubmitClinic={onSubmitClinic}
                     />

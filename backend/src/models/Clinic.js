@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 
 const clinicSchema = new mongoose.Schema({
+  clinicCode: { type: String, unique: true, sparse: true, index: true },
   name: { type: String, required: true },
   facilityType: { type: String },
   yearOfEstablishment: { type: String },
@@ -26,6 +27,7 @@ const clinicSchema = new mongoose.Schema({
     maxDoctors: { type: Number, default: 5 },
     maxStaff: { type: Number, default: 10 },
     maxPets: { type: Number },
+    maxPetsUnlimited: { type: Boolean, default: false },
     storageLimit: { type: Number }
   },
   
@@ -103,6 +105,7 @@ const clinicSchema = new mongoose.Schema({
     enum: ['SUBMITTED', 'UNDER_REVIEW', 'DOCS_VERIFIED', 'APPROVED', 'REJECTED'],
     default: 'SUBMITTED'
   },
+  isActive: { type: Boolean, default: true, index: true },
   rejectionReason: { type: String }
 }, { timestamps: true });
 

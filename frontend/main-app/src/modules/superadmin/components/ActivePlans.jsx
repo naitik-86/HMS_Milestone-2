@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { MoreVertical, Pencil, Trash2 } from "lucide-react";
+import { Eye, Pencil, Trash2, Layers, CheckCircle2, Building, UserCheck } from "lucide-react";
 import { deletePlan, getPlans } from "../api/planApi";
 import { showToast } from "../../../shared/components/toast";
 
@@ -20,12 +20,11 @@ const getStatusClassName = (status) => {
         case "Archived":
             return "bg-slate-100 text-slate-600";
         default:
-            return "bg-green-100 text-green-700";
+            return "bg-emerald-100 text-emerald-800";
     }
 };
 
-export default function ActivePlans({ refreshKey = 0, onEditPlan, onChanged }) {
-    const [openMenuId, setOpenMenuId] = useState(null);
+export default function ActivePlans({ refreshKey = 0, onViewPlan, onEditPlan, onChanged }) {
     const [selectedFilter, setSelectedFilter] = useState("All");
     const [plans, setPlans] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -117,19 +116,17 @@ export default function ActivePlans({ refreshKey = 0, onEditPlan, onChanged }) {
                 title: "Delete Failed",
                 description: err.response?.data?.message || "Unable to delete plan",
             });
-        } finally {
-            setOpenMenuId(null);
         }
     };
 
     return (
-        <div className="bg-white rounded-xl p-4 md:p-6 shadow-sm border overflow-hidden">
+        <div className="bg-white rounded-2xl p-4 md:p-6 shadow-xs border border-gray-100 overflow-hidden">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-5">
                 <div>
-                    <h2 className="text-base font-bold text-gray-800">
+                    <h2 className="text-base font-bold text-[#0C3D2E] tracking-tight">
                         Active Subscription Plans
                     </h2>
-                    <p className="text-sm text-gray-500 mt-1">
+                    <p className="text-xs font-medium text-gray-400 mt-0.5">
                         Manage clinic and solo doctor plan definitions from one place
                     </p>
                 </div>
@@ -147,10 +144,10 @@ export default function ActivePlans({ refreshKey = 0, onEditPlan, onChanged }) {
                                 key={option}
                                 type="button"
                                 onClick={() => setSelectedFilter(option)}
-                                className={`rounded-full border px-4 py-2 text-xs font-semibold transition ${
+                                className={`rounded-xl border px-4 py-2 text-xs font-bold transition-all cursor-pointer ${
                                     selectedFilter === option
-                                        ? "border-orange-500 bg-orange-50 text-orange-600"
-                                        : "border-gray-200 text-gray-500 hover:bg-gray-50"
+                                        ? "border-[#F7931E]/30 bg-[#FFF4E5] text-[#F7931E] shadow-xs"
+                                        : "border-gray-200 text-gray-500 hover:bg-slate-50"
                                 }`}
                             >
                                 {option} ({count})
@@ -160,29 +157,60 @@ export default function ActivePlans({ refreshKey = 0, onEditPlan, onChanged }) {
                 </div>
             </div>
 
+            {/* DASHBOARD STATS CARDS WITH EXACT CARD COLOR STYLING */}
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 pb-5 mb-4 border-b border-gray-100">
                 {[
-                    { num: stats.total, label: "Total Plans", bg: "#fff7ed", iconColor: "#f97316" },
-                    { num: stats.active, label: "Active Plans", bg: "#eff6ff", iconColor: "#3b82f6" },
-                    { num: stats.clinic, label: "Clinic Plans", bg: "#f0fdf4", iconColor: "#22c55e" },
-                    { num: stats.soloDoctor, label: "Solo Doctor Plans", bg: "#faf5ff", iconColor: "#a855f7" },
-                ].map((item) => (
-                    <div key={item.label} className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: item.bg }}>
-                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke={item.iconColor} strokeWidth={2}>
-                                <path d="M12 8v8m-4-4h8" />
-                            </svg>
+                    {
+                        num: stats.total,
+                        label: "TOTAL PLANS",
+                        badge: `+${stats.total} total`,
+                        theme: "mint",
+                        icon: Layers,
+                    },
+                    {
+                        num: stats.active,
+                        label: "ACTIVE PLANS",
+                        badge: `${stats.active} active`,
+                        theme: "orange",
+                        icon: CheckCircle2,
+                    },
+                    {
+                        num: stats.clinic,
+                        label: "CLINIC PLANS",
+                        badge: `${stats.clinic} clinic`,
+                        theme: "mint",
+                        icon: Building,
+                    },
+                    {
+                        num: stats.soloDoctor,
+                        label: "SOLO DOCTOR PLANS",
+                        badge: `${stats.soloDoctor} solo`,
+                        theme: "orange",
+                        icon: UserCheck,
+                    },
+                ].map((item) => {
+                    const isOrange = item.theme === "orange";
+                    const cardBg = isOrange ? "bg-[#FFF4E5]/60 border-[#F7931E]/20" : "bg-[#D9E8E3]/25 border-[#0C3D2E]/10";
+                    const iconBoxBg = isOrange ? "bg-[#F7931E] text-white" : "bg-[#0C3D2E] text-white";
+                    const badgeBg = isOrange ? "bg-[#F7931E]/15 text-[#F7931E]" : "bg-[#0C3D2E]/10 text-[#0C3D2E]";
+                    const IconComponent = item.icon;
+
+                    return (
+                        <div key={item.label} className={`flex items-center gap-3 p-3 rounded-2xl border ${cardBg} shadow-xs`}>
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-xs ${iconBoxBg}`}>
+                                <IconComponent size={20} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <div className="text-lg font-extrabold text-[#0C3D2E] tracking-tight">{item.num}</div>
+                                <div className="text-[11px] font-medium text-gray-400">{item.label}</div>
+                            </div>
                         </div>
-                        <div>
-                            <div className="text-xl font-extrabold text-gray-800">{item.num}</div>
-                            <div className="text-xs text-gray-400">{item.label}</div>
-                        </div>
-                    </div>
-                ))}
+                    );
+                })}
             </div>
 
             {error && (
-                <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-medium text-rose-700">
                     {error}
                 </div>
             )}
@@ -211,8 +239,7 @@ export default function ActivePlans({ refreshKey = 0, onEditPlan, onChanged }) {
                     <tbody>
                         {loading && (
                             <tr>
-                                {/* colSpan updated to 14 because checkbox column is removed */}
-                                <td colSpan={14} className="py-8 px-3 text-center text-gray-500">
+                                <td colSpan={14} className="py-8 px-3 text-center text-xs font-medium text-gray-400">
                                     Loading plans...
                                 </td>
                             </tr>
@@ -220,8 +247,7 @@ export default function ActivePlans({ refreshKey = 0, onEditPlan, onChanged }) {
 
                         {!loading && visiblePlans.length === 0 && (
                             <tr>
-                                {/* colSpan updated to 14 because checkbox column is removed */}
-                                <td colSpan={14} className="py-8 px-3 text-center text-gray-500">
+                                <td colSpan={14} className="py-8 px-3 text-center text-xs font-medium text-gray-400">
                                     No {selectedFilter === "All" ? "" : `${selectedFilter.toLowerCase()} `}plans found.
                                 </td>
                             </tr>
@@ -229,26 +255,25 @@ export default function ActivePlans({ refreshKey = 0, onEditPlan, onChanged }) {
 
                         {visiblePlans.map((plan) => {
                             const planType = resolvePlanType(plan);
-                            const isActiveMenu = openMenuId === plan._id;
 
                             return (
-                                <tr key={plan._id} className="border-b border-gray-50 hover:bg-gray-50 transition">
-                                    <td className="py-3 px-3 text-orange-500 font-semibold">
+                                <tr key={plan._id} className="border-b border-gray-50 hover:bg-slate-50/60 transition-colors">
+                                    <td className="py-3 px-3 text-[#F7931E] font-bold text-xs">
                                         #{plan.planCode || plan._id?.slice(-6)}
                                     </td>
 
                                     <td className="py-3 px-3">
-                                        <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${planType === "Solo Doctor" ? "bg-purple-100 text-purple-700" : "bg-emerald-100 text-emerald-700"}`}>
+                                        <span className={`inline-flex rounded-full px-3 py-1 text-[11px] font-bold ${planType === "Solo Doctor" ? "bg-[#FFF4E5] text-[#F7931E]" : "bg-[#D9E8E3] text-[#0C3D2E]"}`}>
                                             {planType}
                                         </span>
                                     </td>
 
                                     <td className="py-3 px-3">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0 bg-orange-500">
+                                            <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-extrabold shrink-0 bg-[#0C3D2E]">
                                                 {plan.subscriptionPlan?.slice(0, 2).toUpperCase()}
                                             </div>
-                                            <span className="font-medium text-gray-800 whitespace-nowrap">
+                                            <span className="font-bold text-[#0C3D2E] text-xs whitespace-nowrap">
                                                 {plan.subscriptionPlan}
                                             </span>
                                         </div>
@@ -265,45 +290,43 @@ export default function ActivePlans({ refreshKey = 0, onEditPlan, onChanged }) {
                                     <Cell>{Object.values(plan.modules || {}).filter(Boolean).length}</Cell>
 
                                     <td className="py-3 px-3">
-                                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusClassName(plan.status)}`}>
+                                        <span className={`px-3 py-1 rounded-full text-[11px] font-bold ${getStatusClassName(plan.status)}`}>
                                             {plan.status}
                                         </span>
                                     </td>
 
-                                    <td className="relative py-3 px-3">
-                                        <button
-                                            type="button"
-                                            onClick={() => setOpenMenuId(isActiveMenu ? null : plan._id)}
-                                            className="inline-flex items-center justify-center rounded-lg border border-gray-200 p-2 text-gray-500 hover:bg-gray-50"
-                                            aria-label="Plan actions"
-                                        >
-                                            <MoreVertical size={18} />
-                                        </button>
+                                    <td className="py-3 px-3">
+                                        <div className="flex flex-wrap gap-2 justify-end">
+                                            <button
+                                                type="button"
+                                                onClick={() => onViewPlan?.(plan)}
+                                                className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-gray-200 bg-white text-[#0C3D2E] transition hover:bg-[#D9E8E3]/40 cursor-pointer"
+                                                title="View plan"
+                                                aria-label="View plan"
+                                            >
+                                                <Eye size={16} />
+                                            </button>
 
-                                        {isActiveMenu && (
-                                            <div className="absolute right-3 z-20 mt-2 w-40 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        onEditPlan?.(plan);
-                                                        setOpenMenuId(null);
-                                                    }}
-                                                    className="flex w-full items-center gap-2 px-4 py-3 text-sm text-gray-700 hover:bg-orange-50"
-                                                >
-                                                    <Pencil size={16} className="text-orange-600" />
-                                                    Edit
-                                                </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => onEditPlan?.(plan)}
+                                                className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-[#F7931E]/30 bg-[#FFF4E5] text-[#F7931E] transition hover:bg-[#F7931E] hover:text-white cursor-pointer"
+                                                title="Edit plan"
+                                                aria-label="Edit plan"
+                                            >
+                                                <Pencil size={16} />
+                                            </button>
 
-                                                <button
-                                                    type="button"
-                                                    onClick={() => handleDelete(plan)}
-                                                    className="flex w-full items-center gap-2 px-4 py-3 text-sm text-gray-700 hover:bg-red-50"
-                                                >
-                                                    <Trash2 size={16} className="text-red-600" />
-                                                    Delete
-                                                </button>
-                                            </div>
-                                        )}
+                                            <button
+                                                type="button"
+                                                onClick={() => handleDelete(plan)}
+                                                className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-rose-200 bg-rose-50 text-rose-600 transition hover:bg-rose-600 hover:text-white cursor-pointer"
+                                                title="Delete plan"
+                                                aria-label="Delete plan"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             );
@@ -317,12 +340,12 @@ export default function ActivePlans({ refreshKey = 0, onEditPlan, onChanged }) {
 
 function Header({ children }) {
     return (
-        <th className="py-3 px-3 text-left text-xs font-semibold text-gray-400">
+        <th className="py-3 px-3 text-left text-[11px] font-bold uppercase tracking-wider text-gray-400">
             {children}
         </th>
     );
 }
 
 function Cell({ children }) {
-    return <td className="py-3 px-3 text-gray-600 whitespace-nowrap">{children}</td>;
+    return <td className="py-3 px-3 text-xs font-medium text-gray-700 whitespace-nowrap">{children}</td>;
 }

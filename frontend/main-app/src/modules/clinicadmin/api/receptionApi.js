@@ -57,6 +57,8 @@ export const registerOwnerAndPet = async (data) => {
         ownerName: data.ownerName,
         visitType: data.visitType,
         ownerIdType: data.ownerIdType,
+        ownerOtherIdType: data.ownerOtherIdType,
+        ownerIdNumber: data.ownerIdNumber,
         email: data.email,
         address: data.address,
         state: data.state,
@@ -138,6 +140,29 @@ export const updatePet = async (ownerId, petId, petData) => {
         petData
     );
 
+    return response.data;
+};
+
+export const verifyRegistrationOtp = async (mobileNumber, otp) => {
+    const response = await API.post(`${BASE_URL}/new-registration/verify-otp`, { mobileNumber, otp });
+    return response.data;
+};
+
+export const deletePet = async (ownerId, petId) => {
+    const response = await API.delete(`${BASE_URL}/new-registration/owner/${ownerId}/pets/${petId}`);
+    return response.data;
+};
+
+export const deletePetVisit = async (ownerId, petId, visitId) => {
+    const response = await API.delete(`${BASE_URL}/new-registration/owner/${ownerId}/pets/${petId}/visits/${visitId}`);
+    return response.data;
+};
+
+export const updatePetVisit = async (ownerId, petId, visitId, visitData) => {
+    const response = await API.put(
+        `${BASE_URL}/new-registration/owner/${ownerId}/pets/${petId}/visits/${visitId}`,
+        visitData
+    );
     return response.data;
 };
 

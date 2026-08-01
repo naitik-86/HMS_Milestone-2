@@ -3,7 +3,7 @@ import PetOwnerSidebar from "../../components/pet-owner/PetOwnerSidebar";
 
 const PetOwnerDashboard = () => {
   return (
-    <div className="flex min-h-screen bg-slate-50">
+    <div className="pet-owner-theme flex min-h-screen bg-slate-50">
       <PetOwnerSidebar />
 
       <div className="flex-1 ml-0 lg:ml-[280px] pt-[72px] lg:pt-0 min-w-0">
@@ -45,7 +45,7 @@ const PetOwnerDashboard = () => {
         {/* Content */}
         <div className="p-4 md:p-8">
           {/* Hero Banner */}
-          <div className="mb-8 overflow-hidden rounded-3xl bg-gradient-to-r from-slate-900 via-blue-900 to-blue-600 p-5 text-white shadow-lg md:p-8">
+          <div className="mb-8 overflow-hidden rounded-3xl bg-gradient-to-r from-[#063D31] via-[#075443] to-[#0A5243] p-5 text-white shadow-lg md:p-8">
             <h2 className="text-2xl font-bold md:text-3xl">
               Welcome Back 👋
             </h2>

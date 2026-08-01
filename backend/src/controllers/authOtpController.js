@@ -2,38 +2,42 @@ const jwt = require('jsonwebtoken');
 const SuperAdmin = require('../models/SuperAdmin');
 const ClinicAdmin = require('../models/ClinicAdmin');
 const Staff = require('../models/Staff');
+const Clinic = require('../models/Clinic');
 const LoginOtp = require('../models/LoginOtp');
+const lockoutService = require('../utils/lockoutService');
+const { getClinicGateError } = require('../utils/clinicStatus');
 
 const normalizeEmail = (value) => (typeof value === 'string' ? value.trim().toLowerCase() : '');
 const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-// Checks the shared OTP without consuming it. Final login still
-// verifies and consumes the OTP through the role-specific endpoints below.
-exports.validateLoginOtp = async (req, res) => {
-  try {
-    const email = normalizeEmail(req.body?.email);
-    const otp = String(req.body?.otp || '').trim();
-    const role = req.body?.role === 'SUPER_ADMIN'
-      ? 'SUPER_ADMIN'
-      : req.body?.role === 'CLINIC_ADMIN' ? 'CLINIC_ADMIN' : 'STAFF';
+const recordLoginSuccess = async (doc, fields, req) => {
+  fields.lastLoginAt = new Date();
+  fields.lastLoginIp = req.headers['x-forwarded-for'] || req.ip || null;
+  fields.lastLoginDevice = req.headers['user-agent'] || null;
+  await doc.save();
+};
 
-    if (!email || !/^\d{6}$/.test(otp)) {
-      return res.status(400).json({ success: false, message: 'Enter a valid 6 digit OTP.' });
-    }
-    const otpRecord = await LoginOtp.findOne({
-      userType: role,
-      purpose: 'LOGIN',
-      email,
-      otpEmail: otp,
-      isConsumed: false,
-      expiresAt: { $gt: new Date() },
-    }).sort({ createdAt: -1 });
+const otpFailureMessage = async ({ userType, email, otp }) => {
+  const expiredOtp = await LoginOtp.exists({
+    userType,
+    purpose: 'LOGIN',
+    email,
+    otpEmail: otp,
+    isConsumed: false,
+    expiresAt: { $lte: new Date() },
+  });
 
-    if (!otpRecord) return res.status(401).json({ success: false, message: 'Invalid or expired OTP.' });
-    return res.json({ success: true, message: 'OTP verified.' });
-  } catch (error) {
-    return res.status(500).json({ success: false, message: error.message || 'Unable to verify OTP.' });
-  }
+  return expiredOtp
+    ? 'OTP has expired. Please request a new OTP.'
+    : 'Invalid OTP.';
+};
+
+const ensureClinicIsActive = async (clinicId, res) => {
+  const clinic = await Clinic.findById(clinicId).select('isActive verificationStatus');
+  const gateError = getClinicGateError(clinic);
+  if (!gateError) return true;
+  res.status(403).json({ success: false, ...gateError });
+  return false;
 };
 
 // ==========================================
@@ -49,6 +53,15 @@ exports.verifySuperAdminOtp = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Email and a valid 6 digit OTP are required' });
     }
 
+    const admin = await SuperAdmin.findOne({ email: normalizedEmail });
+    if (!admin) {
+      return res.status(404).json({ success: false, message: 'Account not found' });
+    }
+
+    if (lockoutService.isLocked(admin, 'otp')) {
+      return res.status(403).json({ success: false, message: lockoutService.LOCK_MESSAGE.otp });
+    }
+
     const otpRecord = await LoginOtp.findOne({
       userType: 'SUPER_ADMIN',
       purpose: 'LOGIN',
@@ -59,16 +72,17 @@ exports.verifySuperAdminOtp = async (req, res) => {
     }).sort({ createdAt: -1 });
 
     if (!otpRecord) {
-        return res.status(401).json({ success: false, message: 'Invalid or expired OTP' });
+      await lockoutService.registerFailedAttempt(admin, admin, 'otp');
+      return res.status(401).json({ success: false, message: await otpFailureMessage({ userType: 'SUPER_ADMIN', email: normalizedEmail, otp }) });
     }
 
-    if (otpRecord) {
-        otpRecord.isConsumed = true;
-        otpRecord.verifiedAt = new Date();
-        await otpRecord.save();
-    }
+    otpRecord.isConsumed = true;
+    otpRecord.verifiedAt = new Date();
+    await otpRecord.save();
 
-    const admin = await SuperAdmin.findOne({ email: normalizedEmail });
+    await lockoutService.resetAttempts(admin, admin, 'otp');
+    await recordLoginSuccess(admin, admin, req);
+
     const token = jwt.sign(
       { id: admin._id, role: 'SUPER_ADMIN', email: admin.email },
       process.env.JWT_SECRET,
@@ -94,6 +108,13 @@ exports.verifyClinicAdminOtp = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Email and a valid 6 digit OTP are required' });
     }
 
+    const clinicAdmin = await ClinicAdmin.findOne({ email: normalizedEmail });
+    if (!clinicAdmin || !(await ensureClinicIsActive(clinicAdmin.clinicId, res))) return;
+
+    if (lockoutService.isLocked(clinicAdmin, 'otp')) {
+      return res.status(403).json({ success: false, message: lockoutService.LOCK_MESSAGE.otp });
+    }
+
     const otpRecord = await LoginOtp.findOne({
       userType: 'CLINIC_ADMIN',
       purpose: 'LOGIN',
@@ -104,29 +125,31 @@ exports.verifyClinicAdminOtp = async (req, res) => {
     }).sort({ createdAt: -1 });
 
     if (!otpRecord) {
-        return res.status(401).json({ success: false, message: 'Invalid or expired OTP' });
+      await lockoutService.registerFailedAttempt(clinicAdmin, clinicAdmin, 'otp');
+      return res.status(401).json({ success: false, message: await otpFailureMessage({ userType: 'CLINIC_ADMIN', email: normalizedEmail, otp }) });
     }
 
-    if (otpRecord) {
-        otpRecord.isConsumed = true;
-        otpRecord.verifiedAt = new Date();
-        await otpRecord.save();
-    }
+    otpRecord.isConsumed = true;
+    otpRecord.verifiedAt = new Date();
+    await otpRecord.save();
 
-    const admin = await ClinicAdmin.findOne({ email: normalizedEmail });
+    await lockoutService.resetAttempts(clinicAdmin, clinicAdmin, 'otp');
+    await recordLoginSuccess(clinicAdmin, clinicAdmin, req);
+
+    const admin = clinicAdmin;
     const token = jwt.sign(
       { id: admin._id, role: 'CLINIC_ADMIN', email: admin.email, clinicId: admin.clinicId },
       process.env.JWT_SECRET,
       { expiresIn: '1d' }
     );
 
-   return res.status(200).json({ 
-      success: true, 
-      message: 'Login successful', 
-      token, 
+   return res.status(200).json({
+      success: true,
+      message: 'Login successful',
+      token,
       role: 'CLINIC_ADMIN',
-      requiresPasswordReset: admin.email === 'admin@clinic.com' ? false : (admin.forcePasswordReset !== false), 
-      user: admin 
+      requiresPasswordReset: admin.forcePasswordReset !== false,
+      user: admin
     });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
@@ -156,8 +179,14 @@ exports.verifyStaffOtp = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Staff not found' });
     }
 
+    if (!(await ensureClinicIsActive(staff.clinicId, res))) return;
+
     if (!/^\d{6}$/.test(otp)) {
       return res.status(400).json({ success: false, message: 'A valid 6 digit OTP is required' });
+    }
+
+    if (lockoutService.isLocked(staff.accountInfo, 'otp')) {
+      return res.status(403).json({ success: false, message: lockoutService.LOCK_MESSAGE.otp });
     }
 
     const otpRecord = await LoginOtp.findOne({
@@ -170,14 +199,16 @@ exports.verifyStaffOtp = async (req, res) => {
     }).sort({ createdAt: -1 });
 
     if (!otpRecord) {
-      return res.status(401).json({ success: false, message: 'Invalid or expired OTP' });
+      await lockoutService.registerFailedAttempt(staff, staff.accountInfo, 'otp');
+      return res.status(401).json({ success: false, message: await otpFailureMessage({ userType: 'STAFF', email: normalizedEmail, otp }) });
     }
 
-    if (otpRecord) {
-      otpRecord.isConsumed = true;
-      otpRecord.verifiedAt = new Date();
-      await otpRecord.save();
-    }
+    otpRecord.isConsumed = true;
+    otpRecord.verifiedAt = new Date();
+    await otpRecord.save();
+
+    await lockoutService.resetAttempts(staff, staff.accountInfo, 'otp');
+    await recordLoginSuccess(staff, staff.accountInfo, req);
 
     const token = jwt.sign(
       { id: staff._id, role: staff.employmentInfo.role, clinicId: staff.clinicId },
