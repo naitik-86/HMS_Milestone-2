@@ -38,6 +38,7 @@ export const createClinic = async (clinicData) => {
         website: clinicData.website,
         plan: clinicData.plan,
         trialDays: clinicData.trialDays,
+        customPlanPrice: clinicData.customPlanPrice,
         discountCode: clinicData.discountCode,
         notes: clinicData.notes,
         subscriptionType,

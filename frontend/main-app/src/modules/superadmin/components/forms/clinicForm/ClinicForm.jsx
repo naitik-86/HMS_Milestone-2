@@ -42,6 +42,7 @@ const CUSTOM_PLAN = "Custom";
 // were assignable here, so any Standard/Professional/Enterprise plan
 // created in Plans never appeared in this dropdown.
 const CLINIC_ASSIGNABLE_PLAN_NAMES = new Set(["Basic", "Standard", "Professional", "Enterprise", CUSTOM_PLAN]);
+const CUSTOM_PLAN_MAX_TRIAL_DAYS = 90;
 const LICENSE_NUMBER_MAX_LENGTH = 30;
 
 const GOVT_ID_TYPES = ["Aadhar", "PAN", "Passport"];
@@ -504,9 +505,15 @@ export default function ClinicForm({
                 return prev;
             }
 
+           // Only reset the Custom Plan limits when actually switching TO
+           // Custom from a different plan - once already on Custom, this
+           // effect can re-run (e.g. startDate normalization) without
+           // wiping out limits the admin already entered/saved.
            const derivedFields =
     nextPlan === CUSTOM_PLAN
-        ? {
+        ? prev.plan === CUSTOM_PLAN
+            ? {}
+            : {
               maxStaff: "",
               maxDoctors: "",
               maxPets: "",
@@ -1103,16 +1110,23 @@ export default function ClinicForm({
 
     const handleStartDateChange = (e) => {
         const startDate = e.target.value;
+        const isCustomPlan = form.plan === CUSTOM_PLAN;
 
         setForm((prev) => ({
             ...prev,
             startDate,
-            endDate: startDate && prev.billing ? getPlanEndDate(startDate, prev.billing) : "",
+            // Custom plan's end date is manually edited, not derived from a
+            // billing cycle (which is blank for Custom) - don't overwrite it.
+            endDate: isCustomPlan
+                ? prev.endDate
+                : startDate && prev.billing
+                    ? getPlanEndDate(startDate, prev.billing)
+                    : "",
         }));
 
         setErrors((prev) => ({
             ...prev,
-            startDate: startDate && startDate < getTomorrowDate() ? "Plan start date must be a future date." : undefined,
+            startDate: !isCustomPlan && startDate && startDate < getTomorrowDate() ? "Plan start date must be a future date." : undefined,
         }));
     };
 
@@ -1603,6 +1617,7 @@ export default function ClinicForm({
 
     const validatePlanFields = ({ syncEndDate = true } = {}) => {
         const nextErrors = {};
+        const isCustomPlan = form.plan === CUSTOM_PLAN;
 
         if (!normalizeText(form.plan)) {
             nextErrors.plan = "Subscription plan is required.";
@@ -1610,39 +1625,50 @@ export default function ClinicForm({
             nextErrors.plan = "Please select a configured subscription plan.";
         }
 
-        if (!normalizeText(form.billing)) {
-            nextErrors.billing = "Billing cycle is required.";
-        } else if (!billingOptions.includes(form.billing)) {
-            nextErrors.billing = "Please select Monthly, Quarterly, Half-Yearly, or Annual.";
+        if (!isCustomPlan) {
+            if (!normalizeText(form.billing)) {
+                nextErrors.billing = "Billing cycle is required.";
+            } else if (!billingOptions.includes(form.billing)) {
+                nextErrors.billing = "Please select Monthly, Quarterly, Half-Yearly, or Annual.";
+            }
         }
 
         const tomorrow = getTomorrowDate();
 
         if (!normalizeText(form.startDate)) {
             nextErrors.startDate = "Plan start date is required.";
-        } else if (form.startDate < tomorrow) {
+        } else if (!isCustomPlan && form.startDate < tomorrow) {
             nextErrors.startDate = "Plan start date must be a future date.";
         }
 
-        const expectedEndDate =
-            form.startDate && form.billing
-                ? getPlanEndDate(form.startDate, form.billing)
-                : "";
+        if (isCustomPlan) {
+            if (!normalizeText(form.endDate)) {
+                nextErrors.endDate = "Plan end / renewal date is required.";
+            } else if (form.startDate && form.endDate < form.startDate) {
+                nextErrors.endDate = "Plan end / renewal date must be on or after the start date.";
+            }
+        } else {
+            const expectedEndDate =
+                form.startDate && form.billing
+                    ? getPlanEndDate(form.startDate, form.billing)
+                    : "";
 
-        if (expectedEndDate && form.endDate !== expectedEndDate) {
-            nextErrors.endDate = "Plan end / renewal date does not match the selected billing cycle.";
-            if (syncEndDate) {
-                setForm((prev) => ({
-                    ...prev,
-                    endDate: expectedEndDate,
-                }));
+            if (expectedEndDate && form.endDate !== expectedEndDate) {
+                nextErrors.endDate = "Plan end / renewal date does not match the selected billing cycle.";
+                if (syncEndDate) {
+                    setForm((prev) => ({
+                        ...prev,
+                        endDate: expectedEndDate,
+                    }));
+                }
             }
         }
 
+        const trialDaysMax = isCustomPlan ? CUSTOM_PLAN_MAX_TRIAL_DAYS : maxTrialDays;
         const trialDays = Number(form.trialDays ?? 0);
 
-        if (Number.isNaN(trialDays) || trialDays < 0 || trialDays > maxTrialDays) {
-            nextErrors.trialDays = `Trial period must be between 0 and ${maxTrialDays} days.`;
+        if (Number.isNaN(trialDays) || trialDays < 0 || trialDays > trialDaysMax) {
+            nextErrors.trialDays = `Trial period must be between 0 and ${trialDaysMax} days.`;
         }
 
         // Required for all plans
@@ -1658,11 +1684,12 @@ export default function ClinicForm({
         const storageLimitError = validateStorageLimit(form.storageLimit);
         if (storageLimitError) nextErrors.storageLimit = storageLimitError;
 
-// Keep this block only if you later add validations that apply
-// exclusively to the Custom plan.
-if (form.plan === CUSTOM_PLAN) {
-    // Custom-only validations (if any)
-}
+        if (isCustomPlan) {
+            const customPrice = Number(form.customPlanPrice);
+            if (!normalizeText(form.customPlanPrice) || Number.isNaN(customPrice) || customPrice <= 0) {
+                nextErrors.customPlanPrice = "Custom plan price must be a positive number.";
+            }
+        }
 
         return nextErrors;
     };
@@ -1850,17 +1877,22 @@ if (form.plan === CUSTOM_PLAN) {
 
         setIsSubmitting(true);
         try {
+            // Custom plan's trial days are admin-entered, not derived from a
+            // plan config (maxTrialDays is 0/unset for Custom) - don't
+            // clobber whatever the admin typed in that case.
+            const submitTrialDays = form.plan === CUSTOM_PLAN ? form.trialDays : maxTrialDays;
+
             if (onSubmitClinic) {
                 await onSubmitClinic({
                     ...form,
-                    trialDays: maxTrialDays,
+                    trialDays: submitTrialDays,
                 });
                 return;
             }
 
             const data = await createClinic({
                 ...form,
-                trialDays: maxTrialDays,
+                trialDays: submitTrialDays,
             });
 
             if (data.emailWarning?.length) {
@@ -2475,18 +2507,30 @@ if (form.plan === CUSTOM_PLAN) {
                                         disabled={plansLoading || !planOptions.length}
                                     />
 
-                                    <Select
-                                        requiredField
-                                        name="billing"
-                                        label="Billing Cycle"
-                                        value={form.billing}
-                                        error={errors.billing}
-                                        options={billingOptions}
-                                        onChange={handleBillingChange}
-                                        disabled={!billingOptions.length}
-                                    />
+                                    {form.plan === CUSTOM_PLAN ? (
+                                        <Input
+                                            requiredField
+                                            type="number"
+                                            name="customPlanPrice"
+                                            label="Custom Plan Price"
+                                            value={form.customPlanPrice}
+                                            error={errors.customPlanPrice}
+                                            onChange={handleChange}
+                                        />
+                                    ) : (
+                                        <Select
+                                            requiredField
+                                            name="billing"
+                                            label="Billing Cycle"
+                                            value={form.billing}
+                                            error={errors.billing}
+                                            options={billingOptions}
+                                            onChange={handleBillingChange}
+                                            disabled={!billingOptions.length}
+                                        />
+                                    )}
 
-                                    {!plansLoading && form.plan && !billingOptions.length && (
+                                    {!plansLoading && form.plan && form.plan !== CUSTOM_PLAN && !billingOptions.length && (
                                         <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800">
                                             No billing cycles have been created for {form.plan}. Create one in Plans to assign this plan.
                                         </div>
@@ -2499,7 +2543,7 @@ if (form.plan === CUSTOM_PLAN) {
                                         label="Plan Start Date"
                                         value={form.startDate}
                                         error={errors.startDate}
-                                        min={getTomorrowDate()}
+                                        min={form.plan === CUSTOM_PLAN ? undefined : getTomorrowDate()}
                                         max="9999-12-31"
                                         onChange={handleStartDateChange}
                                     />
@@ -2511,9 +2555,20 @@ if (form.plan === CUSTOM_PLAN) {
                                         label="Plan End / Renewal Date"
                                         value={form.endDate}
                                         error={errors.endDate}
-                                        disabled
+                                        onChange={handleChange}
+                                        disabled={form.plan !== CUSTOM_PLAN}
                                     />
-                                    <Input requiredField={false} type="number" name="trialDays" label="Trial Period (Days)" value={maxTrialDays} error={errors.trialDays} disabled />
+                                    <Input
+                                        requiredField={false}
+                                        type="number"
+                                        name="trialDays"
+                                        label="Trial Period (Days)"
+                                        value={form.plan === CUSTOM_PLAN ? form.trialDays : maxTrialDays}
+                                        error={errors.trialDays}
+                                        max={form.plan === CUSTOM_PLAN ? CUSTOM_PLAN_MAX_TRIAL_DAYS : undefined}
+                                        onChange={handleChange}
+                                        disabled={form.plan !== CUSTOM_PLAN}
+                                    />
 
                                     <Input requiredField={false} name="discountCode" label="Discount / Promo Code" value={form.discountCode} onChange={handleChange} />
                                 </Grid>
@@ -2593,10 +2648,8 @@ if (form.plan === CUSTOM_PLAN) {
                                                 ["apiAccess", "API Access"],
                                                 ["whiteLabel", "White Label / Custom Branding"],
                                             ].map(([key, label]) => {
-                                                const isLabModule = key === "labModule";
-                                                // Only the Lab Module is available in this release - the rest
-                                                // are always greyed out, not just once Lab Module is checked.
-                                                const isDisabled = !isLabModule;
+                                                // All modules made clickable.
+                                                const isDisabled = false;
                                                 return (
                                                     <label
                                                         key={key}

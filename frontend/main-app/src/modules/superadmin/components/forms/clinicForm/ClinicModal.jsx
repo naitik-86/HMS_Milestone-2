@@ -212,6 +212,7 @@ export default function ClinicModal({ onClose }) {
         trialDays: 0,
         discountCode: "",
         notes: "",
+        customPlanPrice: "",
 
         maxStaff: "",
         maxDoctors: "",

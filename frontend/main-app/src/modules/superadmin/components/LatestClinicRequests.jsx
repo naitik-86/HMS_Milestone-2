@@ -385,6 +385,7 @@ const getClinicForm = (clinic = {}) => {
         startDate: toDateInputValue(clinic.startDate || clinic.planStartDate || plan.startDate) || today,
         endDate: toDateInputValue(clinic.endDate || clinic.planEndDate || clinic.expiryDate || plan.endDate) || calculateEndDate(today, billing),
         trialDays: clinic.trialDays || clinic.trialPeriodDays || plan.trialDays || 0,
+        customPlanPrice: clinic.customPlanPrice ?? plan.customPlanPrice ?? "",
         discountCode: clinic.discountCode || plan.discountCode || "",
         notes: clinic.notes || plan.notes || "",
         
@@ -450,6 +451,7 @@ const getUpdatePayload = (form) => {
         planStartDate: form.startDate,
         planEndDate: form.endDate,
         trialDays: form.trialDays,
+        customPlanPrice: form.customPlanPrice,
         discountCode: form.discountCode,
         notes: form.notes,
         

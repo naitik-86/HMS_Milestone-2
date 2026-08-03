@@ -13,6 +13,7 @@ const clinicSchema = new mongoose.Schema({
   website: { type: String },
   plan: { type: String },
   trialDays: { type: Number, default: 0 },
+  customPlanPrice: { type: Number },
   discountCode: { type: String },
   notes: { type: String },
   

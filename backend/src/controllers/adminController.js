@@ -1100,8 +1100,10 @@ exports.createClinic = async (req, res) => {
     if (!/^\d{6}$/.test(String(normalizedAddressDetails.pincode || '').trim())) {
       return res.status(400).json({ success: false, field: 'pincode', message: 'A valid 6-digit clinic PIN code is required.' });
     }
-    if (!serviceAreaPincodes.length || serviceAreaPincodes.some((pincode) => !/^\d{6}$/.test(pincode))) {
-      return res.status(400).json({ success: false, field: 'serviceAreas', message: 'Add at least one valid 6-digit service area PIN code.' });
+    // Service areas are optional - only validate the format of whichever
+    // ones were actually provided, don't require at least one.
+    if (serviceAreaPincodes.some((pincode) => !/^\d{6}$/.test(pincode))) {
+      return res.status(400).json({ success: false, field: 'serviceAreas', message: 'Each service area PIN code must be exactly 6 digits.' });
     }
 
     const contactsInUse = await Promise.all([
@@ -1135,6 +1137,7 @@ exports.createClinic = async (req, res) => {
       planEndDate: req.body.planEndDate,
       plan: req.body.plan,
       trialDays: req.body.trialDays,
+      customPlanPrice: req.body.customPlanPrice,
       discountCode: req.body.discountCode,
       notes: req.body.notes,
       phone: clinicPhone,

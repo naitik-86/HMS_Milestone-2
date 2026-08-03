@@ -778,7 +778,19 @@ exports.updatePlan = async (req, res) => {
 
 exports.deletePlan = async (req, res) => {
   try {
-    const inUseCount = await clinincSubscriptionTracker.countDocuments({ planId: req.params.id });
+    const plan = await SubscriptionPlan.findById(req.params.id).select('subscriptionPlan');
+    if (!plan) {
+      return res.status(404).json({ success: false, message: 'Plan not found' });
+    }
+
+    // clinincSubscriptionTracker.countDocuments({ planId }) alone
+    // overcounts: tracker records aren't cleaned up when a clinic is
+    // deleted, so a plan can show far more "in use" clinics than
+    // actually exist. Count by the clinic's own current plan name
+    // instead - that's the authoritative "what plan is this clinic on"
+    // source used everywhere else in this file (getSubscriptionDetails,
+    // createSubscriptionPayment, paymentSuccess).
+    const inUseCount = await Clinic.countDocuments({ plan: plan.subscriptionPlan });
 
     if (inUseCount > 0) {
       return res.status(409).json({
@@ -787,11 +799,7 @@ exports.deletePlan = async (req, res) => {
       });
     }
 
-    const plan = await SubscriptionPlan.findByIdAndDelete(req.params.id);
-
-    if (!plan) {
-      return res.status(404).json({ success: false, message: 'Plan not found' });
-    }
+    await SubscriptionPlan.findByIdAndDelete(req.params.id);
 
     res.status(200).json({ success: true, message: 'Plan deleted successfully' });
   } catch (error) {

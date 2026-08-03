@@ -4,7 +4,7 @@
 // (password vs otp) so a wrong OTP guess never burns password-attempt
 // budget and vice versa.
 
-const MAX_ATTEMPTS = 5;
+const MAX_ATTEMPTS = 10;
 const LOCK_MINUTES = 15;
 
 const LOCK_MESSAGE = {
