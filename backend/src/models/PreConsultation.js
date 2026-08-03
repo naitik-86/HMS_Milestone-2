@@ -47,6 +47,12 @@ const preConsultationSchema = new mongoose.Schema(
       type: Number,
     },
 
+    bodyTemperatureUnit: {
+      type: String,
+      enum: ["F", "C"],
+      default: "F",
+    },
+
     heartRate: {
       type: Number,
     },

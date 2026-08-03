@@ -347,7 +347,6 @@ export default function PendingPets() {
               setSelectedPet(null);
             }}
             onCompleted={() => {
-              toast.success("Pre-consultation assessment saved successfully!");
               fetchPendingPets();
             }}
           />

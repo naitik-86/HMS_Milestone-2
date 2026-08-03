@@ -81,6 +81,33 @@ const getLoggedInStaffName = () => {
   return "Duty Staff";
 };
 
+// Strips everything except digits (and, if allowed, a single decimal point),
+// then caps the integer part to `maxIntDigits` digits and the decimal part
+// to 1 digit - this is what actually blocks garbage like "0-1-09643..." at
+// the keystroke level instead of only after Number() parsing.
+const sanitizeNumeric = (value, { allowDecimal = false, maxIntDigits = 3 } = {}) => {
+  let cleaned = value.replace(allowDecimal ? /[^0-9.]/g : /[^0-9]/g, "");
+
+  if (allowDecimal) {
+    const firstDot = cleaned.indexOf(".");
+    if (firstDot !== -1) {
+      cleaned = cleaned.slice(0, firstDot + 1) + cleaned.slice(firstDot + 1).replace(/\./g, "");
+    }
+  }
+
+  const [intPart, decPart] = cleaned.split(".");
+  const truncatedInt = intPart.slice(0, maxIntDigits);
+  return decPart !== undefined ? `${truncatedInt}.${decPart.slice(0, 1)}` : truncatedInt;
+};
+
+const NUMERIC_FIELD_RULES = {
+  bodyTemperature: { allowDecimal: true, maxIntDigits: 3, max: 120 },
+  heartRate: { allowDecimal: false, maxIntDigits: 3, max: 300 },
+  respiratoryRate: { allowDecimal: false, maxIntDigits: 3, max: 300 },
+  spo2: { allowDecimal: false, maxIntDigits: 3, max: 100 },
+  bodyWeight: { allowDecimal: true, maxIntDigits: 3, max: 200 },
+};
+
 export default function VitalsForm({ formData, setFormData }) {
   useEffect(() => {
     // Auto fill recordedBy strictly from logged in staff name if empty
@@ -98,28 +125,33 @@ export default function VitalsForm({ formData, setFormData }) {
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    setFormData((prev) => {
+    if (name === "bcs") {
       let numVal = value === "" ? "" : Number(value);
+      if (typeof numVal === "number" && numVal > 9) numVal = 9;
+      setFormData((prev) => ({ ...prev, bcs: numVal }));
+      return;
+    }
 
-      if (typeof numVal === "number") {
-        if (numVal < 0) numVal = 0;
-        if (name === "spo2" && numVal > 100) numVal = 100;
-        if (name === "bcs" && numVal > 9) numVal = 9;
-      }
+    const rule = NUMERIC_FIELD_RULES[name];
+    if (!rule) {
+      setFormData((prev) => ({ ...prev, [name]: value }));
+      return;
+    }
 
-      return {
-        ...prev,
-        [name]:
-          name === "bcs" ||
-          name === "bodyTemperature" ||
-          name === "heartRate" ||
-          name === "respiratoryRate" ||
-          name === "spo2" ||
-          name === "bodyWeight"
-            ? numVal
-            : value,
-      };
-    });
+    let cleaned = sanitizeNumeric(value, rule);
+
+    // Only clamp the upper bound once the value is a complete number -
+    // clamping mid-decimal-entry (e.g. "98.") would fight the user's typing.
+    if (cleaned !== "" && !cleaned.endsWith(".")) {
+      const numVal = Number(cleaned);
+      if (numVal > rule.max) cleaned = String(rule.max);
+    }
+
+    setFormData((prev) => ({ ...prev, [name]: cleaned }));
+  };
+
+  const handleUnitChange = (e) => {
+    setFormData((prev) => ({ ...prev, bodyTemperatureUnit: e.target.value }));
   };
 
   return (
@@ -132,17 +164,28 @@ export default function VitalsForm({ formData, setFormData }) {
         {/* Body Temperature */}
         <div>
           <label className="block mb-2 font-medium text-slate-700">
-            Body Temperature (°F / °C)
+            Body Temperature
           </label>
 
-          <input
-            type="number"
-            name="bodyTemperature"
-            value={formData.bodyTemperature}
-            onChange={handleChange}
-            placeholder="Enter Temperature"
-            className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm md:text-base outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-100"
-          />
+          <div className="flex gap-2">
+            <input
+              type="text"
+              inputMode="decimal"
+              name="bodyTemperature"
+              value={formData.bodyTemperature}
+              onChange={handleChange}
+              placeholder="Enter Temperature"
+              className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm md:text-base outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-100"
+            />
+            <select
+              value={formData.bodyTemperatureUnit || "F"}
+              onChange={handleUnitChange}
+              className="shrink-0 w-20 border border-slate-200 rounded-2xl px-2 py-3 text-sm md:text-base outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-100 font-medium"
+            >
+              <option value="F">°F</option>
+              <option value="C">°C</option>
+            </select>
+          </div>
         </div>
 
         {/* Heart Rate */}
@@ -152,7 +195,8 @@ export default function VitalsForm({ formData, setFormData }) {
           </label>
 
           <input
-            type="number"
+            type="text"
+            inputMode="numeric"
             name="heartRate"
             value={formData.heartRate}
             onChange={handleChange}
@@ -168,7 +212,8 @@ export default function VitalsForm({ formData, setFormData }) {
           </label>
 
           <input
-            type="number"
+            type="text"
+            inputMode="numeric"
             name="respiratoryRate"
             value={formData.respiratoryRate}
             onChange={handleChange}
@@ -247,7 +292,8 @@ export default function VitalsForm({ formData, setFormData }) {
           </label>
 
           <input
-            type="number"
+            type="text"
+            inputMode="numeric"
             name="spo2"
             value={formData.spo2}
             onChange={handleChange}
@@ -263,9 +309,9 @@ export default function VitalsForm({ formData, setFormData }) {
           </label>
 
           <input
-            type="number"
+            type="text"
+            inputMode="decimal"
             name="bodyWeight"
-            step="0.1"
             value={formData.bodyWeight}
             onChange={handleChange}
             placeholder="Enter Weight in KG"

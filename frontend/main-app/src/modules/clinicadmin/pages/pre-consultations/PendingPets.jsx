@@ -129,6 +129,7 @@ export default function PendingPets() {
                   <option value="CAT">Cat</option>
                   <option value="BIRD">Bird</option>
                   <option value="RABBIT">Rabbit</option>
+                  <option value="OTHER">Other</option>
                 </select>
               </div>
 
@@ -352,7 +353,6 @@ export default function PendingPets() {
               setSelectedPet(null);
             }}
             onCompleted={() => {
-              toast.success("Pre-consultation assessment saved successfully!");
               fetchPendingPets();
             }}
           />

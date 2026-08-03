@@ -103,6 +103,7 @@ export default function PetRegistrationWizard({ onClose, petData, onCompleted })
   const [formData, setFormData] = useState({
     // Vitals
     bodyTemperature: pc.bodyTemperature || petData?.vitals?.temp || "",
+    bodyTemperatureUnit: pc.bodyTemperatureUnit || "F",
     heartRate: pc.heartRate || petData?.vitals?.heartRate || "",
     respiratoryRate: pc.respiratoryRate || petData?.vitals?.respRate || "",
     bloodPressure: {
@@ -124,10 +125,10 @@ export default function PetRegistrationWizard({ onClose, petData, onCompleted })
     // History
     durationOfIllness: {
       value: pc.durationOfIllness?.value || "",
-      unit: pc.durationOfIllness?.unit || "days",
+      unit: pc.durationOfIllness?.unit || "Days",
     },
-    onset: pc.onset || "Sudden",
-    progression: pc.progression || "Stable",
+    onset: pc.onset || "",
+    progression: pc.progression || "",
     previousEpisodes: {
       hasPreviousEpisodes: pc.previousEpisodes?.hasPreviousEpisodes ?? false,
       description: pc.previousEpisodes?.description || "",
@@ -148,8 +149,8 @@ export default function PetRegistrationWizard({ onClose, petData, onCompleted })
     severity: "",
 
     // Observation
-    generalDemeanour: pc.generalDemeanour || "Alert",
-    gaitAndPosture: pc.gaitAndPosture || "Normal",
+    generalDemeanour: pc.generalDemeanour || "",
+    gaitAndPosture: pc.gaitAndPosture || "",
     visibleLesions: pc.visibleLesions || "",
     eyesAbnormality: pc.eyesAbnormality || "",
     noseAbnormality: pc.noseAbnormality || "",
@@ -160,6 +161,24 @@ export default function PetRegistrationWizard({ onClose, petData, onCompleted })
 
   // Calculate overall percentage
   const progressPercent = Math.round((step / steps.length) * 100);
+
+  // A field is "meaningful" if it's empty (optional fields are allowed to be
+  // blank) or contains at least one letter - blocks entries that are only
+  // digits/punctuation (e.g. "1234" or "----").
+  const isMeaningfulText = (value) => {
+    const trimmed = (value || "").trim();
+    return !trimmed || /[a-zA-Z]/.test(trimmed);
+  };
+
+  const OBSERVATION_FIELDS = [
+    ["gaitAndPosture", "Gait And Posture"],
+    ["visibleLesions", "Visible Lesions / Abnormality"],
+    ["eyesAbnormality", "Eyes Abnormality"],
+    ["noseAbnormality", "Nose Abnormality"],
+    ["earAbnormality", "Ear Abnormality"],
+    ["skinCondition", "Skin Condition / Coat"],
+    ["staffNotes", "Staff Notes"],
+  ];
 
   // Validate step before advancing
   const validateCurrentStep = (targetStep) => {
@@ -177,11 +196,30 @@ export default function PetRegistrationWizard({ onClose, petData, onCompleted })
 
     // Step 3: Problem Description Validation
     if (step === 3 && targetStep > 3) {
-      if (!formData.primaryComplaint || formData.primaryComplaint.trim().length === 0) {
+      const primaryComplaint = (formData.primaryComplaint || "").trim();
+      if (!primaryComplaint) {
         const errorMsg = "Please describe the Primary Complaint before proceeding.";
         setValidationError(errorMsg);
         toast.error(errorMsg);
         return false;
+      }
+      if (!isMeaningfulText(primaryComplaint)) {
+        const errorMsg = "Primary Complaint must contain meaningful text, not just numbers or symbols.";
+        setValidationError(errorMsg);
+        toast.error(errorMsg);
+        return false;
+      }
+    }
+
+    // Step 4: Observation Validation (checked when finishing the assessment)
+    if (step === 4 && targetStep > 4) {
+      for (const [field, label] of OBSERVATION_FIELDS) {
+        if (!isMeaningfulText(formData[field])) {
+          const errorMsg = `${label} must contain meaningful text, not just numbers or symbols.`;
+          setValidationError(errorMsg);
+          toast.error(errorMsg);
+          return false;
+        }
       }
     }
 

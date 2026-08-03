@@ -152,6 +152,7 @@ export default function HistoryPets() {
                 <option value="CAT">Cat</option>
                 <option value="BIRD">Bird</option>
                 <option value="RABBIT">Rabbit</option>
+                <option value="OTHER">Other</option>
               </select>
             </div>
 

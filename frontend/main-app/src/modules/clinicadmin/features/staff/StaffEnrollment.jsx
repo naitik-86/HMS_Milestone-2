@@ -117,6 +117,7 @@ function EnrollForm({ onClose, onSave, editData, mode, staff, isSubmitting, }) {
     accountHolderName: "",
     accountNumber: "",
     ifscCode: "",
+    branchName: "",
     upiId: "",
   });
 
@@ -160,6 +161,12 @@ function EnrollForm({ onClose, onSave, editData, mode, staff, isSubmitting, }) {
       if (bankRule?.ifscPrefix && !ifscCode.startsWith(bankRule.ifscPrefix)) {
         return `IFSC for ${formSnapshot.bankName} should start with ${bankRule.ifscPrefix}.`;
       }
+      return "";
+    }
+
+    if (field === "branchName") {
+      const branchName = formSnapshot.branchName.trim();
+      if (branchName && branchName.length < 3) return "Branch name must be at least 3 characters.";
       return "";
     }
 
@@ -442,7 +449,7 @@ function EnrollForm({ onClose, onSave, editData, mode, staff, isSubmitting, }) {
 
 
 
-  const bankFieldKeys = ["bankName", "accountHolderName", "accountNumber", "ifscCode", "upiId"];
+  const bankFieldKeys = ["bankName", "accountHolderName", "accountNumber", "ifscCode", "branchName", "upiId"];
 
   const update = (k, v) => {
     if (isView) return;
@@ -1087,8 +1094,12 @@ function EnrollForm({ onClose, onSave, editData, mode, staff, isSubmitting, }) {
                       onChange={(e) =>
                         update("branchName", e.target.value)
                       }
+                      onBlur={() => handleBankFieldBlur("branchName")}
                       placeholder="Enter Branch Name"
                     />
+                    {bankFieldErrors.branchName && (
+                      <p className="mt-1 text-sm text-red-500 font-medium">{bankFieldErrors.branchName}</p>
+                    )}
                   </div>
 
                   <div>

@@ -14,7 +14,10 @@ const {
     deletePreConsultationVisit
 } = require("../controllers/preConsultationController");
 
-router.use(authorize("PRE_CONSULTATION_STAFF", "CLINIC_ADMIN"));
+// DOCTOR is included because the Doctor Station's "Record Vitals" mini-wizard
+// (PetRegistrationWizard) submits through this same endpoint, not just the
+// dedicated pre-consultation staff role.
+router.use(authorize("PRE_CONSULTATION_STAFF", "CLINIC_ADMIN", "DOCTOR"));
 
 // Dashboard
 router.get("/dashboard", getDashboard);

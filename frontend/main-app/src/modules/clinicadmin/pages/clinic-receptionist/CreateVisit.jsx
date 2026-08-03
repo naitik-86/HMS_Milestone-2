@@ -1268,10 +1268,10 @@ export default function CreateVisitForm() {
                   <div>
                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Token / Queue Number</label>
                     <input
-                      name="tokenNumber"
-                      value={petForm.tokenNumber || "TK-101"}
-                      onChange={handlePetChange}
-                      className="w-full border border-slate-200 rounded-lg py-1.5 px-3 bg-slate-50 text-slate-700 font-mono font-bold text-xs outline-none"
+                      value="Auto-assigned on check-in"
+                      readOnly
+                      disabled
+                      className="w-full border border-slate-200 rounded-lg py-1.5 px-3 bg-slate-100 text-slate-500 font-mono font-bold text-xs outline-none cursor-not-allowed"
                     />
                   </div>
 
