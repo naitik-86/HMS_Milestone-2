@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { showToast } from '../../../../shared/components/toast';
 import ViewStaffModal from "./ViewStaffModal";
-import { roles, departments, employmentTypes, staffData } from '../../data/staff';
+import { roles, departments, employmentTypes, staffData, MODULE_OPTIONS } from '../../data/staff';
 import Loader from '../../../../shared/components/Loader';
 import { Eye, Pencil, Trash2 } from "lucide-react";
 import { Plus, Users } from "lucide-react";
@@ -473,6 +473,14 @@ function EnrollForm({ onClose, onSave, editData, mode, staff, isSubmitting, }) {
     else update('modules', [...current, m]);
   };
 
+  const allModulesSelected = MODULE_OPTIONS.every(m => form.modules.includes(m));
+  const someModulesSelected = MODULE_OPTIONS.some(m => form.modules.includes(m));
+
+  const toggleAllModules = () => {
+    if (isView) return;
+    update('modules', allModulesSelected ? [] : [...MODULE_OPTIONS]);
+  };
+
   const checkContact = async (field) => {
     if (isView) return '';
 
@@ -942,20 +950,28 @@ function EnrollForm({ onClose, onSave, editData, mode, staff, isSubmitting, }) {
 
                 {/* Module Access Card */}
                 <div className="bg-white border border-[#F3F4F6] rounded-2xl p-5 sm:p-8 shadow-sm">
-                  <h3 className="text-base font-bold text-[#1A1D2E] mb-2">Module Access Permissions</h3>
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-base font-bold text-[#1A1D2E]">Module Access Permissions</h3>
+                    <label
+                      className="flex items-center gap-2 text-sm font-semibold text-[#E8630A] select-none"
+                      style={{ cursor: isView ? 'default' : 'pointer' }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={allModulesSelected}
+                        ref={(el) => {
+                          if (el) el.indeterminate = someModulesSelected && !allModulesSelected;
+                        }}
+                        onChange={toggleAllModules}
+                        disabled={isView}
+                        className="accent-[#E8630A]"
+                      />
+                      Select All
+                    </label>
+                  </div>
                   <p className="text-sm text-gray-400 mb-6">Select the modules this staff member should have access to.</p>
                   <div className="flex flex-wrap gap-3">
-                    {[
-                      'opd',
-                      'surgery',
-                      'lab',
-                      'icu',
-                      'grooming',
-                      'kennel',
-                      'pharmacy',
-                      'reports',
-                      'settings'
-                    ].map(m => (
+                    {MODULE_OPTIONS.map(m => (
                       <div
                         key={m}
                         onClick={() => toggleModule(m)}

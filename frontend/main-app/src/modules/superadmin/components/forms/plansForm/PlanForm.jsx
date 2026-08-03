@@ -190,14 +190,6 @@ export default function PlanForm({ plan, onClose, onSaved, onCreated, readOnly =
             price: clampNonNegativeNumber(form.price),
             trialPeriodDays: clampNonNegativeNumber(form.trialPeriodDays),
             planEndRenewalDate,
-            // Only Lab is actually selectable in the UI right now - force the
-            // rest off so an old plan's stale enabled flags (from before this
-            // restriction existed) can't be silently carried forward.
-            groomingModuleEnabled: false,
-            kennelModuleEnabled: false,
-            onlinePharmacyModuleEnabled: false,
-            apiAccessEnabled: false,
-            whiteLabelCustomBranding: false,
         };
 
         try {
@@ -292,28 +284,28 @@ export default function PlanForm({ plan, onClose, onSaved, onCreated, readOnly =
                         <Section title="Module Access" />
                         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                             {[
-                                ["labModuleEnabled", "Lab module enabled", false],
-                                ["groomingModuleEnabled", "Grooming module enabled", true],
-                                ["kennelModuleEnabled", "Kennel module enabled", true],
-                                ["onlinePharmacyModuleEnabled", "Online pharmacy module enabled", true],
-                                ["apiAccessEnabled", "API access enabled", true],
-                                ["whiteLabelCustomBranding", "White-label / custom branding", true],
-                            ].map(([name, label, isDisabled]) => (
+                                ["labModuleEnabled", "Lab module enabled"],
+                                ["groomingModuleEnabled", "Grooming module enabled"],
+                                ["kennelModuleEnabled", "Kennel module enabled"],
+                                ["onlinePharmacyModuleEnabled", "Online pharmacy module enabled"],
+                                ["apiAccessEnabled", "API access enabled"],
+                                ["whiteLabelCustomBranding", "White-label / custom branding"],
+                            ].map(([name, label]) => (
                                 <label
                                     key={name}
                                     className={`flex items-center justify-between gap-4 rounded-xl border px-4 py-3 text-xs font-semibold shadow-xs transition-colors ${
-                                        isDisabled || readOnly
+                                        readOnly
                                             ? "border-gray-100 bg-gray-50 text-gray-400 cursor-not-allowed"
                                             : "border-gray-200 bg-white text-gray-700 cursor-pointer hover:border-[#F7931E]/40"
                                     }`}
                                 >
-                                    <span>{label}{isDisabled ? " (coming soon)" : ""}</span>
+                                    <span>{label}</span>
                                     <input
                                         type="checkbox"
                                         name={name}
-                                        checked={isDisabled ? false : form[name]}
-                                        onChange={isDisabled || readOnly ? undefined : handleChange}
-                                        disabled={isDisabled || readOnly}
+                                        checked={form[name]}
+                                        onChange={readOnly ? undefined : handleChange}
+                                        disabled={readOnly}
                                         className="h-4 w-4 accent-[#F7931E] rounded-xs cursor-pointer disabled:cursor-not-allowed"
                                     />
                                 </label>

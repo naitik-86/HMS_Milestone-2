@@ -3,6 +3,7 @@
 export const roles = ['Receptionist', 'Pre-consultation Staff', 'Doctor', 'Lab Technician', 'Groomer', 'Kennel Staff', 'Pharmacist'];
 export const departments = ['OPD', 'Surgery', 'Lab', 'ICU', 'Grooming', 'Kennel'];
 export const employmentTypes = ['Full-time', 'Part-time', 'Contract', 'Visiting', 'Locum'];
+export const MODULE_OPTIONS = ['opd', 'surgery', 'lab', 'icu', 'grooming', 'kennel', 'pharmacy', 'reports', 'settings'];
 
 export const staffData = [
   { id: 'STF001', name: 'Dr. Priya Sharma', role: 'Doctor', dept: 'OPD', status: 'Active', joined: '2024-01-15', initials: 'DP', color: '#6366F1', employment: 'Full-time' },

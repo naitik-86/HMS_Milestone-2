@@ -1,4 +1,5 @@
 import API from "../../../shared/api/axios";
+import { MODULE_OPTIONS } from "../data/staff";
 
 const BASE_URL = "/clinic/staff";
 
@@ -163,13 +164,14 @@ const buildStaffFormData = (staff) => {
     );
 
 
+    // Explicitly set every known module to true/false rather than only
+    // including selected ones - an omitted key can't reliably clear a
+    // previously-true permission on an edit/update.
+    const selectedModules = staff.modules || [];
     const moduleAccess = {};
-
-    (staff.modules || []).forEach(
-        module => {
-            moduleAccess[module] = true;
-        }
-    );
+    MODULE_OPTIONS.forEach(module => {
+        moduleAccess[module] = selectedModules.includes(module);
+    });
 
     formData.append(
         "moduleAccess",

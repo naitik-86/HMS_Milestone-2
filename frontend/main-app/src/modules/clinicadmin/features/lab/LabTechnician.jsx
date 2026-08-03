@@ -172,6 +172,13 @@ function LabTechnicianForm({ existingData, existingEmployeeIds = [], isEdit, isS
     );
   };
 
+  const allTestsSelected = TEST_OPTIONS.every((test) => formData.specializedTests.includes(test));
+  const someTestsSelected = TEST_OPTIONS.some((test) => formData.specializedTests.includes(test));
+
+  const toggleAllTests = () => {
+    update("specializedTests", allTestsSelected ? [] : [...TEST_OPTIONS]);
+  };
+
   const handleSubmit = () => {
     if (!validate()) return;
     onSave(formData);
@@ -334,14 +341,28 @@ function LabTechnicianForm({ existingData, existingEmployeeIds = [], isEdit, isS
               </section>
 
               <section className={cardCls}>
-                <div className="mb-5 flex items-center gap-3">
-                  <div className="grid size-10 place-items-center rounded-xl bg-[#0C3D2E]/10 text-[#0C3D2E]">
-                    <BadgeCheck size={20} />
+                <div className="mb-5 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="grid size-10 place-items-center rounded-xl bg-[#0C3D2E]/10 text-[#0C3D2E]">
+                      <BadgeCheck size={20} />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-bold text-[#1A1D2E]">Specialised Tests Handled</h3>
+                      <p className="text-xs text-gray-500">Select all test areas the technician can handle</p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-base font-bold text-[#1A1D2E]">Specialised Tests Handled</h3>
-                    <p className="text-xs text-gray-500">Select all test areas the technician can handle</p>
-                  </div>
+                  <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-[#E8630A] select-none">
+                    <input
+                      type="checkbox"
+                      checked={allTestsSelected}
+                      ref={(el) => {
+                        if (el) el.indeterminate = someTestsSelected && !allTestsSelected;
+                      }}
+                      onChange={toggleAllTests}
+                      className="size-4 accent-[#E8630A]"
+                    />
+                    Select All
+                  </label>
                 </div>
 
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">

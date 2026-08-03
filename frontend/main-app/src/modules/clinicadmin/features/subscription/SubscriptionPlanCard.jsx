@@ -3,8 +3,20 @@ import {
     Crown,
     Users,
     Stethoscope,
+    PawPrint,
+    HardDrive,
+    X,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+
+const MODULE_LABELS = [
+    ["lab", "Lab Module"],
+    ["grooming", "Grooming"],
+    ["kennel", "Kennel"],
+    ["onlinePharmacy", "Online Pharmacy"],
+    ["apiAccess", "API Access"],
+    ["whiteLabelBranding", "White Label Branding"],
+];
 
 export default function SubscriptionPlanCard({
     status,
@@ -12,19 +24,14 @@ export default function SubscriptionPlanCard({
     isCurrent,
 }) {
     const navigate = useNavigate();
-    const features = [];
     const handleContactAdmin = () => {
         navigate("/contact");
     };
-    if (plan.modules.lab) features.push("Lab Module");
-    if (plan.modules.grooming) features.push("Grooming");
-    if (plan.modules.kennel) features.push("Kennel");
-    if (plan.modules.onlinePharmacy)
-        features.push("Online Pharmacy");
-    if (plan.modules.apiAccess)
-        features.push("API Access");
-    if (plan.modules.whiteLabelBranding)
-        features.push("White Label Branding");
+    const includedModules = MODULE_LABELS.filter(([key]) => plan.modules[key]);
+    const excludedModules = MODULE_LABELS.filter(([key]) => !plan.modules[key]);
+    const petRecordsLabel = plan.featureLimits.maxPetRecordsUnlimited
+        ? "Unlimited"
+        : plan.featureLimits.maxPetRecords ?? "-";
 
     return (
         <div
@@ -114,6 +121,26 @@ export default function SubscriptionPlanCard({
                         </span>
                     </div>
 
+                    <div className="flex items-center gap-3 text-gray-700">
+                        <PawPrint
+                            size={18}
+                            className="text-orange-500"
+                        />
+                        <span>
+                            <strong>{petRecordsLabel}</strong> Pet Records
+                        </span>
+                    </div>
+
+                    <div className="flex items-center gap-3 text-gray-700">
+                        <HardDrive
+                            size={18}
+                            className="text-orange-500"
+                        />
+                        <span>
+                            <strong>{plan.featureLimits.storageLimitGb} GB</strong> Storage
+                        </span>
+                    </div>
+
                 </div>
 
                 {/* Features */}
@@ -121,14 +148,14 @@ export default function SubscriptionPlanCard({
                 <div className="mt-6">
 
                     <h4 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-700">
-                        Included Modules
+                        Modules
                     </h4>
 
                     <div className="space-y-3">
 
-                        {features.map((feature) => (
+                        {includedModules.map(([key, label]) => (
                             <div
-                                key={feature}
+                                key={key}
                                 className="flex items-center gap-3 text-sm text-gray-700"
                             >
                                 <Check
@@ -136,7 +163,21 @@ export default function SubscriptionPlanCard({
                                     className="text-green-600"
                                 />
 
-                                {feature}
+                                {label}
+                            </div>
+                        ))}
+
+                        {excludedModules.map(([key, label]) => (
+                            <div
+                                key={key}
+                                className="flex items-center gap-3 text-sm text-gray-400"
+                            >
+                                <X
+                                    size={16}
+                                    className="text-gray-300"
+                                />
+
+                                {label}
                             </div>
                         ))}
 

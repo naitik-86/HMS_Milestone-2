@@ -1,7 +1,6 @@
 export default function BriefHistoryForm({ formData, setFormData }) {
   const handleChange = (e) => {
     const { name, value } = e.target;
-
     setFormData((prev) => ({
       ...prev,
       [name]: value,
@@ -10,6 +9,23 @@ export default function BriefHistoryForm({ formData, setFormData }) {
 
   const hasPrevious = formData.previousEpisodes?.hasPreviousEpisodes || false;
 
+  const handleDurationChange = (e) => {
+    const raw = e.target.value;
+    const numeric = raw.replace(/\D/g, "");
+    const clamped = numeric.slice(0, 3);
+    const final =
+      clamped === ""
+        ? ""
+        : Math.min(999, Math.max(1, Number(clamped)));
+    setFormData((prev) => ({
+      ...prev,
+      durationOfIllness: {
+        ...prev.durationOfIllness,
+        value: final,
+      },
+    }));
+  };
+
   return (
     <div>
       <h2 className="text-xl md:text-3xl font-bold text-slate-800 mb-6 md:mb-8">
@@ -17,32 +33,24 @@ export default function BriefHistoryForm({ formData, setFormData }) {
       </h2>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
-        {/* Duration Of Illness Value */}
+
+        {/* Duration Of Illness */}
         <div>
           <label className="block mb-2 font-medium text-slate-700">
             Duration Of Illness
           </label>
-
           <input
             type="number"
-            min="0"
-            step="1"
+            min="1"
+            max="999"
             value={formData.durationOfIllness?.value || ""}
-            onChange={(e) => {
-              const value = e.target.value;
-
-              setFormData((prev) => ({
-                ...prev,
-                durationOfIllness: {
-                  ...prev.durationOfIllness,
-                  value:
-                    value === ""
-                      ? ""
-                      : Math.max(0, Number(value)), // Prevent negative values
-                },
-              }));
+            onChange={handleDurationChange}
+            onKeyDown={(e) => {
+              if (["e", "E", "+", "-", "."].includes(e.key)) {
+                e.preventDefault();
+              }
             }}
-            placeholder="Enter Duration Number"
+            placeholder="Enter Duration (1–999)"
             className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm md:text-base outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-100"
           />
         </div>
@@ -52,9 +60,8 @@ export default function BriefHistoryForm({ formData, setFormData }) {
           <label className="block mb-2 font-medium text-slate-700">
             Duration Unit
           </label>
-
           <select
-            value={formData.durationOfIllness?.unit || "Days"}
+            value={formData.durationOfIllness?.unit || ""}
             onChange={(e) =>
               setFormData((prev) => ({
                 ...prev,
@@ -66,18 +73,17 @@ export default function BriefHistoryForm({ formData, setFormData }) {
             }
             className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm md:text-base outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-100 font-medium"
           >
-            <option value="Days">days</option>
-            <option value="Weeks">weeks</option>
-            <option value="Years">years</option>
+            <option value="" disabled>Select Duration Unit</option>
+            <option value="Days">Days</option>
+            <option value="Weeks">Weeks</option>
+            <option value="Months">Months</option>
+            <option value="Years">Years</option>
           </select>
         </div>
 
         {/* Onset */}
         <div>
-          <label className="block mb-2 font-medium text-slate-700">
-            Onset
-          </label>
-
+          <label className="block mb-2 font-medium text-slate-700">Onset</label>
           <select
             name="onset"
             value={formData.onset}
@@ -92,10 +98,7 @@ export default function BriefHistoryForm({ formData, setFormData }) {
 
         {/* Progression */}
         <div>
-          <label className="block mb-2 font-medium text-slate-700">
-            Progression
-          </label>
-
+          <label className="block mb-2 font-medium text-slate-700">Progression</label>
           <select
             name="progression"
             value={formData.progression}
@@ -120,17 +123,13 @@ export default function BriefHistoryForm({ formData, setFormData }) {
                 Has the pet travelled recently? If yes, mention where and when.
               </p>
             </div>
-
             <div className="flex items-center bg-slate-200 p-1 rounded-xl shrink-0">
               <button
                 type="button"
                 onClick={() =>
                   setFormData((prev) => ({
                     ...prev,
-                    recentTravel: {
-                      hasTravel: false,
-                      description: "",
-                    },
+                    recentTravel: { hasTravel: false, description: "" },
                   }))
                 }
                 className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
@@ -141,16 +140,12 @@ export default function BriefHistoryForm({ formData, setFormData }) {
               >
                 No
               </button>
-
               <button
                 type="button"
                 onClick={() =>
                   setFormData((prev) => ({
                     ...prev,
-                    recentTravel: {
-                      ...prev.recentTravel,
-                      hasTravel: true,
-                    },
+                    recentTravel: { ...prev.recentTravel, hasTravel: true },
                   }))
                 }
                 className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
@@ -163,7 +158,6 @@ export default function BriefHistoryForm({ formData, setFormData }) {
               </button>
             </div>
           </div>
-
           {formData.recentTravel?.hasTravel && (
             <textarea
               rows={3}
@@ -195,17 +189,13 @@ export default function BriefHistoryForm({ formData, setFormData }) {
                 Has the pet had recent contact with other animals?
               </p>
             </div>
-
             <div className="flex items-center bg-slate-200 p-1 rounded-xl shrink-0">
               <button
                 type="button"
                 onClick={() =>
                   setFormData((prev) => ({
                     ...prev,
-                    animalContact: {
-                      hasContact: false,
-                      description: "",
-                    },
+                    animalContact: { hasContact: false, description: "" },
                   }))
                 }
                 className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
@@ -216,16 +206,12 @@ export default function BriefHistoryForm({ formData, setFormData }) {
               >
                 No
               </button>
-
               <button
                 type="button"
                 onClick={() =>
                   setFormData((prev) => ({
                     ...prev,
-                    animalContact: {
-                      ...prev.animalContact,
-                      hasContact: true,
-                    },
+                    animalContact: { ...prev.animalContact, hasContact: true },
                   }))
                 }
                 className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
@@ -238,7 +224,6 @@ export default function BriefHistoryForm({ formData, setFormData }) {
               </button>
             </div>
           </div>
-
           {formData.animalContact?.hasContact && (
             <textarea
               rows={3}
@@ -259,7 +244,7 @@ export default function BriefHistoryForm({ formData, setFormData }) {
           )}
         </div>
 
-        {/* Previous Similar Episodes with Toggle + Textarea */}
+        {/* Previous Similar Episodes */}
         <div className="lg:col-span-2 bg-slate-50 border border-slate-200 rounded-2xl p-4 md:p-5">
           <div className="flex items-center justify-between gap-4 mb-2">
             <div>
@@ -270,18 +255,13 @@ export default function BriefHistoryForm({ formData, setFormData }) {
                 Has the pet experienced similar health episodes in the past?
               </p>
             </div>
-
-            {/* Toggle Switch */}
             <div className="flex items-center bg-slate-200 p-1 rounded-xl shrink-0">
               <button
                 type="button"
                 onClick={() =>
                   setFormData((prev) => ({
                     ...prev,
-                    previousEpisodes: {
-                      hasPreviousEpisodes: false,
-                      description: "",
-                    },
+                    previousEpisodes: { hasPreviousEpisodes: false, description: "" },
                   }))
                 }
                 className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
@@ -313,7 +293,6 @@ export default function BriefHistoryForm({ formData, setFormData }) {
               </button>
             </div>
           </div>
-
           {hasPrevious && (
             <div className="mt-3 animate-in fade-in duration-200">
               <textarea
@@ -335,6 +314,7 @@ export default function BriefHistoryForm({ formData, setFormData }) {
             </div>
           )}
         </div>
+
       </div>
     </div>
   );

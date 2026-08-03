@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { MoreVertical } from "lucide-react";
 import {
   Users,
   UserCheck,
@@ -50,6 +49,15 @@ const formatINR = (value) =>
   new Intl.NumberFormat("en-IN", {
     maximumFractionDigits: 0,
   }).format(Number(value) || 0);
+
+// BUG 4 FIX: Smart Y-axis formatter — shows plain 0 instead of 0k
+const revenueYAxisFormatter = (value) => {
+  const num = Number(value);
+  if (num === 0) return "0";
+  if (num >= 100000) return `${(num / 100000).toFixed(1)}L`;
+  if (num >= 1000) return `${(num / 1000).toFixed(0)}k`;
+  return `${num}`;
+};
 
 const getStatusClass = (status = "") => {
   if (status === "In Progress") return "bg-amber-100 text-amber-700";
@@ -105,32 +113,13 @@ const normalizeDashboard = (payload = {}) => {
     recentEnrollments: Array.isArray(data?.recentEnrollments) ? data.recentEnrollments : [],
     roleDistribution: Array.isArray(data?.roleDistribution)
       ? data.roleDistribution.map((item) => ({
-        ...item,
-        count: Number(item.count || 0),
-        total: Number(item.total || 0),
-      }))
+          ...item,
+          count: Number(item.count || 0),
+          total: Number(item.total || 0),
+        }))
       : [],
     todayAppointments: Array.isArray(data?.todayAppointments) ? data.todayAppointments : [],
   };
-};
-const CARD_THEMES = {
-  green: {
-    cardBg:
-      "bg-[#D9E8E3]/35 border-[#0C3D2E]/15 hover:border-[#0C3D2E]/40",
-    iconBg: "bg-[#0C3D2E] text-white shadow-sm",
-    labelColor: "text-[#0C3D2E]/80",
-    valueColor: "text-[#0C3D2E]",
-    badgeBg: "bg-[#0C3D2E]/10 text-[#0C3D2E]",
-  },
-
-  orange: {
-    cardBg:
-      "bg-[#FFF4E5] border-[#F7931E]/20 hover:border-[#F7931E]/50",
-    iconBg: "bg-[#F7931E] text-white shadow-sm",
-    labelColor: "text-amber-900/80",
-    valueColor: "text-[#0C3D2E]",
-    badgeBg: "bg-[#F7931E]/15 text-[#F7931E]",
-  },
 };
 
 export default function Dashboard() {
@@ -185,8 +174,8 @@ export default function Dashboard() {
 
       setError(
         err?.response?.data?.message ||
-        err?.message ||
-        "Failed to load clinic dashboard"
+          err?.message ||
+          "Failed to load clinic dashboard"
       );
     } finally {
       if (mountedRef.current) {
@@ -223,8 +212,10 @@ export default function Dashboard() {
   if (error) {
     return (
       <div className="p-4 sm:p-6">
-        <div className="rounded-2xl bg- p-6 shadow-sm border border-red-100">
-          <div className="text-sm font-semibold text-red-600">Dashboard unavailable</div>
+        <div className="rounded-2xl p-6 shadow-sm border border-red-100">
+          <div className="text-sm font-semibold text-red-600">
+            Dashboard unavailable
+          </div>
           <p className="mt-2 text-sm text-gray-600">{error}</p>
           <button
             type="button"
@@ -242,81 +233,70 @@ export default function Dashboard() {
     <div className="p-4 sm:p-6 bg-gray-100 min-h-screen">
       <h1 className="text-2xl font-bold text-gray-900 mb-6">Dashboard</h1>
 
-    <div className="mb-6">
-  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-    {cards.map((card) => {
-      const Icon = card.icon;
-      const isGreen = card.theme === "green";
+      {/* Metric Cards */}
+      <div className="mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+          {cards.map((card) => {
+            const Icon = card.icon;
+            const isGreen = card.theme === "green";
 
-      return (
-        <div
-          key={card.label}
-          className={`
-            rounded-2xl p-5 flex items-start gap-4
-            border transition-all duration-200
-            shadow-sm hover:shadow-md
-            ${
-              isGreen
-                ? "bg-[#D9E8E3]/40 border-[#0C3D2E]/10 hover:border-[#0C3D2E]/30"
-                : "bg-[#FFF4E5] border-[#F7931E]/20 hover:border-[#F7931E]/40"
-            }
-          `}
-        >
-          <div
-            className={`
-              w-12 h-12 rounded-xl flex items-center justify-center
-              ${
-                isGreen
-                  ? "bg-[#0C3D2E] text-white"
-                  : "bg-[#F7931E] text-white"
-              }
-            `}
-          >
-            <Icon size={22} />
-          </div>
+            return (
+              <div
+                key={card.label}
+                className={`
+                  rounded-2xl p-5 flex items-start gap-4
+                  border transition-all duration-200
+                  shadow-sm hover:shadow-md
+                  ${
+                    isGreen
+                      ? "bg-[#D9E8E3]/40 border-[#0C3D2E]/10 hover:border-[#0C3D2E]/30"
+                      : "bg-[#FFF4E5] border-[#F7931E]/20 hover:border-[#F7931E]/40"
+                  }
+                `}
+              >
+                <div
+                  className={`
+                    w-12 h-12 rounded-xl flex items-center justify-center
+                    ${isGreen ? "bg-[#0C3D2E] text-white" : "bg-[#F7931E] text-white"}
+                  `}
+                >
+                  <Icon size={22} />
+                </div>
 
-          <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0">
+                  {/* BUG 3 FIX: Removed MoreVertical icon — was static with no functionality */}
+                  <p className="text-xs font-medium text-gray-600 truncate">
+                    {card.label}
+                  </p>
 
-            <div className="flex justify-between items-center">
-              <p className="text-xs font-medium text-gray-600 truncate">
-                {card.label}
-              </p>
+                  <h3 className="text-2xl font-bold mt-1 text-[#0C3D2E]">
+                    {card.value}
+                  </h3>
 
-              <MoreVertical 
-                size={16} 
-                className="text-gray-400"
-              />
-            </div>
-
-
-            <h3 className="text-2xl font-bold mt-1 text-[#0C3D2E]">
-              {card.value}
-            </h3>
-
-
-            <p
-              className={`
-                text-xs font-medium mt-2
-                ${
-                  isGreen
-                    ? "text-[#0C3D2E]"
-                    : "text-[#F7931E]"
-                }
-              `}
-            >
-              {card.change}
-            </p>
-
-          </div>
+                  <p
+                    className={`
+                      text-xs font-medium mt-2
+                      ${isGreen ? "text-[#0C3D2E]" : "text-[#F7931E]"}
+                    `}
+                  >
+                    {card.change}
+                  </p>
+                </div>
+              </div>
+            );
+          })}
         </div>
-      );
-    })}
-  </div>
-</div>
+      </div>
+
+      {/* Charts Row */}
       <div className="grid grid-cols-1 xl:grid-cols-[1.5fr_1fr] gap-6 mb-6">
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
-          <h3 className="text-gray-900 font-bold text-base mb-1">Revenue Overview</h3>
-          <p className="text-gray-600 text-xs mb-5">Monthly revenue from completed appointments</p>
+          <h3 className="text-gray-900 font-bold text-base mb-1">
+            Revenue Overview
+          </h3>
+          <p className="text-gray-600 text-xs mb-5">
+            Monthly revenue from completed appointments
+          </p>
 
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={dashboard.revenueData} barSize={24}>
@@ -326,21 +306,29 @@ export default function Dashboard() {
                 axisLine={false}
                 tickLine={false}
               />
+              {/* BUG 4 FIX: Smart formatter — 0 stays "0", values show k/L */}
               <YAxis
                 tick={{ fill: "#9CA3AF", fontSize: 11 }}
                 axisLine={false}
                 tickLine={false}
-                tickFormatter={(value) => `${(Number(value) / 1000).toFixed(0)}k`}
+                tickFormatter={revenueYAxisFormatter}
               />
-              <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(234, 179, 8, 0.05)" }} />
+              <Tooltip
+                content={<CustomTooltip />}
+                cursor={{ fill: "rgba(234, 179, 8, 0.05)" }}
+              />
               <Bar dataKey="revenue" fill="#E8A145" radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
 
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
-          <h3 className="text-gray-900 font-bold text-base mb-1">Weekly Appointments</h3>
-          <p className="text-gray-600 text-xs mb-5">Last 7 days from the clinic queue</p>
+          <h3 className="text-gray-900 font-bold text-base mb-1">
+            Weekly Appointments
+          </h3>
+          <p className="text-gray-600 text-xs mb-5">
+            Last 7 days from the clinic queue
+          </p>
 
           <ResponsiveContainer width="100%" height={200}>
             <LineChart data={dashboard.appointmentTrend}>
@@ -369,9 +357,14 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* Bottom Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-[1fr_1fr_1.2fr] gap-6">
+
+        {/* Recent Staff Enrollments */}
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
-          <h3 className="text-gray-900 font-bold text-base mb-4">Recent Staff Enrollments</h3>
+          <h3 className="text-gray-900 font-bold text-base mb-4">
+            Recent Staff Enrollments
+          </h3>
 
           <div className="flex flex-col gap-3">
             {dashboard.recentEnrollments.length > 0 ? (
@@ -412,15 +405,20 @@ export default function Dashboard() {
           </div>
         </div>
 
+        {/* Role Distribution */}
         <div className="bg-white p-6 rounded-2xl shadow-sm">
-          <h3 className="text-gray-900 font-bold text-base mb-4">Staff Role Distribution</h3>
+          <h3 className="text-gray-900 font-bold text-base mb-4">
+            Staff Role Distribution
+          </h3>
 
           <div className="flex flex-col gap-4 mb-5">
             {dashboard.roleDistribution.length > 0 ? (
               dashboard.roleDistribution.map((role) => (
                 <div key={role.role}>
                   <div className="flex justify-between mb-1.5">
-                    <span className="text-xs text-gray-600 font-medium">{role.role}</span>
+                    <span className="text-xs text-gray-600 font-medium">
+                      {role.role}
+                    </span>
                     <span className="text-xs text-gray-600 font-semibold">
                       {role.count} staff
                     </span>
@@ -459,9 +457,12 @@ export default function Dashboard() {
           </div>
         </div>
 
+        {/* Today's Appointments */}
         <div className="bg-white p-6 rounded-2xl shadow-sm">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-gray-900 font-bold text-base">Today's Appointments</h3>
+            <h3 className="text-gray-900 font-bold text-base">
+              Today's Appointments
+            </h3>
             <span className="bg-orange-100 text-orange-700 text-xs font-bold px-2.5 py-1 rounded-full">
               {dashboard.metrics.todayAppointments} total
             </span>

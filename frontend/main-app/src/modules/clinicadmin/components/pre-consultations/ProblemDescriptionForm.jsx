@@ -13,9 +13,18 @@ const symptomOptions = [
 ];
 
 export default function ProblemDescriptionForm({ formData, setFormData }) {
+
+  const handleAlphaOnlyChange = (e) => {
+    const { name, value } = e.target;
+    const cleaned = value.replace(/[^a-zA-Z\s]/g, "");
+    setFormData((prev) => ({
+      ...prev,
+      [name]: cleaned,
+    }));
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
-
     setFormData((prev) => ({
       ...prev,
       [name]: value,
@@ -44,20 +53,24 @@ export default function ProblemDescriptionForm({ formData, setFormData }) {
       </h2>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
-        {/* Primary Complaint */}
+
+        {/* Primary Complaint — letters and spaces only */}
         <div className="lg:col-span-2">
           <label className="block mb-2 font-medium text-slate-700">
-            Primary Complaint <span className="text-red-500 font-bold ml-1">*</span>
+            Primary Complaint{" "}
+            <span className="text-red-500 font-bold ml-1">*</span>
           </label>
-
           <textarea
             rows={4}
             name="primaryComplaint"
             value={formData.primaryComplaint}
-            onChange={handleChange}
-            placeholder="Enter primary complaint..."
+            onChange={handleAlphaOnlyChange}
+            placeholder="Enter primary complaint (alphabets only)..."
             className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm md:text-base outline-none resize-none focus:border-orange-500 focus:ring-4 focus:ring-orange-100"
           />
+          <p className="text-xs text-slate-400 mt-1">
+            Only alphabetic characters and spaces are allowed.
+          </p>
         </div>
 
         {/* Associated Symptoms Multi-Select */}
@@ -68,7 +81,6 @@ export default function ProblemDescriptionForm({ formData, setFormData }) {
               Select all symptoms that apply
             </span>
           </label>
-
           <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl">
             <div className="flex flex-wrap gap-2.5">
               {symptomOptions.map((symptom) => {
@@ -90,7 +102,6 @@ export default function ProblemDescriptionForm({ formData, setFormData }) {
                 );
               })}
             </div>
-
             {(formData.associatedSymptoms || []).length > 0 && (
               <p className="mt-3 text-xs text-orange-600 font-medium">
                 Selected: {(formData.associatedSymptoms || []).join(", ")}
@@ -101,10 +112,7 @@ export default function ProblemDescriptionForm({ formData, setFormData }) {
 
         {/* Severity */}
         <div className="lg:col-span-2">
-          <label className="block mb-2 font-medium text-slate-700">
-            Severity
-          </label>
-
+          <label className="block mb-2 font-medium text-slate-700">Severity</label>
           <select
             name="severity"
             value={formData.severity}
@@ -117,6 +125,7 @@ export default function ProblemDescriptionForm({ formData, setFormData }) {
             <option value="Severe">Severe</option>
           </select>
         </div>
+
       </div>
     </div>
   );
