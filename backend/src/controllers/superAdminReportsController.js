@@ -319,9 +319,19 @@ const buildXlsHtml = (reportData) => {
 
 const buildReportData = async () => {
   const totalClinics = await Clinic.countDocuments();
-  const activeClinics = await Clinic.countDocuments({ isActive: true });
+  // Matches the Super Admin Dashboard's own definition of "active" - a
+  // clinic that hasn't been manually deactivated and wasn't rejected in
+  // verification, so this report always agrees with the dashboard.
+  const activeClinics = await Clinic.countDocuments({
+    isActive: true,
+    verificationStatus: { $ne: "REJECTED" },
+  });
   const suspendedClinics = await Clinic.countDocuments({
-    subscriptionStatus: { $in: ["SUSPENDED", "EXPIRED"] },
+    $or: [
+      { subscriptionStatus: { $in: ["SUSPENDED", "EXPIRED"] } },
+      { isActive: false },
+      { verificationStatus: "REJECTED" },
+    ],
   });
 
   const revenueAggregation = await Appointment.aggregate([
@@ -580,7 +590,7 @@ const buildDoctorReportData = async (clinics) => {
     clinics.map((clinic) => [String(clinic._id), clinic.name])
   );
 
-  const [doctorRegistry, doctorUsers, doctorAppointments] = await Promise.all([
+  const [doctorRegistryRaw, doctorUsers, doctorAppointments] = await Promise.all([
     Doctor.find()
       .populate("clinicId", "name")
       .select(
@@ -632,7 +642,7 @@ const buildDoctorReportData = async (clinics) => {
               ],
             },
           },
-          lastAppointmentAt: { $max: "$appointmentDate" },
+    lastAppointmentAt: { $max: "$appointmentDate" },
         },
       },
       {
@@ -643,6 +653,21 @@ const buildDoctorReportData = async (clinics) => {
       },
     ]),
   ]);
+
+  const doctorRegistry = doctorRegistryRaw.map((doctor) => ({
+    ...doctor,
+    clinicName: doctor.clinicId?.name || clinicNameMap.get(String(doctor.clinicId?._id || doctor.clinicId)) || "",
+  }));
+
+  // DoctorDetails (the current doctor-management collection) reliably has a
+  // clinic reference; the legacy User/role=DOCTOR records used for
+  // appointment activity often don't. Fall back to a name match against
+  // DoctorDetails so the Clinic column isn't blank for those.
+  const doctorNameToClinicName = new Map(
+    doctorRegistry
+      .filter((doctor) => doctor.clinicName)
+      .map((doctor) => [String(doctor.name || "").trim().toLowerCase(), doctor.clinicName])
+  );
 
   const doctorAppointmentMap = new Map(
     doctorAppointments.map((item) => [
@@ -662,7 +687,11 @@ const buildDoctorReportData = async (clinics) => {
   const doctorActivity = doctorUsers
     .map((doctor) => {
       const stats = doctorAppointmentMap.get(String(doctor._id)) || {};
-      const clinicName = doctor.clinicId?.name || clinicNameMap.get(String(doctor.clinicId?._id || doctor.clinicId)) || "";
+      const clinicName =
+        doctor.clinicId?.name ||
+        clinicNameMap.get(String(doctor.clinicId?._id || doctor.clinicId)) ||
+        doctorNameToClinicName.get(String(doctor.name || "").trim().toLowerCase()) ||
+        "";
 
       return {
         doctorId: String(doctor._id),
@@ -691,15 +720,16 @@ const buildDoctorReportData = async (clinics) => {
   );
 
   return {
-    registry: doctorRegistry.map((doctor) => ({
-      ...doctor,
-      clinicName: doctor.clinicId?.name || clinicNameMap.get(String(doctor.clinicId?._id || doctor.clinicId)) || "",
-    })),
+    registry: doctorRegistry,
     activity: doctorActivity,
     consultation: doctorUsers
       .map((doctor) => {
         const activity = doctorActivityMap.get(String(doctor._id)) || {};
-        const clinicName = doctor.clinicId?.name || clinicNameMap.get(String(doctor.clinicId?._id || doctor.clinicId)) || "";
+        const clinicName =
+          doctor.clinicId?.name ||
+          clinicNameMap.get(String(doctor.clinicId?._id || doctor.clinicId)) ||
+          doctorNameToClinicName.get(String(doctor.name || "").trim().toLowerCase()) ||
+          "";
 
         return {
           doctorId: String(doctor._id),
@@ -857,7 +887,7 @@ exports.getSuperAdminReportCatalog = async (req, res) => {
       buildReportData(),
       Clinic.find()
         .select(
-          "name contactEmail subscriptionType subscriptionStatus verificationStatus expiryDate createdAt address addressDetails servicesOffered"
+          "name contactEmail subscriptionType subscriptionStatus isActive verificationStatus expiryDate createdAt address addressDetails servicesOffered"
         )
         .sort({ createdAt: -1 })
         .lean(),
@@ -997,7 +1027,7 @@ exports.shareSuperAdminBasicReport = async (req, res) => {
         content: Buffer.from(buildCsv(reportData), "utf8"),
         contentType: "text/csv",
       };
-    } else if (format === "xls" || format === "xlsx" / format === "excel") {
+    } else if (format === "xls" || format === "xlsx" || format === "excel") {
       attachment = {
         filename: "superadmin-basic-report.xls",
         content: Buffer.from(buildXlsHtml(reportData), "utf8"),

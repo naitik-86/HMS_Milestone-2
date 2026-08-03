@@ -39,3 +39,8 @@ export const deleteLabTechnician = async (id) => {
   const res = await API.delete(`${BASE_URL}/${id}`);
   return res.data;
 };
+
+export const verifyLabTechnician = async (id) => {
+  const res = await API.post(`${BASE_URL}/${id}/verify`);
+  return res.data;
+};

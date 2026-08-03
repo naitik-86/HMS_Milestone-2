@@ -286,7 +286,16 @@ const getReportBlueprint = ({ category, report, catalog }) => {
   const quarterlyRevenue = Array.isArray(catalog?.quarterlyRevenue) ? catalog.quarterlyRevenue : [];
   const yearlyRevenue = Array.isArray(catalog?.yearlyRevenue) ? catalog.yearlyRevenue : [];
   const verificationSummary = summary.verificationSummary || {};
-  const activeClinicCount = clinics.filter((clinic) => clinic.subscriptionStatus === "ACTIVE").length;
+  // A clinic only counts as truly "active" when its subscription is active,
+  // it hasn't been manually deactivated, and it wasn't rejected in
+  // verification - subscriptionStatus alone defaults to ACTIVE regardless
+  // of those two, which is why this previously over-counted.
+  const activeClinicCount = clinics.filter(
+    (clinic) =>
+      clinic.subscriptionStatus === "ACTIVE" &&
+      clinic.isActive !== false &&
+      clinic.verificationStatus !== "REJECTED"
+  ).length;
   const approvedClinics = clinics.filter((clinic) => clinic.verificationStatus === "APPROVED");
   const rejectedClinics = clinics.filter((clinic) => clinic.verificationStatus === "REJECTED");
   const pendingClinics = clinics.filter((clinic) =>
@@ -347,8 +356,7 @@ const getReportBlueprint = ({ category, report, catalog }) => {
         ],
         columns: [
           { header: "Clinic", width: 52, value: (clinic) => clinic.name },
-          { header: "Reason", width: 74, value: (clinic) => clinic.rejectionReason || "Not provided" },
-          { header: "Email", width: 48, value: (clinic) => clinic.contactEmail },
+          { header: "Email", width: 62, value: (clinic) => clinic.contactEmail },
           { header: "Rejected on", width: 34, value: (clinic) => formatDate(clinic.updatedAt || clinic.createdAt) },
         ],
         rows: sortByDateDesc(rejectedClinics, "updatedAt"),
@@ -365,11 +373,10 @@ const getReportBlueprint = ({ category, report, catalog }) => {
         ],
         columns: [
           { header: "Clinic", width: 48, value: (clinic) => clinic.name },
-          { header: "Doctors", width: 22, value: (clinic) => clinic.doctorCount },
-          { header: "Appointments", width: 24, value: (clinic) => clinic.appointmentCount },
-          { header: "Completed", width: 22, value: (clinic) => clinic.completedAppointments },
-          { header: "Revenue", width: 34, value: (clinic) => formatCurrency(clinic.revenue) },
-          { header: "Last Appointment", width: 36, value: (clinic) => formatDate(clinic.lastAppointmentAt) },
+          { header: "Doctors", width: 26, value: (clinic) => clinic.doctorCount },
+          { header: "Appointments", width: 28, value: (clinic) => clinic.appointmentCount },
+          { header: "Completed", width: 26, value: (clinic) => clinic.completedAppointments },
+          { header: "Last Appointment", width: 40, value: (clinic) => formatDate(clinic.lastAppointmentAt) },
         ],
         rows: sortByNumberDesc(clinicPerformance, "revenue"),
       };
@@ -431,15 +438,15 @@ const getReportBlueprint = ({ category, report, catalog }) => {
         summary: [
           { label: "Appointments", value: sumBy(doctorActivity, (item) => item.appointments) },
           { label: "Completed", value: sumBy(doctorActivity, (item) => item.completedAppointments) },
-          { label: "Paid", value: sumBy(doctorActivity, (item) => item.paidAppointments) },
+          { label: "Total doctors", value: doctorActivity.length },
         ],
         columns: [
-          { header: "Doctor", width: 44, value: (doctor) => doctor.doctorName },
-          { header: "Clinic", width: 42, value: (doctor) => doctor.clinicName || "" },
-          { header: "Appointments", width: 24, value: (doctor) => doctor.appointments },
-          { header: "Completed", width: 22, value: (doctor) => doctor.completedAppointments },
-          { header: "Paid", width: 18, value: (doctor) => doctor.paidAppointments },
-          { header: "Revenue", width: 28, value: (doctor) => formatCurrency(doctor.revenue) },
+          { header: "Doctor", width: 40, value: (doctor) => doctor.doctorName },
+          { header: "Clinic", width: 40, value: (doctor) => doctor.clinicName || "" },
+          { header: "Specialization", width: 32, value: (doctor) => doctor.specialization || "-" },
+          { header: "Appointments", width: 28, value: (doctor) => doctor.appointments },
+          { header: "Completed", width: 26, value: (doctor) => doctor.completedAppointments },
+          { header: "Status", width: 22, value: (doctor) => doctor.status || "-" },
           { header: "Last Visit", width: 32, value: (doctor) => formatDate(doctor.lastAppointmentAt) },
         ],
         rows: sortByNumberDesc(doctorActivity, "appointments"),
@@ -448,21 +455,22 @@ const getReportBlueprint = ({ category, report, catalog }) => {
     case "doctor-consultation":
       return {
         title: reportTitle,
-        subtitle: "Revenue contribution per doctor using appointment and fee data.",
+        subtitle: "Consultation activity per doctor using appointment and fee data.",
         summary: [
-          { label: "Total revenue", value: formatCurrency(sumBy(doctorConsultation, (item) => item.revenue)) },
+          { label: "Total appointments", value: sumBy(doctorConsultation, (item) => item.appointments) },
           { label: "Top doctor", value: doctorConsultation[0]?.doctorName || "-" },
           { label: "Active doctors", value: doctorRegistry.filter((doctor) => doctor.status === "Active").length },
         ],
         columns: [
-          { header: "Doctor", width: 44, value: (doctor) => doctor.doctorName },
-          { header: "Clinic", width: 42, value: (doctor) => doctor.clinicName || "" },
+          { header: "Doctor", width: 40, value: (doctor) => doctor.doctorName },
+          { header: "Clinic", width: 40, value: (doctor) => doctor.clinicName || "" },
           { header: "Fee", width: 22, value: (doctor) => formatCurrency(doctor.consultationFees) },
-          { header: "Appointments", width: 24, value: (doctor) => doctor.appointments },
-          { header: "Revenue", width: 28, value: (doctor) => formatCurrency(doctor.revenue) },
+          { header: "Appointments", width: 26, value: (doctor) => doctor.appointments },
+          { header: "Completed", width: 24, value: (doctor) => doctor.completedAppointments },
+          { header: "Status", width: 22, value: (doctor) => doctor.status || "-" },
           { header: "Last Visit", width: 32, value: (doctor) => formatDate(doctor.lastAppointmentAt) },
         ],
-        rows: sortByNumberDesc(doctorConsultation, "revenue"),
+        rows: sortByNumberDesc(doctorConsultation, "appointments"),
       };
 
     case "revenue-monthly": {
@@ -626,17 +634,16 @@ const getReportBlueprint = ({ category, report, catalog }) => {
     case "verification-rejected":
       return {
         title: reportTitle,
-        subtitle: "Rejected clinic records with portal rejection reason details.",
+        subtitle: "Rejected clinic records from the verification portal.",
         summary: [
           { label: "Rejected clinics", value: rejectedClinics.length },
           { label: "Pending reviews", value: pendingClinics.length },
           { label: "Total clinics", value: clinics.length },
         ],
         columns: [
-          { header: "Clinic", width: 52, value: (clinic) => clinic.name },
-          { header: "Reason", width: 74, value: (clinic) => clinic.rejectionReason || "Not provided" },
-          { header: "Contact", width: 46, value: (clinic) => clinic.contactEmail },
-          { header: "Submitted", width: 34, value: (clinic) => formatDate(clinic.createdAt) },
+          { header: "Clinic", width: 60, value: (clinic) => clinic.name },
+          { header: "Contact", width: 60, value: (clinic) => clinic.contactEmail },
+          { header: "Submitted", width: 40, value: (clinic) => formatDate(clinic.createdAt) },
         ],
         rows: sortByDateDesc(rejectedClinics, "updatedAt"),
       };

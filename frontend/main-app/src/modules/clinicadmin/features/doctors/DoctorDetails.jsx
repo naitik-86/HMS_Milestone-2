@@ -218,76 +218,96 @@ function DoctorForm({ onClose, onSave, existingData, isEdit, isSubmitting, docto
     { label: 'Practice Settings' },
   ];
 
-  const validate = () => {
-    const e = {};
-    
+  const validateStep0 = (e) => {
     // Doctor selection validation
     if (!formData.staff) e.staff = 'Please select a doctor';
-    
+
     // Name validation
     if (!formData.name.trim()) e.name = 'Doctor name is required';
-    
+
     // Mobile validation
     if (!formData.mobile.trim()) {
       e.mobile = 'Mobile number is required';
     } else if (!isValidMobile(formData.mobile)) {
       e.mobile = 'Mobile must be a valid 10-digit number';
     }
-    
+
     // Email validation
     if (!formData.email.trim()) {
       e.email = 'Email is required';
     } else if (!isValidEmail(formData.email)) {
       e.email = 'Please enter a valid email address';
     }
-    
+
     // Experience validation
     if (!formData.experience || Number(formData.experience) <= 0 || Number(formData.experience) > 70) {
       e.experience = 'Experience must be between 1 and 70 years';
     }
-    
+
     // Degrees validation
     if (!degrees.some(d => d.degree || d.degreeName)) {
       e.degrees = 'Select at least one degree type';
     }
-    
+
     // Specialization validation
     if (!selectedSpecs.length) {
       e.selectedSpecs = 'Select at least one specialization';
     }
-    
+  };
+
+  const validateStep1 = (e) => {
     // Registration number validation
     if (!formData.regNumber.trim()) {
       e.regNumber = 'Registration number is required';
     } else if (!/^[A-Za-z0-9/-]{5,30}$/.test(formData.regNumber.trim())) {
       e.regNumber = 'Use 5-30 letters, numbers, / or - only';
     }
-    
+
     // State validation
     if (!formData.state) {
       e.state = 'Please select a state';
     }
-    
+
     // Certificate validity validation
     if (formData.certValidity && isPastDate(formData.certValidity)) {
       e.certValidity = 'Certificate validity date cannot be in the past';
     }
-    
+
     // Reminder days validation
     if (formData.reminderDays === "" || Number(formData.reminderDays) < 0 || Number(formData.reminderDays) > 365) {
       e.reminderDays = 'Reminder days must be between 0 and 365';
     }
-    
+  };
+
+  const validateStep2 = (e) => {
     // Consultation fees validation
     if (!formData.fees || Number(formData.fees) <= 0 || Number(formData.fees) > 100000) {
       e.fees = 'Consultation fees must be between 1 and 100000';
     }
-    
+
     // Average duration validation
     if (!formData.avgDuration || Number(formData.avgDuration) < 5 || Number(formData.avgDuration) > 240) {
       e.avgDuration = 'Duration must be between 5 and 240 minutes';
     }
-    
+  };
+
+  const STEP_VALIDATORS = [validateStep0, validateStep1, validateStep2];
+
+  // Validates only the current tab's fields, shows its errors inline right
+  // away, and blocks advancing - previously every field across all 3 tabs
+  // was only checked at the very end, on the final Save/Update click.
+  const validateCurrentStep = () => {
+    const e = {};
+    STEP_VALIDATORS[activeStep](e);
+    setErrors(e);
+    return !Object.keys(e).length;
+  };
+
+  const validate = () => {
+    const e = {};
+    validateStep0(e);
+    validateStep1(e);
+    validateStep2(e);
     setErrors(e);
     return !Object.keys(e).length;
   };
@@ -866,6 +886,7 @@ function DoctorForm({ onClose, onSave, existingData, isEdit, isSubmitting, docto
                 if (isSubmitting || blockedByLimit) return;
                 if (activeStep === 0 && hasMissingDegreeCertificate()) return;
                 if (activeStep === 1 && hasInvalidCertValidity()) return;
+                if (!validateCurrentStep()) return;
 
                 if (activeStep < steps.length - 1) {
                   setActiveStep(activeStep + 1);

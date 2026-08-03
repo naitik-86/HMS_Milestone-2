@@ -1,8 +1,43 @@
 const LabTechnician = require("../models/LabTechnician");
+const Staff = require("../models/Staff");
 const Visit = require("../models/visitModel");
 const PetRegistration = require("../models/PetRegistration");
 const DoctorConsultation = require("../models/DoctorConsultationModdel");
 const LabReport = require("../models/LabReport");
+
+// LabTechnician only stores employeeId (a staffId string, e.g. "STF0027"),
+// not the person's actual name - the UI was displaying the qualification
+// field as if it were the name. Resolve the real name from the linked
+// Staff record here so every consumer gets it for free.
+const attachStaffNames = async (technicians, clinicId) => {
+    const staffIds = technicians
+        .map((technician) => technician.employeeId)
+        .filter(Boolean);
+
+    const staffRecords = staffIds.length
+        ? await Staff.find({
+              clinicId,
+              "employmentInfo.staffId": { $in: staffIds },
+          })
+              .select("employmentInfo.staffId personalInfo.fullName")
+              .lean()
+        : [];
+
+    const nameByStaffId = new Map(
+        staffRecords.map((staff) => [
+            staff.employmentInfo?.staffId,
+            staff.personalInfo?.fullName,
+        ])
+    );
+
+    return technicians.map((technician) => {
+        const plain = technician.toObject ? technician.toObject() : technician;
+        return {
+            ...plain,
+            name: nameByStaffId.get(plain.employeeId) || plain.employeeId,
+        };
+    });
+};
 
 const resolveUploadedFile = (file) => ({
     public_id: file.key || file.filename,
@@ -609,11 +644,13 @@ exports.getAllLabTechnicians =
                 createdAt: -1,
             });
 
+            const withNames = await attachStaffNames(technicians, clinicId);
+
             res.status(200).json({
                 success: true,
                 count:
-                    technicians.length,
-                data: technicians,
+                    withNames.length,
+                data: withNames,
             });
         } catch (error) {
             res.status(500).json({
@@ -643,9 +680,11 @@ exports.getSingleLabTechnician =
                 });
             }
 
+            const [withName] = await attachStaffNames([technician], clinicId);
+
             res.status(200).json({
                 success: true,
-                data: technician,
+                data: withName,
             });
         } catch (error) {
             res.status(500).json({

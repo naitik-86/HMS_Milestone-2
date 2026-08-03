@@ -2150,8 +2150,17 @@ exports.getAdminDashboard = async (req, res) => {
       lastMonthRevenueAggregation,
     ] = await Promise.all([
       Clinic.countDocuments(),
-      Clinic.countDocuments({ isActive: true }),
-      Clinic.countDocuments({ subscriptionStatus: { $in: ['SUSPENDED', 'EXPIRED'] } }),
+      // A clinic only counts as truly active when it hasn't been manually
+      // deactivated and wasn't rejected in verification - isActive alone
+      // stays true by default regardless of verification outcome.
+      Clinic.countDocuments({ isActive: true, verificationStatus: { $ne: 'REJECTED' } }),
+      Clinic.countDocuments({
+        $or: [
+          { subscriptionStatus: { $in: ['SUSPENDED', 'EXPIRED'] } },
+          { isActive: false },
+          { verificationStatus: 'REJECTED' },
+        ],
+      }),
       Owner.countDocuments(),
       // Veterinarians here means the same population as the Veterinarian
       // Management page (super-admin-onboarded solo vets, User role

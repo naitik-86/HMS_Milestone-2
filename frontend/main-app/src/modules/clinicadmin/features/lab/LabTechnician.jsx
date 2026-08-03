@@ -21,6 +21,7 @@ import {
   deleteLabTechnician,
   getLabTechnicians,
   updateLabTechnician,
+  verifyLabTechnician,
 } from "../../api/labTechnicianApi";
 
 const TEST_OPTIONS = [
@@ -451,7 +452,53 @@ function LabTechnicianForm({ existingData, existingEmployeeIds = [], isEdit, isS
   );
 }
 
-function LabTechnicianDetails({ technician, onClose, onEdit }) {
+function LabTechnicianDetails({ technician, onClose, onEdit, onChanged }) {
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  const handleApprove = async () => {
+    if (!window.confirm("Approve this lab technician?")) return;
+    try {
+      setIsUpdating(true);
+      await verifyLabTechnician(technician._id);
+      showToast({
+        type: "success",
+        title: "Lab Technician Approved",
+        description: "The technician is now verified and active.",
+      });
+      await onChanged?.();
+    } catch (error) {
+      showToast({
+        type: "error",
+        title: "Approval Failed",
+        description: error?.response?.data?.message || "Unable to approve this technician.",
+      });
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleToggleStatus = async () => {
+    const nextStatus = technician.status === "Active" ? "Inactive" : "Active";
+    try {
+      setIsUpdating(true);
+      await updateLabTechnician(technician._id, { ...technician, status: nextStatus });
+      showToast({
+        type: "success",
+        title: "Status Updated",
+        description: `Lab technician is now ${nextStatus}.`,
+      });
+      await onChanged?.();
+    } catch (error) {
+      showToast({
+        type: "error",
+        title: "Update Failed",
+        description: error?.response?.data?.message || "Unable to update status.",
+      });
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-[#1A1D2E]/80 p-3 sm:p-5 backdrop-blur-sm">
       <div className="w-full max-w-3xl overflow-hidden rounded-3xl border border-[#EAE5DC] bg-white shadow-2xl">
@@ -461,8 +508,8 @@ function LabTechnicianDetails({ technician, onClose, onEdit }) {
               <Beaker size={13} />
               Lab Profile
             </div>
-            <h2 className="text-2xl font-bold text-[#1A1D2E]">{technician.qualification}</h2>
-            <p className="mt-1 text-xs text-gray-500">{technician.employeeId || "System generated ID"}</p>
+            <h2 className="text-2xl font-bold text-[#1A1D2E]">{technician.name || "Unnamed Technician"}</h2>
+            <p className="mt-1 text-xs text-gray-500">{technician.qualification}{technician.employeeId ? ` · ${technician.employeeId}` : ""}</p>
           </div>
           <button onClick={onClose} className="grid size-10 place-items-center rounded-xl bg-gray-100 text-gray-500">
             <X size={18} />
@@ -529,24 +576,38 @@ function LabTechnicianDetails({ technician, onClose, onEdit }) {
                 Edit Details
               </button>
               <button
-                onClick={() => {
-                  if (window.confirm('Approve this lab technician?')) {
-                    onClose();
-                  }
-                }}
-                className="rounded-xl bg-green-600 hover:bg-green-700 px-5 py-2.5 text-sm font-semibold text-white transition"
+                onClick={handleApprove}
+                disabled={isUpdating}
+                className="rounded-xl bg-green-600 hover:bg-green-700 disabled:opacity-60 disabled:cursor-not-allowed px-5 py-2.5 text-sm font-semibold text-white transition"
               >
-                Approve
+                {isUpdating ? "Approving..." : "Approve"}
               </button>
             </>
           )}
           {technician.isVerified && (
-            <button
-              onClick={() => onEdit(technician)}
-              className="rounded-xl bg-[#E8630A] hover:bg-[#d05a09] px-5 py-2.5 text-sm font-semibold text-white transition"
-            >
-              Edit Details
-            </button>
+            <>
+              <button
+                onClick={() => onEdit(technician)}
+                className="rounded-xl bg-[#E8630A] hover:bg-[#d05a09] px-5 py-2.5 text-sm font-semibold text-white transition"
+              >
+                Edit Details
+              </button>
+              <button
+                onClick={handleToggleStatus}
+                disabled={isUpdating}
+                className={`rounded-xl px-5 py-2.5 text-sm font-semibold text-white transition disabled:opacity-60 disabled:cursor-not-allowed ${
+                  technician.status === "Active"
+                    ? "bg-red-600 hover:bg-red-700"
+                    : "bg-green-600 hover:bg-green-700"
+                }`}
+              >
+                {isUpdating
+                  ? "Updating..."
+                  : technician.status === "Active"
+                  ? "Set Inactive"
+                  : "Set Active"}
+              </button>
+            </>
           )}
         </div>
       </div>
@@ -570,14 +631,23 @@ export default function LabTechnician() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
+  const [planAccessDenied, setPlanAccessDenied] = useState(false);
 
   const fetchTechnicians = async () => {
     try {
       setLoading(true);
+      setPlanAccessDenied(false);
       const response = await getLabTechnicians();
       setTechnicians((response.data || []).map(normalizeLabTechnician));
     } catch (error) {
       console.error(error);
+
+      if (error?.response?.data?.code === "MODULE_NOT_ENABLED") {
+        setPlanAccessDenied(true);
+        setTechnicians([]);
+        return;
+      }
+
       showToast({
         type: "error",
         title: "Load Failed",
@@ -599,6 +669,7 @@ export default function LabTechnician() {
       const matchesSearch =
         !query ||
         [
+          item.name,
           item.employeeId,
           item.qualification,
           item.shift,
@@ -700,6 +771,10 @@ export default function LabTechnician() {
           technician={modal.technician}
           onClose={closeModal}
           onEdit={(technician) => setModal({ type: "edit", technician })}
+          onChanged={async () => {
+            await fetchTechnicians();
+            closeModal();
+          }}
         />
       )}
 
@@ -718,12 +793,30 @@ export default function LabTechnician() {
         </div>
         <button
           onClick={() => setModal({ type: "add" })}
-          className="bg-[#E8630A] hover:bg-[#D05A09] text-white text-sm font-semibold px-6 py-3 rounded-xl cursor-pointer border-none transition-colors shrink-0"
+          disabled={planAccessDenied}
+          className="bg-[#E8630A] hover:bg-[#D05A09] disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold px-6 py-3 rounded-xl cursor-pointer border-none transition-colors shrink-0"
         >
           + Add Lab Details
         </button>
       </div>
 
+      {planAccessDenied ? (
+        <div className="bg-white border border-[#EAE5DC] rounded-2xl overflow-hidden shadow-sm">
+          <div className="flex flex-col items-center justify-center py-20 px-6">
+            <div className="w-20 h-20 rounded-full bg-amber-100 flex items-center justify-center mb-5">
+              <Beaker className="w-10 h-10 text-amber-600" />
+            </div>
+            <h3 className="text-2xl font-bold text-[#1A1D2E]">
+              Lab Module Not Included In Your Plan
+            </h3>
+            <p className="mt-3 text-sm text-gray-500 max-w-md text-center leading-7">
+              Your clinic's current subscription plan doesn't include the Lab module.
+              Contact the super admin to upgrade your plan to manage lab technicians.
+            </p>
+          </div>
+        </div>
+      ) : (
+      <>
       <div className="bg-[#F8F9FA] border border-[#E5E7EB] rounded-2xl shadow-sm p-5 sm:p-6 mb-10">
         <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-5">
           <div className="flex flex-col md:flex-row gap-4 flex-1">
@@ -846,11 +939,11 @@ export default function LabTechnician() {
 
                         <div>
                           <div className="font-semibold text-[#1A1D2E]">
-                            {item.qualification}
+                            {item.name || item.employeeId || "Unnamed"}
                           </div>
 
                           <div className="text-xs text-gray-400">
-                            {item.employeeId || item._id}
+                            {item.qualification}{item.employeeId ? ` · ${item.employeeId}` : ""}
                           </div>
                         </div>
                       </div>
@@ -939,6 +1032,8 @@ export default function LabTechnician() {
           </div>
         )}
       </div>
+      </>
+      )}
     </div>
   );
 }

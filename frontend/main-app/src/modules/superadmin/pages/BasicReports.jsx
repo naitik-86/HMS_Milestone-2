@@ -485,7 +485,13 @@ export default function BasicReports() {
                       tick={{ fontSize: 11, fill: "#0C3D2E" }}
                       axisLine={false}
                       tickLine={false}
-                      tickFormatter={(value) => `₹${Math.round(Number(value || 0) / 1000)}k`}
+                      tickFormatter={(value) => {
+                        const num = Number(value || 0);
+                        if (num === 0) return "₹0";
+                        if (num >= 100000) return `₹${(num / 100000).toFixed(1)}L`;
+                        if (num >= 1000) return `₹${(num / 1000).toFixed(0)}k`;
+                        return `₹${num}`;
+                      }}
                     />
                     <Tooltip formatter={(value) => [`₹${fmtINR.format(Number(value || 0))}`, "Revenue"]} />
                     <Line
