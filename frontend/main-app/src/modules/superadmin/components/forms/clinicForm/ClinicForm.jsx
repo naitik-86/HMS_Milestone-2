@@ -795,10 +795,17 @@ export default function ClinicForm({
         const match = await resolveAddressByName(value, form.state);
         if (match) {
             nextForm.pincode = match.pincode;
+            nextForm.pincodeVerifiedValue = match.pincode;
             if (match.district) nextForm.district = match.district;
             setForm((prev) => ({
                 ...prev,
                 pincode: match.pincode,
+                // Keep pincodeVerifiedValue in lockstep with pincode whenever
+                // it's set programmatically from a resolved address lookup -
+                // validateAddressFields() only accepts the pincode as valid
+                // when these two match, otherwise Next silently disables
+                // with no visible error (same fix as handlePincodeChange).
+                pincodeVerifiedValue: match.pincode,
                 district: match.district || prev.district,
             }));
         }
@@ -825,6 +832,7 @@ export default function ClinicForm({
             city: match.city || form.city,
             district: match.district || value,
             pincode: match.pincode || form.pincode,
+            pincodeVerifiedValue: match.pincode || form.pincodeVerifiedValue,
         };
         setForm((prev) => ({
             ...prev,
@@ -832,6 +840,11 @@ export default function ClinicForm({
             city: match.city || prev.city,
             district: match.district || prev.district,
             pincode: match.pincode || prev.pincode,
+            // See handleCityChange - keeps pincodeVerifiedValue in sync with
+            // whatever pincode this resolves to, otherwise Next silently
+            // disables with no visible error when only City/District (not
+            // PIN code directly) was used to fill in the address.
+            pincodeVerifiedValue: match.pincode || prev.pincodeVerifiedValue,
         }));
 
         if (!applyKnownLocationCoordinates(nextForm)) {
@@ -848,6 +861,11 @@ export default function ClinicForm({
             district: location.district || location.city || prev.district,
             state: location.state || prev.state,
             pincode: location.pincode || prev.pincode,
+            // See handleCityChange - keeps pincodeVerifiedValue in sync so
+            // a pincode filled in via map-pin selection doesn't silently
+            // fail validateAddressFields() and disable Next with no
+            // visible error.
+            pincodeVerifiedValue: location.pincode || prev.pincodeVerifiedValue,
             latitude: location.latitude,
             longitude: location.longitude,
             serviceAreas: prev.serviceAreas?.length
