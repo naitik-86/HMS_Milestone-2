@@ -491,7 +491,12 @@ function DoctorForm({ onClose, onSave, existingData, isEdit, isSubmitting, docto
                             email:
                               doctor.personalInfo.email,
                           }));
-                          if (errors.staff) setErrors(p => ({ ...p, staff: '' }));
+                          // Selecting a doctor sets name/mobile/email
+                          // directly (bypassing the u() helper that
+                          // normally clears a field's own error), so those
+                          // three would otherwise stay stuck red forever
+                          // even after a valid doctor is picked.
+                          setErrors(p => ({ ...p, staff: '', name: '', mobile: '', email: '' }));
                         }}
                       >
                         <option value="">
@@ -545,8 +550,11 @@ function DoctorForm({ onClose, onSave, existingData, isEdit, isSubmitting, docto
                             <label className={labelCls}>Degree Type</label>
                             <select 
                               className={inputCls} 
-                              value={d.degree || d.degreeName || ""} 
-                              onChange={e => setDegrees(degrees.map((deg, j) => j === i ? { ...deg, degree: e.target.value, degreeName: e.target.value } : deg))}
+                              value={d.degree || d.degreeName || ""}
+                              onChange={e => {
+                                setDegrees(degrees.map((deg, j) => j === i ? { ...deg, degree: e.target.value, degreeName: e.target.value } : deg));
+                                if (errors.degrees) setErrors(p => ({ ...p, degrees: '' }));
+                              }}
                             >
                               <option value="">Select</option>
                               {getAvailableDegrees(i).map(t => (
@@ -614,6 +622,12 @@ function DoctorForm({ onClose, onSave, existingData, isEdit, isSubmitting, docto
                                 <FileText size={14} />
                                 View existing certificate
                               </a>
+                            )}
+
+                            {(d.degree || d.degreeName) && !d.certificate && !d.existingCertificate && !d.degreeCertificate && (
+                              <p className="text-red-500 text-xs mt-1.5">
+                                Upload a certificate for this degree to continue - the Next button stays disabled until every selected degree has one.
+                              </p>
                             )}
                           </div>
                         </div>
