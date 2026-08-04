@@ -348,6 +348,29 @@ function DoctorForm({ onClose, onSave, existingData, isEdit, isSubmitting, docto
     fetchDoctorStaff();
   }, []);
 
+  // DoctorDetails never stores mobile/email of its own - those live only on
+  // the linked Staff record. In edit mode formData.mobile/email start blank
+  // because existingData has nothing to populate them with, so validation
+  // always flagged both as missing with no field on screen to fix them.
+  // Once the doctor-select dropdown's options load, hydrate them from the
+  // already-selected staff member, same as picking a doctor manually does.
+  useEffect(() => {
+    if (!isEdit || !formData.staffId || !doctorStaff.length) return;
+    const doctor = doctorStaff.find((d) => d._id === formData.staffId);
+    if (!doctor) return;
+    const timer = window.setTimeout(() => {
+      setFormData((prev) => ({
+        ...prev,
+        name: doctor.personalInfo.fullName,
+        mobile: doctor.personalInfo.mobileNumber,
+        email: doctor.personalInfo.email,
+      }));
+      setErrors((prev) => ({ ...prev, name: '', mobile: '', email: '' }));
+    }, 0);
+    return () => window.clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [doctorStaff]);
+
   const fetchDoctorStaff = async () => {
     try {
       const data = await getDoctorStaff(existingData?._id);
