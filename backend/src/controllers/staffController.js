@@ -67,6 +67,23 @@ const createStaff = async (req, res) => {
             ? JSON.parse(req.body.moduleAccess)
             : {};
 
+        // "Reporting To" is optional - an empty string from the form can't be
+        // cast to an ObjectId, so it must become null rather than being sent
+        // to Staff.create() as-is. Mirrors the same normalization already
+        // done in updateStaff.
+        if (!employmentInfo.reportingTo || employmentInfo.reportingTo.trim() === "") {
+            employmentInfo.reportingTo = null;
+        } else {
+            const reportingStaff = await Staff.findOne({
+                _id: employmentInfo.reportingTo,
+                clinicId: req.user.clinicId,
+            });
+
+            if (!reportingStaff) {
+                employmentInfo.reportingTo = null;
+            }
+        }
+
         if (!personalInfo.fullName || !personalInfo.email || !personalInfo.mobileNumber || !personalInfo.dateOfBirth) {
             return res.status(400).json({
                 success: false,
