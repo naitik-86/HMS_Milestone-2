@@ -125,7 +125,12 @@ export default function PetRegistrationWizard({ onClose, petData, onCompleted })
     // History
     durationOfIllness: {
       value: pc.durationOfIllness?.value || "",
-      unit: pc.durationOfIllness?.unit || "Days",
+      // Was defaulting to "Days" here even for a brand-new assessment with
+      // no saved unit yet, making it look like a real selection had already
+      // been made. Blank lets BriefHistoryForm's placeholder option show
+      // until the user actually picks one; an existing saved unit is still
+      // preserved via pc.durationOfIllness?.unit above.
+      unit: pc.durationOfIllness?.unit || "",
     },
     onset: pc.onset || "",
     progression: pc.progression || "",
@@ -163,11 +168,20 @@ export default function PetRegistrationWizard({ onClose, petData, onCompleted })
   const progressPercent = Math.round((step / steps.length) * 100);
 
   // A field is "meaningful" if it's empty (optional fields are allowed to be
-  // blank) or contains at least one letter - blocks entries that are only
-  // digits/punctuation (e.g. "1234" or "----").
+  // blank), isn't padded with a repeated punctuation/bracket character, and
+  // has a reasonable proportion of actual letters. Just requiring "at least
+  // one letter anywhere" (the old check) still let garbage like
+  // "))))))))nyvghjkjhg" or "------))))jhgfdfghjk" through, since a single
+  // stray letter run was enough to pass.
   const isMeaningfulText = (value) => {
     const trimmed = (value || "").trim();
-    return !trimmed || /[a-zA-Z]/.test(trimmed);
+    if (!trimmed) return true;
+    // 3+ of the exact same non-alphanumeric character in a row - e.g. ")))",
+    // "----" - is padding, not content.
+    if (/([^a-zA-Z0-9\s])\1{2,}/.test(trimmed)) return false;
+    const letters = (trimmed.match(/[a-zA-Z]/g) || []).length;
+    const nonSpace = trimmed.replace(/\s/g, "").length;
+    return nonSpace > 0 && letters / nonSpace >= 0.5;
   };
 
   const OBSERVATION_FIELDS = [

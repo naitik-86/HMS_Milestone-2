@@ -287,15 +287,19 @@ const createRegistration = async (req, res) => {
             const createdPet = owner.pets[i];
             const petVisitInfo = petsInput[i]?.visit || visit || {};
             try {
-                const lastVisit = await Visit.findOne({ clinicId }).sort({ createdAt: -1 });
-                const tokenNum = lastVisit && typeof lastVisit.tokenNumber === "number" ? lastVisit.tokenNumber + 1 : (i + 1);
+                // Reuse the same token already assigned to this pet's
+                // embedded visit record above - previously this generated
+                // its own independent incrementing number here, so this
+                // standalone Visit doc (what Pre-Consultation/Doctor/Lab
+                // actually query) showed a different token than reception.
+                const sharedTokenNumber = createdPet.visits?.[createdPet.visits.length - 1]?.tokenNumber;
 
                 await Visit.create({
                     clinicId,
                     ownerId: owner._id,
                     petId: createdPet._id,
                     receptionistId: req.user?._id,
-                    tokenNumber: tokenNum,
+                    tokenNumber: sharedTokenNumber,
                     primaryReason: petVisitInfo?.primaryReason,
                     assignedDoctor: petVisitInfo?.assignedDoctor,
                     appointmentDate: petVisitInfo?.appointmentDate,
@@ -654,24 +658,28 @@ const addVisit = async (req, res) => {
             });
         }
 
+        const embeddedTokenNumber = await generateGuaranteedTokenNumber(req.body?.tokenNumber);
+
         pet.visits.push({
             ...req.body,
-            tokenNumber: `TK-${Date.now()}`,
+            tokenNumber: embeddedTokenNumber,
         });
 
         await owner.save();
 
-        // Create Visit document for Pre-Consultation / Doctor workflow
+        // Create Visit document for Pre-Consultation / Doctor workflow -
+        // reuse the same token just assigned above instead of generating a
+        // separate, disconnected one here (previously this queried its own
+        // last-inserted-Visit number, so this standalone doc - what
+        // Pre-Consultation/Doctor/Lab actually query - showed a different
+        // token than what reception just assigned).
         try {
-            const lastVisit = await Visit.findOne({ clinicId }).sort({ createdAt: -1 });
-            const tokenNum = lastVisit && typeof lastVisit.tokenNumber === "number" ? lastVisit.tokenNumber + 1 : 1;
-
             await Visit.create({
                 clinicId,
                 ownerId: owner._id,
                 petId: pet._id,
                 receptionistId: req.user?._id,
-                tokenNumber: tokenNum,
+                tokenNumber: embeddedTokenNumber,
                 primaryReason: req.body.primaryReason,
                 assignedDoctor: req.body.assignedDoctor,
                 appointmentDate: req.body.appointmentDate,

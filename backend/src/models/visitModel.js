@@ -65,7 +65,13 @@ const visitSchema = new mongoose.Schema(
             default: "CONSULTATION"
         },
 
-        tokenNumber: Number,
+        // String, not Number - the reception module's own token generator
+        // (generateGuaranteedTokenNumber in petRegistrationController.js)
+        // produces "TK-116"-style values, which this standalone Visit
+        // record must be able to store verbatim so Pre-Consultation/Doctor/
+        // Lab (which all read from this collection) show the same token
+        // reception assigned, instead of a separate disconnected number.
+        tokenNumber: String,
 
         appointmentId: {
             type: mongoose.Schema.Types.ObjectId,

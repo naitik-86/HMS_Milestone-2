@@ -13,10 +13,15 @@ exports.createVisit = async (req, res) => {
         }
 
         // ✅ Token generation
+        // tokenNumber is a String on the model (reception's own token
+        // generator writes "TK-116"-style values there) - parse defensively
+        // instead of `+ 1`, which would silently string-concatenate onto a
+        // non-numeric last token (e.g. "TK-1161") rather than increment it.
         const lastVisit = await Visit.findOne({ clinicId: req.user.clinicId })
             .sort({ createdAt: -1 });
 
-        const tokenNumber = lastVisit ? lastVisit.tokenNumber + 1 : 1;
+        const lastTokenNum = parseInt(lastVisit?.tokenNumber, 10);
+        const tokenNumber = String(Number.isFinite(lastTokenNum) ? lastTokenNum + 1 : 1);
 
         // ✅ Stage logic
         let nextStage = "PRE_CONSULTATION";

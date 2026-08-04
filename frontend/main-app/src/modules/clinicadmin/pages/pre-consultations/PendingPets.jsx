@@ -375,13 +375,68 @@ export default function PendingPets() {
                 <X className="w-4 h-4" />
               </button>
             </div>
-            <div className="p-6 overflow-y-auto flex-1">
-              <p className="text-sm text-slate-500">Reception intake details for this visit are shown here.</p>
+            <div className="p-6 overflow-y-auto flex-1 space-y-5">
+              {(() => {
+                const owner = viewDetailsItem?.owner || {};
+                const pet = viewDetailsItem?.pet || {};
+                const dobRaw = pet.dob || pet.dateOfBirth;
+                return (
+                  <>
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                      <h3 className="text-sm font-bold text-slate-800 mb-4">Owner Details</h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <IntakeField label="Owner Name" value={owner.ownerName} />
+                        <IntakeField label="Mobile Number" value={owner.mobileNumber} />
+                        <IntakeField label="Address" value={owner.address} className="sm:col-span-2" />
+                      </div>
+                    </div>
+
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                      <h3 className="text-sm font-bold text-slate-800 mb-4">Pet Profile</h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <IntakeField label="Pet Name" value={pet.petName || pet.name} />
+                        <IntakeField label="Species" value={pet.species} />
+                        <IntakeField label="Breed" value={pet.breed} />
+                        <IntakeField label="Gender" value={pet.gender} />
+                        <IntakeField label="Date of Birth" value={dobRaw ? new Date(dobRaw).toLocaleDateString() : null} />
+                        <IntakeField label="Color / Markings" value={pet.color} />
+                      </div>
+                    </div>
+
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                      <h3 className="text-sm font-bold text-slate-800 mb-4">Reception Visit Details</h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <IntakeField label="Token Number" value={viewDetailsItem?.tokenNumber} />
+                        <IntakeField label="Primary Reason" value={viewDetailsItem?.primaryReason} />
+                        <IntakeField label="Assigned Doctor" value={viewDetailsItem?.assignedDoctor} />
+                        <IntakeField
+                          label="Appointment Date"
+                          value={viewDetailsItem?.appointmentDate ? new Date(viewDetailsItem.appointmentDate).toLocaleDateString() : null}
+                        />
+                        <IntakeField label="Appointment Time" value={viewDetailsItem?.appointmentTime} />
+                        <IntakeField label="Complaint" value={viewDetailsItem?.chiefComplaint || viewDetailsItem?.complaint} className="sm:col-span-3" />
+                        {viewDetailsItem?.notes && (
+                          <IntakeField label="Reception Notes" value={viewDetailsItem.notes} className="sm:col-span-3" />
+                        )}
+                      </div>
+                    </div>
+                  </>
+                );
+              })()}
             </div>
           </div>
         </div>
       )}
 
+    </div>
+  );
+}
+
+function IntakeField({ label, value, className = "" }) {
+  return (
+    <div className={className}>
+      <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400 mb-1">{label}</p>
+      <p className="text-sm font-semibold text-slate-800">{value || "—"}</p>
     </div>
   );
 }

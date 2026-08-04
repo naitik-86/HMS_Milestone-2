@@ -1,9 +1,12 @@
 export default function ObservationForm({ formData, setFormData }) {
 
-  // ✅ Bug 3 Fix: Only allow letters, spaces, commas, periods, hyphens
+  // Only letters, spaces, commas, periods, hyphens and slashes - no
+  // brackets/parentheses. These fields previously allowed ( and ), which
+  // combined with the meaningful-text check only requiring "one letter
+  // anywhere" let entries like "))))))))nyvghjkjhg" through untouched.
   const handleTextChange = (e) => {
     const { name, value } = e.target;
-    const cleaned = value.replace(/[^a-zA-Z\s,.\-\/()]/g, "");
+    const cleaned = value.replace(/[^a-zA-Z\s,.\-/]/g, "");
     setFormData((prev) => ({
       ...prev,
       [name]: cleaned,
