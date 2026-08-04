@@ -335,38 +335,20 @@ const buildReportData = async () => {
     ],
   });
 
-  const revenueAggregation = await Appointment.aggregate([
-    {
-      $match: {
-        status: "COMPLETED",
-      },
-    },
-    {
-      $lookup: {
-        from: "users",
-        localField: "doctorId",
-        foreignField: "_id",
-        as: "doctor",
-      },
-    },
-    {
-      $unwind: {
-        path: "$doctor",
-        preserveNullAndEmptyArrays: true,
-      },
-    },
-    {
-      $addFields: {
-        fee: { $ifNull: ["$doctor.consultationFee", 0] },
-      },
-    },
+  // Matches adminController.js's dashboard totalRevenue exactly - Plan
+  // price summed by month, not appointment/consultation fees. The old
+  // Appointment-based fee aggregation here always produced zero revenue
+  // (same problem the dashboard had before it was switched to this same
+  // SubscriptionPlan source), leaving Basic Reports' Total Payment
+  // Collected permanently stuck at ₹0 even after the dashboard was fixed.
+  const revenueAggregation = await SubscriptionPlan.aggregate([
     {
       $group: {
         _id: {
-          year: { $year: "$appointmentDate" },
-          month: { $month: "$appointmentDate" },
+          year: { $year: "$createdAt" },
+          month: { $month: "$createdAt" },
         },
-        revenue: { $sum: "$fee" },
+        revenue: { $sum: "$price" },
       },
     },
     {
