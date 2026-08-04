@@ -14,7 +14,7 @@ import {
   Upload,
   FileText,
 } from "lucide-react";
-import { createDoctor, getDoctors, updateDoctor, deleteDoctor } from '../../api/doctorApi';
+import { createDoctor, getDoctors, updateDoctor, deleteDoctor, toggleDoctorStatus } from '../../api/doctorApi';
 import { useEffect, useState } from "react";
 import { getDoctorStaff } from "../../api/staffApi";
 import { getCurrentSubscription } from "../../api/subscriptionApi";
@@ -1262,6 +1262,36 @@ export default function DoctorDetails() {
 
   const closeModal = () => setModal(null);
 
+  const [togglingStatusId, setTogglingStatusId] = useState(null);
+
+  const handleToggleDoctorStatus = async (doctor) => {
+    const nextStatus = doctor.status === "Active" ? "Inactive" : "Active";
+    setTogglingStatusId(doctor._id);
+    try {
+      await toggleDoctorStatus(doctor._id, nextStatus);
+
+      showToast({
+        type: "success",
+        title: "Status Updated",
+        description: `${doctor.name || "Doctor"} is now ${nextStatus}.`,
+      });
+
+      setDoctors((prev) =>
+        prev.map((d) => (d._id === doctor._id ? { ...d, status: nextStatus } : d))
+      );
+    } catch (err) {
+      console.error(err);
+
+      showToast({
+        type: "error",
+        title: "Update Failed",
+        description: err.response?.data?.message || "Unable to update status.",
+      });
+    } finally {
+      setTogglingStatusId(null);
+    }
+  };
+
   const handleDelete = async (doctorId) => {
     try {
       await deleteDoctor(doctorId);
@@ -1628,9 +1658,20 @@ export default function DoctorDetails() {
 
                     {/* Status */}
                     <td className="px-6 py-5">
-                      <span className="px-3 py-1 rounded-full text-xs font-semibold" style={{ backgroundColor: '#E6F6EC', color: '#1E9E5A' }}>
-                        {d.status}
-                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleToggleDoctorStatus(d)}
+                        disabled={togglingStatusId === d._id}
+                        title="Click to toggle Active / Inactive"
+                        className="px-3 py-1 rounded-full text-xs font-semibold border-none cursor-pointer transition-opacity disabled:opacity-60 disabled:cursor-wait"
+                        style={
+                          d.status === "Active"
+                            ? { backgroundColor: '#E6F6EC', color: '#1E9E5A' }
+                            : { backgroundColor: '#FDECEC', color: '#D64545' }
+                        }
+                      >
+                        {togglingStatusId === d._id ? "…" : d.status}
+                      </button>
                     </td>
 
                     {/* Actions */}

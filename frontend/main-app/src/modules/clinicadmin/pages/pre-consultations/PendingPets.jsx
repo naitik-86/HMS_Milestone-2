@@ -228,7 +228,7 @@ export default function PendingPets() {
                           <button
                             onClick={() => setViewDetailsItem(petItem)}
                             className="grid size-9 place-items-center rounded-lg border border-[#0C3D2E]/15 bg-white text-[#0C3D2E] transition hover:bg-[#D9E8E3]/40"
-                            title="View Reception Intake Data"
+                            title="View Pet Details"
                           >
                             <Eye className="size-4 text-[#F7931E]" />
                           </button>
@@ -376,67 +376,233 @@ export default function PendingPets() {
               </button>
             </div>
             <div className="p-6 overflow-y-auto flex-1 space-y-5">
-              {(() => {
-                const owner = viewDetailsItem?.owner || {};
-                const pet = viewDetailsItem?.pet || {};
-                const dobRaw = pet.dob || pet.dateOfBirth;
-                return (
-                  <>
-                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-                      <h3 className="text-sm font-bold text-slate-800 mb-4">Owner Details</h3>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <IntakeField label="Owner Name" value={owner.ownerName} />
-                        <IntakeField label="Mobile Number" value={owner.mobileNumber} />
-                        <IntakeField label="Address" value={owner.address} className="sm:col-span-2" />
-                      </div>
-                    </div>
+              {/* Section 1: Pet Profile Details */}
+              <div className="bg-orange-50/60 border border-orange-100 rounded-2xl p-4 space-y-3">
+                <h3 className="text-xs font-extrabold text-orange-800 tracking-wider flex items-center gap-2">
+                  <PawPrint className="w-4 h-4 text-orange-600" />
+                  1. Pet Profile Information
+                </h3>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                  <div className="bg-white p-2.5 rounded-xl border border-orange-100">
+                    <span className="text-[10px] font-bold text-slate-400 block">Pet Name</span>
+                    <span className="font-bold text-slate-900 block mt-0.5">{viewDetailsItem?.pet?.petName || viewDetailsItem?.petName || "N/A"}</span>
+                  </div>
+                  <div className="bg-white p-2.5 rounded-xl border border-orange-100">
+                    <span className="text-[10px] font-bold text-slate-400 block">Species / Breed</span>
+                    <span className="font-bold text-slate-900 block mt-0.5">{viewDetailsItem?.pet?.species || viewDetailsItem?.species || "Dog"} • {viewDetailsItem?.pet?.breed || viewDetailsItem?.breed || "N/A"}</span>
+                  </div>
+                  <div className="bg-white p-2.5 rounded-xl border border-orange-100">
+                    <span className="text-[10px] font-bold text-slate-400 block">Gender & Age</span>
+                    <span className="font-bold text-slate-900 block mt-0.5">{viewDetailsItem?.pet?.gender || viewDetailsItem?.gender || "N/A"} • {viewDetailsItem?.pet?.age !== undefined ? `${viewDetailsItem.pet.age} yrs` : (viewDetailsItem?.age ? `${viewDetailsItem.age} yrs` : "N/A")}</span>
+                  </div>
+                  <div className="bg-white p-2.5 rounded-xl border border-orange-100">
+                    <span className="text-[10px] font-bold text-slate-400 block">Date of Birth (DOB)</span>
+                    <span className="font-bold text-slate-900 block mt-0.5">{viewDetailsItem?.pet?.dob ? new Date(viewDetailsItem.pet.dob).toLocaleDateString() : "N/A"}</span>
+                  </div>
+                  <div className="bg-white p-2.5 rounded-xl border border-orange-100">
+                    <span className="text-[10px] font-bold text-slate-400 block">Color / Coat</span>
+                    <span className="font-bold text-slate-900 block mt-0.5">{viewDetailsItem?.pet?.color || viewDetailsItem?.color || "N/A"}</span>
+                  </div>
+                  <div className="bg-white p-2.5 rounded-xl border border-orange-100">
+                    <span className="text-[10px] font-bold text-slate-400 block">Sterilized Status</span>
+                    <span className="font-bold text-slate-900 block mt-0.5">{viewDetailsItem?.pet?.sterilized || viewDetailsItem?.pet?.isSterilised ? "Yes" : "No"}</span>
+                  </div>
+                  <div className="bg-white p-2.5 rounded-xl border border-orange-100">
+                    <span className="text-[10px] font-bold text-slate-400 block">Microchip RFID Tag</span>
+                    <span className="font-mono font-bold text-slate-900 block mt-0.5">{viewDetailsItem?.pet?.rfid || viewDetailsItem?.pet?.rfidTag || viewDetailsItem?.rfid || "Not Provided"}</span>
+                  </div>
+                  <div className="bg-white p-2.5 rounded-xl border border-orange-100">
+                    <span className="text-[10px] font-bold text-slate-400 block">Identification Area</span>
+                    <span className="font-bold text-slate-900 block mt-0.5">{viewDetailsItem?.pet?.identificationArea || viewDetailsItem?.identificationArea || "Not Provided"}</span>
+                  </div>
+                </div>
+                {viewDetailsItem?.pet?.identificationMarks && (
+                  <div className="bg-white p-2.5 rounded-xl border border-orange-100 text-xs">
+                    <span className="text-[10px] font-bold text-slate-400 block">Identification Marks</span>
+                    <span className="font-semibold text-slate-800 block mt-0.5">{viewDetailsItem.pet.identificationMarks}</span>
+                  </div>
+                )}
+              </div>
 
-                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-                      <h3 className="text-sm font-bold text-slate-800 mb-4">Pet Profile</h3>
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <IntakeField label="Pet Name" value={pet.petName || pet.name} />
-                        <IntakeField label="Species" value={pet.species} />
-                        <IntakeField label="Breed" value={pet.breed} />
-                        <IntakeField label="Gender" value={pet.gender} />
-                        <IntakeField label="Date of Birth" value={dobRaw ? new Date(dobRaw).toLocaleDateString() : null} />
-                        <IntakeField label="Color / Markings" value={pet.color} />
-                      </div>
-                    </div>
+              {/* Section 2: Owner & Reception Visit Info */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-2">
+                  <h3 className="text-xs font-extrabold text-slate-800 tracking-wider flex items-center gap-2">
+                    <User className="w-4 h-4 text-orange-500" />
+                    2. Owner & Contact Information
+                  </h3>
+                  <div className="space-y-1 text-xs">
+                    <p><span className="font-bold text-slate-500">Owner Name:</span> <span className="font-extrabold text-slate-800">{viewDetailsItem?.owner?.ownerName || viewDetailsItem?.ownerName || "Unknown Owner"}</span></p>
+                    <p><span className="font-bold text-slate-500">Primary Mobile:</span> <span className="font-mono font-bold text-slate-800">{viewDetailsItem?.owner?.mobileNumber || viewDetailsItem?.phoneNumber || "N/A"}</span></p>
+                    {viewDetailsItem?.owner?.alternateNumber && <p><span className="font-bold text-slate-500">Alternate Mobile:</span> <span className="font-mono text-slate-700">{viewDetailsItem.owner.alternateNumber}</span></p>}
+                    {viewDetailsItem?.owner?.email && <p><span className="font-bold text-slate-500">Email:</span> <span className="text-slate-700">{viewDetailsItem.owner.email}</span></p>}
+                    {viewDetailsItem?.owner?.address && <p><span className="font-bold text-slate-500">Address:</span> <span className="text-slate-700">{viewDetailsItem.owner.address}, {viewDetailsItem.owner.city || ""} {viewDetailsItem.owner.state || ""}</span></p>}
+                  </div>
+                </div>
 
-                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-                      <h3 className="text-sm font-bold text-slate-800 mb-4">Reception Visit Details</h3>
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <IntakeField label="Token Number" value={viewDetailsItem?.tokenNumber} />
-                        <IntakeField label="Primary Reason" value={viewDetailsItem?.primaryReason} />
-                        <IntakeField label="Assigned Doctor" value={viewDetailsItem?.assignedDoctor} />
-                        <IntakeField
-                          label="Appointment Date"
-                          value={viewDetailsItem?.appointmentDate ? new Date(viewDetailsItem.appointmentDate).toLocaleDateString() : null}
-                        />
-                        <IntakeField label="Appointment Time" value={viewDetailsItem?.appointmentTime} />
-                        <IntakeField label="Complaint" value={viewDetailsItem?.chiefComplaint || viewDetailsItem?.complaint} className="sm:col-span-3" />
-                        {viewDetailsItem?.notes && (
-                          <IntakeField label="Reception Notes" value={viewDetailsItem.notes} className="sm:col-span-3" />
-                        )}
-                      </div>
+                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-2">
+                  <h3 className="text-xs font-extrabold text-slate-800 tracking-wider flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-orange-500" />
+                    3. Reception Reason & Complaint
+                  </h3>
+                  <div className="space-y-1.5 text-xs">
+                    <p className="font-bold text-slate-800 text-sm">
+                      Reason: <span className="text-orange-600">{viewDetailsItem?.primaryReason || viewDetailsItem?.visitType || "General Checkup"}</span>
+                    </p>
+                    <div className="bg-white p-3 rounded-xl border border-slate-200 text-slate-700">
+                      <span className="font-bold text-slate-500 block text-[10px] mb-0.5">Chief Complaint / Notes:</span>
+                      <p className="italic font-medium">{viewDetailsItem?.chiefComplaint || viewDetailsItem?.complaint || "Routine Pre-Checkup Examination"}</p>
                     </div>
-                  </>
-                );
-              })()}
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 3: Pet Medical History & Past Records */}
+              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-4">
+                <h3 className="text-xs font-extrabold text-slate-800 tracking-wider flex items-center gap-2 border-b border-slate-200 pb-2">
+                  <Stethoscope className="w-4 h-4 text-orange-500" />
+                  4. Medical History & Registration Background
+                </h3>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                  {/* Vaccinations */}
+                  <div className="bg-white p-3.5 rounded-xl border border-slate-200 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Syringe className="w-4 h-4 text-orange-500" />
+                      <span className="font-extrabold text-slate-800 text-xs text-orange-600">Vaccinations</span>
+                    </div>
+                    {viewDetailsItem?.pet?.history?.vaccinations?.length > 0 ? (
+                      <div className="space-y-2 divide-y divide-slate-100">
+                        {viewDetailsItem.pet.history.vaccinations.map((v, i) => (
+                          <div key={i} className="pt-1.5 first:pt-0 space-y-0.5">
+                            <p className="font-bold text-slate-800">{v.vaccineName || v.name || "Vaccine"}</p>
+                            <p className="text-slate-500 text-[11px]">
+                              Date: {v.vaccinationDate || v.date ? new Date(v.vaccinationDate || v.date).toLocaleDateString() : "N/A"}
+                              {v.batchNumber && ` • Batch: ${v.batchNumber}`}
+                            </p>
+                            {v.clinicName && <p className="text-slate-400 text-[10px]">Clinic: {v.clinicName}</p>}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-slate-400 italic">No past vaccination records.</p>
+                    )}
+                  </div>
+
+                  {/* Dewormings */}
+                  <div className="bg-white p-3.5 rounded-xl border border-slate-200 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <ShieldPlus className="w-4 h-4 text-orange-500" />
+                      <span className="font-extrabold text-slate-800 text-xs text-orange-600">Dewormings</span>
+                    </div>
+                    {viewDetailsItem?.pet?.history?.dewormings?.length > 0 ? (
+                      <div className="space-y-2 divide-y divide-slate-100">
+                        {viewDetailsItem.pet.history.dewormings.map((d, i) => (
+                          <div key={i} className="pt-1.5 first:pt-0 space-y-0.5">
+                            <p className="font-bold text-slate-800">{d.dewormingProduct || d.product || "Deworming Product"}</p>
+                            <p className="text-slate-500 text-[11px]">
+                              Date: {d.dewormingDate || d.date ? new Date(d.dewormingDate || d.date).toLocaleDateString() : "N/A"}
+                              {d.dose && ` • Dose: ${d.dose}`}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-slate-400 italic">No past deworming records.</p>
+                    )}
+                  </div>
+
+                  {/* Surgeries */}
+                  <div className="bg-white p-3.5 rounded-xl border border-slate-200 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Scissors className="w-4 h-4 text-orange-500" />
+                      <span className="font-extrabold text-slate-800 text-xs text-orange-600">Surgeries</span>
+                    </div>
+                    {viewDetailsItem?.pet?.history?.surgeries?.length > 0 ? (
+                      <div className="space-y-2 divide-y divide-slate-100">
+                        {viewDetailsItem.pet.history.surgeries.map((s, i) => (
+                          <div key={i} className="pt-1.5 first:pt-0 space-y-0.5">
+                            <p className="font-bold text-slate-800">{s.surgicalProcedure || s.procedure || "Surgery"}</p>
+                            <p className="text-slate-500 text-[11px]">
+                              Date: {s.surgeryDate || s.date ? new Date(s.surgeryDate || s.date).toLocaleDateString() : "N/A"}
+                              {s.hospital && ` • Hospital: ${s.hospital}`}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-slate-400 italic">No past surgical records.</p>
+                    )}
+                  </div>
+
+                  {/* Treatments & Conditions */}
+                  <div className="bg-white p-3.5 rounded-xl border border-slate-200 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <HeartPulse className="w-4 h-4 text-orange-500" />
+                      <span className="font-extrabold text-slate-800 text-xs text-orange-600">Past Treatments & Conditions</span>
+                    </div>
+                    {viewDetailsItem?.pet?.history?.treatments?.length > 0 ? (
+                      <div className="space-y-2 divide-y divide-slate-100">
+                        {viewDetailsItem.pet.history.treatments.map((t, i) => (
+                          <div key={i} className="pt-1.5 first:pt-0 space-y-0.5">
+                            <p className="font-bold text-slate-800">{t.condition || t.treatment || t.details || "Treatment"}</p>
+                            <p className="text-slate-500 text-[11px]">
+                              Date: {t.treatmentDate || t.date ? new Date(t.treatmentDate || t.date).toLocaleDateString() : "N/A"}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-slate-400 italic">No past treatment records.</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Allergies, Current Medications & Clinical Notes */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs pt-1">
+                  <div className="bg-white p-3 rounded-xl border border-slate-200">
+                    <span className="font-bold text-slate-500 block text-[10px] mb-0.5">Known Allergies</span>
+                    <p className="font-semibold text-slate-800">{viewDetailsItem?.pet?.history?.allergies || (Array.isArray(viewDetailsItem?.pet?.allergies) ? viewDetailsItem.pet.allergies.join(", ") : viewDetailsItem?.pet?.allergies) || "None Reported"}</p>
+                  </div>
+
+                  <div className="bg-white p-3 rounded-xl border border-slate-200">
+                    <span className="font-bold text-slate-500 block text-[10px] mb-0.5">Current Ongoing Medications</span>
+                    <p className="font-semibold text-slate-800">{viewDetailsItem?.pet?.history?.currentMedications || "None Reported"}</p>
+                  </div>
+
+                  <div className="bg-white p-3 rounded-xl border border-slate-200">
+                    <span className="font-bold text-slate-500 block text-[10px] mb-0.5">General Clinical Notes</span>
+                    <p className="font-semibold text-slate-800">{viewDetailsItem?.pet?.history?.notes || viewDetailsItem?.notes || "No additional notes"}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="bg-slate-50 border-t border-slate-200 px-6 py-4 flex justify-between items-center shrink-0">
+              <button
+                onClick={() => setViewDetailsItem(null)}
+                className="px-5 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold rounded-xl text-xs transition cursor-pointer border-none"
+              >
+                Close Window
+              </button>
+              <button
+                onClick={() => {
+                  const item = viewDetailsItem;
+                  setViewDetailsItem(null);
+                  setSelectedPet(item);
+                  setOpenModal(true);
+                }}
+                className="px-5 py-2 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl text-xs transition shadow-xs cursor-pointer border-none flex items-center gap-2"
+              >
+                <Stethoscope className="w-3.5 h-3.5" />
+                <span>Proceed to Record Vitals</span>
+              </button>
             </div>
           </div>
         </div>
       )}
 
-    </div>
-  );
-}
-
-function IntakeField({ label, value, className = "" }) {
-  return (
-    <div className={className}>
-      <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400 mb-1">{label}</p>
-      <p className="text-sm font-semibold text-slate-800">{value || "—"}</p>
     </div>
   );
 }

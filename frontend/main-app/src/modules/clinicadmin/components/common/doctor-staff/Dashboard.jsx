@@ -242,17 +242,6 @@ export default function PendingPets() {
                               <Eye className="w-3.5 h-3.5 text-[#F7931E]" />
                               View Details
                             </button>
-
-                            <button
-                              onClick={() => {
-                                setSelectedPet(petItem);
-                                setOpenModal(true);
-                              }}
-                              className="bg-[#F7931E] hover:bg-[#E08319] text-white px-4 py-1.5 rounded-[12px] text-[12px] font-[700] transition-all shadow-xs inline-flex items-center gap-1.5 cursor-pointer border-none"
-                            >
-                              <Stethoscope className="w-3.5 h-3.5" />
-                              Record Vitals
-                            </button>
                           </div>
                         </td>
                       </tr>

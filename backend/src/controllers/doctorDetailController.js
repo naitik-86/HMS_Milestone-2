@@ -413,6 +413,48 @@ const deleteDoctor = async (req, res) => {
     }
 };
 
+// Dedicated, minimal endpoint (mirrors staffController.toggleStaffStatus) -
+// only touches the status field, not the full updateDoctor payload which
+// would otherwise send/overwrite specializations, degrees, etc.
+const toggleDoctorStatus = async (req, res) => {
+    try {
+        const { status } = req.body || {};
+
+        if (!["Active", "Inactive"].includes(status)) {
+            return res.status(400).json({
+                success: false,
+                message: "status must be 'Active' or 'Inactive'",
+            });
+        }
+
+        const clinicId = req.user.clinicId;
+
+        const doctor = await Doctor.findOneAndUpdate(
+            { _id: req.params.id, clinicId },
+            { status },
+            { new: true }
+        );
+
+        if (!doctor) {
+            return res.status(404).json({
+                success: false,
+                message: "Doctor not found",
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: `Doctor marked ${status}`,
+            data: doctor,
+        });
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
+
 const verifyDoctor = async (req, res) => {
     try {
         const { id } = req.params;
@@ -487,3 +529,4 @@ exports.updateDoctor = updateDoctor;
 exports.deleteDoctor = deleteDoctor;
 exports.verifyDoctor = verifyDoctor;
 exports.rejectDoctor = rejectDoctor;
+exports.toggleDoctorStatus = toggleDoctorStatus;

@@ -27,7 +27,7 @@ export default function PreConsultationReportModal({
     const s = (sev || "").toUpperCase();
     if (s.includes("SEVERE") || s.includes("HIGH") || s.includes("CRITICAL")) {
       return (
-        <span className="bg-red-100 text-red-800 text-xs font-bold px-3 py-1 rounded-full border border-red-200 inline-flex items-center gap-1">
+        <span className="bg-red-100 text-red-800 text-xs font-bold px-3 py-1 rounded-full border border-red-200 inline-flex items-center gap-1 whitespace-nowrap leading-none">
           <ShieldAlert className="w-3.5 h-3.5 text-red-600" />
           Severe / Urgent
         </span>
@@ -35,13 +35,13 @@ export default function PreConsultationReportModal({
     }
     if (s.includes("MODERATE")) {
       return (
-        <span className="bg-amber-100 text-amber-800 text-xs font-bold px-3 py-1 rounded-full border border-amber-200">
+        <span className="bg-amber-100 text-amber-800 text-xs font-bold px-3 py-1 rounded-full border border-amber-200 inline-flex items-center gap-1 whitespace-nowrap leading-none">
           Moderate Observation
         </span>
       );
     }
     return (
-      <span className="bg-emerald-100 text-emerald-800 text-xs font-bold px-3 py-1 rounded-full border border-emerald-200 inline-flex items-center gap-1">
+      <span className="bg-emerald-100 text-emerald-800 text-xs font-bold px-3 py-1 rounded-full border border-emerald-200 inline-flex items-center gap-1 whitespace-nowrap leading-none">
         <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
         Normal Observation
       </span>
@@ -109,7 +109,7 @@ export default function PreConsultationReportModal({
                 <p className="font-mono text-slate-500 text-[11px]">{data?.ownerId?.mobileNumber || data?.mobileNumber || "N/A"}</p>
               </div>
 
-              <div>
+              <div className="col-span-2 md:col-span-1">
                 <p className="text-slate-400 font-bold uppercase tracking-wider text-[10px]">Severity Level</p>
                 <div className="mt-1">{getSeverityBadge(severity)}</div>
               </div>

@@ -27,6 +27,8 @@ router.put(
     ]),
     doctorController.updateDoctor
 );
+router.patch('/:id/status', doctorController.toggleDoctorStatus);
+
 router.delete('/:id', doctorController.deleteDoctor);
 router.post('/:id/verify', doctorController.verifyDoctor);
 router.post('/:id/reject', doctorController.rejectDoctor);

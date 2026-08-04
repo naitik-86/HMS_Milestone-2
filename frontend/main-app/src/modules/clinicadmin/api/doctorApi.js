@@ -48,6 +48,12 @@ export const deleteDoctor = async (id) => {
     return res.data;
 };
 
+/* TOGGLE DOCTOR STATUS (Active / Inactive) */
+export const toggleDoctorStatus = async (id, status) => {
+    const res = await API.patch(`${BASE_URL}/${id}/status`, { status });
+    return res.data;
+};
+
 const buildDoctorFormData = (doctorData) => {
     const formData = new FormData();
 

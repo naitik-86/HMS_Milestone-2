@@ -144,7 +144,11 @@ export default function PendingPets() {
   };
 
 
-  const handleViewPreConsultation = async (visitId) => {
+  // fallbackPet backfills owner/pet display fields (name, species, breed,
+  // etc.) from the row already on screen when the pre-consultation record
+  // itself doesn't have them populated, so PreConsultReportModal isn't left
+  // showing "Patient"/"Owner" placeholders for data we already have.
+  const handleViewPreConsultation = async (visitId, fallbackPet = null) => {
 
     try {
 
@@ -154,7 +158,26 @@ export default function PendingPets() {
 
       console.log(response);
 
-      setSelectedPreConsultation(response.data);
+      const mergedData = {
+        ...response.data,
+        pet: {
+          ...(fallbackPet?.pet || {}),
+          ...(response.data?.pet || {}),
+        },
+        owner: {
+          ...(fallbackPet?.owner || {}),
+          ...(response.data?.owner || {}),
+        },
+        petName: response.data?.petName || response.data?.pet?.petName || fallbackPet?.pet?.petName || fallbackPet?.petName,
+        species: response.data?.species || response.data?.pet?.species || fallbackPet?.pet?.species || fallbackPet?.species,
+        breed: response.data?.breed || response.data?.pet?.breed || fallbackPet?.pet?.breed || fallbackPet?.breed,
+        gender: response.data?.gender || response.data?.pet?.gender || fallbackPet?.pet?.gender || fallbackPet?.gender,
+        age: response.data?.age ?? response.data?.pet?.age ?? fallbackPet?.pet?.age ?? fallbackPet?.age,
+        ownerName: response.data?.ownerName || response.data?.owner?.ownerName || fallbackPet?.owner?.ownerName || fallbackPet?.ownerName,
+        phoneNumber: response.data?.phoneNumber || response.data?.owner?.mobileNumber || fallbackPet?.owner?.mobileNumber || fallbackPet?.phoneNumber,
+      };
+
+      setSelectedPreConsultation(mergedData);
 
       setShowPreConsultationModal(true);
 
@@ -507,7 +530,7 @@ export default function PendingPets() {
 
                   <div className="grid grid-cols-2 gap-2 pt-1">
                     <button
-                      onClick={() => handleViewPreConsultation(pet._id)}
+                      onClick={() => handleViewPreConsultation(pet._id, pet)}
                       className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all"
                       title="View vitals"
                     >
@@ -614,7 +637,7 @@ export default function PendingPets() {
 
                       <td className="py-4 px-6">
                         <button
-                          onClick={() => handleViewPreConsultation(pet._id)}
+                          onClick={() => handleViewPreConsultation(pet._id, pet)}
                           className="grid size-9 place-items-center rounded-xl border border-[#0C3D2E]/15 bg-white text-[#0C3D2E] transition hover:bg-[#D9E8E3]/40"
                           title="View vitals"
                         >
