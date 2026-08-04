@@ -2699,8 +2699,10 @@ export default function ClinicForm({
                                                 ["apiAccess", "API Access"],
                                                 ["whiteLabel", "White Label / Custom Branding"],
                                             ].map(([key, label]) => {
-                                                // All modules made clickable.
-                                                const isDisabled = false;
+                                                const isLabModule = key === "labModule";
+                                                // Only the Lab Module is available in this release - the rest
+                                                // are always greyed out, not just once Lab Module is checked.
+                                                const isDisabled = !isLabModule;
                                                 return (
                                                     <label
                                                         key={key}
