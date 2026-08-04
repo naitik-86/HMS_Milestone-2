@@ -288,3 +288,39 @@ exports.selectStaffRole = async (req, res) => {
     return res.status(500).json({ success: false, message: error.message });
   }
 };
+
+// ==========================================
+// STAFF ROLE SWITCH (already logged in, switching to another of their
+// own assigned roles without logging out and re-doing OTP)
+// ==========================================
+exports.switchStaffRole = async (req, res) => {
+  try {
+    const { role } = req.body || {};
+    if (!role) {
+      return res.status(400).json({ success: false, message: 'Role is required' });
+    }
+
+    // protect() has already verified the bearer token and set req.user - the
+    // current session's staff id, whatever role it was issued for.
+    const staff = await Staff.findById(req.user?.id);
+    if (!staff) {
+      return res.status(404).json({ success: false, message: 'Staff not found' });
+    }
+    if (!(await ensureClinicIsActive(staff.clinicId, res))) return;
+
+    const roles = getStaffRoles(staff);
+    if (!roles.includes(role)) {
+      return res.status(403).json({ success: false, message: 'This role is not assigned to your account' });
+    }
+
+    return res.json({
+      success: true,
+      token: issueStaffSession(staff, role),
+      role,
+      roles,
+      user: staff,
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
