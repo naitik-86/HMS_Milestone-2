@@ -188,8 +188,12 @@ function EnrollForm({ onClose, onSave, editData, mode, staff, isSubmitting, }) {
   const hasVisibleBankErrors = step === 3 && Object.values(bankFieldErrors).some(Boolean);
 
 
-  const validateStep = async () => {
-    if (step === 1) {
+  // Accepts the step to validate explicitly rather than always reading the
+  // current `step` state - needed so the final Save can re-validate every
+  // step in order (the tabs now let you jump straight to Security without
+  // passing through 1-3's Next-triggered checks first).
+  const validateStep = async (targetStep) => {
+    if (targetStep === 1) {
       const emergencyNumber = form.emergencyContacts[0]?.contactNumber?.trim();
 
       if (
@@ -286,7 +290,7 @@ function EnrollForm({ onClose, onSave, editData, mode, staff, isSubmitting, }) {
       }
     }
 
-    if (step === 2) {
+    if (targetStep === 2) {
       if (
         !form.role ||
         !form.staffId ||
@@ -297,7 +301,7 @@ function EnrollForm({ onClose, onSave, editData, mode, staff, isSubmitting, }) {
       }
     }
 
-    if (step === 3) {
+    if (targetStep === 3) {
       const nextErrors = Object.fromEntries(
         bankFieldKeys.map((field) => [field, validateBankField(field)])
       );
@@ -307,7 +311,7 @@ function EnrollForm({ onClose, onSave, editData, mode, staff, isSubmitting, }) {
       }
     }
 
-    if (step === 4) {
+    if (targetStep === 4) {
       if (form.employmentType === 'Contract') {
         if (!form.accountExpiryDate) {
           alert("Please select account expiry date for contract staff");
@@ -581,7 +585,11 @@ function EnrollForm({ onClose, onSave, editData, mode, staff, isSubmitting, }) {
                 const isDone = step > num;
                 return (
                   <React.Fragment key={i}>
-                    <div className="flex items-center gap-2.5">
+                    <div
+                      className="flex items-center gap-2.5"
+                      onClick={() => { if (!isView) setStep(num); }}
+                      style={{ cursor: isView ? 'default' : 'pointer' }}
+                    >
                       {/* Circle */}
                       <div
                         className="flex items-center justify-center rounded-full font-bold text-sm flex-shrink-0 transition-all"
@@ -629,13 +637,12 @@ function EnrollForm({ onClose, onSave, editData, mode, staff, isSubmitting, }) {
                   <button
                     key={i}
                     onClick={() => {
-                      // Only allow jumping to the current step or one already
-                      // passed - jumping ahead must go through "Next" so each
-                      // intervening step's validation (including the async
-                      // duplicate email/phone check) actually runs, instead of
-                      // skipping straight to Security and only finding out at
-                      // final save.
-                      if (!isView && num <= step) setStep(num);
+                      // Free navigation, same as the Doctor Edit form - the
+                      // final Save re-validates every step in order (see
+                      // validateStep/the Next-Save button handler above) so
+                      // jumping ahead can no longer let an incomplete record
+                      // slip through.
+                      if (!isView) setStep(num);
                     }}
                     className="px-5 py-2 rounded-full text-sm font-semibold transition-all cursor-pointer"
                     style={{
@@ -1292,15 +1299,24 @@ function EnrollForm({ onClose, onSave, editData, mode, staff, isSubmitting, }) {
                 }
 
                 if (step < 4) {
-                  const isValid = await validateStep();
+                  const isValid = await validateStep(step);
                   if (isValid) {
                     setStep(step + 1);
                   }
                 } else {
-                  const isValid = await validateStep();
-                  if (isValid) {
-                    onSave(form);
+                  // The tabs let you jump straight here without passing
+                  // through 1-3's own Next-triggered checks, so re-validate
+                  // every step in order before actually saving - jump back
+                  // to the first one that fails instead of sending an
+                  // incomplete record to the backend.
+                  for (let s = 1; s <= 4; s++) {
+                    const isValid = await validateStep(s);
+                    if (!isValid) {
+                      setStep(s);
+                      return;
+                    }
                   }
+                  onSave(form);
                 }
               }}
               className={`px-8 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors
