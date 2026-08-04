@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { getSessionProfile } from "../../../../shared/utils/sessionProfile";
+import RoleSwitcherButton from "../../../../shared/components/RoleSwitcherButton";
 
 const menuItems = [
   { name: "Dashboard", path: "", icon: LayoutDashboard, end: true },
@@ -62,6 +63,7 @@ export default function ReceptionSidebar({ isCollapsed = false, toggleCollapse }
 
         <div className="mx-4 border-t border-white/15" />
         <div className="p-4">
+          <RoleSwitcherButton className={`mb-1 group relative flex w-full items-center gap-3 rounded-xl px-3 py-3 text-xs font-bold text-amber-200 transition hover:bg-amber-400/10 ${isCollapsed ? "justify-center" : ""}`} />
           <button onClick={handleLogout} className={`group relative flex w-full items-center gap-3 rounded-xl px-3 py-3 text-xs font-bold text-rose-200 transition hover:bg-rose-400/10 hover:text-rose-100 ${isCollapsed ? "justify-center" : ""}`}><LogOut size={17} />{!isCollapsed && "Logout"}{isCollapsed && <span className="pointer-events-none absolute left-full ml-4 hidden whitespace-nowrap rounded-lg bg-[#073126] px-3 py-1.5 text-xs text-white shadow-xl group-hover:block">Logout</span>}</button>
           <div className={`mt-2 flex items-center gap-3 rounded-xl ${isCollapsed ? "justify-center" : "border border-white/10 bg-white/5 p-3"}`}>
             <span className="grid size-9 shrink-0 place-items-center rounded-full bg-[#F7931E] text-xs font-black text-white">{profile.name?.[0]?.toUpperCase() || "R"}</span>

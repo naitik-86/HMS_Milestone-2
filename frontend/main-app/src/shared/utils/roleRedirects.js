@@ -22,3 +22,16 @@ const DASHBOARD_PATHS = {
 
 export const getDashboardPathForRole = (role) =>
   DASHBOARD_PATHS[normalizeRole(role)] || null;
+
+// The full list of roles assigned to the currently logged-in staff member,
+// stored on login/role-select/role-switch. Empty array for non-staff
+// accounts (Super Admin / Clinic Admin never set this) or a single-role
+// staff member who only ever had one role to begin with.
+export const getAvailableRoles = () => {
+  try {
+    const roles = JSON.parse(localStorage.getItem("availableRoles") || "[]");
+    return Array.isArray(roles) ? roles : [];
+  } catch {
+    return [];
+  }
+};

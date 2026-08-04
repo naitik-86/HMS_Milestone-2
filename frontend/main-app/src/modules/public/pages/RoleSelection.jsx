@@ -42,6 +42,17 @@ export default function RoleSelection() {
       localStorage.setItem("user", JSON.stringify(data.user || {}));
       sessionStorage.removeItem("roleSelectionToken");
       sessionStorage.removeItem("availableRoles");
+
+      // Same force-password-change gate the single-role login path already
+      // has (Login.jsx) - a multi-role account on its temporary password
+      // must not skip straight past this just because it also had to pick
+      // a role first.
+      if (data.requiresPasswordReset) {
+        localStorage.setItem("passwordResetRequired", "true");
+        return navigate("/change-password", { replace: true });
+      }
+      localStorage.setItem("passwordResetRequired", "false");
+
       const dashboard = getDashboardPathForRole(data.role);
       navigate(dashboard || "/unauthorized", { replace: true });
     } catch (error) {

@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { ReceptionSidebar } from "../modules/clinicadmin/components";
-import SwitchRoleButton from "../shared/components/SwitchRoleButton";
 
 export default function ReceptionLayout() {
   const location = useLocation();
@@ -33,9 +32,8 @@ export default function ReceptionLayout() {
           isCollapsed ? "md:pl-20" : "md:pl-[260px]"
         }`}
       >
-        <header className="hidden md:flex h-[72px] items-center justify-between border-b border-slate-100 bg-white px-6 lg:px-8">
+        <header className="hidden md:flex h-[72px] items-center border-b border-slate-100 bg-white px-6 lg:px-8">
           <h1 className="text-xl font-bold tracking-tight text-[#0C3D2E]">{pageTitle}</h1>
-          <SwitchRoleButton />
         </header>
         <div className="p-4 sm:p-6 lg:p-8 max-w-[1440px] mx-auto">
           <Outlet />

@@ -12,6 +12,7 @@ import {
   Mail,
 } from "lucide-react";
 import { getSessionProfile } from "../../../../shared/utils/sessionProfile";
+import RoleSwitcherButton from "../../../../shared/components/RoleSwitcherButton";
 
 export default function LabSidebar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -148,6 +149,8 @@ export default function LabSidebar() {
               </p>
             </div>
           </div>
+
+          <RoleSwitcherButton className="flex w-full items-center justify-center gap-2 rounded-xl border border-amber-400/20 bg-amber-500/10 px-4 py-3 text-xs font-bold text-amber-300 transition hover:bg-amber-500/20" />
 
           <button
             type="button"
