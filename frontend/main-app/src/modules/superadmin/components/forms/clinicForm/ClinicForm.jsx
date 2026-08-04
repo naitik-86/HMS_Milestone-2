@@ -1528,23 +1528,74 @@ export default function ClinicForm({
         return nextErrors;
     };
 
-    // Bank/IFSC mismatch is only otherwise checked inside validateTaxFields,
-    // which runs on Next-click or (silently, to compute the disabled state)
-    // via hasCurrentTabErrors - neither of those paths calls setErrors, so
-    // the Next button would grey out with no visible reason. Mirrors the
-    // debounced email/phone live-check above.
+    // Same "Next silently disabled" gap on the Licenses & Registrations tab
+    // - validateLicensesFields() only ever ran on Next-click/submit, never
+    // populating errors live.
+    useEffect(() => {
+        const timer = window.setTimeout(() => {
+            const licenseErrors = validateLicensesFields();
+            setErrors((prev) => ({
+                ...prev,
+                stateCouncil: licenseErrors.stateCouncil,
+                vetReg: licenseErrors.vetReg,
+                vetCert: licenseErrors.vetCert,
+                vetExpiry: licenseErrors.vetExpiry,
+                tradeLicense: licenseErrors.tradeLicense,
+                tradeDoc: licenseErrors.tradeDoc,
+                tradeExpiry: licenseErrors.tradeExpiry,
+                drugLicense: licenseErrors.drugLicense,
+                drugDoc: licenseErrors.drugDoc,
+                drugExpiry: licenseErrors.drugExpiry,
+            }));
+        }, 400);
+        return () => window.clearTimeout(timer);
+    }, [
+        form.stateCouncil,
+        form.vetReg, form.vetCert, form.vetExpiry,
+        form.tradeLicense, form.tradeDoc, form.tradeExpiry,
+        form.drugLicense, form.drugDoc, form.drugExpiry,
+    ]);
+
+    // Address1/State/City/District/PIN are only otherwise checked inside
+    // validateAddressFields, which runs on Next-click or (silently, to
+    // compute the disabled state) via hasCurrentTabErrors - neither of
+    // those paths calls setErrors, so Next would grey out with no visible
+    // reason (e.g. a manually-typed PIN code whose lookup never resolves).
+    useEffect(() => {
+        const timer = window.setTimeout(() => {
+            const addressErrors = validateAddressFields();
+            setErrors((prev) => ({
+                ...prev,
+                address1: addressErrors.address1,
+                state: addressErrors.state,
+                city: addressErrors.city,
+                district: addressErrors.district,
+                pincode: addressErrors.pincode,
+            }));
+        }, 400);
+        return () => window.clearTimeout(timer);
+    }, [form.address1, form.state, form.city, form.district, form.pincode, form.pincodeVerifiedValue]);
+
+    // GST/PAN/bank/IFSC/cheque are only otherwise checked inside
+    // validateTaxFields, which runs on Next-click or (silently, to compute
+    // the disabled state) via hasCurrentTabErrors - neither of those paths
+    // calls setErrors, so the Next button would grey out with no visible
+    // reason. Mirrors the debounced email/phone live-check above.
     useEffect(() => {
         const timer = window.setTimeout(() => {
             const taxErrors = validateTaxFields(true);
             setErrors((prev) => ({
                 ...prev,
+                gst: taxErrors.gst,
+                pan: taxErrors.pan,
                 bankName: taxErrors.bankName,
                 accountNumber: taxErrors.accountNumber,
                 ifsc: taxErrors.ifsc,
+                cheque: taxErrors.cheque,
             }));
         }, 400);
         return () => window.clearTimeout(timer);
-    }, [form.bankName, form.accountNumber, form.ifsc]);
+    }, [form.gst, form.pan, form.bankName, form.accountNumber, form.ifsc, form.cheque]);
 
     const validateGovtIdFields = () => {
         const nextErrors = {};
