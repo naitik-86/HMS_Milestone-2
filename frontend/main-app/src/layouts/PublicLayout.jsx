@@ -15,9 +15,11 @@ function PublicLayout() {
         }
 
         // /contact stays reachable for logged-in users too (e.g. Clinic
-        // Admin's "Contact Admin To Change Plan" button) instead of being
-        // bounced straight back to their dashboard.
-        if (dashboardPath && location.pathname !== "/contact") {
+        // Admin's "Contact Admin To Change Plan" button), and /select-role
+        // must stay reachable for a multi-role staff member using the
+        // Switch Role button - both would otherwise be bounced straight
+        // back to their dashboard before ever rendering.
+        if (dashboardPath && location.pathname !== "/contact" && location.pathname !== "/select-role") {
             return <Navigate to={dashboardPath} replace />;
         }
     }
