@@ -542,6 +542,14 @@ const deleteStaff = async (req, res) => {
             });
         }
 
+        // A staff member enrolled as a Doctor has a linked DoctorDetails
+        // record (Clinic Admin > Doctors) - deleting the staff account
+        // without also removing this left an orphaned doctor entry behind.
+        await DoctorDetails.deleteOne({
+            staff: staff._id,
+            clinicId: req.user.clinicId,
+        });
+
         return res.status(200).json({
             success: true,
             message: "Staff deleted permanently",
