@@ -320,17 +320,18 @@ const buildXlsHtml = (reportData) => {
 const buildReportData = async () => {
   const totalClinics = await Clinic.countDocuments();
   // Matches the Super Admin Dashboard's own definition of "active" - a
-  // clinic that hasn't been manually deactivated and wasn't rejected in
-  // verification, so this report always agrees with the dashboard.
+  // clinic that hasn't been manually deactivated AND has actually been
+  // approved in verification. A still-pending SUBMITTED clinic isn't
+  // active yet, so "not rejected" alone isn't strict enough.
   const activeClinics = await Clinic.countDocuments({
     isActive: true,
-    verificationStatus: { $ne: "REJECTED" },
+    verificationStatus: "APPROVED",
   });
   const suspendedClinics = await Clinic.countDocuments({
     $or: [
       { subscriptionStatus: { $in: ["SUSPENDED", "EXPIRED"] } },
       { isActive: false },
-      { verificationStatus: "REJECTED" },
+      { verificationStatus: { $ne: "APPROVED" } },
     ],
   });
 
@@ -590,17 +591,13 @@ const buildDoctorReportData = async (clinics) => {
     clinics.map((clinic) => [String(clinic._id), clinic.name])
   );
 
-  const [doctorRegistryRaw, doctorUsers, doctorAppointments] = await Promise.all([
+  const [doctorRegistryRaw, doctorAppointments] = await Promise.all([
     Doctor.find()
       .populate("clinicId", "name")
       .select(
         "doctorId name clinicId staffCode experience registrationNumber stateVetCouncil consultationFees avgConsultationDuration emergencyAvailability status certificateValidityDate renewalReminderDays specializations createdAt updatedAt"
       )
       .sort({ createdAt: -1 })
-      .lean(),
-    User.find({ role: "DOCTOR" })
-      .select("_id name clinicId specialization consultationFee isActive createdAt updatedAt")
-      .populate("clinicId", "name")
       .lean(),
     Appointment.aggregate([
       {
@@ -659,97 +656,57 @@ const buildDoctorReportData = async (clinics) => {
     clinicName: doctor.clinicId?.name || clinicNameMap.get(String(doctor.clinicId?._id || doctor.clinicId)) || "",
   }));
 
-  // DoctorDetails (the current doctor-management collection) reliably has a
-  // clinic reference; the legacy User/role=DOCTOR records used for
-  // appointment activity often don't. Fall back to a name match against
-  // DoctorDetails so the Clinic column isn't blank for those.
-  const doctorNameToClinicName = new Map(
-    doctorRegistry
-      .filter((doctor) => doctor.clinicName)
-      .map((doctor) => [String(doctor.name || "").trim().toLowerCase(), doctor.clinicName])
+  // Doctor Activity/Consultation previously listed doctors from the legacy
+  // User/role=DOCTOR collection instead of the real doctors clinics
+  // actually manage via DoctorDetails - that's why a doctor's Active/
+  // Inactive status here never matched what Doctor Registration correctly
+  // showed (it already used DoctorDetails). Source both reports from
+  // doctorRegistry instead; appointment activity is only ever recorded
+  // against legacy User accounts today, so it's joined in as a best-effort
+  // name match, defaulting to zero when there's no match rather than
+  // showing a doctor that isn't actually managed by any clinic.
+  const doctorAppointmentsByName = new Map(
+    doctorAppointments
+      .filter((item) => item.doctorName)
+      .map((item) => [
+        String(item.doctorName).trim().toLowerCase(),
+        {
+          appointments: Number(item.appointments || 0),
+          completedAppointments: Number(item.completedAppointments || 0),
+          paidAppointments: Number(item.paidAppointments || 0),
+          revenue: Number(item.revenue || 0),
+          lastAppointmentAt: item.lastAppointmentAt || null,
+        },
+      ])
   );
 
-  const doctorAppointmentMap = new Map(
-    doctorAppointments.map((item) => [
-      String(item._id),
-      {
-        doctorName: item.doctorName || "",
-        clinicId: item.clinicId ? String(item.clinicId) : "",
-        appointments: Number(item.appointments || 0),
-        completedAppointments: Number(item.completedAppointments || 0),
-        paidAppointments: Number(item.paidAppointments || 0),
-        revenue: Number(item.revenue || 0),
-        lastAppointmentAt: item.lastAppointmentAt || null,
-      },
-    ])
-  );
+  const buildDoctorRow = (doctor) => {
+    const stats = doctorAppointmentsByName.get(String(doctor.name || "").trim().toLowerCase()) || {};
+    return {
+      doctorId: String(doctor._id),
+      doctorName: doctor.name,
+      clinicId: doctor.clinicId?._id ? String(doctor.clinicId._id) : String(doctor.clinicId || ""),
+      clinicName: doctor.clinicName,
+      specialization: (doctor.specializations || []).join(", "),
+      consultationFees: Number(doctor.consultationFees || 0),
+      appointments: Number(stats.appointments || 0),
+      completedAppointments: Number(stats.completedAppointments || 0),
+      paidAppointments: Number(stats.paidAppointments || 0),
+      revenue: Number(stats.revenue || 0),
+      lastAppointmentAt: stats.lastAppointmentAt || null,
+      status: doctor.status || "Active",
+    };
+  };
 
-  const doctorActivity = doctorUsers
-    .map((doctor) => {
-      const stats = doctorAppointmentMap.get(String(doctor._id)) || {};
-      const clinicName =
-        doctor.clinicId?.name ||
-        clinicNameMap.get(String(doctor.clinicId?._id || doctor.clinicId)) ||
-        doctorNameToClinicName.get(String(doctor.name || "").trim().toLowerCase()) ||
-        "";
-
-      return {
-        doctorId: String(doctor._id),
-        doctorName: doctor.name,
-        clinicId: doctor.clinicId?._id ? String(doctor.clinicId._id) : String(doctor.clinicId || ""),
-        clinicName,
-        specialization: doctor.specialization || "",
-        consultationFees: Number(doctor.consultationFee || 0),
-        appointments: Number(stats.appointments || 0),
-        completedAppointments: Number(stats.completedAppointments || 0),
-        paidAppointments: Number(stats.paidAppointments || 0),
-        revenue: Number(stats.revenue || 0),
-        lastAppointmentAt: stats.lastAppointmentAt || null,
-        status: doctor.isActive ? "Active" : "Inactive",
-      };
-    })
-    .sort(
-      (left, right) =>
-        Number(right.appointments || 0) - Number(left.appointments || 0) ||
-        Number(right.revenue || 0) - Number(left.revenue || 0) ||
-        String(left.doctorName || "").localeCompare(String(right.doctorName || ""))
-    );
-
-  const doctorActivityMap = new Map(
-    doctorActivity.map((item) => [String(item.doctorId), item])
-  );
+  const sortByAppointmentsThenName = (left, right) =>
+    Number(right.appointments || 0) - Number(left.appointments || 0) ||
+    Number(right.revenue || 0) - Number(left.revenue || 0) ||
+    String(left.doctorName || "").localeCompare(String(right.doctorName || ""));
 
   return {
     registry: doctorRegistry,
-    activity: doctorActivity,
-    consultation: doctorUsers
-      .map((doctor) => {
-        const activity = doctorActivityMap.get(String(doctor._id)) || {};
-        const clinicName =
-          doctor.clinicId?.name ||
-          clinicNameMap.get(String(doctor.clinicId?._id || doctor.clinicId)) ||
-          doctorNameToClinicName.get(String(doctor.name || "").trim().toLowerCase()) ||
-          "";
-
-        return {
-          doctorId: String(doctor._id),
-          doctorName: doctor.name,
-          clinicId: doctor.clinicId?._id ? String(doctor.clinicId._id) : String(doctor.clinicId || ""),
-          clinicName,
-          consultationFees: Number(doctor.consultationFee || 0),
-          status: doctor.isActive ? "Active" : "Inactive",
-          appointments: Number(activity.appointments || 0),
-          completedAppointments: Number(activity.completedAppointments || 0),
-          revenue: Number(activity.revenue || 0),
-          lastAppointmentAt: activity.lastAppointmentAt || null,
-        };
-      })
-      .sort(
-        (left, right) =>
-          Number(right.revenue || 0) - Number(left.revenue || 0) ||
-          Number(right.appointments || 0) - Number(left.appointments || 0) ||
-          String(left.doctorName || "").localeCompare(String(right.doctorName || ""))
-      ),
+    activity: doctorRegistry.map(buildDoctorRow).sort(sortByAppointmentsThenName),
+    consultation: doctorRegistry.map(buildDoctorRow).sort(sortByAppointmentsThenName),
   };
 };
 

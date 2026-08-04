@@ -2151,14 +2151,16 @@ exports.getAdminDashboard = async (req, res) => {
     ] = await Promise.all([
       Clinic.countDocuments(),
       // A clinic only counts as truly active when it hasn't been manually
-      // deactivated and wasn't rejected in verification - isActive alone
-      // stays true by default regardless of verification outcome.
-      Clinic.countDocuments({ isActive: true, verificationStatus: { $ne: 'REJECTED' } }),
+      // deactivated AND has actually been approved in verification -
+      // isActive alone stays true by default the moment a clinic is
+      // submitted, before anyone has reviewed it, so "not rejected" isn't
+      // strict enough: a still-pending SUBMITTED clinic isn't active yet.
+      Clinic.countDocuments({ isActive: true, verificationStatus: 'APPROVED' }),
       Clinic.countDocuments({
         $or: [
           { subscriptionStatus: { $in: ['SUSPENDED', 'EXPIRED'] } },
           { isActive: false },
-          { verificationStatus: 'REJECTED' },
+          { verificationStatus: { $ne: 'APPROVED' } },
         ],
       }),
       Owner.countDocuments(),

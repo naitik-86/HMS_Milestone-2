@@ -287,14 +287,15 @@ const getReportBlueprint = ({ category, report, catalog }) => {
   const yearlyRevenue = Array.isArray(catalog?.yearlyRevenue) ? catalog.yearlyRevenue : [];
   const verificationSummary = summary.verificationSummary || {};
   // A clinic only counts as truly "active" when its subscription is active,
-  // it hasn't been manually deactivated, and it wasn't rejected in
-  // verification - subscriptionStatus alone defaults to ACTIVE regardless
-  // of those two, which is why this previously over-counted.
+  // it hasn't been manually deactivated, and it has actually been approved
+  // in verification - subscriptionStatus alone defaults to ACTIVE
+  // regardless of those two, and a still-pending SUBMITTED clinic isn't
+  // active yet either, which is why this previously over-counted.
   const activeClinicCount = clinics.filter(
     (clinic) =>
       clinic.subscriptionStatus === "ACTIVE" &&
       clinic.isActive !== false &&
-      clinic.verificationStatus !== "REJECTED"
+      clinic.verificationStatus === "APPROVED"
   ).length;
   const approvedClinics = clinics.filter((clinic) => clinic.verificationStatus === "APPROVED");
   const rejectedClinics = clinics.filter((clinic) => clinic.verificationStatus === "REJECTED");
