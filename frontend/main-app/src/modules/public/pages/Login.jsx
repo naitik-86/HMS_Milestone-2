@@ -38,6 +38,9 @@ export default function Login() {
 
   const [googleLoading, setGoogleLoading] = useState(false);
   const [loginLoading, setLoginLoading] = useState(false);
+  const [sessionExpired] = useState(
+    () => new URLSearchParams(window.location.search).get("sessionExpired") === "1"
+  );
 
   const openOtpVerification = useCallback((response, values = {}) => {
     const role = response.user?.role || response.role;
@@ -368,6 +371,12 @@ export default function Login() {
       <p className="mt-2 text-slate-500">
         Log in to your account
       </p>
+
+      {sessionExpired && (
+        <div className="mt-4 w-full max-w-md rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800">
+          Your session has expired. Please log in again.
+        </div>
+      )}
 
       {/* LOGIN FORM */}
 

@@ -1556,6 +1556,24 @@ export default function ClinicForm({
         form.drugLicense, form.drugDoc, form.drugExpiry,
     ]);
 
+    // Same "Next silently disabled" gap on Clinic Identity - email/phone
+    // already get live feedback via checkContact above, but clinicName,
+    // facilityType, year, website, and logo never did.
+    useEffect(() => {
+        const timer = window.setTimeout(() => {
+            const identityErrors = validateIdentityFields();
+            setErrors((prev) => ({
+                ...prev,
+                clinicName: identityErrors.clinicName,
+                facilityType: identityErrors.facilityType,
+                year: identityErrors.year,
+                website: identityErrors.website,
+                logo: identityErrors.logo,
+            }));
+        }, 400);
+        return () => window.clearTimeout(timer);
+    }, [form.clinicName, form.facilityType, form.year, form.website, form.logo]);
+
     // Address1/State/City/District/PIN are only otherwise checked inside
     // validateAddressFields, which runs on Next-click or (silently, to
     // compute the disabled state) via hasCurrentTabErrors - neither of
@@ -1665,6 +1683,24 @@ export default function ClinicForm({
 
         return nextErrors;
     };
+
+    // Same "Next silently disabled" gap on Admin Info - adminName/adminEmail/
+    // adminPhone already get live feedback above, but designation and the
+    // Govt ID type/number/document pair never did.
+    useEffect(() => {
+        const timer = window.setTimeout(() => {
+            const adminErrors = validateAdminFields();
+            setErrors((prev) => ({
+                ...prev,
+                designation: adminErrors.designation,
+                govtIdType: adminErrors.govtIdType,
+                govtIdNumber: adminErrors.govtIdNumber,
+                idDoc: adminErrors.idDoc,
+                profile: adminErrors.profile,
+            }));
+        }, 400);
+        return () => window.clearTimeout(timer);
+    }, [form.designation, form.govtIdType, form.govtIdNumber, form.idDoc, form.profile]);
 
     const validatePlanFields = ({ syncEndDate = true } = {}) => {
         const nextErrors = {};
