@@ -12,7 +12,21 @@ const symptomOptions = [
   "Other",
 ];
 
-export default function ProblemDescriptionForm({ formData, setFormData }) {
+export default function ProblemDescriptionForm({ formData, setFormData, errors = {}, setErrors }) {
+
+  const clearErrorIfValid = (field, isValid) => {
+    if (!setErrors) return;
+    if (isValid) {
+      setErrors((prev) => (prev[field] ? { ...prev, [field]: "" } : prev));
+    }
+  };
+
+  const markRequiredOnBlur = (field, value, message) => {
+    if (!setErrors) return;
+    if (!value) {
+      setErrors((prev) => ({ ...prev, [field]: message }));
+    }
+  };
 
   const handleAlphaOnlyChange = (e) => {
     const { name, value } = e.target;
@@ -21,6 +35,7 @@ export default function ProblemDescriptionForm({ formData, setFormData }) {
       ...prev,
       [name]: cleaned,
     }));
+    clearErrorIfValid(name, Boolean(cleaned.trim()));
   };
 
   const handleChange = (e) => {
@@ -29,6 +44,7 @@ export default function ProblemDescriptionForm({ formData, setFormData }) {
       ...prev,
       [name]: value,
     }));
+    clearErrorIfValid(name, Boolean(value));
   };
 
   const toggleSymptom = (symptom) => {
@@ -37,13 +53,19 @@ export default function ProblemDescriptionForm({ formData, setFormData }) {
         ? prev.associatedSymptoms
         : [];
       const exists = current.includes(symptom);
+      const next = exists
+        ? current.filter((s) => s !== symptom)
+        : [...current, symptom];
       return {
         ...prev,
-        associatedSymptoms: exists
-          ? current.filter((s) => s !== symptom)
-          : [...current, symptom],
+        associatedSymptoms: next,
       };
     });
+    if (setErrors) {
+      const current = Array.isArray(formData.associatedSymptoms) ? formData.associatedSymptoms : [];
+      const willHaveAtLeastOne = current.includes(symptom) ? current.length > 1 : true;
+      clearErrorIfValid("associatedSymptoms", willHaveAtLeastOne);
+    }
   };
 
   return (
@@ -65,18 +87,20 @@ export default function ProblemDescriptionForm({ formData, setFormData }) {
             name="primaryComplaint"
             value={formData.primaryComplaint}
             onChange={handleAlphaOnlyChange}
+            onBlur={() => markRequiredOnBlur("primaryComplaint", (formData.primaryComplaint || "").trim(), "Please describe the Primary Complaint.")}
             placeholder="Enter primary complaint (alphabets only)..."
             className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm md:text-base outline-none resize-none focus:border-orange-500 focus:ring-4 focus:ring-orange-100"
           />
           <p className="text-xs text-slate-400 mt-1">
             Only alphabetic characters and spaces are allowed.
           </p>
+          {errors.primaryComplaint && <p className="mt-1 text-xs font-medium text-red-500">{errors.primaryComplaint}</p>}
         </div>
 
         {/* Associated Symptoms Multi-Select */}
         <div className="lg:col-span-2">
           <label className="block mb-2 font-medium text-slate-700 flex items-center justify-between">
-            <span>Associated Symptoms (Multi Select)</span>
+            <span>Associated Symptoms (Multi Select) <span className="text-red-500 font-bold">*</span></span>
             <span className="text-xs text-slate-400 font-normal">
               Select all symptoms that apply
             </span>
@@ -108,15 +132,19 @@ export default function ProblemDescriptionForm({ formData, setFormData }) {
               </p>
             )}
           </div>
+          {errors.associatedSymptoms && <p className="mt-1 text-xs font-medium text-red-500">{errors.associatedSymptoms}</p>}
         </div>
 
         {/* Severity */}
         <div className="lg:col-span-2">
-          <label className="block mb-2 font-medium text-slate-700">Severity</label>
+          <label className="block mb-2 font-medium text-slate-700">
+            Severity <span className="text-red-500 font-bold">*</span>
+          </label>
           <select
             name="severity"
             value={formData.severity}
             onChange={handleChange}
+            onBlur={() => markRequiredOnBlur("severity", formData.severity, "Severity is required.")}
             className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm md:text-base outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-100"
           >
             <option value="">Select Severity</option>
@@ -124,6 +152,7 @@ export default function ProblemDescriptionForm({ formData, setFormData }) {
             <option value="Moderate">Moderate</option>
             <option value="Severe">Severe</option>
           </select>
+          {errors.severity && <p className="mt-1 text-xs font-medium text-red-500">{errors.severity}</p>}
         </div>
 
       </div>

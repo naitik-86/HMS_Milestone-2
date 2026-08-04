@@ -108,7 +108,24 @@ const NUMERIC_FIELD_RULES = {
   bodyWeight: { allowDecimal: true, maxIntDigits: 3, max: 200 },
 };
 
-export default function VitalsForm({ formData, setFormData }) {
+export default function VitalsForm({ formData, setFormData, errors = {}, setErrors }) {
+  // Clears a field's error the moment it becomes valid; used both from
+  // onChange (as the user types/selects) and onBlur (catches a field left
+  // empty).
+  const clearErrorIfValid = (field, isValid) => {
+    if (!setErrors) return;
+    if (isValid) {
+      setErrors((prev) => (prev[field] ? { ...prev, [field]: "" } : prev));
+    }
+  };
+
+  const markRequiredOnBlur = (field, value, message) => {
+    if (!setErrors) return;
+    if (!value) {
+      setErrors((prev) => ({ ...prev, [field]: message }));
+    }
+  };
+
   useEffect(() => {
     // Auto fill recordedBy strictly from logged in staff name if empty
     if (!formData.recordedBy) {
@@ -148,6 +165,7 @@ export default function VitalsForm({ formData, setFormData }) {
     }
 
     setFormData((prev) => ({ ...prev, [name]: cleaned }));
+    clearErrorIfValid(name, Boolean(cleaned));
   };
 
   const handleUnitChange = (e) => {
@@ -164,7 +182,7 @@ export default function VitalsForm({ formData, setFormData }) {
         {/* Body Temperature */}
         <div>
           <label className="block mb-2 font-medium text-slate-700">
-            Body Temperature
+            Body Temperature <span className="text-red-500 font-bold">*</span>
           </label>
 
           <div className="flex gap-2">
@@ -174,6 +192,7 @@ export default function VitalsForm({ formData, setFormData }) {
               name="bodyTemperature"
               value={formData.bodyTemperature}
               onChange={handleChange}
+              onBlur={() => markRequiredOnBlur("bodyTemperature", formData.bodyTemperature, "Body temperature is required.")}
               placeholder="Enter Temperature"
               className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm md:text-base outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-100"
             />
@@ -186,12 +205,13 @@ export default function VitalsForm({ formData, setFormData }) {
               <option value="C">°C</option>
             </select>
           </div>
+          {errors.bodyTemperature && <p className="mt-1 text-xs font-medium text-red-500">{errors.bodyTemperature}</p>}
         </div>
 
         {/* Heart Rate */}
         <div>
           <label className="block mb-2 font-medium text-slate-700">
-            Heart Rate (bpm)
+            Heart Rate (bpm) <span className="text-red-500 font-bold">*</span>
           </label>
 
           <input
@@ -200,9 +220,11 @@ export default function VitalsForm({ formData, setFormData }) {
             name="heartRate"
             value={formData.heartRate}
             onChange={handleChange}
+            onBlur={() => markRequiredOnBlur("heartRate", formData.heartRate, "Heart rate is required.")}
             placeholder="Enter Heart Rate"
             className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm md:text-base outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-100"
           />
+          {errors.heartRate && <p className="mt-1 text-xs font-medium text-red-500">{errors.heartRate}</p>}
         </div>
 
         {/* Respiratory Rate */}
@@ -225,7 +247,7 @@ export default function VitalsForm({ formData, setFormData }) {
         {/* Blood Pressure */}
         <div>
           <label className="block mb-2 font-medium text-slate-700">
-            Blood Pressure (mmHg)
+            Blood Pressure (mmHg) <span className="text-red-500 font-bold">*</span>
           </label>
 
           <div className="grid grid-cols-2 gap-4">
@@ -236,15 +258,18 @@ export default function VitalsForm({ formData, setFormData }) {
 
               <select
                 value={formData.bloodPressure?.systolic || ""}
-                onChange={(e) =>
+                onChange={(e) => {
+                  const value = e.target.value;
                   setFormData((prev) => ({
                     ...prev,
                     bloodPressure: {
                       ...(prev.bloodPressure || {}),
-                      systolic: e.target.value,
+                      systolic: value,
                     },
-                  }))
-                }
+                  }));
+                  clearErrorIfValid("bloodPressureSystolic", Boolean(value));
+                }}
+                onBlur={() => markRequiredOnBlur("bloodPressureSystolic", formData.bloodPressure?.systolic, "Systolic reading is required.")}
                 className="w-full border border-slate-200 rounded-2xl px-4 py-3"
               >
                 <option value="">Select</option>
@@ -254,6 +279,7 @@ export default function VitalsForm({ formData, setFormData }) {
                   </option>
                 ))}
               </select>
+              {errors.bloodPressureSystolic && <p className="mt-1 text-xs font-medium text-red-500">{errors.bloodPressureSystolic}</p>}
             </div>
 
             <div>
@@ -263,15 +289,18 @@ export default function VitalsForm({ formData, setFormData }) {
 
               <select
                 value={formData.bloodPressure?.diastolic || ""}
-                onChange={(e) =>
+                onChange={(e) => {
+                  const value = e.target.value;
                   setFormData((prev) => ({
                     ...prev,
                     bloodPressure: {
                       ...(prev.bloodPressure || {}),
-                      diastolic: e.target.value,
+                      diastolic: value,
                     },
-                  }))
-                }
+                  }));
+                  clearErrorIfValid("bloodPressureDiastolic", Boolean(value));
+                }}
+                onBlur={() => markRequiredOnBlur("bloodPressureDiastolic", formData.bloodPressure?.diastolic, "Diastolic reading is required.")}
                 className="w-full border border-slate-200 rounded-2xl px-4 py-3"
               >
                 <option value="">Select</option>
@@ -281,6 +310,7 @@ export default function VitalsForm({ formData, setFormData }) {
                   </option>
                 ))}
               </select>
+              {errors.bloodPressureDiastolic && <p className="mt-1 text-xs font-medium text-red-500">{errors.bloodPressureDiastolic}</p>}
             </div>
           </div>
         </div>
@@ -305,7 +335,7 @@ export default function VitalsForm({ formData, setFormData }) {
         {/* Body Weight */}
         <div>
           <label className="block mb-2 font-medium text-slate-700">
-            Body Weight (KG)
+            Body Weight (KG) <span className="text-red-500 font-bold">*</span>
           </label>
 
           <input
@@ -314,9 +344,11 @@ export default function VitalsForm({ formData, setFormData }) {
             name="bodyWeight"
             value={formData.bodyWeight}
             onChange={handleChange}
+            onBlur={() => markRequiredOnBlur("bodyWeight", formData.bodyWeight, "Body weight is required.")}
             placeholder="Enter Weight in KG"
             className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm md:text-base outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-100"
           />
+          {errors.bodyWeight && <p className="mt-1 text-xs font-medium text-red-500">{errors.bodyWeight}</p>}
         </div>
 
         {/* BCS */}

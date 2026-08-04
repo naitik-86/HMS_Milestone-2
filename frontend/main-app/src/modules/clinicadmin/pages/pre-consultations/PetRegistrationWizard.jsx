@@ -89,6 +89,11 @@ export default function PetRegistrationWizard({ onClose, petData, onCompleted })
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationError, setValidationError] = useState("");
+  // Per-field inline errors, shared across the Vitals/History/Problem steps -
+  // each form clears its own field's entry as soon as it's filled in, and
+  // validateCurrentStep below fills in every missing required field's entry
+  // at once if Next is clicked without touching them.
+  const [errors, setErrors] = useState({});
   const scrollRef = useRef(null);
 
   const steps = [
@@ -198,27 +203,60 @@ export default function PetRegistrationWizard({ onClose, petData, onCompleted })
   const validateCurrentStep = (targetStep) => {
     setValidationError("");
 
-    // Step 1: Vitals Validation
-    if (step === 1) {
-      if (!formData.bodyTemperature && !formData.bodyWeight && !formData.heartRate) {
-        const errorMsg = "Please record at least Body Temperature or Weight to continue.";
+    // Step 1: Vitals Validation - Body Temperature, Heart Rate, Blood
+    // Pressure (both systolic and diastolic) and Body Weight are all
+    // individually mandatory now, not just "any one of temp/weight/HR".
+    if (step === 1 && targetStep > 1) {
+      const stepErrors = {};
+      if (!formData.bodyTemperature) stepErrors.bodyTemperature = "Body temperature is required.";
+      if (!formData.heartRate) stepErrors.heartRate = "Heart rate is required.";
+      if (!formData.bloodPressure?.systolic) stepErrors.bloodPressureSystolic = "Systolic reading is required.";
+      if (!formData.bloodPressure?.diastolic) stepErrors.bloodPressureDiastolic = "Diastolic reading is required.";
+      if (!formData.bodyWeight) stepErrors.bodyWeight = "Body weight is required.";
+
+      if (Object.keys(stepErrors).length) {
+        setErrors((prev) => ({ ...prev, ...stepErrors }));
+        const errorMsg = "Please fill all required vitals fields.";
         setValidationError(errorMsg);
         toast.error(errorMsg);
         return false;
       }
     }
 
-    // Step 3: Problem Description Validation
-    if (step === 3 && targetStep > 3) {
-      const primaryComplaint = (formData.primaryComplaint || "").trim();
-      if (!primaryComplaint) {
-        const errorMsg = "Please describe the Primary Complaint before proceeding.";
+    // Step 2: Brief History Validation - Duration of Illness (value + unit),
+    // Onset and Progression are all mandatory.
+    if (step === 2 && targetStep > 2) {
+      const stepErrors = {};
+      if (!formData.durationOfIllness?.value) stepErrors.durationValue = "Duration of illness is required.";
+      if (!formData.durationOfIllness?.unit) stepErrors.durationUnit = "Duration unit is required.";
+      if (!formData.onset) stepErrors.onset = "Onset is required.";
+      if (!formData.progression) stepErrors.progression = "Progression is required.";
+
+      if (Object.keys(stepErrors).length) {
+        setErrors((prev) => ({ ...prev, ...stepErrors }));
+        const errorMsg = "Please fill all required history fields.";
         setValidationError(errorMsg);
         toast.error(errorMsg);
         return false;
       }
-      if (!isMeaningfulText(primaryComplaint)) {
-        const errorMsg = "Primary Complaint must contain meaningful text, not just numbers or symbols.";
+    }
+
+    // Step 3: Problem Description Validation - Primary Complaint,
+    // Associated Symptoms and Severity are all mandatory.
+    if (step === 3 && targetStep > 3) {
+      const stepErrors = {};
+      const primaryComplaint = (formData.primaryComplaint || "").trim();
+      if (!primaryComplaint) {
+        stepErrors.primaryComplaint = "Please describe the Primary Complaint.";
+      } else if (!isMeaningfulText(primaryComplaint)) {
+        stepErrors.primaryComplaint = "Primary Complaint must contain meaningful text, not just numbers or symbols.";
+      }
+      if (!formData.associatedSymptoms?.length) stepErrors.associatedSymptoms = "Select at least one associated symptom.";
+      if (!formData.severity) stepErrors.severity = "Severity is required.";
+
+      if (Object.keys(stepErrors).length) {
+        setErrors((prev) => ({ ...prev, ...stepErrors }));
+        const errorMsg = "Please fill all required problem fields.";
         setValidationError(errorMsg);
         toast.error(errorMsg);
         return false;
@@ -384,9 +422,9 @@ export default function PetRegistrationWizard({ onClose, petData, onCompleted })
         {/* Form Body Container */}
         <div ref={scrollRef} className="flex-1 overflow-y-auto bg-slate-50/50 p-4 md:p-8">
           <div className="bg-white rounded-[16px] p-5 md:p-8 border border-[#0C3D2E]/15 shadow-sm max-w-4xl mx-auto">
-            {step === 1 && <VitalsForm formData={formData} setFormData={setFormData} />}
-            {step === 2 && <BriefHistoryForm formData={formData} setFormData={setFormData} />}
-            {step === 3 && <ProblemDescriptionForm formData={formData} setFormData={setFormData} />}
+            {step === 1 && <VitalsForm formData={formData} setFormData={setFormData} errors={errors} setErrors={setErrors} />}
+            {step === 2 && <BriefHistoryForm formData={formData} setFormData={setFormData} errors={errors} setErrors={setErrors} />}
+            {step === 3 && <ProblemDescriptionForm formData={formData} setFormData={setFormData} errors={errors} setErrors={setErrors} />}
             {step === 4 && <ObservationForm formData={formData} setFormData={setFormData} />}
           </div>
         </div>

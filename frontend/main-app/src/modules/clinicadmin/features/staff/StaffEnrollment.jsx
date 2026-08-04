@@ -168,7 +168,8 @@ function EnrollForm({ onClose, onSave, editData, mode, staff, isSubmitting, }) {
 
     if (field === "branchName") {
       const branchName = formSnapshot.branchName.trim();
-      if (branchName && branchName.length < 3) return "Branch name must be at least 3 characters.";
+      if (!branchName) return "Branch name is required.";
+      if (branchName.length < 3) return "Branch name must be at least 3 characters.";
       return "";
     }
 
@@ -1125,7 +1126,7 @@ function EnrollForm({ onClose, onSave, editData, mode, staff, isSubmitting, }) {
 
                   <div>
                     <label className={labelClass}>
-                      Branch Name
+                      Branch Name <span className="text-[#E8630A]">*</span>
                     </label>
                     <input
                       className={isView ? inputDisabled : inputBase}

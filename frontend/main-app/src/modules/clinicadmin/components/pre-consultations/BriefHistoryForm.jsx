@@ -1,10 +1,25 @@
-export default function BriefHistoryForm({ formData, setFormData }) {
+export default function BriefHistoryForm({ formData, setFormData, errors = {}, setErrors }) {
+  const clearErrorIfValid = (field, isValid) => {
+    if (!setErrors) return;
+    if (isValid) {
+      setErrors((prev) => (prev[field] ? { ...prev, [field]: "" } : prev));
+    }
+  };
+
+  const markRequiredOnBlur = (field, value, message) => {
+    if (!setErrors) return;
+    if (!value) {
+      setErrors((prev) => ({ ...prev, [field]: message }));
+    }
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
       [name]: value,
     }));
+    clearErrorIfValid(name, Boolean(value));
   };
 
   const hasPrevious = formData.previousEpisodes?.hasPreviousEpisodes || false;
@@ -24,6 +39,7 @@ export default function BriefHistoryForm({ formData, setFormData }) {
         value: final,
       },
     }));
+    clearErrorIfValid("durationValue", Boolean(final));
   };
 
   return (
@@ -37,7 +53,7 @@ export default function BriefHistoryForm({ formData, setFormData }) {
         {/* Duration Of Illness */}
         <div>
           <label className="block mb-2 font-medium text-slate-700">
-            Duration Of Illness
+            Duration Of Illness <span className="text-red-500 font-bold">*</span>
           </label>
           <input
             type="number"
@@ -45,6 +61,7 @@ export default function BriefHistoryForm({ formData, setFormData }) {
             max="999"
             value={formData.durationOfIllness?.value || ""}
             onChange={handleDurationChange}
+            onBlur={() => markRequiredOnBlur("durationValue", formData.durationOfIllness?.value, "Duration of illness is required.")}
             onKeyDown={(e) => {
               if (["e", "E", "+", "-", "."].includes(e.key)) {
                 e.preventDefault();
@@ -53,24 +70,28 @@ export default function BriefHistoryForm({ formData, setFormData }) {
             placeholder="Enter Duration (1–999)"
             className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm md:text-base outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-100"
           />
+          {errors.durationValue && <p className="mt-1 text-xs font-medium text-red-500">{errors.durationValue}</p>}
         </div>
 
         {/* Duration Unit */}
         <div>
           <label className="block mb-2 font-medium text-slate-700">
-            Duration Unit
+            Duration Unit <span className="text-red-500 font-bold">*</span>
           </label>
           <select
             value={formData.durationOfIllness?.unit || ""}
-            onChange={(e) =>
+            onChange={(e) => {
+              const value = e.target.value;
               setFormData((prev) => ({
                 ...prev,
                 durationOfIllness: {
                   ...prev.durationOfIllness,
-                  unit: e.target.value,
+                  unit: value,
                 },
-              }))
-            }
+              }));
+              clearErrorIfValid("durationUnit", Boolean(value));
+            }}
+            onBlur={() => markRequiredOnBlur("durationUnit", formData.durationOfIllness?.unit, "Duration unit is required.")}
             className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm md:text-base outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-100 font-medium"
           >
             <option value="" disabled>Select Duration Unit</option>
@@ -79,30 +100,38 @@ export default function BriefHistoryForm({ formData, setFormData }) {
             <option value="Months">Months</option>
             <option value="Years">Years</option>
           </select>
+          {errors.durationUnit && <p className="mt-1 text-xs font-medium text-red-500">{errors.durationUnit}</p>}
         </div>
 
         {/* Onset */}
         <div>
-          <label className="block mb-2 font-medium text-slate-700">Onset</label>
+          <label className="block mb-2 font-medium text-slate-700">
+            Onset <span className="text-red-500 font-bold">*</span>
+          </label>
           <select
             name="onset"
             value={formData.onset}
             onChange={handleChange}
+            onBlur={() => markRequiredOnBlur("onset", formData.onset, "Onset is required.")}
             className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm md:text-base outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-100 font-medium"
           >
             <option value="">Select Onset</option>
             <option value="Sudden">Sudden</option>
             <option value="Gradual">Gradual</option>
           </select>
+          {errors.onset && <p className="mt-1 text-xs font-medium text-red-500">{errors.onset}</p>}
         </div>
 
         {/* Progression */}
         <div>
-          <label className="block mb-2 font-medium text-slate-700">Progression</label>
+          <label className="block mb-2 font-medium text-slate-700">
+            Progression <span className="text-red-500 font-bold">*</span>
+          </label>
           <select
             name="progression"
             value={formData.progression}
             onChange={handleChange}
+            onBlur={() => markRequiredOnBlur("progression", formData.progression, "Progression is required.")}
             className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm md:text-base outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-100 font-medium"
           >
             <option value="">Select Progression</option>
@@ -110,6 +139,7 @@ export default function BriefHistoryForm({ formData, setFormData }) {
             <option value="Worsening">Worsening</option>
             <option value="Stable">Stable</option>
           </select>
+          {errors.progression && <p className="mt-1 text-xs font-medium text-red-500">{errors.progression}</p>}
         </div>
 
         {/* Recent Travel */}
