@@ -13,6 +13,7 @@ import {
   getStaff,
   getStaffById,
   checkStaffContactAvailability,
+  toggleStaffStatus,
 } from '../../api/staffApi';
 import {
   BANK_OPTIONS,
@@ -1430,7 +1431,7 @@ export default function StaffEnrollment() {
 
   const filtered = staff.filter(s =>
     (!filterRole ||
-      s.employmentInfo?.role === filterRole) &&
+      (s.employmentInfo?.roles?.length ? s.employmentInfo.roles : [s.employmentInfo?.role]).includes(filterRole)) &&
     (!filterStatus ||
       (s.accountInfo?.accountActive
         ? "Active"
@@ -1480,6 +1481,40 @@ export default function StaffEnrollment() {
         title: "Delete Failed",
         description: "Unable to delete staff.",
       });
+    }
+  };
+
+  const [togglingStatusId, setTogglingStatusId] = useState(null);
+
+  const handleToggleStatus = async (item) => {
+    const nextActive = !item.accountInfo?.accountActive;
+    setTogglingStatusId(item._id);
+    try {
+      await toggleStaffStatus(item._id, nextActive);
+
+      showToast({
+        type: "success",
+        title: "Status Updated",
+        description: `${item.personalInfo?.fullName || "Staff member"} is now ${nextActive ? "Active" : "Inactive"}.`,
+      });
+
+      setStaff((prev) =>
+        prev.map((s) =>
+          s._id === item._id
+            ? { ...s, accountInfo: { ...s.accountInfo, accountActive: nextActive } }
+            : s
+        )
+      );
+    } catch (err) {
+      console.error(err);
+
+      showToast({
+        type: "error",
+        title: "Update Failed",
+        description: err.response?.data?.message || "Unable to update status.",
+      });
+    } finally {
+      setTogglingStatusId(null);
     }
   };
 
@@ -1698,7 +1733,7 @@ export default function StaffEnrollment() {
                 <td className="px-5 py-5 font-mono text-gray-500 text-sm"> {s.employmentInfo?.staffId}</td>
                 <td className="px-5 py-5">
                   <div className="text-[#1A1D2E] font-semibold text-sm">
-                    {s.employmentInfo?.role}
+                    {(s.employmentInfo?.roles?.length ? s.employmentInfo.roles : [s.employmentInfo?.role].filter(Boolean)).join(', ')}
                   </div>
 
                   <div className="text-gray-400 text-xs mt-0.5">
@@ -1707,8 +1742,12 @@ export default function StaffEnrollment() {
                 </td>
                 <td className="px-5 py-5 text-gray-600 text-sm">  {s.employmentInfo?.employmentType}</td>
                 <td className="px-5 py-5">
-                  <span
-                    className="px-3 py-1.5 rounded-lg text-xs font-bold"
+                  <button
+                    type="button"
+                    onClick={() => handleToggleStatus(s)}
+                    disabled={togglingStatusId === s._id}
+                    title="Click to toggle Active / Inactive"
+                    className="px-3 py-1.5 rounded-lg text-xs font-bold border-none cursor-pointer transition-opacity disabled:opacity-60 disabled:cursor-wait"
                     style={{
                       backgroundColor: s.accountInfo?.accountActive
                         ? '#DCFCE7'
@@ -1718,10 +1757,12 @@ export default function StaffEnrollment() {
                         : '#6B7280',
                     }}
                   >
-                    {s.accountInfo?.accountActive
-                      ? "Active"
-                      : "Inactive"}
-                  </span>
+                    {togglingStatusId === s._id
+                      ? "…"
+                      : s.accountInfo?.accountActive
+                        ? "Active"
+                        : "Inactive"}
+                  </button>
                 </td>
                 <td className="px-5 py-5 text-gray-500 text-sm">{s.employmentInfo?.dateOfJoining?.split("T")[0]}</td>
                 <td className="px-5 py-5 text-right">

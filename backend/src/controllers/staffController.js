@@ -564,6 +564,53 @@ const deleteStaff = async (req, res) => {
     }
 };
 
+// Deliberately its own tiny endpoint rather than routing an Active/Inactive
+// toggle through updateStaff - that endpoint expects the full staff form
+// payload (buildStaffFormData on the frontend always sends every section),
+// so a bare {accountActive} call through it would blank out roles and
+// module access by overwriting them with empty defaults. This only ever
+// touches accountInfo.accountActive.
+const toggleStaffStatus = async (req, res) => {
+    try {
+        const { accountActive } = req.body || {};
+
+        if (typeof accountActive !== "boolean") {
+            return res.status(400).json({
+                success: false,
+                message: "accountActive (true/false) is required",
+            });
+        }
+
+        const staff = await Staff.findOneAndUpdate(
+            {
+                _id: req.params.id,
+                clinicId: req.user.clinicId,
+            },
+            { "accountInfo.accountActive": accountActive },
+            { new: true }
+        );
+
+        if (!staff) {
+            return res.status(404).json({
+                success: false,
+                message: "Staff not found",
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: `Staff marked ${accountActive ? "Active" : "Inactive"}`,
+            data: staff,
+        });
+    } catch (error) {
+        console.error("TOGGLE STAFF STATUS ERROR:", error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error",
+        });
+    }
+};
 
 const getManagers = async (req, res) => {
     try {
@@ -691,3 +738,4 @@ exports.getStaffById = getStaffById;
 exports.updateStaff = updateStaff;
 exports.deleteStaff = deleteStaff;
 exports.getManagers = getManagers;
+exports.toggleStaffStatus = toggleStaffStatus;

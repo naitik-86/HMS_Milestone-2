@@ -15,6 +15,10 @@ export default function ViewStaffModal({
         reportTo = "Clinic Admin"
     }
 
+    const roleList = staff.employmentInfo?.roles?.length
+        ? staff.employmentInfo.roles
+        : [staff.employmentInfo?.role].filter(Boolean);
+
     return (
         <div
             className="fixed inset-0 z-[1000] flex items-center justify-center"
@@ -75,11 +79,7 @@ export default function ViewStaffModal({
                             </h3>
 
                             <p className="text-gray-500">
-                                {
-                                    staff
-                                        .employmentInfo
-                                        ?.role
-                                }
+                                {roleList.join(', ') || '—'}
                             </p>
 
                             <span className="inline-block mt-2 px-3 py-1 rounded-lg text-xs font-bold bg-green-100 text-green-700">
@@ -157,12 +157,8 @@ export default function ViewStaffModal({
                             />
 
                             <Info
-                                label="Role"
-                                value={
-                                    staff
-                                        .employmentInfo
-                                        ?.role
-                                }
+                                label={roleList.length > 1 ? "Roles" : "Role"}
+                                value={roleList.join(', ')}
                             />
 
                             <Info

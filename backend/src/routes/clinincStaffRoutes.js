@@ -38,6 +38,8 @@ router.put(
     staffController.updateStaff
 );
 
+router.patch("/:id/status", authorize("CLINIC_ADMIN"), staffController.toggleStaffStatus);
+
 router.delete("/:id", authorize("CLINIC_ADMIN"), staffController.deleteStaff);
 
 module.exports = router;

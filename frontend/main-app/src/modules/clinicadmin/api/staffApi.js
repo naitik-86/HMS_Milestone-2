@@ -101,6 +101,14 @@ export const deleteStaff =
         return res.data;
     };
 
+// Dedicated endpoint - does not touch roles/module access/bank details the
+// way routing a bare {accountActive} through updateStaff's full-payload
+// PUT would.
+export const toggleStaffStatus = async (id, accountActive) => {
+    const res = await API.patch(`${BASE_URL}/${id}/status`, { accountActive });
+    return res.data;
+};
+
 
 
 const buildStaffFormData = (staff) => {
