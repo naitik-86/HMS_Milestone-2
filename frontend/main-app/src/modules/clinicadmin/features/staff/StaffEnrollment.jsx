@@ -91,6 +91,7 @@ function EnrollForm({ onClose, onSave, editData, mode, staff, isSubmitting, }) {
     ],
 
     role: '',
+    roles: [],
     dateOfJoining: '',
     staffId: '',
     reportingTo: '',
@@ -361,6 +362,11 @@ function EnrollForm({ onClose, onSave, editData, mode, staff, isSubmitting, }) {
 
         role:
           editData.employmentInfo?.role || "",
+
+        roles:
+          editData.employmentInfo?.roles?.length
+            ? editData.employmentInfo.roles
+            : [editData.employmentInfo?.role].filter(Boolean),
 
         dateOfJoining:
           editData.employmentInfo?.dateOfJoining
@@ -874,16 +880,26 @@ function EnrollForm({ onClose, onSave, editData, mode, staff, isSubmitting, }) {
                   <h3 className="text-base font-bold text-[#1A1D2E] mb-6">Professional Placement</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <label className={labelClass}>Role <span className="text-[#E8630A]">*</span></label>
-                      <select
-                        className={isView ? inputDisabled : inputBase}
-                        disabled={isView}
-                        value={form.role}
-                        onChange={e => update('role', e.target.value)}
-                      >
-                        <option value="">Select</option>
-                        {roles.map(r => <option key={r}>{r}</option>)}
-                      </select>
+                      <label className={labelClass}>Roles <span className="text-[#E8630A]">*</span></label>
+                      <div className="grid grid-cols-1 gap-2 rounded-xl border border-slate-200 p-3">
+                        {roles.map((role) => (
+                          <label key={role} className="flex items-center gap-2 text-sm text-slate-700">
+                            <input
+                              type="checkbox"
+                              disabled={isView}
+                              checked={form.roles.includes(role)}
+                              onChange={(event) => {
+                                const nextRoles = event.target.checked
+                                  ? [...form.roles, role]
+                                  : form.roles.filter((value) => value !== role);
+                                update('roles', nextRoles);
+                                update('role', nextRoles[0] || '');
+                              }}
+                            />
+                            {role}
+                          </label>
+                        ))}
+                      </div>
                     </div>
                     <div>
                       <label className={labelClass}>Department</label>

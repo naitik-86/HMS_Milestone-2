@@ -40,6 +40,20 @@ const ensureClinicIsActive = async (clinicId, res) => {
   return false;
 };
 
+// A staff member can be assigned more than one role (employmentInfo.roles).
+// getStaffRoles() falls back to the single legacy employmentInfo.role field
+// so older staff documents created before multi-role support keep working.
+const getStaffRoles = (staff) => [...new Set(
+  (staff.employmentInfo?.roles?.length ? staff.employmentInfo.roles : [staff.employmentInfo?.role])
+    .filter(Boolean)
+)];
+
+const issueStaffSession = (staff, role) => jwt.sign(
+  { id: staff._id, role, clinicId: staff.clinicId },
+  process.env.JWT_SECRET,
+  { expiresIn: '1d' }
+);
+
 // ==========================================
 // SUPER_ADMIN OTP VERIFY
 // ==========================================
@@ -207,19 +221,68 @@ exports.verifyStaffOtp = async (req, res) => {
     await lockoutService.resetAttempts(staff, staff.accountInfo, 'otp');
     await recordLoginSuccess(staff, staff.accountInfo, req);
 
-    const token = jwt.sign(
-      { id: staff._id, role: staff.employmentInfo.role, clinicId: staff.clinicId },
-      process.env.JWT_SECRET,
-      { expiresIn: '1d' }
-    );
+    const roles = getStaffRoles(staff);
+    const needsRoleSelection = roles.length > 1;
+    const token = needsRoleSelection ? undefined : issueStaffSession(staff, roles[0]);
+    const roleSelectionToken = needsRoleSelection
+      ? jwt.sign({ id: staff._id, clinicId: staff.clinicId, roles, purpose: 'ROLE_SELECTION' }, process.env.JWT_SECRET, { expiresIn: '10m' })
+      : undefined;
 
-   return res.status(200).json({ 
-      success: true, 
-      message: 'Login successful', 
-      token, 
-      role: staff.employmentInfo.role, 
-      requiresPasswordReset: staff.accountInfo?.forcePasswordReset !== false, 
-      user: staff 
+   return res.status(200).json({
+      success: true,
+      message: 'Login successful',
+      token,
+      role: roles[0],
+      roles,
+      needsRoleSelection,
+      roleSelectionToken,
+      requiresPasswordReset: staff.accountInfo?.forcePasswordReset !== false,
+      user: staff
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// ==========================================
+// STAFF ROLE SELECTION (multi-role accounts)
+// ==========================================
+exports.selectStaffRole = async (req, res) => {
+  try {
+    const { roleSelectionToken, role } = req.body || {};
+    if (!roleSelectionToken || !role) {
+      return res.status(400).json({ success: false, message: 'Role selection token and role are required' });
+    }
+
+    let decoded;
+    try {
+      decoded = jwt.verify(roleSelectionToken, process.env.JWT_SECRET);
+    } catch (verifyError) {
+      return res.status(401).json({ success: false, message: 'Role selection session has expired. Please log in again.' });
+    }
+
+    if (decoded.purpose !== 'ROLE_SELECTION' || !decoded.id) {
+      return res.status(401).json({ success: false, message: 'Invalid role selection session' });
+    }
+
+    const staff = await Staff.findById(decoded.id);
+    if (!staff) {
+      return res.status(404).json({ success: false, message: 'Staff not found' });
+    }
+    if (!(await ensureClinicIsActive(staff.clinicId, res))) return;
+
+    const roles = getStaffRoles(staff);
+    if (!roles.includes(role)) {
+      return res.status(403).json({ success: false, message: 'This role is not assigned to your account' });
+    }
+
+    return res.json({
+      success: true,
+      token: issueStaffSession(staff, role),
+      role,
+      roles,
+      requiresPasswordReset: staff.accountInfo?.forcePasswordReset !== false,
+      user: staff,
     });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });

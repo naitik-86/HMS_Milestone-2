@@ -133,6 +133,7 @@ const buildStaffFormData = (staff) => {
         "employmentInfo",
         JSON.stringify({
             role: staff.role,
+            roles: staff.roles?.length ? staff.roles : [staff.role].filter(Boolean),
             department: staff.department,
             reportingTo: staff.reportingTo,
             staffId: staff.staffId,

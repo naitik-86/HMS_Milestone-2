@@ -69,6 +69,11 @@ const staffSchema = new mongoose.Schema(
                 required: true,
             },
 
+            roles: {
+                type: [String],
+                default: [],
+            },
+
             dateOfJoining: Date,
 
             staffId: {

@@ -12,6 +12,7 @@ const Privacy = lazy(() => import("../modules/public/pages/Privacy"));
 const Cookies = lazy(() => import("../modules/public/pages/Cookies"));
 const Info = lazy(() => import("../modules/public/pages/Info"));
 const ComingSoon = lazy(() => import("../modules/clinicadmin/pages/pet-owner/ComingSoon"));
+const RoleSelection = lazy(() => import("../modules/public/pages/RoleSelection"));
 
 const PublicRoutes = (
     <Route element={<PublicLayout />}>
@@ -22,6 +23,7 @@ const PublicRoutes = (
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/cookies" element={<Cookies />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/select-role" element={<RoleSelection />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/total-users" element={<Info />} />
         <Route path="/create-account" element={<ComingSoon />} />

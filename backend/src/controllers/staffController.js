@@ -15,6 +15,13 @@ const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const phoneRegex = /^\d{10}$/;
 const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
+const normalizeRoles = (roles, fallbackRole = '') => [...new Set(
+    (Array.isArray(roles) ? roles : [roles, fallbackRole])
+        .filter(Boolean)
+        .map((role) => String(role).trim())
+        .filter(Boolean)
+)];
+
 const createStaff = async (req, res) => {
 
     console.log("****** -> createstaff");
@@ -67,12 +74,17 @@ const createStaff = async (req, res) => {
             });
         }
 
-        if (!employmentInfo.role) {
+        const assignedRoles = normalizeRoles(employmentInfo.roles, employmentInfo.role);
+
+        if (!assignedRoles.length) {
             return res.status(400).json({
                 success: false,
                 message: "Staff role is required",
             });
         }
+
+        employmentInfo.roles = assignedRoles;
+        employmentInfo.role = assignedRoles[0];
 
         const normalizedEmail = typeof personalInfo.email === "string"
             ? personalInfo.email.trim().toLowerCase()
@@ -375,6 +387,19 @@ const updateStaff = async (req, res) => {
             ? JSON.parse(req.body.employmentInfo)
             : {};
 
+        if (employmentInfo.roles !== undefined || employmentInfo.role !== undefined) {
+            const assignedRoles = normalizeRoles(
+                employmentInfo.roles,
+                employmentInfo.role || existingStaff.employmentInfo.role
+            );
+
+            if (!assignedRoles.length) {
+                return res.status(400).json({ success: false, message: "At least one staff role is required" });
+            }
+
+            employmentInfo.roles = assignedRoles;
+            employmentInfo.role = assignedRoles[0];
+        }
 
         if (!employmentInfo.reportingTo || employmentInfo.reportingTo.trim() === "") {
             employmentInfo.reportingTo = null;

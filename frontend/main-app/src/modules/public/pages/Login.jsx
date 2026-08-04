@@ -318,8 +318,21 @@ export default function Login() {
     // 2. Make Verification Call & Set Token
     try {
       const verifyRes = await API.post(verifyEndpoint, payload);
+
+      // A staff account with more than one assigned role doesn't get a
+      // dashboard token yet - it gets a short-lived role-selection token
+      // instead, and the user picks which dashboard to open next.
+      if (verifyRes.data?.needsRoleSelection) {
+        sessionStorage.setItem("roleSelectionToken", verifyRes.data.roleSelectionToken);
+        sessionStorage.setItem("availableRoles", JSON.stringify(verifyRes.data.roles || []));
+        localStorage.setItem("user", JSON.stringify(verifyRes.data.user || {}));
+        return navigate("/select-role", { replace: true });
+      }
+
       if (verifyRes.data?.token) {
         localStorage.setItem("token", verifyRes.data.token);
+        localStorage.setItem("role", normalizeRole(verifyRes.data.role || role));
+        localStorage.setItem("availableRoles", JSON.stringify(verifyRes.data.roles || [verifyRes.data.role || role]));
 
         // =========== FORCE PASSWORD LOGIC ===========
         if (verifyRes.data?.requiresPasswordReset) {
