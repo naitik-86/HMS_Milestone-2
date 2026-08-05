@@ -17,6 +17,16 @@ import {
 } from "lucide-react";
 import { getLabDashboard } from "../../api/labApi";
 
+// tokenNumber is stored WITH its "TK-" prefix already (e.g. "TK-115") -
+// unconditionally prepending "TK-" here duplicated it into "TK-TK-115".
+// Older legacy records only ever stored the bare number, so keep
+// prepending for those.
+const formatToken = (raw, fallback = "N/A") => {
+  if (raw === undefined || raw === null || raw === "") return fallback;
+  const str = String(raw);
+  return str.toUpperCase().startsWith("TK-") ? str : `TK-${str}`;
+};
+
 export default function LabDashboard() {
   const [loading, setLoading] = useState(true);
   const [statsData, setStatsData] = useState({
@@ -161,8 +171,8 @@ export default function LabDashboard() {
                     {pendingSummary.map((item) => (
                       <div key={item._id} className="p-4 sm:p-5 hover:bg-orange-50/40 transition flex items-center justify-between gap-4">
                         <div className="flex items-center gap-3.5">
-                          <div className="w-10 h-10 rounded-2xl bg-orange-100 text-orange-600 flex items-center justify-center font-bold text-xs shrink-0">
-                            TK-{item.tokenNumber || "N/A"}
+                          <div className="min-w-10 h-10 px-2 rounded-2xl bg-orange-100 text-orange-600 flex items-center justify-center whitespace-nowrap font-bold text-xs shrink-0">
+                            {formatToken(item.tokenNumber)}
                           </div>
                           <div>
                             <p className="font-bold text-slate-800 text-sm">{item.petName || "Pet"} ({item.species})</p>

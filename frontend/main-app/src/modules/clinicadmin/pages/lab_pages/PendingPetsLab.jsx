@@ -23,6 +23,16 @@ import {
 } from "../../api/labApi";
 import { showToast } from "../../../../shared/components/toast";
 
+// tokenNumber is stored WITH its "TK-" prefix already (e.g. "TK-115") -
+// unconditionally prepending "TK-" here duplicated it into "TK-TK-115".
+// Older legacy records only ever stored the bare number, so keep
+// prepending for those.
+const formatToken = (raw, fallback = "N/A") => {
+  if (raw === undefined || raw === null || raw === "") return fallback;
+  const str = String(raw);
+  return str.toUpperCase().startsWith("TK-") ? str : `TK-${str}`;
+};
+
 export default function LabPendingCases() {
   const [cases, setCases] = useState([]);
   const [search, setSearch] = useState("");
@@ -223,8 +233,8 @@ export default function LabPendingCases() {
                     {filtered.map((item) => (
                       <tr key={item._id} className="hover:bg-orange-50/40 transition-colors">
                         <td className="py-4 px-4 font-mono font-black text-slate-800">
-                          <span className="inline-block bg-slate-900 text-white px-3 py-1 rounded-xl text-xs shadow-2xs">
-                            TK-{item.tokenNumber || item._id?.slice(-4)}
+                          <span className="inline-block whitespace-nowrap bg-slate-900 text-white px-3 py-1 rounded-xl text-xs shadow-2xs">
+                            {formatToken(item.tokenNumber || item._id?.slice(-4))}
                           </span>
                         </td>
                         <td className="py-4 px-4">
@@ -311,7 +321,7 @@ export default function LabPendingCases() {
                 <div>
                   <h3 className="text-lg font-extrabold text-white">Doctor Requisition Details</h3>
                   <p className="text-xs text-slate-300">
-                    Patient: {selectedCase.pet?.petName || selectedCase.pet?.name || "Pet"} • Token: TK-{selectedCase.tokenNumber || "00"}
+                    Patient: {selectedCase.pet?.petName || selectedCase.pet?.name || "Pet"} • Token: {formatToken(selectedCase.tokenNumber, "TK-00")}
                   </p>
                 </div>
               </div>
@@ -397,7 +407,7 @@ export default function LabPendingCases() {
                   <h3 className="text-xl font-extrabold text-white">Upload Diagnostic Reports</h3>
                   <p className="text-xs text-slate-300">
                     Patient: <span className="text-white font-semibold">{selectedCase.pet?.petName || selectedCase.pet?.name || "Pet"}</span> • Token:{" "}
-                    <span className="font-mono text-white font-bold">TK-{selectedCase.tokenNumber || "00"}</span>
+                    <span className="font-mono text-white font-bold">{formatToken(selectedCase.tokenNumber, "TK-00")}</span>
                   </p>
                 </div>
               </div>

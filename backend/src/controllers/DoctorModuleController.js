@@ -660,10 +660,31 @@ exports.getPreConsultationByVisit = async (req, res) => {
             });
         }
 
+        const responseData = preConsultation.toObject();
+
+        // preConsultation.petId is never a real document in the standalone
+        // Pet collection - pet registration only ever writes pets into
+        // PetRegistration.pets[] (see petRegistrationController.js), so
+        // .populate("petId") above silently resolves to null every time.
+        // The actual pet record (rfid, identificationArea, dob, color,
+        // etc.) lives in that embedded array, keyed by the same _id this
+        // document's petId field stores - fetch it from there instead so
+        // the frontend's existing data.petId.<field> reads actually work.
+        if (!responseData.petId && preConsultation.petId) {
+            const ownerRegistration = await PetRegistration.findOne(
+                { "pets._id": preConsultation.petId },
+                { "pets.$": 1 }
+            ).lean();
+            const embeddedPet = ownerRegistration?.pets?.[0];
+            if (embeddedPet) {
+                responseData.petId = embeddedPet;
+            }
+        }
+
         return res.status(200).json({
             success: true,
             message: "Pre-consultation report fetched successfully.",
-            data: preConsultation,
+            data: responseData,
         });
 
     } catch (error) {

@@ -407,7 +407,7 @@ export default function CompletedPets() {
                             href={r.fileUrl}
                             target="_blank"
                             rel="noreferrer"
-                            download={`${r.fileName || r.testName || "Lab_Report"}.pdf`}
+                            download={r.fileName && /\.[a-zA-Z0-9]+$/.test(r.fileName) ? r.fileName : `${r.fileName || r.testName || "Lab_Report"}.pdf`}
                             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs transition cursor-pointer shrink-0 border-none"
                           >
                             <span>📄</span> View / Download PDF

@@ -715,10 +715,20 @@ export default function NewRegistrationPet() {
     }
 
     if (name === "city") {
-      setFormData((prev) => ({ ...prev, city: value }));
+      // Same "downstream field is now stale" issue the state/district
+      // handlers above already guard against - picking a different city
+      // manually left whatever pincode a PREVIOUS pincode lookup (or a
+      // previous city) had set completely untouched, so the two could
+      // silently point at different places with no re-validation.
+      pincodeRequestRef.current += 1;
+      setFormData((prev) => ({ ...prev, city: value, pincode: "" }));
+      setPincodeValid(null);
+      setPincodeLoading(false);
+      setPincodeDetails(value ? "City changed — PIN code reset." : "");
       setErrors((prev) => ({
         ...prev,
         city: value ? "" : "City is required.",
+        pincode: "",
       }));
       return;
     }
@@ -1116,6 +1126,8 @@ export default function NewRegistrationPet() {
       required("ownerName", "Owner name is required.");
       if (formData.ownerName && !/^[a-zA-Z\s.'-]+$/.test(formData.ownerName.trim())) {
         nextErrors.ownerName = "Owner name can contain alphabets only.";
+      } else if (formData.ownerName && formData.ownerName.trim().length < 3) {
+        nextErrors.ownerName = "Owner name must be at least 3 characters.";
       }
       if (formData.ownerIdType === "Aadhaar Card") {
         if (!formData.ownerIdNumber || formData.ownerIdNumber.length !== 12) {
@@ -2521,10 +2533,17 @@ export default function NewRegistrationPet() {
                                     value={row.vaccinationDate || ""}
                                     max={today}
                                     onChange={(e) => {
+                                      // max={today} only stops the calendar
+                                      // picker from letting you click a
+                                      // future date - typing one directly
+                                      // into the field goes straight
+                                      // through unless it's clamped here.
+                                      const entered = e.target.value;
+                                      const safeDate = entered && entered > today ? today : entered;
                                       const newList = [...vacList];
-                                      newList[rIdx] = { ...newList[rIdx], vaccinationDate: e.target.value };
+                                      newList[rIdx] = { ...newList[rIdx], vaccinationDate: safeDate };
                                       handlePetHistoryChange(currentHistoryPet.id, "vaccinations", newList);
-                                      if (rIdx === 0) handlePetHistoryChange(currentHistoryPet.id, "vaccinationDate", e.target.value);
+                                      if (rIdx === 0) handlePetHistoryChange(currentHistoryPet.id, "vaccinationDate", safeDate);
                                     }}
                                     className={inputClass}
                                   />

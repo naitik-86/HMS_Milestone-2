@@ -1,4 +1,5 @@
 import { FileText, Download, CheckCircle, X, PawPrint, User, ShieldCheck } from "lucide-react";
+import { formatPetAge } from "../../../../shared/utils/petAge";
 
 export default function LabReportModal({
     open,
@@ -92,7 +93,7 @@ export default function LabReportModal({
 
                             <div>
                                 <p className="text-[10px] font-bold text-slate-400 uppercase">Gender / Age</p>
-                                <p className="font-bold text-slate-800 mt-0.5">{report.pet?.gender || "N/A"} / {report.pet?.age ? `${report.pet.age} yrs` : "N/A"}</p>
+                                <p className="font-bold text-slate-800 mt-0.5">{report.pet?.gender || "N/A"} / {formatPetAge(report.pet)}</p>
                             </div>
 
                             <div className="col-span-2">
@@ -140,7 +141,7 @@ export default function LabReportModal({
                                         {item.fileUrl && (
                                             <a
                                                 href={item.fileUrl}
-                                                download={`${item.fileName || item.testName || "Lab_Report"}.pdf`}
+                                                download={item.fileName && /\.[a-zA-Z0-9]+$/.test(item.fileName) ? item.fileName : `${item.fileName || item.testName || "Lab_Report"}.pdf`}
                                                 target="_blank"
                                                 rel="noreferrer"
                                                 className="inline-flex items-center gap-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold px-4 py-2.5 transition text-xs shadow-xs border-none cursor-pointer shrink-0"

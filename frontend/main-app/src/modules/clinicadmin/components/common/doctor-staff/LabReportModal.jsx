@@ -18,8 +18,15 @@ export default function LabReportModal({
             const blobUrl = window.URL.createObjectURL(blob);
             const link = document.createElement("a");
             link.href = blobUrl;
-            const safeName = fileName || `${testName || "Lab_Report"}.pdf`;
-            link.download = safeName.endsWith(".pdf") ? safeName : `${safeName}.pdf`;
+            // Preserve the file's own extension - forcing ".pdf" onto
+            // every download regardless of the actual uploaded type broke
+            // JPG (and any other non-PDF) attachments: the browser saved
+            // e.g. "photo.jpg" as "photo.jpg.pdf", so opening it tried to
+            // parse JPEG bytes as a PDF and failed to load. Only guess
+            // ".pdf" when there's no filename/extension to go on at all.
+            const hasExtension = fileName && /\.[a-zA-Z0-9]+$/.test(fileName);
+            const safeName = hasExtension ? fileName : `${fileName || testName || "Lab_Report"}.pdf`;
+            link.download = safeName;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);

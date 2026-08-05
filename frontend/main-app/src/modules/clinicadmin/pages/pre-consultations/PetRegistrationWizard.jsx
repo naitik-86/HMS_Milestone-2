@@ -154,9 +154,9 @@ export default function PetRegistrationWizard({ onClose, petData, onCompleted })
     },
 
     // Problem
-    primaryComplaint: "",
+    primaryComplaint: pc.primaryComplaint || "",
     associatedSymptoms: pc.associatedSymptoms || [],
-    severity: "",
+    severity: pc.severity || "",
 
     // Observation
     generalDemeanour: pc.generalDemeanour || "",

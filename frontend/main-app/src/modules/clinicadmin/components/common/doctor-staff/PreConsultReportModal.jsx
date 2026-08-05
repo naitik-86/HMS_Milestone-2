@@ -1,4 +1,5 @@
 import { Activity, Heart, Thermometer, Weight, Wind, ShieldAlert, CheckCircle2, User, Clock, FileText } from "lucide-react";
+import { formatPetAge } from "../../../../../shared/utils/petAge";
 
 export default function PreConsultationReportModal({
   open,
@@ -100,7 +101,7 @@ export default function PreConsultationReportModal({
 
               <div>
                 <p className="text-slate-400 font-bold uppercase tracking-wider text-[10px]">Gender & Age</p>
-                <p className="font-bold text-slate-900 text-xs mt-0.5">{data?.petId?.gender || data?.gender || "N/A"} • {data?.petId?.age ? `${data.petId.age} yrs` : (data?.age ? `${data.age} yrs` : "N/A")}</p>
+                <p className="font-bold text-slate-900 text-xs mt-0.5">{data?.petId?.gender || data?.gender || "N/A"} • {formatPetAge(data?.petId || data)}</p>
               </div>
 
               <div>

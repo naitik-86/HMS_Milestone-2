@@ -1,4 +1,5 @@
 import { jsPDF } from "jspdf";
+import { formatPetAge } from "../../../../../shared/utils/petAge";
 
 export const generateCaseReportPDF = (data) => {
   if (!data) return;
@@ -86,7 +87,7 @@ export const generateCaseReportPDF = (data) => {
     data.pet?.species || data.petId?.species || data.species || "N/A";
   const breed = data.pet?.breed || data.petId?.breed || data.breed || "N/A";
   const gender = data.pet?.gender || data.petId?.gender || data.gender || "N/A";
-  const age = data.pet?.age || data.petId?.age || data.age || "N/A";
+  const age = formatPetAge(data.pet || data.petId || data);
 
   const ownerName =
     data.owner?.ownerName ||

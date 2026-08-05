@@ -512,7 +512,7 @@ export default function PendingPets() {
                       </div>
                       <div>
                         <h3 className="font-bold text-slate-900 text-base">{petName}</h3>
-                        <span className="bg-slate-900 text-white text-[10px] font-mono font-bold px-2 py-0.5 rounded-md">
+                        <span className="whitespace-nowrap bg-slate-900 text-white text-[10px] font-mono font-bold px-2 py-0.5 rounded-md">
                           {token}
                         </span>
                       </div>
@@ -598,7 +598,7 @@ export default function PendingPets() {
                   return (
                     <tr key={pet._id} className="hover:bg-slate-50/80 transition-all">
                       <td className="py-4 px-6 font-mono font-bold text-slate-900">
-                        <span className="bg-slate-900 text-white px-2.5 py-1 rounded-lg text-xs">
+                        <span className="whitespace-nowrap bg-slate-900 text-white px-2.5 py-1 rounded-lg text-xs">
                           {token}
                         </span>
                       </td>
