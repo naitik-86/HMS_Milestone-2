@@ -720,11 +720,12 @@ exports.login = async (req, res) => {
 
       const isMatch = await bcrypt.compare(password, clinicAdmin.password);
 
-      let phoneMatches = true;
-      if (phone) {
-        const clinicForPhone = await Clinic.findById(clinicAdmin.clinicId).select('adminDetails.adminPhone').lean();
-        phoneMatches = normalizePhone(phone) === normalizePhone(clinicForPhone?.adminDetails?.adminPhone);
-      }
+      // Phone is required at login (not just checked when provided) - it
+      // must match the admin phone number entered by the Super Admin when
+      // this clinic was onboarded (Add Clinic > Admin Info). Same pattern
+      // as the Staff/User branches below.
+      const clinicForPhone = await Clinic.findById(clinicAdmin.clinicId).select('adminDetails.adminPhone').lean();
+      const phoneMatches = normalizePhone(phone) === normalizePhone(clinicForPhone?.adminDetails?.adminPhone);
 
       if (!isMatch || !phoneMatches) {
         await lockoutService.registerFailedAttempt(clinicAdmin, clinicAdmin, 'password');

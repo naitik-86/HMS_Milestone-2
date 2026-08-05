@@ -793,10 +793,29 @@ exports.deletePlan = async (req, res) => {
     const inUseCount = await Clinic.countDocuments({ plan: plan.subscriptionPlan });
 
     if (inUseCount > 0) {
-      return res.status(409).json({
-        success: false,
-        message: `This plan is still assigned to ${inUseCount} clinic${inUseCount === 1 ? '' : 's'} and cannot be deleted. Move those clinics to another plan first.`,
+      // Clinic.plan only stores the tier NAME ("Basic", "Standard", ...),
+      // not a reference to this specific plan document - so multiple
+      // catalog entries can share a tier (e.g. duplicate/legacy "Basic"
+      // plans at different price points) with no way to tell which exact
+      // document a given clinic is on. For standard, fungible catalog
+      // tiers that's safe to delete around: as long as another document
+      // of the same tier remains, every clinic on that tier still
+      // resolves to a valid plan and nothing breaks. Custom plans are
+      // NOT fungible - each is created per-clinic with its own unique
+      // price/limits (see createClinic's custom-plan flow) - so a
+      // sibling "Custom" document is not a safe substitute and this tier
+      // stays unconditionally blocked while any clinic is on it.
+      const hasSiblingPlan = plan.subscriptionPlan !== 'Custom' && await SubscriptionPlan.exists({
+        subscriptionPlan: plan.subscriptionPlan,
+        _id: { $ne: plan._id },
       });
+
+      if (!hasSiblingPlan) {
+        return res.status(409).json({
+          success: false,
+          message: `This plan is still assigned to ${inUseCount} clinic${inUseCount === 1 ? '' : 's'} and cannot be deleted. Move those clinics to another plan first.`,
+        });
+      }
     }
 
     await SubscriptionPlan.findByIdAndDelete(req.params.id);

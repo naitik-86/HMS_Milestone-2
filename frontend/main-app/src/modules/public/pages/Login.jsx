@@ -209,8 +209,9 @@ export default function Login() {
       newErrors.email = "Enter a valid email";
     }
 
-    // Phone is optional - only validated if provided
-    if (form.phone.trim() && !/^[6-9]\d{9}$/.test(form.phone)) {
+    if (!form.phone.trim()) {
+      newErrors.phone = "Phone number is required";
+    } else if (!/^[6-9]\d{9}$/.test(form.phone)) {
       newErrors.phone =
         "Enter a valid 10-digit mobile number";
     }
@@ -483,6 +484,8 @@ export default function Login() {
               }
             }}
             placeholder="Enter phone number"
+            autoComplete="tel"
+            required
             className={`w-full rounded-xl pl-10 pr-4 py-3 ${
               errors.phone
                 ? "border border-red-500"

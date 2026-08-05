@@ -486,9 +486,7 @@ export default function ClinicModal({ onClose }) {
                             <h2 className="text-xl sm:text-3xl font-bold text-[#0C3D2E] tracking-tight">
                                 Add Clinic
                             </h2>
-                            <span className="px-3 py-0.5 rounded-full text-xs font-bold border border-[#0C3D2E]/20 bg-[#D9E8E3] text-[#0C3D2E]">
-                                {status}
-                            </span>
+                            <StatusDropdown value={status} onChange={handleStatusChange} />
                         </div>
                         <p className="text-[#0C3D2E]/70 text-xs sm:text-sm mt-0.5 font-semibold">
                             Register a new clinic/hospital in the system.
@@ -503,20 +501,6 @@ export default function ClinicModal({ onClose }) {
                     >
                         ✕
                     </button>
-                </div>
-
-                {/* WORKFLOW STATUS BAR WITH MATCHING MINT GREEN BG */}
-                <div className="bg-[#EEF6F3] px-4 sm:px-8 py-3 border-b border-[#0C3D2E]/15 flex flex-wrap items-center justify-between gap-3">
-                    <span className="text-xs font-bold uppercase tracking-wider text-[#0C3D2E]">
-                        Workflow Status:
-                    </span>
-
-                    <div className="flex items-center gap-2">
-                        <StatusDropdown
-                            value={status}
-                            onChange={handleStatusChange}
-                        />
-                    </div>
                 </div>
 
                 {/* STEPPER CONTAINER WITH MATCHING MINT GREEN BG */}

@@ -316,6 +316,7 @@ export default function ClinicForm({
     const [adminPhoneOtpSent, setAdminPhoneOtpSent] = useState(false);
     const [adminPhoneOtpBusy, setAdminPhoneOtpBusy] = useState(false);
     const [adminPhoneOtpError, setAdminPhoneOtpError] = useState("");
+    const [adminPhoneOtpResendCooldown, setAdminPhoneOtpResendCooldown] = useState(0);
     // Stored on `form` (not local state) so ClinicModal's separate
     // tab-completeness check can also see whether the *current* phone
     // value has actually been OTP-verified.
@@ -1210,6 +1211,8 @@ export default function ClinicForm({
         }
     };
 
+    const ADMIN_OTP_RESEND_COOLDOWN_SECONDS = 30;
+
     const handleSendAdminOtp = async () => {
         if (!isValidMobileNumber(form.adminPhone)) {
             setAdminPhoneOtpError("Enter a valid 10-digit mobile number first.");
@@ -1221,13 +1224,23 @@ export default function ClinicForm({
             await sendClinicAdminOtp(form.adminPhone);
             setAdminPhoneOtpSent(true);
             setAdminPhoneOtp("");
-            showToast({ type: "success", title: "OTP Sent", description: "Check the backend logs for the OTP (SMS delivery isn't wired up yet)." });
+            setAdminPhoneOtpResendCooldown(ADMIN_OTP_RESEND_COOLDOWN_SECONDS);
+            showToast({ type: "success", title: "OTP Sent", description: "Testing phase: enter 123456 to verify (SMS delivery isn't wired up yet)." });
         } catch (error) {
             setAdminPhoneOtpError(error.response?.data?.message || "Failed to send OTP.");
         } finally {
             setAdminPhoneOtpBusy(false);
         }
     };
+
+    // Ticks the Resend OTP cooldown down to 0 once a second.
+    useEffect(() => {
+        if (adminPhoneOtpResendCooldown <= 0) return;
+        const timer = window.setInterval(() => {
+            setAdminPhoneOtpResendCooldown((prev) => (prev > 0 ? prev - 1 : 0));
+        }, 1000);
+        return () => window.clearInterval(timer);
+    }, [adminPhoneOtpResendCooldown]);
 
     const handleVerifyAdminOtp = async () => {
         if (!/^\d{6}$/.test(adminPhoneOtp)) {
@@ -1662,6 +1675,8 @@ export default function ClinicForm({
             nextErrors.adminPhone = "Mobile number is required.";
         } else if (!isValidMobileNumber(form.adminPhone)) {
             nextErrors.adminPhone = "Mobile number must be a valid 10-digit number.";
+        } else if (!adminPhoneOtpVerified) {
+            nextErrors.adminPhone = "Please verify this mobile number with the OTP before continuing.";
         }
 
         if (!normalizeText(form.adminEmail)) {
@@ -2445,11 +2460,13 @@ export default function ClinicForm({
                                             ) : (
                                                 <button
                                                     type="button"
-                                                    disabled={!isValidMobileNumber(form.adminPhone) || adminPhoneOtpBusy}
+                                                    disabled={!isValidMobileNumber(form.adminPhone) || adminPhoneOtpBusy || adminPhoneOtpResendCooldown > 0}
                                                     onClick={handleSendAdminOtp}
                                                     className="mb-0.5 px-4 py-2.5 rounded-xl bg-[#FFF4E5] text-[#F7931E] border border-[#F7931E]/20 font-semibold text-xs hover:bg-[#F7931E] hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer whitespace-nowrap"
                                                 >
-                                                    {adminPhoneOtpSent ? "Resend OTP" : "Send OTP"}
+                                                    {adminPhoneOtpResendCooldown > 0
+                                                        ? `Resend OTP in ${adminPhoneOtpResendCooldown}s`
+                                                        : adminPhoneOtpSent ? "Resend OTP" : "Send OTP"}
                                                 </button>
                                             )}
                                         </div>
@@ -2474,6 +2491,12 @@ export default function ClinicForm({
                                                     Verify
                                                 </button>
                                             </div>
+                                        )}
+
+                                        {adminPhoneOtpSent && !adminPhoneOtpVerified && (
+                                            <p className="mt-1 text-xs text-gray-400">
+                                                Testing phase: enter <span className="font-semibold text-gray-500">123456</span> to verify.
+                                            </p>
                                         )}
 
                                         {adminPhoneOtpError && <p className="mt-1 text-sm text-red-600">{adminPhoneOtpError}</p>}
