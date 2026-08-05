@@ -77,6 +77,7 @@ function PrePaidSubscription() {
             ) : (
                 <CurrentSubscriptionCard
                     subscription={currentSubscription}
+                    onUpgrade={handleUpgrade}
                 />
             )}
 

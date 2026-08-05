@@ -5,9 +5,14 @@ import {
     IndianRupee,
 } from "lucide-react";
 
-export default function CurrentSubscriptionCard({ subscription }) {
+export default function CurrentSubscriptionCard({ subscription, onUpgrade }) {
     const sub = subscription;
     const plan = subscription.plan;
+    // A clinic set up directly by Super Admin (Add Clinic / Edit Clinic >
+    // Plan & Features) has no recorded payment transaction at all - fall
+    // back to the plan's own price rather than showing a blank "₹" for
+    // "amount paid", since that's what the assigned plan is worth.
+    const amountPaid = sub.amountPaid || plan?.price || 0;
 
     const formatBillingCycle = (cycle) =>
         cycle.replace("_", " ").toLowerCase();
@@ -102,7 +107,7 @@ export default function CurrentSubscriptionCard({ subscription }) {
                             </p>
 
                             <p className="text-lg font-bold text-gray-900">
-                                ₹{sub.amountPaid?.toLocaleString()}
+                                ₹{amountPaid.toLocaleString()}
                             </p>
                         </div>
                     </div>
@@ -138,6 +143,16 @@ export default function CurrentSubscriptionCard({ subscription }) {
                     <p className="mt-5 text-center text-xs text-gray-500">
                         Enjoy uninterrupted access to all subscribed HMS features.
                     </p>
+
+                    {onUpgrade && (
+                        <button
+                            type="button"
+                            onClick={onUpgrade}
+                            className="mt-5 w-full rounded-xl bg-[#0C3D2E] py-3 text-sm font-semibold text-white transition hover:bg-[#092E23] cursor-pointer"
+                        >
+                            Renew / Make Payment
+                        </button>
+                    )}
                 </div>
             </div>
         </div>

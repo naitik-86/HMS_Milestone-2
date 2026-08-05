@@ -101,8 +101,7 @@ export default function ReceptionDashboard() {
           <button onClick={() => navigate("existing-customer")} className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 shadow-sm transition hover:border-[#F7931E] hover:text-[#F7931E]">View all patients <ChevronRight size={15} /></button>
         </div>
 
-
-        <div className="overflow-x-auto rounded-xl border border-slate-100 bg-white shadow-sm">
+        <div className="mt-4 overflow-x-auto rounded-xl border border-slate-100 bg-white shadow-sm">
           <table className="min-w-[760px] w-full text-sm"><thead><tr className="border-b border-slate-100 bg-slate-50/70 text-left text-[11px] font-bold uppercase tracking-wider text-[#0C3D2E]"><th className="px-4 py-3">Patient ID</th><th className="px-4 py-3">Pet & owner</th><th className="px-4 py-3">Contact</th><th className="px-4 py-3">Species</th><th className="px-4 py-3">Status</th><th className="px-4 py-3">Registered</th></tr></thead>
             <tbody className="divide-y divide-slate-100">
               {customers.slice(0, 6).map((item, index) => {
