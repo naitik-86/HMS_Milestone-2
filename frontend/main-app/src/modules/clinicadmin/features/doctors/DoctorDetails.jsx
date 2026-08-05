@@ -1,6 +1,7 @@
 import React from 'react';
 import { showToast } from '../../../../shared/components/toast';
 import Loader from '../../../../shared/components/Loader';
+import StatusToggle from '../../../../shared/components/StatusToggle';
 // import { useEffect } from 'react';
 import {
   Eye,
@@ -1658,20 +1659,11 @@ export default function DoctorDetails() {
 
                     {/* Status */}
                     <td className="px-6 py-5">
-                      <button
-                        type="button"
-                        onClick={() => handleToggleDoctorStatus(d)}
-                        disabled={togglingStatusId === d._id}
-                        title="Click to toggle Active / Inactive"
-                        className="px-3 py-1 rounded-full text-xs font-semibold border-none cursor-pointer transition-opacity disabled:opacity-60 disabled:cursor-wait"
-                        style={
-                          d.status === "Active"
-                            ? { backgroundColor: '#E6F6EC', color: '#1E9E5A' }
-                            : { backgroundColor: '#FDECEC', color: '#D64545' }
-                        }
-                      >
-                        {togglingStatusId === d._id ? "…" : d.status}
-                      </button>
+                      <StatusToggle
+                        checked={d.status === "Active"}
+                        onChange={() => handleToggleDoctorStatus(d)}
+                        busy={togglingStatusId === d._id}
+                      />
                     </td>
 
                     {/* Actions */}

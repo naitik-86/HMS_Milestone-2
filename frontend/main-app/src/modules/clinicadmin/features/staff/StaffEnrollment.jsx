@@ -3,6 +3,7 @@ import { showToast } from '../../../../shared/components/toast';
 import ViewStaffModal from "./ViewStaffModal";
 import { roles, departments, employmentTypes, staffData, MODULE_OPTIONS } from '../../data/staff';
 import Loader from '../../../../shared/components/Loader';
+import StatusToggle from '../../../../shared/components/StatusToggle';
 import { Eye, Pencil, Trash2 } from "lucide-react";
 import { Plus, Users } from "lucide-react";
 import {
@@ -1759,27 +1760,11 @@ export default function StaffEnrollment() {
                 </td>
                 <td className="px-5 py-5 text-gray-600 text-sm">  {s.employmentInfo?.employmentType}</td>
                 <td className="px-5 py-5">
-                  <button
-                    type="button"
-                    onClick={() => handleToggleStatus(s)}
-                    disabled={togglingStatusId === s._id}
-                    title="Click to toggle Active / Inactive"
-                    className="px-3 py-1.5 rounded-lg text-xs font-bold border-none cursor-pointer transition-opacity disabled:opacity-60 disabled:cursor-wait"
-                    style={{
-                      backgroundColor: s.accountInfo?.accountActive
-                        ? '#DCFCE7'
-                        : '#F3F4F6',
-                      color: s.accountInfo?.accountActive
-                        ? '#16A34A'
-                        : '#6B7280',
-                    }}
-                  >
-                    {togglingStatusId === s._id
-                      ? "…"
-                      : s.accountInfo?.accountActive
-                        ? "Active"
-                        : "Inactive"}
-                  </button>
+                  <StatusToggle
+                    checked={Boolean(s.accountInfo?.accountActive)}
+                    onChange={() => handleToggleStatus(s)}
+                    busy={togglingStatusId === s._id}
+                  />
                 </td>
                 <td className="px-5 py-5 text-gray-500 text-sm">{s.employmentInfo?.dateOfJoining?.split("T")[0]}</td>
                 <td className="px-5 py-5 text-right">

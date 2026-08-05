@@ -290,8 +290,14 @@ const getAllStaff = async (req, res) => {
         }
 
         if (role) {
-            query["employmentInfo.role"] =
-                role;
+            // Same primary-role-only gap as getDoctorStaff above - match
+            // against the full multi-role array too, so filtering by e.g.
+            // "Doctor" also surfaces a staff member whose Doctor role isn't
+            // first in their assigned roles list.
+            query.$or = [
+                { "employmentInfo.roles": role },
+                { "employmentInfo.role": role },
+            ];
         }
 
         if (department) {
@@ -712,9 +718,19 @@ exports.getDoctorStaff = async (req, res) => {
         const completedDoctors = await DoctorDetails.find(completedQuery).select("staff");
         const completedStaffIds = completedDoctors.map((d) => d.staff.toString());
 
+        // employmentInfo.role only ever holds the FIRST of a staff member's
+        // assigned roles (see normalizeRoles/assignedRoles[0] above) - a
+        // staff member with multiple roles where "Doctor" isn't first
+        // (e.g. Receptionist, Pre-consultation Staff, Doctor) was silently
+        // excluded from this list. Match against the full roles array too,
+        // falling back to the legacy singular field for older records that
+        // predate it.
         const doctors = await Staff.find({
-            "employmentInfo.role": "Doctor",
             clinicId,
+            $or: [
+                { "employmentInfo.roles": "Doctor" },
+                { "employmentInfo.role": "Doctor" },
+            ],
             _id: { $nin: completedStaffIds },
         }).select(
             "personalInfo.fullName personalInfo.mobileNumber personalInfo.email employmentInfo.staffId"

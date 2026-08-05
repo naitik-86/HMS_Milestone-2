@@ -35,13 +35,56 @@ exports.getCurrentSubscription = async (req, res) => {
       clinincSubscriptionTracker
         .findOne({ clinicId })
         .populate("planId"),
-      Clinic.findById(clinicId).select("contactEmail"),
+      Clinic.findById(clinicId).select(
+        "contactEmail plan billingCycle subscriptionType planStartDate planEndDate customPlanPrice subscriptionStatus licenseLimits"
+      ),
     ]);
 
     if (!subscription) {
-      return res.status(404).json({
-        success: false,
-        message: "No subscription found.",
+      // No ClinicSubscriptionTracker record exists yet for this clinic.
+      // Trackers are only ever created through the separate self-serve
+      // payment/upgrade flow (createSubscriptionPayment below) - a clinic
+      // set up directly by the Super Admin via Add Clinic / Edit Clinic >
+      // Plan & Features never gets one, since createClinic just writes the
+      // assigned plan straight onto the Clinic document. Fall back to
+      // building the subscription view from those Clinic fields instead
+      // of a bare 404, resolving the specific catalog plan by tier name
+      // the same way getSubscriptionDetails does below - Custom plans
+      // have no catalog document to match, so use the clinic's own
+      // customPlanPrice/licenseLimits directly.
+      if (!clinic || !clinic.plan) {
+        return res.status(404).json({
+          success: false,
+          message: "No subscription found.",
+        });
+      }
+
+      const isCustomPlan = clinic.plan === "Custom";
+      const matchedPlan = isCustomPlan
+        ? null
+        : await SubscriptionPlan.findOne({ subscriptionPlan: clinic.plan, status: "Active" })
+            .select("subscriptionPlan billingCycle price featureLimits modules");
+
+      const remainingDays = clinic.planEndDate
+        ? Math.max(0, Math.ceil((clinic.planEndDate - new Date()) / (1000 * 60 * 60 * 24)))
+        : 0;
+
+      return res.status(200).json({
+        success: true,
+        data: {
+          clinicId,
+          email: clinic.contactEmail || null,
+          status: clinic.subscriptionStatus || "ACTIVE",
+          planStartDate: clinic.planStartDate,
+          planEndRenewalDate: clinic.planEndDate,
+          remainingDays,
+          plan: matchedPlan || {
+            subscriptionPlan: clinic.plan,
+            billingCycle: clinic.billingCycle || clinic.subscriptionType || "Monthly",
+            price: clinic.customPlanPrice || 0,
+            featureLimits: clinic.licenseLimits,
+          },
+        },
       });
     }
 

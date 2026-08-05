@@ -14,6 +14,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import Loader from "../../../../shared/components/Loader";
+import StatusToggle from "../../../../shared/components/StatusToggle";
 import { showToast } from "../../../../shared/components/toast";
 import { getLabTechnicianStaff } from "../../api/staffApi";
 import {
@@ -632,6 +633,35 @@ export default function LabTechnician() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [planAccessDenied, setPlanAccessDenied] = useState(false);
+  const [togglingStatusId, setTogglingStatusId] = useState(null);
+
+  // List-row equivalent of LabTechnicianDetails' handleToggleStatus below -
+  // that one only lived in the detail modal, so the list table's own
+  // Status column was a static, always-green span with no click handler
+  // at all (wrong color for Inactive rows too).
+  const handleToggleStatusInList = async (item) => {
+    const nextStatus = item.status === "Active" ? "Inactive" : "Active";
+    setTogglingStatusId(item._id);
+    try {
+      await updateLabTechnician(item._id, { ...item, status: nextStatus });
+      showToast({
+        type: "success",
+        title: "Status Updated",
+        description: `${item.name || "Lab technician"} is now ${nextStatus}.`,
+      });
+      setTechnicians((prev) =>
+        prev.map((t) => (t._id === item._id ? { ...t, status: nextStatus } : t))
+      );
+    } catch (error) {
+      showToast({
+        type: "error",
+        title: "Update Failed",
+        description: error?.response?.data?.message || "Unable to update status.",
+      });
+    } finally {
+      setTogglingStatusId(null);
+    }
+  };
 
   const fetchTechnicians = async () => {
     try {
@@ -979,9 +1009,11 @@ export default function LabTechnician() {
                     </td>
 
                     <td className="px-6 py-5">
-                      <span className="px-3 py-1 rounded-full text-xs font-semibold" style={{ backgroundColor: "#E6F6EC", color: "#1E9E5A" }}>
-                        {item.status}
-                      </span>
+                      <StatusToggle
+                        checked={item.status === "Active"}
+                        onChange={() => handleToggleStatusInList(item)}
+                        busy={togglingStatusId === item._id}
+                      />
                     </td>
 
                     <td className="px-6 py-5">
