@@ -285,7 +285,7 @@ export default function PreConsultationDashboard() {
                         <div>
                           <div className="flex items-center gap-2">
                             <span className="font-bold text-slate-800 text-base">{petName}</span>
-                            <span className="bg-slate-200 text-slate-700 text-xs px-2.5 py-0.5 rounded-md font-mono font-semibold">
+                            <span className="whitespace-nowrap bg-slate-200 text-slate-700 text-xs px-2.5 py-0.5 rounded-md font-mono font-semibold">
                               {token}
                             </span>
                           </div>

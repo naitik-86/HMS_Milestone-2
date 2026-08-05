@@ -188,7 +188,7 @@ export default function PendingPets() {
                       <tr key={petItem._id} className="hover:bg-[#D9E8E3]/15 transition-all duration-150">
                         {/* Token */}
                         <td className="px-6 py-4 font-mono font-bold text-slate-800">
-                          <span className="bg-[#0C3D2E]/10 text-[#0C3D2E] px-3 py-1.5 rounded-xl text-xs font-mono font-bold">
+                          <span className="whitespace-nowrap bg-[#0C3D2E]/10 text-[#0C3D2E] px-3 py-1.5 rounded-xl text-xs font-mono font-bold">
                             {token}
                           </span>
                         </td>
@@ -283,7 +283,7 @@ export default function PendingPets() {
                     className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs space-y-3"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="font-mono font-bold text-slate-800 bg-slate-100 px-2.5 py-1 rounded-lg text-xs">
+                      <span className="whitespace-nowrap font-mono font-bold text-slate-800 bg-slate-100 px-2.5 py-1 rounded-lg text-xs">
                         {token}
                       </span>
                       <span className="bg-orange-100 text-orange-700 px-3 py-0.5 rounded-full text-xs font-bold">

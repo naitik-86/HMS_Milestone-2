@@ -219,7 +219,7 @@ export default function HistoryPets() {
                     return (
                       <tr key={item._id} className="hover:bg-blue-50/30 transition-all duration-150">
                         <td className="px-6 py-4 font-mono font-bold text-slate-800">
-                          <span className="bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-xl">
+                          <span className="whitespace-nowrap bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-xl">
                             {token}
                           </span>
                         </td>
@@ -292,7 +292,7 @@ export default function HistoryPets() {
                 return (
                   <div key={item._id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="font-mono font-bold text-slate-800 bg-slate-100 px-2.5 py-1 rounded-lg text-xs">
+                      <span className="whitespace-nowrap font-mono font-bold text-slate-800 bg-slate-100 px-2.5 py-1 rounded-lg text-xs">
                         {token}
                       </span>
                       <span className="bg-blue-100 text-blue-800 px-2.5 py-0.5 rounded-full text-xs font-bold">
