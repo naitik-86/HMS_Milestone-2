@@ -1099,13 +1099,23 @@ export default function ClinicForm({
 
     const handleBillingChange = (e) => {
         const billing = e.target.value;
+        const isCustomPlan = form.plan === CUSTOM_PLAN;
 
         setForm((prev) => ({
             ...prev,
             billing,
-            trialDays: getTrialDaysForPlanCycle(activePlans, prev.plan, billing),
-            endDate: prev.startDate && billing ? getPlanEndDate(prev.startDate, billing) : "",
-            ...getPlanDerivedFields(getPlanForCycle(activePlans, prev.plan, billing)),
+            // Custom plan's trial days/end date/limits are manually set by
+            // the admin, not derived from a catalog cycle match (there is
+            // no catalog entry to match) - picking a Billing Cycle here is
+            // purely a record of what cadence the custom deal actually
+            // runs on, same reasoning as handleStartDateChange below.
+            ...(isCustomPlan
+                ? {}
+                : {
+                    trialDays: getTrialDaysForPlanCycle(activePlans, prev.plan, billing),
+                    endDate: prev.startDate && billing ? getPlanEndDate(prev.startDate, billing) : "",
+                    ...getPlanDerivedFields(getPlanForCycle(activePlans, prev.plan, billing)),
+                }),
         }));
     };
 
@@ -1727,12 +1737,14 @@ export default function ClinicForm({
             nextErrors.plan = "Please select a configured subscription plan.";
         }
 
-        if (!isCustomPlan) {
-            if (!normalizeText(form.billing)) {
-                nextErrors.billing = "Billing cycle is required.";
-            } else if (!billingOptions.includes(form.billing)) {
-                nextErrors.billing = "Please select Monthly, Quarterly, Half-Yearly, or Annual.";
-            }
+        // Billing Cycle is now shown (and required) for Custom plans too -
+        // it's informational there (the actual end date is still whatever
+        // the admin picks manually below) rather than driving an
+        // auto-calculated end date the way it does for catalog plans.
+        if (!normalizeText(form.billing)) {
+            nextErrors.billing = "Billing cycle is required.";
+        } else if (!billingOptions.includes(form.billing)) {
+            nextErrors.billing = "Please select Monthly, Quarterly, Half-Yearly, or Annual.";
         }
 
         const tomorrow = getTomorrowDate();
@@ -2617,7 +2629,24 @@ export default function ClinicForm({
                                         disabled={plansLoading || !planOptions.length}
                                     />
 
-                                    {form.plan === CUSTOM_PLAN ? (
+                                    {/* Billing Cycle applies to every plan, Custom included -
+                                        getBillingOptionsForPlan already returns the full
+                                        Monthly/Quarterly/Half-Yearly/Annual set for Custom,
+                                        this just wasn't rendered for it, so a Custom plan's
+                                        billingCycle was always left at its unrelated default
+                                        regardless of what the actual custom-negotiated cycle was. */}
+                                    <Select
+                                        requiredField
+                                        name="billing"
+                                        label="Billing Cycle"
+                                        value={form.billing}
+                                        error={errors.billing}
+                                        options={billingOptions}
+                                        onChange={handleBillingChange}
+                                        disabled={!billingOptions.length}
+                                    />
+
+                                    {form.plan === CUSTOM_PLAN && (
                                         <Input
                                             requiredField
                                             type="number"
@@ -2626,17 +2655,6 @@ export default function ClinicForm({
                                             value={form.customPlanPrice}
                                             error={errors.customPlanPrice}
                                             onChange={handleChange}
-                                        />
-                                    ) : (
-                                        <Select
-                                            requiredField
-                                            name="billing"
-                                            label="Billing Cycle"
-                                            value={form.billing}
-                                            error={errors.billing}
-                                            options={billingOptions}
-                                            onChange={handleBillingChange}
-                                            disabled={!billingOptions.length}
                                         />
                                     )}
 
