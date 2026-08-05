@@ -64,7 +64,15 @@ const doctorSchema = new mongoose.Schema(
             exercise: String,
             currentMedication: String,
             vaccinationStatus: String,
-            allergies: String
+            allergies: String,
+
+            // The "Current Medications Confirmed" multi-row UI
+            // (PendingPets.jsx) reads/writes this as an array of
+            // {drug, dose, frequency, since} - it was never declared here,
+            // so Mongoose's default strict mode silently dropped it on
+            // every save. Mixed (not a fixed sub-schema) so field-name
+            // additions on the frontend don't need a matching model change.
+            medicationsConfirmed: [mongoose.Schema.Types.Mixed]
 
         },
 
@@ -153,7 +161,17 @@ const doctorSchema = new mongoose.Schema(
 
             followUp: String,
 
-            treatmentNotes: String
+            treatmentNotes: String,
+
+            // Same gap as history.medicationsConfirmed above - the
+            // multi-row treatment UIs (PendingPets.jsx) read/write these
+            // as arrays, but none were declared here, so every one of
+            // them was silently dropped by Mongoose on save.
+            medicationsList: [mongoose.Schema.Types.Mixed],
+            proceduresList: [mongoose.Schema.Types.Mixed],
+            vaccinationsList: [mongoose.Schema.Types.Mixed],
+            dewormingList: [mongoose.Schema.Types.Mixed],
+            fluidsList: [mongoose.Schema.Types.Mixed]
 
         },
 
