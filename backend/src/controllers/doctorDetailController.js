@@ -85,11 +85,21 @@ const createDoctor = async (req, res) => {
             });
         }
 
+        // employmentInfo.role only ever holds the FIRST of a staff member's
+        // assigned roles - a multi-role staff member with "Doctor" among
+        // their roles (but not first) now correctly shows up in the
+        // frontend's Select Doctor dropdown (see getDoctorStaff), but this
+        // check still only recognized the legacy singular field, so
+        // actually submitting the form rejected them as "not a valid
+        // doctor staff member". Match the full roles array too.
         const selectedStaff = await Staff.findOne({
             _id: staff,
             clinicId,
             isDeleted: false,
-            "employmentInfo.role": "Doctor",
+            $or: [
+                { "employmentInfo.roles": "Doctor" },
+                { "employmentInfo.role": "Doctor" },
+            ],
         }).select("employmentInfo.staffId personalInfo.fullName");
 
         if (!selectedStaff) {

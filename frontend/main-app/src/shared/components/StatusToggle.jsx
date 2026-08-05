@@ -43,11 +43,17 @@ export default function StatusToggle({
                     className="absolute rounded-full transition-transform duration-200"
                     style={{
                         top: "2px",
+                        left: "2px",
                         height: "16px",
                         width: "16px",
                         backgroundColor: "#FFFFFF",
                         boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
-                        transform: checked ? "translateX(18px)" : "translateX(2px)",
+                        // left is pinned at 2px (its resting position) -
+                        // the slide is purely this transform, so the knob
+                        // can never end up positioned outside the track
+                        // the way an unset `left` + transform-only
+                        // approach could in some layout contexts.
+                        transform: checked ? "translateX(16px)" : "translateX(0px)",
                     }}
                 />
             </span>
