@@ -1,5 +1,12 @@
 const mongoose = require("mongoose");
-const Appointment = require("../models/Appointment");
+// The Appointment collection is legacy/unused by the app's actual
+// reception -> pre-consultation -> doctor -> lab walk-in flow (it has
+// zero documents in production) - every real visit/consultation lives in
+// the standalone Visit collection instead (see visitModel.js), which is
+// what Pre-Consultation/Doctor/Lab all already read from. Querying
+// Appointment here made Today's Appointments and Monthly Revenue always
+// show 0 regardless of actual clinic activity.
+const Visit = require("../models/visitModel");
 const Staff = require("../models/Staff");
 const PetRegistration = require("../models/PetRegistration");
 const DoctorDetails = require("../models/DoctorDetails");
@@ -13,19 +20,24 @@ const ROLE_COLORS = {
   default: "#64748B",
 };
 
+// Matches Visit.status's real enum (visitModel.js) - the old
+// Appointment-shaped labels here never matched what Visit actually stores.
 const APPOINTMENT_STATUS_LABELS = {
   WAITING: "Pending",
-  IN_CONSULTATION: "In Progress",
-  LAB_PENDING: "Lab Pending",
-  LAB_COMPLETED: "Lab Completed",
+  IN_PROGRESS: "In Progress",
   COMPLETED: "Completed",
-  NO_SHOW: "No Show",
   CANCELLED: "Cancelled",
 };
 
+// Matches Visit.visitType's real enum (visitModel.js).
 const APPOINTMENT_TYPE_LABELS = {
-  PHYSICAL: "Physical Visit",
-  ONLINE_VIDEO: "Online Video",
+  CONSULTATION: "Consultation",
+  VACCINATION: "Vaccination",
+  GROOMING: "Grooming",
+  SURGERY: "Surgery",
+  KENNEL: "Kennel",
+  FOLLOW_UP: "Follow Up",
+  EMERGENCY: "Emergency",
 };
 
 const getRange = (date, tzOffsetMinutes = 330) => {
@@ -124,20 +136,25 @@ exports.getDashboard = async (req, res) => {
         createdAt: { $gte: monthStart, $lt: nextMonthStart },
       }),
 
-      Appointment.countDocuments({
+      Visit.countDocuments({
         clinicId: clinicObjectId,
         status: "WAITING",
       }),
 
-      Appointment.find({
+      // createdAt, not appointmentDate - appointmentDate on real Visit
+      // records is frequently a stale/default value days away from when
+      // the visit actually happened (a separate pre-existing data issue
+      // upstream of this dashboard), while createdAt reliably reflects
+      // when the walk-in was actually checked in.
+      Visit.find({
         clinicId: clinicObjectId,
-        appointmentDate: { $gte: todayRange.start, $lte: todayRange.end },
+        createdAt: { $gte: todayRange.start, $lte: todayRange.end },
       })
-        .sort({ appointmentDate: 1 })
-        .populate("doctorId", "name consultationFee")
+        .sort({ createdAt: 1 })
+        .populate("doctorId", "name consultationFees")
         .populate("petId",    "name species breed")
-        .populate("ownerId",  "name")
-        .select("appointmentDate status type doctorId petId ownerId"),
+        .populate("ownerId",  "ownerName")
+        .select("createdAt appointmentDate status visitType doctorId petId ownerId"),
 
       Staff.find({ clinicId: clinicObjectId, isDeleted: false })
         .sort({ createdAt: -1 })
@@ -151,12 +168,12 @@ exports.getDashboard = async (req, res) => {
         createdAt: { $gte: todayRange.start, $lte: todayRange.end },
       }),
 
-      Appointment.aggregate([
+      Visit.aggregate([
         {
           $match: {
             clinicId: clinicObjectId,
             status: "COMPLETED",
-            appointmentDate: { $gte: revenueStart },
+            createdAt: { $gte: revenueStart },
           },
         },
         {
@@ -181,8 +198,8 @@ exports.getDashboard = async (req, res) => {
         {
           $group: {
             _id: {
-              year:  { $year: "$appointmentDate" },
-              month: { $month: "$appointmentDate" },
+              year:  { $year: "$createdAt" },
+              month: { $month: "$createdAt" },
             },
             revenue: { $sum: "$fee" },
           },
@@ -192,12 +209,12 @@ exports.getDashboard = async (req, res) => {
         },
       ]),
 
-      Appointment.aggregate([
+      Visit.aggregate([
         {
           $match: {
             clinicId: clinicObjectId,
             status: "COMPLETED",
-            appointmentDate: {
+            createdAt: {
               $gte: previousMonthStart,
               $lt: nextAfterPreviousMonthStart,
             },
@@ -230,19 +247,19 @@ exports.getDashboard = async (req, res) => {
         },
       ]),
 
-      Appointment.aggregate([
+      Visit.aggregate([
         {
           $match: {
             clinicId: clinicObjectId,
-            appointmentDate: { $gte: trendStart, $lte: todayRange.end },
+            createdAt: { $gte: trendStart, $lte: todayRange.end },
           },
         },
         {
           $group: {
             _id: {
-              year:  { $year: "$appointmentDate" },
-              month: { $month: "$appointmentDate" },
-              day:   { $dayOfMonth: "$appointmentDate" },
+              year:  { $year: "$createdAt" },
+              month: { $month: "$createdAt" },
+              day:   { $dayOfMonth: "$createdAt" },
             },
             appts: { $sum: 1 },
           },
@@ -323,18 +340,21 @@ exports.getDashboard = async (req, res) => {
     });
 
     const formattedTodayAppointments = todayAppointments.map((appointment) => {
-      const petName    = appointment.petId?.name    || "Unnamed Pet";
-      const breed      = appointment.petId?.breed   || "";
-      const ownerName  = appointment.ownerId?.name  || "Owner";
-      const doctorName = appointment.doctorId?.name || "Assigned Doctor";
+      const petName    = appointment.petId?.name       || "Unnamed Pet";
+      const breed       = appointment.petId?.breed      || "";
+      // PetRegistration (Visit.ownerId's ref target) stores this as
+      // ownerName, not name - the old Appointment-based version of this
+      // populate/read never actually matched the real schema.
+      const ownerName  = appointment.ownerId?.ownerName || "Owner";
+      const doctorName = appointment.doctorId?.name     || "Assigned Doctor";
 
       return {
         id:     appointment._id,
-        time:   formatTime(appointment.appointmentDate),
+        time:   formatTime(appointment.createdAt),
         pet:    breed ? `${petName} (${breed})` : petName,
         owner:  ownerName,
         doctor: doctorName,
-        type:   APPOINTMENT_TYPE_LABELS[appointment.type] || appointment.type || "Physical Visit",
+        type:   APPOINTMENT_TYPE_LABELS[appointment.visitType] || appointment.visitType || "Physical Visit",
         status: APPOINTMENT_STATUS_LABELS[appointment.status] || appointment.status || "Pending",
       };
     });

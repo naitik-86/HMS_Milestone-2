@@ -128,8 +128,11 @@ function LabTechnicianForm({ existingData, existingEmployeeIds = [], isEdit, isS
       nextErrors.employeeId = "Select a lab technician staff member";
     }
 
-    if (!formData.qualification.trim()) {
+    const qualification = formData.qualification.trim();
+    if (!qualification) {
       nextErrors.qualification = "Qualification / diploma is required";
+    } else if (qualification.length < 3) {
+      nextErrors.qualification = "Qualification / diploma must be at least 3 characters";
     }
 
     if (formData.experience === "" || Number(formData.experience) < 0) {
@@ -267,8 +270,8 @@ function LabTechnicianForm({ existingData, existingEmployeeIds = [], isEdit, isS
                     </label>
                     <input
                       value={formData.qualification}
-                      onChange={(event) => update("qualification", event.target.value)}
-                      placeholder="e.g. B.Sc. MLT, Diploma in Lab Technology"
+                      onChange={(event) => update("qualification", event.target.value.replace(/[^a-zA-Z\s]/g, ""))}
+                      placeholder="e.g. BSc in Medical Lab Technology"
                       className={errors.qualification ? inputErrCls : inputCls}
                     />
                     {errors.qualification && (
@@ -309,10 +312,10 @@ function LabTechnicianForm({ existingData, existingEmployeeIds = [], isEdit, isS
                       Years of Lab Experience <span className="text-[#E8630A]">*</span>
                     </label>
                     <input
-                      type="number"
-                      min="0"
+                      type="text"
+                      inputMode="numeric"
                       value={formData.experience}
-                      onChange={(event) => update("experience", event.target.value)}
+                      onChange={(event) => update("experience", event.target.value.replace(/\D/g, ""))}
                       placeholder="e.g. 5"
                       className={errors.experience ? inputErrCls : inputCls}
                     />
