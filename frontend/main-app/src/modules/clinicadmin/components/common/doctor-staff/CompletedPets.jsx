@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Search, Filter, RefreshCw, Eye, Download, PawPrint, CheckCircle2, CalendarDays, Stethoscope, Trash2 } from "lucide-react";
 import { deletePatient, getCompletedPets } from "../../../api/doctorModuleApi";
 import { generateCaseReportPDF } from "./generateCaseReportPDF";
+import { formatPetAge } from "../../../../../shared/utils/petAge";
 import toast from "react-hot-toast";
 
 export default function CompletedPets() {
@@ -52,6 +53,19 @@ export default function CompletedPets() {
 
   const getSpeciesIcon = () => <PawPrint className="size-5 text-[#F7931E]" />;
 
+  // bloodPressure is stored as { systolic, diastolic }, not a string -
+  // rendering it directly showed the literal "[object Object]".
+  const formatBloodPressure = (bp) => {
+    if (!bp) return "N/A";
+    if (typeof bp === "string") return bp;
+    if (typeof bp === "object") {
+      const { systolic, diastolic } = bp;
+      if (systolic && diastolic) return `${systolic}/${diastolic} mmHg`;
+      if (systolic || diastolic) return `${systolic || "?"}/${diastolic || "?"} mmHg`;
+    }
+    return "N/A";
+  };
+
   const normalizeCaseData = (item) => {
     if (!item) return null;
 
@@ -59,7 +73,7 @@ export default function CompletedPets() {
     const species = item.petId?.species || item.pet?.species || item.species || "N/A";
     const breed = item.petId?.breed || item.pet?.breed || item.breed || "N/A";
     const gender = item.petId?.gender || item.pet?.gender || item.gender || "N/A";
-    const age = item.petId?.age || item.pet?.age || item.age || "N/A";
+    const age = formatPetAge(item.petId || item.pet || item);
 
     const ownerName = item.ownerId?.ownerName || item.owner?.ownerName || item.ownerName || "N/A";
     const mobileNumber = item.ownerId?.mobileNumber || item.owner?.mobileNumber || item.phoneNumber || "N/A";
@@ -110,6 +124,12 @@ export default function CompletedPets() {
   });
 
   const activeCase = normalizeCaseData(selectedCase);
+  const uploadedLabReports = activeCase
+    ? (() => {
+        const reports = activeCase.labReport?.reports || activeCase.consultationDetails?.labReport?.reports;
+        return Array.isArray(reports) ? reports : [];
+      })()
+    : [];
 
   return (
     <div className="space-y-6">
@@ -312,7 +332,7 @@ export default function CompletedPets() {
                 <div>Weight: <span className="font-bold">{activeCase.vitals.bodyWeight || activeCase.vitals.weight ? `${activeCase.vitals.bodyWeight || activeCase.vitals.weight} kg` : "N/A"}</span></div>
                 <div>Heart Rate: <span className="font-bold">{activeCase.vitals.heartRate || activeCase.vitals.pulseRate ? `${activeCase.vitals.heartRate || activeCase.vitals.pulseRate} bpm` : "N/A"}</span></div>
                 <div>Resp Rate: <span className="font-bold">{activeCase.vitals.respiratoryRate || "N/A"}</span></div>
-                <div>BP: <span className="font-bold">{activeCase.vitals.bloodPressure || "N/A"}</span></div>
+                <div>BP: <span className="font-bold">{formatBloodPressure(activeCase.vitals.bloodPressure)}</span></div>
                 <div>SpO2: <span className="font-bold">{activeCase.vitals.spo2 !== undefined && activeCase.vitals.spo2 !== null && activeCase.vitals.spo2 !== "" ? `${activeCase.vitals.spo2}%` : "N/A"}</span></div>
                 <div>BCS: <span className="font-bold">{activeCase.vitals.bcs ? `${activeCase.vitals.bcs}/5` : "N/A"}</span></div>
                 <div>Recorded By: <span className="font-bold">{activeCase.vitals.recordedBy || "N/A"}</span></div>
@@ -392,11 +412,11 @@ export default function CompletedPets() {
               </div>
 
               {/* Uploaded Lab Reports Sub-card */}
-              {(activeCase.labReport?.reports || activeCase.consultationDetails?.labReport?.reports) && (
+              {uploadedLabReports.length > 0 && (
                 <div className="pt-2 border-t border-emerald-200 space-y-2">
                   <p className="font-extrabold text-slate-800 uppercase text-[10px]">Uploaded Diagnostic Report PDFs:</p>
                   <div className="space-y-2">
-                    {(activeCase.labReport?.reports || activeCase.consultationDetails?.labReport?.reports).map((r, idx) => (
+                    {uploadedLabReports.map((r, idx) => (
                       <div key={idx} className="bg-white p-3 rounded-xl border border-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-slate-700">
                         <div>
                           <p className="font-bold text-orange-600">{r.testName || `Lab Report #${idx + 1}`}</p>

@@ -22,6 +22,7 @@ import {
   Pencil,
 } from "lucide-react";
 import toast from "react-hot-toast";
+import { formatPetAge } from "../../../../shared/utils/petAge";
 
 export default function PendingPets() {
   const [search, setSearch] = useState("");
@@ -393,7 +394,7 @@ export default function PendingPets() {
                   </div>
                   <div className="bg-white p-2.5 rounded-xl border border-orange-100">
                     <span className="text-[10px] font-bold text-slate-400 block">Gender & Age</span>
-                    <span className="font-bold text-slate-900 block mt-0.5">{viewDetailsItem?.pet?.gender || viewDetailsItem?.gender || "N/A"} • {viewDetailsItem?.pet?.age !== undefined ? `${viewDetailsItem.pet.age} yrs` : (viewDetailsItem?.age ? `${viewDetailsItem.age} yrs` : "N/A")}</span>
+                    <span className="font-bold text-slate-900 block mt-0.5">{viewDetailsItem?.pet?.gender || viewDetailsItem?.gender || "N/A"} • {formatPetAge(viewDetailsItem?.pet || viewDetailsItem)}</span>
                   </div>
                   <div className="bg-white p-2.5 rounded-xl border border-orange-100">
                     <span className="text-[10px] font-bold text-slate-400 block">Date of Birth (DOB)</span>

@@ -91,6 +91,19 @@ exports.getPendingPets = async (req, res) => {
             }
         });
 
+        // A doctor who already started (but hasn't finished) a
+        // consultation for one of these visits has a DoctorConsultation
+        // doc sitting there unread - this list never attached it, so the
+        // frontend's Edit button always opened a blank form even when
+        // previously-entered history/diagnosis/etc. actually existed.
+        const existingConsultations = await DoctorConsultation.find({ visitId: { $in: visitIds } });
+        const consultationMap = {};
+        existingConsultations.forEach((c) => {
+            if (c.visitId) {
+                consultationMap[c.visitId.toString()] = c;
+            }
+        });
+
         // Create a lookup map: petId -> { owner, pet }
         const ownerPetMap = {};
 
@@ -103,10 +116,12 @@ exports.getPendingPets = async (req, res) => {
             });
         });
 
-        // Attach owner, pet, and labReport status to each visit
+        // Attach owner, pet, labReport status, and any previously-saved
+        // consultation draft to each visit.
         const data = visits.map((visit) => {
             const details = ownerPetMap[visit.petId.toString()];
             const labRep = labReportMap[visit._id.toString()] || null;
+            const existingConsultation = consultationMap[visit._id.toString()] || null;
 
             return {
                 ...visit.toObject(),
@@ -115,6 +130,12 @@ exports.getPendingPets = async (req, res) => {
                 labReport: labRep,
                 hasLabReport: !!labRep,
                 isSentToLab: visit.currentStage === "LAB" || visit.status === "LAB_TEST_RAISED",
+                history: existingConsultation?.history || undefined,
+                clinicalObservation: existingConsultation?.clinicalObservation || undefined,
+                diagnosis: existingConsultation?.diagnosis || undefined,
+                labRequisition: existingConsultation?.labRequisition || undefined,
+                treatment: existingConsultation?.treatment || undefined,
+                suggestion: existingConsultation?.suggestion || undefined,
             };
         });
 
