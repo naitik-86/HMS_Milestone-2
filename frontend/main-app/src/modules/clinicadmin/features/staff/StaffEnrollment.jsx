@@ -74,6 +74,10 @@ function EnrollForm({ onClose, onSave, editData, mode, staff, isSubmitting, }) {
   };
 
   const [step, setStep] = useState(1);
+  // Furthest step reached via a validated Next click - tabs beyond this
+  // stay locked (both Add and Edit) so a user can't skip ahead of an
+  // incomplete step. Going back to an already-reached step stays free.
+  const [maxReachedStep, setMaxReachedStep] = useState(1);
   const [managerOptions, setManagerOptions] = useState([]);
   const [contactErrors, setContactErrors] = useState({ email: '', mobileNumber: '' });
   const [checkingAvailability, setCheckingAvailability] = useState(false);
@@ -332,8 +336,11 @@ function EnrollForm({ onClose, onSave, editData, mode, staff, isSubmitting, }) {
 
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setStep(1);
+    setMaxReachedStep(1);
+
     if (editData) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setForm({
         fullName:
           editData.personalInfo?.fullName || "",
@@ -585,12 +592,13 @@ function EnrollForm({ onClose, onSave, editData, mode, staff, isSubmitting, }) {
                 const num = i + 1;
                 const isActive = step === num;
                 const isDone = step > num;
+                const isLocked = num > maxReachedStep;
                 return (
                   <React.Fragment key={i}>
                     <div
                       className="flex items-center gap-2.5"
-                      onClick={() => { if (!isView) setStep(num); }}
-                      style={{ cursor: isView ? 'default' : 'pointer' }}
+                      onClick={() => { if (!isView && !isLocked) setStep(num); }}
+                      style={{ cursor: isView || isLocked ? 'not-allowed' : 'pointer', opacity: isLocked ? 0.5 : 1 }}
                     >
                       {/* Circle */}
                       <div
@@ -635,22 +643,24 @@ function EnrollForm({ onClose, onSave, editData, mode, staff, isSubmitting, }) {
                 const num = i + 1;
                 const isActive = step === num;
                 const isDone = step > num;
+                const isLocked = num > maxReachedStep;
                 return (
                   <button
                     key={i}
+                    disabled={isLocked}
+                    title={isLocked ? "Complete the previous steps first" : undefined}
                     onClick={() => {
-                      // Free navigation, same as the Doctor Edit form - the
-                      // final Save re-validates every step in order (see
-                      // validateStep/the Next-Save button handler above) so
-                      // jumping ahead can no longer let an incomplete record
-                      // slip through.
-                      if (!isView) setStep(num);
+                      // Locked (both Add and Edit) - a tab is only reachable
+                      // once every step before it has been validated via
+                      // Next. Going back to an already-reached step is free.
+                      if (!isView && !isLocked) setStep(num);
                     }}
-                    className="px-5 py-2 rounded-full text-sm font-semibold transition-all cursor-pointer"
+                    className="px-5 py-2 rounded-full text-sm font-semibold transition-all disabled:cursor-not-allowed disabled:opacity-50"
                     style={{
                       backgroundColor: isActive ? '#E8630A' : isDone ? '#FEF3EB' : '#F3F4F6',
                       color: isActive ? '#FFFFFF' : isDone ? '#E8630A' : '#6B7280',
                       border: 'none',
+                      cursor: isLocked ? 'not-allowed' : 'pointer',
                     }}
                   >
                     {s.short}
@@ -1303,6 +1313,7 @@ function EnrollForm({ onClose, onSave, editData, mode, staff, isSubmitting, }) {
                 if (step < 4) {
                   const isValid = await validateStep(step);
                   if (isValid) {
+                    setMaxReachedStep((prev) => Math.max(prev, step + 1));
                     setStep(step + 1);
                   }
                 } else {

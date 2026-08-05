@@ -112,6 +112,10 @@ function DoctorForm({ onClose, onSave, existingData, isEdit, isSubmitting, docto
   const blockedByLimit = !isEdit && doctorLimitReached;
   const [doctorStaff, setDoctorStaff] = useState([]);
   const [activeStep, setActiveStep] = useState(0);
+  // Furthest step reached via a validated Next click - tabs beyond this
+  // stay locked (both Add and Edit) so a user can't skip ahead of an
+  // incomplete step. Going back to an already-reached step stays free.
+  const [maxReachedStepIndex, setMaxReachedStepIndex] = useState(0);
   const todayDateStr = new Date().toISOString().split('T')[0];
 
   console.log(existingData);
@@ -455,11 +459,14 @@ function DoctorForm({ onClose, onSave, existingData, isEdit, isSubmitting, docto
                 return (
                   <div key={i} className="relative">
                     <button
-                      onClick={() => setActiveStep(i)}
-                      className="px-5 py-2 rounded-full text-sm font-semibold cursor-pointer border-none transition-all"
+                      disabled={i > maxReachedStepIndex}
+                      title={i > maxReachedStepIndex ? "Complete the previous steps first" : undefined}
+                      onClick={() => { if (i <= maxReachedStepIndex) setActiveStep(i); }}
+                      className="px-5 py-2 rounded-full text-sm font-semibold border-none transition-all disabled:cursor-not-allowed disabled:opacity-50"
                       style={{
                         backgroundColor: isActive ? '#E8630A' : isDone ? '#FEF3EB' : '#F3F4F6',
                         color: isActive ? '#fff' : isDone ? '#E8630A' : '#6B7280',
+                        cursor: i > maxReachedStepIndex ? 'not-allowed' : 'pointer',
                       }}
                     >
                       {s.label}
@@ -927,6 +934,7 @@ function DoctorForm({ onClose, onSave, existingData, isEdit, isSubmitting, docto
                 if (!validateCurrentStep()) return;
 
                 if (activeStep < steps.length - 1) {
+                  setMaxReachedStepIndex((prev) => Math.max(prev, activeStep + 1));
                   setActiveStep(activeStep + 1);
                 } else {
                   submitForm();
