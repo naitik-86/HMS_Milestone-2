@@ -13,11 +13,17 @@ export default function PreConsultationReportModal({
   const ownerName = data?.ownerId?.ownerName || data?.ownerName || "Owner";
   const recordedBy = data?.recordedBy || "Staff";
   const severity = data?.severity || "NORMAL";
-  const associatedSymptoms = Array.isArray(data?.associatedSymptoms)
-    ? data.associatedSymptoms.filter(Boolean).join(", ")
-    : typeof data?.associatedSymptoms === "string"
-      ? data.associatedSymptoms
-      : "-";
+  const associatedSymptomsList = Array.isArray(data?.associatedSymptoms)
+    ? data.associatedSymptoms.filter(Boolean)
+    : typeof data?.associatedSymptoms === "string" && data.associatedSymptoms
+      ? [data.associatedSymptoms]
+      : [];
+  const associatedSymptoms = associatedSymptomsList.length
+    ? associatedSymptomsList.join(", ") +
+      (associatedSymptomsList.includes("Other") && data?.otherSymptomDetail
+        ? ` (${data.otherSymptomDetail})`
+        : "")
+    : "-";
   let bpDisplay = "-"; // Default if no data
   if (data?.bloodPressure && typeof data.bloodPressure === 'object') {
     const s = data.bloodPressure.systolic || '--';

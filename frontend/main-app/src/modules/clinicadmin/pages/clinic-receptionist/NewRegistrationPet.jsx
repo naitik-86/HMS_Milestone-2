@@ -1110,58 +1110,72 @@ export default function NewRegistrationPet() {
     setErrors((prev) => ({ ...prev, [`${field}${errorKeySuffix}`]: message }));
   };
 
-  const validateFields = (fields) => {
+  // Extracted out of validateFields so the Next button can also use it to
+  // stay disabled live, before the user ever clicks Next - previously
+  // errors here only appeared *after* clicking Next (this step has no
+  // per-field onBlur validation like the pet step does), so the button
+  // stayed clickable the whole time even with an unverified OTP or a
+  // too-short owner name.
+  const getOwnerStepErrors = () => {
     const nextErrors = {};
     const required = (name, message) => {
       if (!String(formData[name] || "").trim()) nextErrors[name] = message;
     };
 
+    if (!/^[6-9]\d{9}$/.test(formData.mobileNumber)) {
+      nextErrors.mobileNumber = "Enter a valid 10 digit mobile number.";
+    }
+    if (!isEditMode && !otpVerified) {
+      nextErrors.otp = "Verify the mobile OTP before continuing.";
+    }
+    required("ownerName", "Owner name is required.");
+    if (formData.ownerName && !/^[a-zA-Z\s.'-]+$/.test(formData.ownerName.trim())) {
+      nextErrors.ownerName = "Owner name can contain alphabets only.";
+    } else if (formData.ownerName && formData.ownerName.trim().length < 3) {
+      nextErrors.ownerName = "Owner name must be at least 3 characters.";
+    }
+    if (formData.ownerIdType === "Aadhaar Card") {
+      if (!formData.ownerIdNumber || formData.ownerIdNumber.length !== 12) {
+        nextErrors.ownerIdNumber = "Aadhaar Card number must be 12 digits.";
+      }
+    } else if (formData.ownerIdType === "PAN Card") {
+      const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
+      if (!formData.ownerIdNumber || !panRegex.test(formData.ownerIdNumber)) {
+        nextErrors.ownerIdNumber = "Enter a valid 10-character PAN number (e.g. ABCDE1234F).";
+      }
+    } else if (formData.ownerIdType === "Other Government ID") {
+      if (!formData.ownerOtherIdType) {
+        nextErrors.ownerOtherIdType = "Please select Government ID type.";
+      }
+      if (!formData.ownerIdNumber || formData.ownerIdNumber.length < 5) {
+        nextErrors.ownerIdNumber = "Please enter a valid Government ID number.";
+      }
+    }
+    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      nextErrors.email = "Enter a valid email address.";
+    }
+    required("address", "Full address is required.");
+    required("state", "State is required.");
+    required("city", "City is required.");
+    required("district", "District is required.");
+    if (!/^\d{6}$/.test(formData.pincode)) {
+      nextErrors.pincode = "Enter a valid 6 digit pincode.";
+    } else if (pincodeValid === false) {
+      // pincodeValid is null (not yet re-verified) for a pincode that was
+      // already saved and loaded - e.g. opening Edit - and briefly while a
+      // fresh lookup is still in flight. Only block on a *confirmed*
+      // invalid pincode, not on "hasn't been re-checked yet".
+      nextErrors.pincode = "Invalid PIN code. Please enter a valid 6-digit Indian PIN code.";
+    }
+
+    return nextErrors;
+  };
+
+  const validateFields = (fields) => {
+    let nextErrors = {};
+
     if (fields.includes("owner")) {
-      if (!/^[6-9]\d{9}$/.test(formData.mobileNumber)) {
-        nextErrors.mobileNumber = "Enter a valid 10 digit mobile number.";
-      }
-      if (!isEditMode && !otpVerified) {
-        nextErrors.otp = "Verify the mobile OTP before continuing.";
-      }
-      required("ownerName", "Owner name is required.");
-      if (formData.ownerName && !/^[a-zA-Z\s.'-]+$/.test(formData.ownerName.trim())) {
-        nextErrors.ownerName = "Owner name can contain alphabets only.";
-      } else if (formData.ownerName && formData.ownerName.trim().length < 3) {
-        nextErrors.ownerName = "Owner name must be at least 3 characters.";
-      }
-      if (formData.ownerIdType === "Aadhaar Card") {
-        if (!formData.ownerIdNumber || formData.ownerIdNumber.length !== 12) {
-          nextErrors.ownerIdNumber = "Aadhaar Card number must be 12 digits.";
-        }
-      } else if (formData.ownerIdType === "PAN Card") {
-        const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
-        if (!formData.ownerIdNumber || !panRegex.test(formData.ownerIdNumber)) {
-          nextErrors.ownerIdNumber = "Enter a valid 10-character PAN number (e.g. ABCDE1234F).";
-        }
-      } else if (formData.ownerIdType === "Other Government ID") {
-        if (!formData.ownerOtherIdType) {
-          nextErrors.ownerOtherIdType = "Please select Government ID type.";
-        }
-        if (!formData.ownerIdNumber || formData.ownerIdNumber.length < 5) {
-          nextErrors.ownerIdNumber = "Please enter a valid Government ID number.";
-        }
-      }
-      if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-        nextErrors.email = "Enter a valid email address.";
-      }
-      required("address", "Full address is required.");
-      required("state", "State is required.");
-      required("city", "City is required.");
-      required("district", "District is required.");
-      if (!/^\d{6}$/.test(formData.pincode)) {
-        nextErrors.pincode = "Enter a valid 6 digit pincode.";
-      } else if (pincodeValid === false) {
-        // pincodeValid is null (not yet re-verified) for a pincode that was
-        // already saved and loaded - e.g. opening Edit - and briefly while a
-        // fresh lookup is still in flight. Only block on a *confirmed*
-        // invalid pincode, not on "hasn't been re-checked yet".
-        nextErrors.pincode = "Invalid PIN code. Please enter a valid 6-digit Indian PIN code.";
-      }
+      nextErrors = { ...nextErrors, ...getOwnerStepErrors() };
     }
 
     if (fields.includes("pet")) {
@@ -1231,6 +1245,13 @@ export default function NewRegistrationPet() {
       step === 1 ? validateFields(["owner"]) : step === 2 ? validateFields(["pet"]) : true;
     if (isValid) setStep((prev) => prev + 1);
   };
+
+  // Live-computed (not dependent on errors state, which only fills in
+  // after clicking Next since this step has no per-field onBlur checks) so
+  // the Next button stays greyed out the whole time the step is invalid,
+  // instead of only showing errors after an ineffective click.
+  const isOwnerStepIncomplete =
+    step === 1 && Object.keys(getOwnerStepErrors()).length > 0;
 
   const hasVisiblePetErrors =
     step === 2 &&
@@ -3167,7 +3188,7 @@ export default function NewRegistrationPet() {
               {step < steps.length ? (
                 <button
                   onClick={handleNext}
-                  disabled={hasVisiblePetErrors}
+                  disabled={isOwnerStepIncomplete || hasVisiblePetErrors}
                   className="flex items-center gap-1.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white px-6 py-2.5 rounded-xl font-semibold text-xs sm:text-sm shadow-md shadow-orange-100 transition cursor-pointer border-none disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:from-orange-500 disabled:hover:to-amber-500"
                 >
                   Next Step

@@ -104,6 +104,17 @@ const preConsultationSchema = new mongoose.Schema(
     durationOfIllness: {
       value: {
         type: Number,
+        // No pet's illness has been going on for 100 years - cap "Years"
+        // to a realistic pet lifespan server-side too, not just in the
+        // form's input, since the form's max is only a soft UI clamp.
+        validate: {
+          validator: function (value) {
+            if (value == null) return true;
+            const unit = String(this.durationOfIllness?.unit || "").toLowerCase();
+            return unit !== "years" || value <= 20;
+          },
+          message: "Duration in Years must be 20 or less.",
+        },
       },
       unit: {
         type: String,
@@ -180,6 +191,16 @@ const preConsultationSchema = new mongoose.Schema(
         ],
       },
     ],
+
+    // Free-text detail entered when "Other" is picked in associatedSymptoms -
+    // not declared here originally, so Mongoose's default strict mode
+    // silently dropped it on save (same gap as the doctor-consultation
+    // multi-row fields elsewhere in this codebase).
+    otherSymptomDetail: {
+      type: String,
+      trim: true,
+      default: "",
+    },
 
     severity: {
       type: String,

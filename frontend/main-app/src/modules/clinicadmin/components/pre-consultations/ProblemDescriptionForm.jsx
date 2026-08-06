@@ -135,6 +135,27 @@ export default function ProblemDescriptionForm({ formData, setFormData, errors =
           {errors.associatedSymptoms && <p className="mt-1 text-xs font-medium text-red-500">{errors.associatedSymptoms}</p>}
         </div>
 
+        {/* Shown only when "Other" is selected above - specify what the
+            other symptom actually is. */}
+        {(formData.associatedSymptoms || []).includes("Other") && (
+          <div className="lg:col-span-2">
+            <label className="block mb-2 font-medium text-slate-700">
+              Please Specify Other Symptom{" "}
+              <span className="text-red-500 font-bold ml-1">*</span>
+            </label>
+            <input
+              type="text"
+              name="otherSymptomDetail"
+              value={formData.otherSymptomDetail || ""}
+              onChange={handleChange}
+              onBlur={() => markRequiredOnBlur("otherSymptomDetail", (formData.otherSymptomDetail || "").trim(), "Please specify the other symptom.")}
+              placeholder="Describe the other symptom..."
+              className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm md:text-base outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-100"
+            />
+            {errors.otherSymptomDetail && <p className="mt-1 text-xs font-medium text-red-500">{errors.otherSymptomDetail}</p>}
+          </div>
+        )}
+
         {/* Severity */}
         <div className="lg:col-span-2">
           <label className="block mb-2 font-medium text-slate-700">

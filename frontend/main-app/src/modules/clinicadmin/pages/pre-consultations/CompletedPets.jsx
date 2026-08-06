@@ -496,7 +496,12 @@ export default function CompletedPets() {
                             Severity: <span className="font-bold text-orange-600">{pc.severity || "Moderate"}</span>
                           </p>
                           {pc.associatedSymptoms?.length > 0 && (
-                            <p className="text-slate-600">Symptoms: {pc.associatedSymptoms.join(", ")}</p>
+                            <p className="text-slate-600">
+                              Symptoms: {pc.associatedSymptoms.join(", ")}
+                              {pc.associatedSymptoms.includes("Other") && pc.otherSymptomDetail
+                                ? ` (${pc.otherSymptomDetail})`
+                                : ""}
+                            </p>
                           )}
                         </div>
                       </div>

@@ -156,6 +156,7 @@ export default function PetRegistrationWizard({ onClose, petData, onCompleted })
     // Problem
     primaryComplaint: pc.primaryComplaint || "",
     associatedSymptoms: pc.associatedSymptoms || [],
+    otherSymptomDetail: pc.otherSymptomDetail || "",
     severity: pc.severity || "",
 
     // Observation
@@ -252,6 +253,9 @@ export default function PetRegistrationWizard({ onClose, petData, onCompleted })
         stepErrors.primaryComplaint = "Primary Complaint must contain meaningful text, not just numbers or symbols.";
       }
       if (!formData.associatedSymptoms?.length) stepErrors.associatedSymptoms = "Select at least one associated symptom.";
+      if (formData.associatedSymptoms?.includes("Other") && !(formData.otherSymptomDetail || "").trim()) {
+        stepErrors.otherSymptomDetail = "Please specify the other symptom.";
+      }
       if (!formData.severity) stepErrors.severity = "Severity is required.";
 
       if (Object.keys(stepErrors).length) {

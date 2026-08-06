@@ -29,7 +29,7 @@ const treatmentSchema = new mongoose.Schema({
 const visitSchema = new mongoose.Schema({
     primaryReason: {
         type: String,
-        enum: ["Treatment", "Vaccination", "Checkup", "Certificate"],
+        enum: ["Treatment", "Vaccination", "Checkup", "Certificate", "Other"],
         required: true
     },
 

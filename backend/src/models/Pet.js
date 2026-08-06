@@ -62,7 +62,7 @@ const petSchema = new mongoose.Schema({
   visits: [{
     primaryReason: {
       type: String,
-      enum: ["Treatment", "Vaccination", "Checkup", "Certificate"],
+      enum: ["Treatment", "Vaccination", "Checkup", "Certificate", "Other"],
       required: true
     },
     assignedDoctor: {

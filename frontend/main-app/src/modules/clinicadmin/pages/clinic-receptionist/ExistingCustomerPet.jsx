@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { jsPDF } from "jspdf";
+import { MAX_PET_AGE_YEARS } from "../../../../shared/utils/petAge";
 
 export default function ExistingCustomerPet() {
   const navigate = useNavigate();
@@ -256,21 +257,11 @@ export default function ExistingCustomerPet() {
   const getDisplayAge = (pet) => {
     if (!pet) return null;
 
-    // 1. Direct pet.age check (handle 0, numbers, strings)
-    if (pet.age !== undefined && pet.age !== null && String(pet.age).trim() !== "") {
-      const ageStr = String(pet.age).trim();
-      if (
-        ageStr.toLowerCase().includes("yr") ||
-        ageStr.toLowerCase().includes("month") ||
-        ageStr.toLowerCase().includes("year") ||
-        ageStr.toLowerCase().includes("mo")
-      ) {
-        return ageStr;
-      }
-      return `${ageStr} yrs`;
-    }
-
-    // 2. Compute from DOB if age is not explicitly set
+    // 1. Compute from DOB first - it's the precise source (down to the
+    // month) whenever it's available. Checking the raw pet.age field first
+    // meant a literal stored 0 (common for a just-registered young pet)
+    // always won and got shown as "0 yrs", even when a real DOB was on
+    // file and would have given the actual age in months/years.
     if (pet.dob) {
       const birthDate = new Date(pet.dob);
       if (!isNaN(birthDate.getTime())) {
@@ -293,6 +284,21 @@ export default function ExistingCustomerPet() {
           return "Newborn (< 1 mo)";
         }
       }
+    }
+
+    // 2. Fall back to the raw pet.age field only when there's no DOB to
+    // compute from.
+    if (pet.age !== undefined && pet.age !== null && String(pet.age).trim() !== "") {
+      const ageStr = String(pet.age).trim();
+      if (
+        ageStr.toLowerCase().includes("yr") ||
+        ageStr.toLowerCase().includes("month") ||
+        ageStr.toLowerCase().includes("year") ||
+        ageStr.toLowerCase().includes("mo")
+      ) {
+        return ageStr;
+      }
+      return `${ageStr} yrs`;
     }
 
     return null;
@@ -1693,9 +1699,16 @@ export default function ExistingCustomerPet() {
                   <div>
                     <label className="block mb-1 font-bold text-slate-500 uppercase tracking-wider text-[10px]">Age (Years)</label>
                     <input
-                      type="text"
+                      type="number"
+                      min="0"
+                      max={MAX_PET_AGE_YEARS}
                       value={editForm.age}
-                      onChange={(e) => setEditForm({ ...editForm, age: e.target.value })}
+                      onChange={(e) => {
+                        const digits = e.target.value.replace(/\D/g, "");
+                        const clamped = digits === "" ? "" : String(Math.min(MAX_PET_AGE_YEARS, Number(digits)));
+                        setEditForm({ ...editForm, age: clamped });
+                      }}
+                      placeholder={`0-${MAX_PET_AGE_YEARS}`}
                       className="w-full border border-slate-200 rounded-xl p-2.5 text-slate-800 font-semibold focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition outline-none"
                     />
                   </div>

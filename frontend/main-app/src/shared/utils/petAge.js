@@ -1,3 +1,10 @@
+// A generous upper bound for a pet's real-world age in years - no dog or
+// cat lives anywhere close to 100 years, so raw numeric age/duration
+// inputs (which have no way to know they're implausible on their own)
+// should be capped against this everywhere a "years" value for a pet is
+// entered, not just validated after the fact server-side.
+export const MAX_PET_AGE_YEARS = 20;
+
 // Formats a pet's age for display, preferring an exact calculation from
 // date of birth (which can show days/months for a young pet) and falling
 // back to a stored whole-years age field. Callers that just did

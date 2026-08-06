@@ -1,3 +1,5 @@
+import { MAX_PET_AGE_YEARS } from "../../../../shared/utils/petAge";
+
 export default function BriefHistoryForm({ formData, setFormData, errors = {}, setErrors }) {
   const clearErrorIfValid = (field, isValid) => {
     if (!setErrors) return;
@@ -24,6 +26,11 @@ export default function BriefHistoryForm({ formData, setFormData, errors = {}, s
 
   const hasPrevious = formData.previousEpisodes?.hasPreviousEpisodes || false;
 
+  // No pet's illness has been going on for 100 years - "Years" is capped to
+  // a realistic pet lifespan, same bound used everywhere else a pet's age
+  // in years is entered (see shared/utils/petAge.js).
+  const durationMax = formData.durationOfIllness?.unit === "Years" ? MAX_PET_AGE_YEARS : 999;
+
   const handleDurationChange = (e) => {
     const raw = e.target.value;
     const numeric = raw.replace(/\D/g, "");
@@ -31,7 +38,7 @@ export default function BriefHistoryForm({ formData, setFormData, errors = {}, s
     const final =
       clamped === ""
         ? ""
-        : Math.min(999, Math.max(1, Number(clamped)));
+        : Math.min(durationMax, Math.max(1, Number(clamped)));
     setFormData((prev) => ({
       ...prev,
       durationOfIllness: {
@@ -58,7 +65,7 @@ export default function BriefHistoryForm({ formData, setFormData, errors = {}, s
           <input
             type="number"
             min="1"
-            max="999"
+            max={durationMax}
             value={formData.durationOfIllness?.value || ""}
             onChange={handleDurationChange}
             onBlur={() => markRequiredOnBlur("durationValue", formData.durationOfIllness?.value, "Duration of illness is required.")}
@@ -67,7 +74,7 @@ export default function BriefHistoryForm({ formData, setFormData, errors = {}, s
                 e.preventDefault();
               }
             }}
-            placeholder="Enter Duration (1–999)"
+            placeholder={`Enter Duration (1–${durationMax})`}
             className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm md:text-base outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-100"
           />
           {errors.durationValue && <p className="mt-1 text-xs font-medium text-red-500">{errors.durationValue}</p>}
@@ -82,13 +89,24 @@ export default function BriefHistoryForm({ formData, setFormData, errors = {}, s
             value={formData.durationOfIllness?.unit || ""}
             onChange={(e) => {
               const value = e.target.value;
-              setFormData((prev) => ({
-                ...prev,
-                durationOfIllness: {
-                  ...prev.durationOfIllness,
-                  unit: value,
-                },
-              }));
+              setFormData((prev) => {
+                const currentValue = Number(prev.durationOfIllness?.value) || "";
+                // Re-clamp an already-entered value if switching to Years
+                // makes it implausible (e.g. "100" entered while unit was
+                // still Days, then unit changed to Years).
+                const nextValue =
+                  value === "Years" && currentValue > MAX_PET_AGE_YEARS
+                    ? MAX_PET_AGE_YEARS
+                    : currentValue;
+                return {
+                  ...prev,
+                  durationOfIllness: {
+                    ...prev.durationOfIllness,
+                    unit: value,
+                    value: nextValue,
+                  },
+                };
+              });
               clearErrorIfValid("durationUnit", Boolean(value));
             }}
             onBlur={() => markRequiredOnBlur("durationUnit", formData.durationOfIllness?.unit, "Duration unit is required.")}
