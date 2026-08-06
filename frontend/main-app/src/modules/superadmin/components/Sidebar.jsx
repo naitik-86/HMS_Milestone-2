@@ -52,7 +52,7 @@ export default function Sidebar({ isOpen = false, onClose }) {
         { name: "Clinics", path: "/superadmin/clinics", icon: Building2 },
         { name: "Veterinarian", path: "/superadmin/Veterinarian", icon: Users },
         { name: "Plans", path: "/superadmin/plans", icon: ClipboardList },
-        { name: "Verification", path: "/superadmin/verification", icon: ShieldCheck, disabled: true },
+        { name: "Verification", path: "/superadmin/verification", icon: ShieldCheck },
         { name: "Reports", path: "/superadmin/reports", icon: BarChart3 },
         { name: "Team", path: "/superadmin/team", icon: UsersRound },
         { name: "Settings", path: "/superadmin/settings", icon: Settings, disabled: true },

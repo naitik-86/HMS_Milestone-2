@@ -229,6 +229,167 @@ exports.verifyClinicAdminOtp = async (req, res) => {
   return res.status(200).json({ success: true, message: 'OTP verified successfully' });
 };
 
+// ==========================================
+// PUBLIC CLINIC SELF-REGISTRATION (Testing server only)
+// ==========================================
+// A clinic sets its own password here (unlike createClinic above, which
+// generates one and emails it) - there's no Super Admin in this flow to
+// hand credentials to anyone. Only real catalog plans are offered (no
+// Custom) since a Custom plan's price/limits are a manual negotiation
+// with Super Admin, not something a public form can safely set. The
+// clinic's subscription stays PAYMENT_REQUIRED (the plan's own trial, if
+// any, still applies via getSubscriptionStatus's existing defaulting)
+// until the frontend redirects to the existing /payment page and PayU
+// succeeds - no separate "pending" gate needed, that machinery already
+// exists.
+exports.getPublicPlans = async (req, res) => {
+  try {
+    const planType = req.query.type === 'Solo Doctor' ? 'Solo Doctor' : 'Clinic';
+    const plans = await SubscriptionPlan.find({
+      planType,
+      status: 'Active',
+      subscriptionPlan: { $ne: 'Custom' },
+    })
+      .select('subscriptionPlan billingCycle price featureLimits modules trialPeriodDays')
+      .sort({ price: 1 });
+
+    return res.status(200).json({ success: true, data: plans });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: 'Failed to load plans.' });
+  }
+};
+
+exports.registerClinic = async (req, res) => {
+  try {
+    const clinicName = String(req.body.clinicName || '').trim();
+    const facilityType = String(req.body.facilityType || '').trim();
+    const contactEmail = normalizeEmail(req.body.email);
+    const clinicPhone = normalizePhone(req.body.phone);
+    const adminName = String(req.body.adminName || '').trim();
+    const adminEmail = normalizeEmail(req.body.adminEmail);
+    const adminPhone = normalizePhone(req.body.adminPhone);
+    const password = String(req.body.password || '');
+    const plan = String(req.body.plan || '').trim();
+    const billingCycle = String(req.body.billingCycle || '').trim();
+    const addressDetails = req.body.addressDetails || {};
+    // "Clinic" or "Solo Doctor" - which catalog the selected plan must come
+    // from. Doesn't change how the account itself works (both still just
+    // create a Clinic + ClinicAdmin doc) - existing logic elsewhere
+    // (normalizePlanType in subscriptionPlanController.js) already infers
+    // "Solo Doctor" from the plan name being "Solo Basic"/"Solo Pro".
+    const accountType = req.body.accountType === 'Solo Doctor' ? 'Solo Doctor' : 'Clinic';
+
+    if (!clinicName || clinicName.length < 3) {
+      return res.status(400).json({ success: false, field: 'clinicName', message: 'Clinic name must be at least 3 characters.' });
+    }
+    if (!adminName || adminName.length < 3) {
+      return res.status(400).json({ success: false, field: 'adminName', message: 'Admin name must be at least 3 characters.' });
+    }
+    if (!EMAIL_REGEX.test(contactEmail) || !EMAIL_REGEX.test(adminEmail)) {
+      return res.status(400).json({ success: false, message: 'A valid clinic and admin email are required.' });
+    }
+    if (!PHONE_REGEX.test(clinicPhone) || !PHONE_REGEX.test(adminPhone)) {
+      return res.status(400).json({ success: false, message: 'A valid clinic and admin phone number are required.' });
+    }
+    if (password.length < 8) {
+      return res.status(400).json({ success: false, field: 'password', message: 'Password must be at least 8 characters.' });
+    }
+    if (!/^\d{6}$/.test(String(addressDetails.pincode || '').trim())) {
+      return res.status(400).json({ success: false, field: 'pincode', message: 'A valid 6-digit clinic PIN code is required.' });
+    }
+    if (plan === 'Custom') {
+      return res.status(400).json({ success: false, message: 'Custom plans are not available through self-registration.' });
+    }
+
+    const selectedPlan = await SubscriptionPlan.findOne({
+      subscriptionPlan: plan,
+      billingCycle,
+      status: 'Active',
+      planType: accountType,
+    });
+    if (!selectedPlan) {
+      return res.status(400).json({ success: false, message: 'Selected plan is not available.' });
+    }
+
+    const contactsInUse = await Promise.all([
+      findExistingClinicContact({ email: contactEmail }),
+      findExistingClinicContact({ email: adminEmail }),
+      findExistingClinicContact({ phone: clinicPhone }),
+      findExistingClinicContact({ phone: adminPhone }),
+    ]);
+    const duplicateField = ['email', 'adminEmail', 'phone', 'adminPhone'][contactsInUse.findIndex(Boolean)];
+    if (duplicateField) {
+      const label = duplicateField.toLowerCase().includes('email') ? 'email' : 'phone number';
+      return res.status(409).json({ success: false, field: duplicateField, message: `This ${label} is already being used.` });
+    }
+
+    const billingCycleMap = { Monthly: 'Monthly', Quarterly: 'Quarterly', 'Half-Yearly': '6_MONTHS', Annual: '12_MONTHS' };
+    const subscriptionType = billingCycleMap[billingCycle] || 'FREE_TIER';
+
+    const clinic = await createClinicWithCode({
+      name: clinicName,
+      facilityType,
+      yearOfEstablishment: req.body.year,
+      address: [addressDetails.addressLine1, addressDetails.city, addressDetails.state].filter(Boolean).join(', '),
+      addressDetails,
+      phone: clinicPhone,
+      email: contactEmail,
+      contactEmail,
+      plan,
+      billingCycle,
+      subscriptionType,
+      planStartDate: new Date(),
+      licenseLimits: {
+        maxDoctors: selectedPlan.featureLimits?.maxDoctors,
+        maxStaff: selectedPlan.featureLimits?.maxStaffAccounts,
+        maxPets: selectedPlan.featureLimits?.maxPetRecords,
+        maxPetsUnlimited: Boolean(selectedPlan.featureLimits?.maxPetRecordsUnlimited),
+        storageLimit: selectedPlan.featureLimits?.storageLimitGb,
+      },
+      adminDetails: {
+        adminName,
+        adminEmail,
+        adminPhone,
+      },
+      trialDays: selectedPlan.trialPeriodDays || 0,
+    });
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    try {
+      await ClinicAdmin.create({
+        clinicId: clinic._id,
+        email: adminEmail,
+        password: hashedPassword,
+        forcePasswordReset: false,
+      });
+    } catch (clinicAdminError) {
+      await Clinic.findByIdAndDelete(clinic._id);
+      throw clinicAdminError;
+    }
+
+    try {
+      await sendEmail({
+        email: adminEmail,
+        subject: `Welcome to HMS, ${clinicName}`,
+        message: `Your clinic "${clinicName}" has been registered. Complete payment to activate your account, then log in at any time with the email and password you set.`,
+        html: `<p>Your clinic "<strong>${clinicName}</strong>" has been registered.</p><p>Complete payment to activate your account, then log in with the email and password you set.</p>`,
+      });
+    } catch (emailError) {
+      console.error('Self-registration welcome email failed:', emailError.message || emailError);
+    }
+
+    return res.status(201).json({
+      success: true,
+      message: 'Clinic registered. Proceed to payment to activate your account.',
+      data: { clinicId: clinic._id, email: contactEmail, name: clinicName },
+    });
+  } catch (error) {
+    console.error('REGISTER CLINIC ERROR:', error);
+    return res.status(500).json({ success: false, message: 'Failed to register clinic.' });
+  }
+};
+
 // Preview-only: shows the Super Admin what code will *likely* be assigned
 // while filling out Add Clinic, before the record is actually created.
 // createClinicWithCode() re-derives and retries on a collision at save

@@ -136,8 +136,8 @@ export const updateClinic = async (id, clinicData) => {
     return res.data;
 };
 
-export const updateClinicVerification = async (id, status) => {
-    const res = await API.put(`/super-admin/clinics/${id}/verification`, { status });
+export const updateClinicVerification = async (id, status, rejectionReason) => {
+    const res = await API.put(`/super-admin/clinics/${id}/verification`, { status, rejectionReason });
     return res.data;
 };
 
