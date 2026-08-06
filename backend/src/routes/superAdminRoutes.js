@@ -20,7 +20,10 @@ const {
     deleteVeterinarian,
     updateVeterinarianStatus,
     updateVeterinarian,
-    createVeterinarian
+    createVeterinarian,
+    createSuperAdminTeamMember,
+    getSuperAdminTeam,
+    deleteSuperAdminTeamMember
 } = require('../controllers/adminController');
 const {
     createPlan,
@@ -74,6 +77,13 @@ router.delete('/plans/:id', deletePlan);
 
 router.put('/clinics/:id/verification', updateClinicVerification);
 router.put('/clinics/:id/activity', updateClinicActivity);
+
+// Internal-ops sub-accounts - every super admin has equal access to the
+// app itself; deleting a team member is the one action restricted to an
+// original (non-sub) account, enforced inside the controller.
+router.post('/team', createSuperAdminTeamMember);
+router.get('/team', getSuperAdminTeam);
+router.delete('/team/:id', deleteSuperAdminTeamMember);
 
 router.post(
     '/clinics/:id/documents',

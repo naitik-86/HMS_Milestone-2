@@ -10,6 +10,7 @@ const Plans = lazy(() => import("../modules/superadmin/pages/Plans"));
 const Reports = lazy(() => import("../modules/superadmin/pages/Reports"));
 const Verification = lazy(() => import("../modules/superadmin/pages/Verification"));
 const Settings = lazy(() => import("../modules/superadmin/pages/Settings"));
+const Team = lazy(() => import("../modules/superadmin/pages/Team"));
 const BasicReports = lazy(() => import("../modules/superadmin/pages/BasicReports"));
 
 const SuperAdminRoutes = (
@@ -29,6 +30,7 @@ const SuperAdminRoutes = (
         <Route path="reports/basic" element={<BasicReports />} />
         <Route path="verification" element={<Verification />} />
         <Route path="settings" element={<Settings />} />
+        <Route path="team" element={<Team />} />
     </Route>
 );
 

@@ -3,6 +3,7 @@ import {
     LayoutDashboard,
     Building2,
     Users,
+    UsersRound,
     ClipboardList,
     ShieldCheck,
     BarChart3,
@@ -53,6 +54,7 @@ export default function Sidebar({ isOpen = false, onClose }) {
         { name: "Plans", path: "/superadmin/plans", icon: ClipboardList },
         { name: "Verification", path: "/superadmin/verification", icon: ShieldCheck, disabled: true },
         { name: "Reports", path: "/superadmin/reports", icon: BarChart3 },
+        { name: "Team", path: "/superadmin/team", icon: UsersRound },
         { name: "Settings", path: "/superadmin/settings", icon: Settings, disabled: true },
     ];
 

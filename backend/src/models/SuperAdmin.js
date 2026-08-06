@@ -2,6 +2,11 @@ const mongoose = require("mongoose");
 
 const superAdminSchema = new mongoose.Schema(
     {
+        name: {
+            type: String,
+            trim: true,
+            default: "",
+        },
         email: {
             type: String,
             required: true,
@@ -17,6 +22,16 @@ const superAdminSchema = new mongoose.Schema(
         role: {
             type: String,
             default: "SUPER_ADMIN",
+        },
+        // Every account in this collection logs in and is authorized
+        // identically (see authOtpController.verifySuperAdminOtp, which
+        // always issues role: 'SUPER_ADMIN' regardless of this field) - all
+        // super admins have equal access by design. createdBy exists only
+        // to show who set up which account, not to gate anything.
+        createdBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "SuperAdmin",
+            default: null,
         },
         failedPasswordAttempts: { type: Number, default: 0 },
         passwordLockUntil: { type: Date, default: null },

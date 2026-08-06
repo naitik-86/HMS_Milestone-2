@@ -22,6 +22,7 @@ const SubscriptionPlan = require('../models/SubscriptionPlan');
 const ClinicSubscriptionTracker = require("../models/ClinicSubscriptionTracker");
 const { getOrCreateCustomPlanForClinic, isCustomPlanClinic } = require("../utils/customPlanCatalog");
 const { Pet } = require('../models/Pet');
+const SuperAdmin = require('../models/SuperAdmin');
 const sendEmail = require('../utils/emailService'); // NEW: Email Trigger Utility
 const { credentialEmail, clinicVerificationEmail } = require('../utils/emailTemplates');
 const bcrypt = require('bcryptjs');
@@ -2521,5 +2522,116 @@ exports.uploadClinicDocuments = async (req, res) => {
     return res.status(200).json({ success: true, data: clinic });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// ==========================================
+// SUPER ADMIN TEAM (internal-ops sub-accounts)
+// ==========================================
+// Every account here logs in and is authorized identically to the original
+// Super Admin - see the note on SuperAdmin.js's createdBy field. The one
+// deliberate exception is deleteSuperAdminTeamMember below: only an
+// original (non-sub) account may remove a team member.
+
+exports.createSuperAdminTeamMember = async (req, res) => {
+  try {
+    const name = String(req.body?.name || '').trim();
+    const normalizedEmail = normalizeEmail(req.body?.email);
+
+    if (!name || name.length < 3) {
+      return res.status(400).json({ success: false, message: 'Name must be at least 3 characters.' });
+    }
+    if (!normalizedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+      return res.status(400).json({ success: false, message: 'A valid email is required.' });
+    }
+
+    const existing = await SuperAdmin.findOne({ email: normalizedEmail });
+    if (existing) {
+      return res.status(409).json({ success: false, message: 'A super admin with this email already exists.' });
+    }
+
+    const temporaryPassword = generatePassword();
+    const hashedPassword = await bcrypt.hash(temporaryPassword, 10);
+
+    const teamMember = await SuperAdmin.create({
+      name,
+      email: normalizedEmail,
+      password: hashedPassword,
+      createdBy: req.user?.id || null,
+    });
+
+    let emailWarning = null;
+    try {
+      await sendEmail({
+        email: normalizedEmail,
+        subject: 'Your HMS Super Admin login credentials',
+        ...credentialEmail({
+          name,
+          email: normalizedEmail,
+          password: temporaryPassword,
+          accountLabel: 'HMS Super Admin',
+        }),
+      });
+    } catch (emailError) {
+      emailWarning = `Account created, but the credential email could not be sent to ${normalizedEmail}: ${emailError.message || emailError}`;
+      console.error(emailWarning);
+    }
+
+    return res.status(201).json({
+      success: true,
+      message: emailWarning ? 'Super admin created, but the credential email was not sent.' : 'Super admin created successfully. Credentials were emailed.',
+      data: { id: teamMember._id, name: teamMember.name, email: teamMember.email, createdBy: teamMember.createdBy },
+      emailWarning,
+    });
+  } catch (error) {
+    console.error('CREATE SUPER ADMIN TEAM MEMBER ERROR:', error);
+    return res.status(500).json({ success: false, message: 'Failed to create super admin.' });
+  }
+};
+
+exports.getSuperAdminTeam = async (req, res) => {
+  try {
+    const team = await SuperAdmin.find().select('name email createdBy createdAt lastLoginAt').sort({ createdAt: 1 });
+    return res.status(200).json({ success: true, data: team });
+  } catch (error) {
+    console.error('GET SUPER ADMIN TEAM ERROR:', error);
+    return res.status(500).json({ success: false, message: 'Failed to load super admin team.' });
+  }
+};
+
+exports.deleteSuperAdminTeamMember = async (req, res) => {
+  try {
+    const requester = await SuperAdmin.findById(req.user?.id);
+    if (!requester) {
+      return res.status(404).json({ success: false, message: 'Requesting account not found.' });
+    }
+
+    // A sub super admin (one that was itself created through this same
+    // endpoint) cannot remove team members - only an original account can.
+    if (requester.createdBy) {
+      return res.status(403).json({
+        success: false,
+        message: 'Only an original super admin can remove a team member.',
+      });
+    }
+
+    if (String(req.params.id) === String(requester._id)) {
+      return res.status(400).json({ success: false, message: 'You cannot delete your own account.' });
+    }
+
+    const totalCount = await SuperAdmin.countDocuments();
+    if (totalCount <= 1) {
+      return res.status(400).json({ success: false, message: 'At least one super admin account must remain.' });
+    }
+
+    const deleted = await SuperAdmin.findByIdAndDelete(req.params.id);
+    if (!deleted) {
+      return res.status(404).json({ success: false, message: 'Super admin not found.' });
+    }
+
+    return res.status(200).json({ success: true, message: 'Super admin removed.' });
+  } catch (error) {
+    console.error('DELETE SUPER ADMIN TEAM MEMBER ERROR:', error);
+    return res.status(500).json({ success: false, message: 'Failed to remove super admin.' });
   }
 };
