@@ -69,26 +69,22 @@ export default function Sidebar({ isOpen = false, onClose }) {
         {
             name: "Groomer",
             path: "/clinic/groomer",
-            icon: Scissors,
-            disabled: true
+            icon: Scissors
         },
         {
             name: "Kennel",
             path: "/clinic/kennel",
-            icon: PawPrint,
-            disabled: true
+            icon: PawPrint
         },
         {
             name: "Reports",
             path: "/clinic/reports",
-            icon: BarChart3,
-            disabled: true
+            icon: BarChart3
         },
         {
             name: "Settings",
             path: "/clinic/settings",
-            icon: Settings,
-            disabled: true
+            icon: Settings
         },
     ];
 
