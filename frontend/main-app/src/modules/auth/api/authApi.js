@@ -12,11 +12,20 @@ export const authApi = async (loginData) => {
         // Avoid storing token here because token is issued only after OTP verify.
         return res.data;
     } catch (error) {
-        console.log("this is from Login page frontend " + error.response.data);
+        // A network failure (backend unreachable, CORS block, timeout, DNS
+        // failure) never gets an HTTP response at all, so error.response is
+        // undefined here - this debug log used to access error.response.data
+        // without optional chaining, which threw its own new TypeError
+        // ("Cannot read properties of undefined (reading 'data')") on any
+        // network-level login failure. That masked the real error: the
+        // throw below never ran, and the login page's catch block showed
+        // this unrelated crash message instead of the actual failure
+        // reason.
+        console.log("Login request failed:", error.response?.data || error.message);
 
         throw error.response?.data || { message: "Login failed" };
     }
-}; 
+};
 
 export const googleLoginApi = async (credential) => {
     try {
