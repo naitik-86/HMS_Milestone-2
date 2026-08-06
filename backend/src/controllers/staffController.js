@@ -10,6 +10,10 @@ const ClinicAdmin = require("../models/ClinicAdmin.js");
 const Clinic = require("../models/Clinic.js");
 const User = require("../models/User.js");
 const DoctorDetails = require("../models/DoctorDetails.js");
+const LabTechnician = require("../models/LabTechnician.js");
+const GroomerModel = require("../models/GroomerModel.js");
+const KennelModel = require("../models/KennelModel.js");
+const LoginOtp = require("../models/LoginOtp.js");
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const phoneRegex = /^\d{10}$/;
@@ -548,13 +552,44 @@ const deleteStaff = async (req, res) => {
             });
         }
 
-        // A staff member enrolled as a Doctor has a linked DoctorDetails
-        // record (Clinic Admin > Doctors) - deleting the staff account
-        // without also removing this left an orphaned doctor entry behind.
-        await DoctorDetails.deleteOne({
-            staff: staff._id,
-            clinicId: req.user.clinicId,
-        });
+        // A staff member enrolled under a role-specific module (Doctor, Lab
+        // Technician, Groomer, Kennel) has a linked detail record there -
+        // deleting the staff account without also removing these left
+        // orphaned entries behind in every one of those lists. DoctorDetails
+        // and KennelModel link by the Staff ObjectId; LabTechnician and
+        // GroomerModel only ever stored the human-readable staffId string
+        // (e.g. "STF0001"), not a real reference, so those two match on
+        // employmentInfo.staffId instead. LoginOtp challenges for this
+        // account are also cleared so nothing tied to the deleted login
+        // remains queryable anywhere.
+        const staffCode = staff.employmentInfo?.staffId;
+
+        await Promise.all([
+            DoctorDetails.deleteOne({
+                staff: staff._id,
+                clinicId: req.user.clinicId,
+            }),
+            KennelModel.deleteOne({
+                staffId: staff._id,
+                clinicId: req.user.clinicId,
+            }),
+            staffCode
+                ? LabTechnician.deleteOne({
+                      employeeId: staffCode,
+                      clinicId: req.user.clinicId,
+                  })
+                : Promise.resolve(),
+            staffCode
+                ? GroomerModel.deleteOne({
+                      employeeId: staffCode,
+                      clinicId: req.user.clinicId,
+                  })
+                : Promise.resolve(),
+            LoginOtp.deleteMany({
+                userType: "STAFF",
+                userId: staff._id,
+            }),
+        ]);
 
         return res.status(200).json({
             success: true,

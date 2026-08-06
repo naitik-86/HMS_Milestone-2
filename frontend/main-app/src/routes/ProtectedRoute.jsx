@@ -34,20 +34,25 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
             try {
                 const { data } = await API.get("/clinic/subscription/status");
 
-                // The live endpoint returns subscription fields flattened
-                // directly under data (data.subscriptionStatus, data.plan,
-                // data.remainingTrialDays, ...) rather than a separate
-                // top-level `subscription` object - matching that shape here
-                // is what keeps this from crashing right after OTP login.
+                // The live lifecycle status (TRIAL / PAYMENT_REQUIRED / ACTIVE /
+                // EXPIRED / ...) lives on data.subscription.status (the
+                // ClinicSubscriptionTracker doc) - data.data.subscriptionStatus
+                // is a *different*, unrelated field straight off the Clinic
+                // document whose schema enum only ever allows
+                // ACTIVE/SUSPENDED/EXPIRED (never TRIAL/PAYMENT_REQUIRED), so
+                // reading it here meant the trial popup could never fire and
+                // an unpaid clinic always looked "ACTIVE" and got full access.
+                // remainingTrialDays is also top-level on the response, not
+                // nested under data.data.
                 setSubscriptionData(data);
-                setRemainingTrialDays(data?.data?.remainingTrialDays ?? 0);
+                setRemainingTrialDays(data?.remainingTrialDays ?? 0);
 
                 const shouldShowPopup =
                     location.state?.forceTrialPopup ||
                     !sessionStorage.getItem("trial-popup");
 
                 if (
-                    data?.data?.subscriptionStatus === "TRIAL" &&
+                    data?.subscription?.status === "TRIAL" &&
                     shouldShowPopup
                 ) {
                     setShowTrialPopup(true);
@@ -89,7 +94,9 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
     if (normalizedRole === "CLINIC_ADMIN" && subscriptionData?.data) {
 
         const clinic = subscriptionData.data;
-        const status = clinic.subscriptionStatus;
+        // Gate on the tracker's real lifecycle status, not
+        // clinic.subscriptionStatus - see the comment in the effect above.
+        const status = subscriptionData.subscription?.status;
 
         // Allow access during trial or active subscription
         if (

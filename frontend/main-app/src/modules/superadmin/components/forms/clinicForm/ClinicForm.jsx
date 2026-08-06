@@ -483,18 +483,27 @@ export default function ClinicForm({
             const nextBilling = nextBillingOptions.includes(prev.billing)
                 ? prev.billing
                 : nextBillingOptions[0] || "";
-            const nextTrialDays = getTrialDaysForPlanCycle(
-                activePlans,
-                nextPlan,
-                nextBilling
-            );
+            const isCustomPlan = nextPlan === CUSTOM_PLAN;
+            // Custom plan's trial days/end date are manually set by the
+            // admin, not derived from a catalog cycle match (there is no
+            // catalog entry named "Custom" to match against). This effect
+            // reruns once the Plans catalog finishes loading - which
+            // happens right after Edit Clinic pre-fills the form with the
+            // clinic's real saved trialDays - and was unconditionally
+            // recomputing it via the catalog lookup, silently resetting a
+            // real value (e.g. 14) back to 0 before the admin ever touched
+            // anything. Same reasoning as handleBillingChange/
+            // handlePlanChange's existing Custom-plan guards.
+            const nextTrialDays = isCustomPlan
+                ? Number(prev.trialDays || 0)
+                : getTrialDaysForPlanCycle(activePlans, nextPlan, nextBilling);
             const nextPlanDetails = getPlanForCycle(activePlans, nextPlan, nextBilling);
             const nextStartDate = isOnboarding && prev.startDate < getTomorrowDate()
                 ? getTomorrowDate()
                 : prev.startDate;
-            const nextEndDate = nextStartDate && nextBilling
-                ? getPlanEndDate(nextStartDate, nextBilling)
-                : "";
+            const nextEndDate = isCustomPlan
+                ? prev.endDate
+                : (nextStartDate && nextBilling ? getPlanEndDate(nextStartDate, nextBilling) : "");
 
             if (
                 prev.plan === nextPlan &&

@@ -141,7 +141,7 @@ export default function Sidebar({ isOpen = false, onClose }) {
                     : "-translate-x-full"
                 }
                 flex flex-col
-                px-4 py-5 shadow-xl`}
+                px-4 py-4 shadow-xl`}
             >
 
 
@@ -181,7 +181,7 @@ export default function Sidebar({ isOpen = false, onClose }) {
 
                     {/* Menu */}
 
-                    <nav className="mt-8 space-y-1.5 flex-1 min-h-0 overflow-y-auto">
+                    <nav className="mt-4 space-y-1 flex-1 min-h-0 overflow-y-auto">
 
 
                         {menu.map((item)=>{
@@ -199,7 +199,7 @@ export default function Sidebar({ isOpen = false, onClose }) {
                                         key={item.name}
                                         className="
                                         flex items-center justify-between
-                                        px-4 py-3 rounded-xl
+                                        px-4 py-2 rounded-xl
                                         text-xs font-semibold
                                         text-white/40
                                         cursor-not-allowed
@@ -258,7 +258,7 @@ export default function Sidebar({ isOpen = false, onClose }) {
 
                                     `
                                     flex items-center gap-3
-                                    px-4 py-3 rounded-xl
+                                    px-4 py-2 rounded-xl
                                     text-xs font-bold
                                     transition-all duration-200
 
@@ -297,8 +297,8 @@ export default function Sidebar({ isOpen = false, onClose }) {
 
                 <div className="
                 shrink-0
-                space-y-3
-                pt-4
+                space-y-2
+                pt-3
                 border-t
                 border-white/10
                 ">
@@ -307,7 +307,7 @@ export default function Sidebar({ isOpen = false, onClose }) {
                     <div
                         className="
                         flex items-center gap-3
-                        px-3 py-2
+                        px-3 py-1.5
                         bg-white/5
                         rounded-xl
                         border border-white/10
@@ -350,7 +350,7 @@ export default function Sidebar({ isOpen = false, onClose }) {
                         onClick={handleLogout}
                         className="
                         w-full flex items-center justify-center
-                        gap-2.5 px-4 py-2.5
+                        gap-2.5 px-4 py-2
                         rounded-xl
                         text-xs font-bold
                         text-rose-300

@@ -3,6 +3,7 @@ const Clinic = require("../models/Clinic");
 const clinincSubscriptionTracker = require("../models/ClinicSubscriptionTracker")
 const crypto = require("crypto");
 const { log } = require('console');
+const { getOrCreateCustomPlanForClinic, isCustomPlanClinic } = require("../utils/customPlanCatalog");
 
 const addMonths = (date, months) => {
   const next = new Date(date);
@@ -59,9 +60,9 @@ exports.getCurrentSubscription = async (req, res) => {
         });
       }
 
-      const isCustomPlan = clinic.plan === "Custom";
+      const isCustomPlan = isCustomPlanClinic(clinic);
       const matchedPlan = isCustomPlan
-        ? null
+        ? await getOrCreateCustomPlanForClinic(clinic)
         : await SubscriptionPlan.findOne({ subscriptionPlan: clinic.plan, status: "Active" })
             .select("subscriptionPlan billingCycle price featureLimits modules");
 
@@ -204,15 +205,18 @@ exports.createSubscriptionPayment = async (req, res) => {
     // Same drift issue as getSubscriptionDetails above: clinic.subscriptionType
     // can point at a billing cycle with no currently-active plan - prefer the
     // clinic's own assigned plan by name first, then fall back to cycle match.
-    const plan =
-      (await SubscriptionPlan.findOne({
-        subscriptionPlan: clinic.plan,
-        status: "Active",
-      })) ||
-      (await SubscriptionPlan.findOne({
-        billingCycle,
-        status: "Active",
-      }));
+    // Custom plans resolve to the clinic's own dedicated plan document
+    // (its real customPlanPrice) instead of an unrelated catalog match.
+    const plan = isCustomPlanClinic(clinic)
+      ? await getOrCreateCustomPlanForClinic(clinic)
+      : (await SubscriptionPlan.findOne({
+          subscriptionPlan: clinic.plan,
+          status: "Active",
+        })) ||
+        (await SubscriptionPlan.findOne({
+          billingCycle,
+          status: "Active",
+        }));
 
     if (!plan) {
       return res.status(404).json({
@@ -300,7 +304,7 @@ exports.getSubscriptionDetails = async (req, res) => {
 
     // 1. Get Clinic
     const clinic = await Clinic.findById(clinicId).select(
-      "name plan subscriptionType subscriptionStatus expiryDate"
+      "name plan subscriptionType subscriptionStatus expiryDate billingCycle customPlanPrice licenseLimits planStartDate planEndDate trialDays"
     );
 
     if (!clinic) {
@@ -327,15 +331,19 @@ exports.getSubscriptionDetails = async (req, res) => {
     // up) - prefer the clinic's own assigned plan by name first, and only
     // fall back to any active plan on that billing cycle, same as the
     // fallback already used in getSubscriptionStatus/paymentSuccess above.
-    const plan =
-      (await SubscriptionPlan.findOne({
-        subscriptionPlan: clinic.plan,
-        status: "Active",
-      }).select("subscriptionPlan billingCycle price featureLimits modules")) ||
-      (await SubscriptionPlan.findOne({
-        billingCycle,
-        status: "Active",
-      }).select("subscriptionPlan billingCycle price featureLimits modules"));
+    // Custom plans have no catalog match at all - this is what left the
+    // /payment page's Plan/Billing Cycle/Total Amount blank ("undefined")
+    // for Custom-plan clinics, since this used to 404 before reaching here.
+    const plan = isCustomPlanClinic(clinic)
+      ? await getOrCreateCustomPlanForClinic(clinic)
+      : (await SubscriptionPlan.findOne({
+          subscriptionPlan: clinic.plan,
+          status: "Active",
+        }).select("subscriptionPlan billingCycle price featureLimits modules")) ||
+        (await SubscriptionPlan.findOne({
+          billingCycle,
+          status: "Active",
+        }).select("subscriptionPlan billingCycle price featureLimits modules"));
     if (!plan) {
       return res.status(404).json({
         success: false,
@@ -434,8 +442,9 @@ exports.paymentSuccess = async (req, res) => {
     // the switch below uses latestPlan.billingCycle for the renewal math, so
     // it still stays correct even when the matched cycle differs from
     // subscriptionType's stale mapping.
-    const latestPlan =
-        (await SubscriptionPlan.findOne({
+    const latestPlan = isCustomPlanClinic(clinic)
+        ? await getOrCreateCustomPlanForClinic(clinic)
+        : (await SubscriptionPlan.findOne({
             subscriptionPlan: clinic.plan,
             status: "Active",
         })) ||
@@ -579,16 +588,20 @@ exports.getSubscriptionStatus = async (req, res) => {
 
       // Prefer a plan matching the clinic's assigned plan name, not just its
       // billing cycle - see the same fix in paymentSuccess above for why.
-      const defaultPlan =
-        (await SubscriptionPlan.findOne({
-          subscriptionPlan: clinic.plan,
-          billingCycle,
-          status: "Active",
-        })) ||
-        (await SubscriptionPlan.findOne({
-          billingCycle,
-          status: "Active",
-        }));
+      // Custom plans have no catalog document to match by name/cycle at all -
+      // resolve (or create) the one dedicated to this clinic instead of
+      // falling back to whatever unrelated catalog plan shares the cycle.
+      const defaultPlan = isCustomPlanClinic(clinic)
+        ? await getOrCreateCustomPlanForClinic(clinic)
+        : (await SubscriptionPlan.findOne({
+            subscriptionPlan: clinic.plan,
+            billingCycle,
+            status: "Active",
+          })) ||
+          (await SubscriptionPlan.findOne({
+            billingCycle,
+            status: "Active",
+          }));
 
       if (!defaultPlan) {
         return res.status(400).json({

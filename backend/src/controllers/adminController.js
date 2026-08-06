@@ -20,6 +20,7 @@ const LoginOtp = require('../models/LoginOtp');
 const Staff = require('../models/Staff');
 const SubscriptionPlan = require('../models/SubscriptionPlan');
 const ClinicSubscriptionTracker = require("../models/ClinicSubscriptionTracker");
+const { getOrCreateCustomPlanForClinic, isCustomPlanClinic } = require("../utils/customPlanCatalog");
 const { Pet } = require('../models/Pet');
 const sendEmail = require('../utils/emailService'); // NEW: Email Trigger Utility
 const { credentialEmail, clinicVerificationEmail } = require('../utils/emailTemplates');
@@ -1950,13 +1951,17 @@ exports.updateClinic = async (req, res) => {
           "12_MONTHS": "Annual",
         };
         const billingCycle = billingCycleMap[updatedClinic.subscriptionType] || updatedClinic.subscriptionType;
-        const matchingPlan =
-          (await SubscriptionPlan.findOne({
-            subscriptionPlan: updatedClinic.plan,
-            billingCycle,
-            status: "Active",
-          })) ||
-          (await SubscriptionPlan.findOne({ billingCycle, status: "Active" }));
+        // Custom plans have no catalog document to match by name/cycle -
+        // resolve (or create) the one dedicated to this clinic instead of
+        // falling back to an unrelated catalog plan on the same cycle.
+        const matchingPlan = isCustomPlanClinic(updatedClinic)
+          ? await getOrCreateCustomPlanForClinic(updatedClinic)
+          : (await SubscriptionPlan.findOne({
+              subscriptionPlan: updatedClinic.plan,
+              billingCycle,
+              status: "Active",
+            })) ||
+            (await SubscriptionPlan.findOne({ billingCycle, status: "Active" }));
 
         if (matchingPlan) {
           tracker.planId = matchingPlan._id;

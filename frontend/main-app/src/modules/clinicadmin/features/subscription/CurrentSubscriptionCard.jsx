@@ -9,10 +9,15 @@ export default function CurrentSubscriptionCard({ subscription, onUpgrade }) {
     const sub = subscription;
     const plan = subscription.plan;
     // A clinic set up directly by Super Admin (Add Clinic / Edit Clinic >
-    // Plan & Features) has no recorded payment transaction at all - fall
-    // back to the plan's own price rather than showing a blank "₹" for
-    // "amount paid", since that's what the assigned plan is worth.
-    const amountPaid = sub.amountPaid || plan?.price || 0;
+    // Plan & Features) with no subscription tracker at all has no
+    // amountPaid field present (undefined) - fall back to the plan's own
+    // price rather than showing a blank "₹" for "amount paid", since
+    // that's what the assigned plan is worth. Once a real tracker exists,
+    // amountPaid is a genuine 0 until an actual payment is recorded - using
+    // || here treated that legitimate 0 the same as "missing" and
+    // substituted the plan price anyway, making an unpaid subscription
+    // look already paid. ?? only falls back on null/undefined.
+    const amountPaid = sub.amountPaid ?? plan?.price ?? 0;
 
     const formatBillingCycle = (cycle) =>
         cycle.replace("_", " ").toLowerCase();
