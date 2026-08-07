@@ -146,13 +146,18 @@ exports.getDashboard = async (req, res) => {
       // the visit actually happened (a separate pre-existing data issue
       // upstream of this dashboard), while createdAt reliably reflects
       // when the walk-in was actually checked in.
+      // petId refs a top-level "Pet" collection that's never populated -
+      // the real pet data is an embedded subdocument on the owner
+      // (ownerId/PetRegistration), keyed by that same petId. Same root
+      // cause already fixed in DoctorModuleController.js's getHistory -
+      // this dashboard query had the identical bug, always falling back
+      // to "Unnamed Pet".
       Visit.find({
         clinicId: clinicObjectId,
         createdAt: { $gte: todayRange.start, $lte: todayRange.end },
       })
         .sort({ createdAt: 1 })
-        .populate("petId",   "name species breed")
-        .populate("ownerId", "ownerName")
+        .populate("ownerId", "ownerName pets")
         .select("createdAt appointmentDate status visitType assignedDoctor petId ownerId"),
 
       Staff.find({ clinicId: clinicObjectId, isDeleted: false })
@@ -192,18 +197,39 @@ exports.getDashboard = async (req, res) => {
             },
           },
         },
+        // Reception's "Assigned Doctor" dropdown merges two different
+        // collections (DoctorDetails via /clinic/doctors, and Staff
+        // members with role "Doctor" via /clinic/staff/doctor-list who
+        // haven't been onboarded as a full veterinarian yet) - so
+        // `assignedDoctor` sometimes holds a Staff._id instead of a
+        // DoctorDetails._id. Try both: direct DoctorDetails._id match
+        // first, then fall back to matching via DoctorDetails.staff
+        // (the link back to that doctor's own Staff record), so a
+        // completed doctor's consultationFees is still found either way.
         {
           $lookup: {
             from: "doctors",
             localField: "assignedDoctorObjId",
             foreignField: "_id",
-            as: "doctorDetails",
+            as: "doctorByIdMatch",
           },
         },
         {
-          $unwind: {
-            path: "$doctorDetails",
-            preserveNullAndEmptyArrays: true,
+          $lookup: {
+            from: "doctors",
+            localField: "assignedDoctorObjId",
+            foreignField: "staff",
+            as: "doctorByStaffMatch",
+          },
+        },
+        {
+          $addFields: {
+            doctorDetails: {
+              $ifNull: [
+                { $arrayElemAt: ["$doctorByIdMatch", 0] },
+                { $arrayElemAt: ["$doctorByStaffMatch", 0] },
+              ],
+            },
           },
         },
         {
@@ -243,18 +269,39 @@ exports.getDashboard = async (req, res) => {
             },
           },
         },
+        // Reception's "Assigned Doctor" dropdown merges two different
+        // collections (DoctorDetails via /clinic/doctors, and Staff
+        // members with role "Doctor" via /clinic/staff/doctor-list who
+        // haven't been onboarded as a full veterinarian yet) - so
+        // `assignedDoctor` sometimes holds a Staff._id instead of a
+        // DoctorDetails._id. Try both: direct DoctorDetails._id match
+        // first, then fall back to matching via DoctorDetails.staff
+        // (the link back to that doctor's own Staff record), so a
+        // completed doctor's consultationFees is still found either way.
         {
           $lookup: {
             from: "doctors",
             localField: "assignedDoctorObjId",
             foreignField: "_id",
-            as: "doctorDetails",
+            as: "doctorByIdMatch",
           },
         },
         {
-          $unwind: {
-            path: "$doctorDetails",
-            preserveNullAndEmptyArrays: true,
+          $lookup: {
+            from: "doctors",
+            localField: "assignedDoctorObjId",
+            foreignField: "staff",
+            as: "doctorByStaffMatch",
+          },
+        },
+        {
+          $addFields: {
+            doctorDetails: {
+              $ifNull: [
+                { $arrayElemAt: ["$doctorByIdMatch", 0] },
+                { $arrayElemAt: ["$doctorByStaffMatch", 0] },
+              ],
+            },
           },
         },
         {
@@ -303,10 +350,22 @@ exports.getDashboard = async (req, res) => {
           .filter((id) => id && mongoose.Types.ObjectId.isValid(id))
       ),
     ];
+    // Same dual-collection ambiguity as the revenue aggregation below -
+    // assignedDoctor may hold either a DoctorDetails._id or that doctor's
+    // own Staff._id, so match on both fields.
     const assignedDoctors = assignedDoctorIds.length
-      ? await DoctorDetails.find({ _id: { $in: assignedDoctorIds } }).select("name")
+      ? await DoctorDetails.find({
+          $or: [
+            { _id: { $in: assignedDoctorIds } },
+            { staff: { $in: assignedDoctorIds } },
+          ],
+        }).select("name staff")
       : [];
-    const doctorNameMap = new Map(assignedDoctors.map((d) => [d._id.toString(), d.name]));
+    const doctorNameMap = new Map();
+    assignedDoctors.forEach((d) => {
+      doctorNameMap.set(d._id.toString(), d.name);
+      if (d.staff) doctorNameMap.set(d.staff.toString(), d.name);
+    });
 
     const revenueMap = new Map(
       revenueAggregation.map((item) => [
@@ -378,8 +437,9 @@ exports.getDashboard = async (req, res) => {
     });
 
     const formattedTodayAppointments = todayAppointments.map((appointment) => {
-      const petName    = appointment.petId?.name       || "Unnamed Pet";
-      const breed       = appointment.petId?.breed      || "";
+      const pet = appointment.ownerId?.pets?.id(appointment.petId) || null;
+      const petName    = pet?.petName || pet?.name || "Unnamed Pet";
+      const breed       = pet?.breed || "";
       // PetRegistration (Visit.ownerId's ref target) stores this as
       // ownerName, not name - the old Appointment-based version of this
       // populate/read never actually matched the real schema.
