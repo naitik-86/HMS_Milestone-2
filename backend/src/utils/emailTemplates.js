@@ -83,4 +83,28 @@ const clinicVerificationEmail = ({ clinicName, approved, rejectionReason }) => {
   };
 };
 
-module.exports = { credentialEmail, loginOtpEmail, passwordResetOtpEmail, clinicVerificationEmail };
+// Sent to a staff member's (new) email whenever their login email and/or
+// mobile number is changed via Edit Staff Member, so they always know
+// which contact details to sign in with next - changedFields lists which
+// of "email"/"mobile" actually changed, since either can change alone.
+const contactUpdatedEmail = ({ name, email, mobileNumber, changedFields = [] }) => {
+  const changedLabel = changedFields
+    .map((field) => (field === 'email' ? 'login email' : 'mobile number'))
+    .join(' and ');
+
+  return {
+    message: `Hello ${name},\n\nYour HMS staff account ${changedLabel} ${changedFields.length > 1 ? 'have' : 'has'} been updated by your clinic admin.\n\nCurrent login email: ${email}\nCurrent mobile number: ${mobileNumber}\n\nUse these updated details the next time you sign in. If you did not expect this change, please contact your clinic admin immediately.\n\nRegards,\nHMS Team`,
+    html: emailLayout(`
+      <h2 style="margin:0 0 16px;color:#0c3d2e;">Your account details were updated</h2>
+      <p>Hello ${escapeHtml(name)},</p>
+      <p>Your <strong>${escapeHtml(changedLabel)}</strong> ${changedFields.length > 1 ? 'were' : 'was'} updated by your clinic admin. Use the details below the next time you sign in.</p>
+      <div style="margin:20px 0;padding:18px;background:#f0f7f3;border-left:4px solid #0c3d2e;border-radius:6px;">
+        <div style="margin-bottom:10px;"><strong>Login email:</strong> ${escapeHtml(email)}</div>
+        <div><strong>Mobile number:</strong> ${escapeHtml(mobileNumber)}</div>
+      </div>
+      <p style="margin-bottom:0;"><strong>Didn't expect this?</strong> Contact your clinic admin immediately if you did not request this change.</p>
+    `),
+  };
+};
+
+module.exports = { credentialEmail, loginOtpEmail, passwordResetOtpEmail, clinicVerificationEmail, contactUpdatedEmail };

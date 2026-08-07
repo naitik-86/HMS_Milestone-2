@@ -319,6 +319,24 @@ export default function DoctorForm({
         return () => window.clearTimeout(timer);
     }, [qualifications]);
 
+    // Same gap for GST/PAN (Practice Details) - validatePracticeStep()
+    // already rejects an invalid value, but only runs from handleNext/
+    // hasCurrentStepErrors, so a wrong GST/PAN silently disabled Next with
+    // no visible reason instead of showing "Enter a valid GSTIN or PAN."
+    useEffect(() => {
+        const timer = window.setTimeout(() => {
+            const value = String(form.gstPan || "").trim();
+
+            if (!value || isValidGstPan(value)) {
+                clearErrorKeys("gstPan");
+            } else {
+                setErrors((prev) => ({ ...prev, gstPan: "Enter a valid GSTIN or PAN." }));
+            }
+        }, 400);
+
+        return () => window.clearTimeout(timer);
+    }, [form.gstPan]);
+
     const currentStepIndex = Math.max(
         tabs.findIndex(([key]) => key === activeTab),
         0
@@ -413,7 +431,33 @@ export default function DoctorForm({
 
             if (!validation.valid) {
                 setErrors((prev) => ({ ...prev, pincode: validation.message }));
+            } else {
+                // hasCurrentStepErrors() for this step just checks whether
+                // `errors` has any keys - a previous mismatch (e.g. before
+                // the city was corrected) left errors.pincode set forever,
+                // since nothing ever cleared it once the value became
+                // valid. Next stayed disabled even after re-entering a
+                // genuinely correct PIN code.
+                clearErrorKeys("pincode");
             }
+        }
+    };
+
+    // City is free text, so re-checking fires on blur (not every keystroke)
+    // rather than hitting the postal API on each character. A pincode
+    // verified against the previous city is only valid for that city -
+    // changing city without re-checking left a stale pincode error (or a
+    // stale "valid" state that was no longer actually correct) in place.
+    const handleCityBlur = async () => {
+        const pincode = String(form.pincode || "").trim();
+        if (!PINCODE_REGEX.test(pincode)) return;
+
+        const validation = await validatePincode(pincode, form.state, form.city, false);
+
+        if (!validation.valid) {
+            setErrors((prev) => ({ ...prev, pincode: validation.message }));
+        } else {
+            clearErrorKeys("pincode");
         }
     };
 
@@ -1204,6 +1248,7 @@ export default function DoctorForm({
                                     label="City"
                                     error={errors.city}
                                     onChange={handleSimpleChange}
+                                    onBlur={handleCityBlur}
                                 />
 
                                 <Input
@@ -1601,19 +1646,21 @@ export default function DoctorForm({
                                     onChange={handleSimpleChange}
                                 />
 
-                                <Input
-                                    value={form.accountNumber}
-                                    requiredField={true}
-                                    name="accountNumber"
-                                    label="Account Number"
-                                    error={errors.accountNumber}
-                                    onChange={handleAccountNumberChange}
-                                    inputMode="numeric"
-                                    maxLength={getMaxAccountLength(getBankRule(form.bankName))}
-                                />
-                                <p className="text-xs text-gray-500 mt-1">
-                                    Expected Length: {formatAccountLength(getBankRule(form.bankName))}
-                                </p>
+                                <div>
+                                    <Input
+                                        value={form.accountNumber}
+                                        requiredField={true}
+                                        name="accountNumber"
+                                        label="Account Number"
+                                        error={errors.accountNumber}
+                                        onChange={handleAccountNumberChange}
+                                        inputMode="numeric"
+                                        maxLength={getMaxAccountLength(getBankRule(form.bankName))}
+                                    />
+                                    <p className="text-xs text-gray-500 mt-1">
+                                        Expected Length: {formatAccountLength(getBankRule(form.bankName))}
+                                    </p>
+                                </div>
 
                                 <Input
                                     requiredField={true}

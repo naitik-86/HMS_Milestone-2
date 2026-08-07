@@ -5,7 +5,7 @@ const generateStaffId = require("../utils/generateStaffId.js");
 const generateUsername = require("../utils/generateUsername.js");
 const generatePassword = require("../utils/generatePassword.js");
 const sendEmail = require("../utils/emailService.js");
-const { credentialEmail } = require("../utils/emailTemplates.js");
+const { credentialEmail, contactUpdatedEmail } = require("../utils/emailTemplates.js");
 const ClinicAdmin = require("../models/ClinicAdmin.js");
 const Clinic = require("../models/Clinic.js");
 const User = require("../models/User.js");
@@ -518,10 +518,48 @@ const updateStaff = async (req, res) => {
             });
         }
 
+        // Notify the staff member whenever their login email and/or mobile
+        // number changes, so they always know which contact details to sign
+        // in with next - sent to the NEW email even if only mobile changed,
+        // since email is what they actually log in with.
+        const previousEmail = String(existingStaff.personalInfo?.email || "").trim().toLowerCase();
+        const nextEmail = String(updatedStaff.personalInfo?.email || "").trim().toLowerCase();
+        const previousMobile = String(existingStaff.personalInfo?.mobileNumber || "").trim();
+        const nextMobile = String(updatedStaff.personalInfo?.mobileNumber || "").trim();
+
+        const changedFields = [
+            previousEmail && nextEmail && previousEmail !== nextEmail ? "email" : null,
+            previousMobile && nextMobile && previousMobile !== nextMobile ? "mobile" : null,
+        ].filter(Boolean);
+
+        let emailWarning = null;
+
+        if (changedFields.length && nextEmail) {
+            try {
+                await sendEmail({
+                    email: nextEmail,
+                    subject: "Your HMS staff account details were updated",
+                    ...contactUpdatedEmail({
+                        name: updatedStaff.personalInfo?.fullName || "there",
+                        email: nextEmail,
+                        mobileNumber: nextMobile,
+                        changedFields,
+                    }),
+                });
+            } catch (emailErr) {
+                console.error("STAFF CONTACT UPDATE EMAIL ERROR:", emailErr.message);
+                emailWarning = {
+                    message: "Staff updated, but the contact-change notification email failed",
+                    reason: emailErr.message,
+                };
+            }
+        }
+
         res.status(200).json({
             success: true,
             message: "Staff updated successfully",
             data: updatedStaff,
+            ...(emailWarning ? { emailWarning } : {}),
         });
 
     } catch (error) {

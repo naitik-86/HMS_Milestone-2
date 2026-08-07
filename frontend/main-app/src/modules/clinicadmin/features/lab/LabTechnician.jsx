@@ -878,8 +878,6 @@ export default function LabTechnician() {
                 <option value="All">All Status</option>
                 <option value="Active">Active</option>
                 <option value="Inactive">Inactive</option>
-                <option value="On Leave">On Leave</option>
-                <option value="Probation">Probation</option>
               </select>
             </div>
           </div>
