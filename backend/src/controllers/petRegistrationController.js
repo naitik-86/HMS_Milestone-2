@@ -1,7 +1,43 @@
 const PetRegistration = require("../models/PetRegistration");
 const Visit = require("../models/visitModel");
+const Clinic = require("../models/Clinic");
 const { generateOTP } = require("../utils/otpService");
 const registrationOtps = new Map();
+
+// Clinic.licenseLimits.maxPets (set from the assigned subscription plan -
+// see adminController.js/subscriptionPlanController.js) was never actually
+// enforced anywhere: Super Admin could configure "Max Pets: 2" on a plan
+// and reception could still register unlimited pets past that. Pets are
+// embedded subdocuments on PetRegistration, not their own collection, so
+// the current total has to be summed across every owner for the clinic.
+const getPetLimitStatus = async (clinicId, additionalPets = 1) => {
+    const clinic = await Clinic.findById(clinicId).select("licenseLimits");
+    const limits = clinic?.licenseLimits || {};
+
+    if (limits.maxPetsUnlimited || limits.maxPets === undefined || limits.maxPets === null) {
+        return { allowed: true };
+    }
+
+    const maxPets = Number(limits.maxPets);
+    if (!Number.isFinite(maxPets)) {
+        return { allowed: true };
+    }
+
+    const [{ total = 0 } = {}] = await PetRegistration.aggregate([
+        { $match: { clinicId: clinic._id } },
+        { $project: { count: { $size: { $ifNull: ["$pets", []] } } } },
+        { $group: { _id: null, total: { $sum: "$count" } } },
+    ]);
+
+    if (total + additionalPets > maxPets) {
+        return {
+            allowed: false,
+            message: `This clinic's plan allows a maximum of ${maxPets} pet record(s). Currently at ${total}/${maxPets}. Upgrade the plan to register more pets.`,
+        };
+    }
+
+    return { allowed: true };
+};
 
 const normalizeSpecies = (species = "") => {
     const value = species.toString().trim().toUpperCase();
@@ -201,6 +237,16 @@ const createRegistration = async (req, res) => {
         const petsInput = Array.isArray(req.body.pets) && req.body.pets.length > 0
             ? req.body.pets
             : pet ? [pet] : [];
+
+        if (petsInput.length > 0) {
+            const limitStatus = await getPetLimitStatus(clinicId, petsInput.length);
+            if (!limitStatus.allowed) {
+                return res.status(403).json({
+                    success: false,
+                    message: limitStatus.message,
+                });
+            }
+        }
 
         for (let i = 0; i < petsInput.length; i++) {
             const currentPet = petsInput[i] || {};
@@ -498,6 +544,14 @@ const addPet = async (req, res) => {
             return res.status(400).json({
                 success: false,
                 message: petNameError,
+            });
+        }
+
+        const limitStatus = await getPetLimitStatus(clinicId, 1);
+        if (!limitStatus.allowed) {
+            return res.status(403).json({
+                success: false,
+                message: limitStatus.message,
             });
         }
 
