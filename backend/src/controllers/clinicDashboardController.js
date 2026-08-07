@@ -151,10 +151,9 @@ exports.getDashboard = async (req, res) => {
         createdAt: { $gte: todayRange.start, $lte: todayRange.end },
       })
         .sort({ createdAt: 1 })
-        .populate("doctorId", "name consultationFees")
-        .populate("petId",    "name species breed")
-        .populate("ownerId",  "ownerName")
-        .select("createdAt appointmentDate status visitType doctorId petId ownerId"),
+        .populate("petId",   "name species breed")
+        .populate("ownerId", "ownerName")
+        .select("createdAt appointmentDate status visitType assignedDoctor petId ownerId"),
 
       Staff.find({ clinicId: clinicObjectId, isDeleted: false })
         .sort({ createdAt: -1 })
@@ -168,6 +167,16 @@ exports.getDashboard = async (req, res) => {
         createdAt: { $gte: todayRange.start, $lte: todayRange.end },
       }),
 
+      // Visit.doctorId is NOT the assigned doctor - reception/registration
+      // stores the assigned doctor's Doctor._id as a STRING in
+      // `assignedDoctor` (visitModel.js), while `doctorId` gets silently
+      // overwritten by DoctorModuleController with the DoctorConsultation
+      // record's own _id once the doctor completes the case. A $lookup on
+      // `doctorId` against the "doctors" collection therefore never
+      // matches, so consultationFees always fell back to 0 and revenue
+      // stayed stuck at 0 regardless of how many cases were completed.
+      // `assignedDoctor` must be converted from string to ObjectId before
+      // the lookup can match "doctors"._id.
       Visit.aggregate([
         {
           $match: {
@@ -177,9 +186,16 @@ exports.getDashboard = async (req, res) => {
           },
         },
         {
+          $addFields: {
+            assignedDoctorObjId: {
+              $convert: { input: "$assignedDoctor", to: "objectId", onError: null, onNull: null },
+            },
+          },
+        },
+        {
           $lookup: {
             from: "doctors",
-            localField: "doctorId",
+            localField: "assignedDoctorObjId",
             foreignField: "_id",
             as: "doctorDetails",
           },
@@ -221,9 +237,16 @@ exports.getDashboard = async (req, res) => {
           },
         },
         {
+          $addFields: {
+            assignedDoctorObjId: {
+              $convert: { input: "$assignedDoctor", to: "objectId", onError: null, onNull: null },
+            },
+          },
+        },
+        {
           $lookup: {
             from: "doctors",
-            localField: "doctorId",
+            localField: "assignedDoctorObjId",
             foreignField: "_id",
             as: "doctorDetails",
           },
@@ -269,6 +292,21 @@ exports.getDashboard = async (req, res) => {
         },
       ]),
     ]);
+
+    // assignedDoctor is a plain String (Doctor._id) on Visit, not a
+    // populate-able ref, so resolve display names with a manual batch
+    // lookup instead of .populate("doctorId", ...) which never matched.
+    const assignedDoctorIds = [
+      ...new Set(
+        todayAppointments
+          .map((v) => v.assignedDoctor)
+          .filter((id) => id && mongoose.Types.ObjectId.isValid(id))
+      ),
+    ];
+    const assignedDoctors = assignedDoctorIds.length
+      ? await DoctorDetails.find({ _id: { $in: assignedDoctorIds } }).select("name")
+      : [];
+    const doctorNameMap = new Map(assignedDoctors.map((d) => [d._id.toString(), d.name]));
 
     const revenueMap = new Map(
       revenueAggregation.map((item) => [
@@ -346,7 +384,7 @@ exports.getDashboard = async (req, res) => {
       // ownerName, not name - the old Appointment-based version of this
       // populate/read never actually matched the real schema.
       const ownerName  = appointment.ownerId?.ownerName || "Owner";
-      const doctorName = appointment.doctorId?.name     || "Assigned Doctor";
+      const doctorName = doctorNameMap.get(appointment.assignedDoctor) || "Assigned Doctor";
 
       return {
         id:     appointment._id,

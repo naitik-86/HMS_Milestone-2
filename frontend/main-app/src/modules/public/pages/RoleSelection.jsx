@@ -92,7 +92,7 @@ export default function RoleSelection() {
                 key={role}
                 type="button"
                 onClick={() => chooseRole(role)}
-                disabled={Boolean(loadingRole) || isCurrent}
+                disabled={Boolean(loadingRole)}
                 className="w-full rounded-2xl border border-slate-200 p-5 text-left flex items-center gap-4 hover:border-emerald-600 hover:bg-emerald-50 disabled:opacity-60"
               >
                 <span className="flex-1">

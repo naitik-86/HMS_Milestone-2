@@ -52,6 +52,16 @@ export default function CaseCompletionModal({ open, onClose, onEdit, caseData })
     return `${String(val).trim()}${suffix}`;
   };
 
+  // bloodPressure is stored as { systolic, diastolic } (PreConsultation.js),
+  // not a scalar - formatVal's plain String(val) turned that object into
+  // the literal text "[object Object]" instead of a real reading.
+  const formatBloodPressure = (bp) => {
+    if (!bp || typeof bp !== "object") return formatVal(bp, " mmHg");
+    const { systolic, diastolic } = bp;
+    if (systolic === undefined && diastolic === undefined) return "-";
+    return `${systolic ?? "-"}/${diastolic ?? "-"} mmHg`;
+  };
+
   return (
     <div className="fixed inset-0 z-[9999] bg-slate-900/80 backdrop-blur-xs p-3 md:p-6 flex items-center justify-center animate-in fade-in duration-200">
       <div className="bg-white rounded-3xl max-w-4xl w-full max-h-[92vh] flex flex-col shadow-2xl overflow-hidden border border-slate-200">
@@ -116,7 +126,7 @@ export default function CaseCompletionModal({ open, onClose, onEdit, caseData })
               <div className="p-3.5 bg-purple-50/80 border border-purple-100 rounded-2xl">
                 <p className="text-[10px] font-bold text-purple-700 uppercase">Blood Pressure</p>
                 <p className="text-sm font-extrabold text-purple-900 mt-0.5">
-                  {formatVal(vitals.bloodPressure)}
+                  {formatBloodPressure(vitals.bloodPressure)}
                 </p>
               </div>
 

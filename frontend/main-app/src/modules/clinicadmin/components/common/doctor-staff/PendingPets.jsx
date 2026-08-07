@@ -13,10 +13,13 @@ import {
 } from "../../../api/doctorModuleApi";
 
 // Next Due Date (vaccination) and Follow-Up Date are both forward-looking
-// reminders, not records of something that already happened - a native
-// date input's own min attribute is the simplest reliable way to keep
-// either from being set in the past across every browser/date-picker UI.
+// reminders, not records of something that already happened. The native
+// `min` attribute only blocks the browser's own date-picker UI - typing a
+// past date by hand (e.g. "02-02-2000") is still accepted into the field's
+// value by most browsers, so it must also be rejected in the change
+// handler itself, not just decorated with `min`.
 const getTodayDateStr = () => new Date().toISOString().split("T")[0];
+const isPastDateStr = (str) => !!str && str < getTodayDateStr();
 
 export default function PendingPets() {
   const [refreshKey, setRefreshKey] = useState(0);
@@ -343,6 +346,23 @@ export default function PendingPets() {
         toast.error(msg);
         return false;
       }
+
+      const vacList = Array.isArray(formData.treatment.vaccinationsList) ? formData.treatment.vaccinationsList : [];
+      if (vacList.some((row) => isPastDateStr(row.nextDueDate))) {
+        const msg = "Vaccination Next Due Date must be a future date.";
+        setValidationError(msg);
+        toast.error(msg);
+        return false;
+      }
+    }
+
+    if (currentStep === 6) {
+      if (isPastDateStr(formData.suggestion.followUpDate)) {
+        const msg = "Follow-Up Date must be a future date.";
+        setValidationError(msg);
+        toast.error(msg);
+        return false;
+      }
     }
 
     return true;
@@ -351,6 +371,7 @@ export default function PendingPets() {
   const sendToLab = async () => {
     if (!selectedPet?._id) return;
     if (!validateStep(4)) return;
+    if (!validateStep(6)) return;
 
     try {
       setShowModal(false);
@@ -376,6 +397,7 @@ export default function PendingPets() {
   const completeCase = async () => {
     if (!selectedPet?._id) return;
     if (!validateStep(5)) return;
+    if (!validateStep(6)) return;
 
     try {
       const caseToSave = { ...selectedPet, ...formData };
@@ -2128,6 +2150,10 @@ export default function PendingPets() {
                                   value={row.nextDueDate || ""}
                                   min={getTodayDateStr()}
                                   onChange={(e) => {
+                                    if (isPastDateStr(e.target.value)) {
+                                      toast.error("Next Due Date must be a future date.");
+                                      return;
+                                    }
                                     const updated = [...vacList];
                                     updated[rIdx] = { ...updated[rIdx], nextDueDate: e.target.value };
                                     handleChange("treatment", "vaccinationsList", updated);
@@ -2576,13 +2602,17 @@ export default function PendingPets() {
                         type="date"
                         value={formData.suggestion.followUpDate}
                         min={getTodayDateStr()}
-                        onChange={(e) =>
+                        onChange={(e) => {
+                          if (isPastDateStr(e.target.value)) {
+                            toast.error("Follow-Up Date must be a future date.");
+                            return;
+                          }
                           handleChange(
                             "suggestion",
                             "followUpDate",
                             e.target.value
-                          )
-                        }
+                          );
+                        }}
                         className="w-full border border-slate-300 p-3 rounded-2xl"
                       />
                     </div>
