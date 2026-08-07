@@ -7,7 +7,6 @@ import { getPlans } from "../../../api/planApi";
 import { showToast } from "../../../../../shared/components/toast";
 
 const SOLO_DOCTOR_PLAN_NAMES = new Set(["Solo Basic", "Solo Pro"]);
-const DEFAULT_SOLO_DOCTOR_PLAN_OPTIONS = ["Solo Basic", "Solo Pro"];
 
 const resolvePlanType = (plan) => {
     if (plan?.planType === "Solo Doctor") return "Solo Doctor";
@@ -161,12 +160,17 @@ const buildFormState = (doctor) => ({
     bankName: doctor?.bankName || doctor?.bankDetails?.bankName || "",
     branch: doctor?.branch || doctor?.bankDetails?.branch || "",
     plan: doctor?.plan || "",
+    billing: doctor?.billing || "",
 });
 
 export default function DoctorModal({ onClose, onCreated, onSaved, mode = "create", doctor = null }) {
     const [activeTab, setActiveTab] = useState("personal");
     const [status, setStatus] = useState(doctor?.status || "Pending");
-    const [planOptions, setPlanOptions] = useState([]);
+    // Full plan records (not just names) are kept so Billing Cycle can be
+    // derived per-selected-plan below, instead of offering every cycle
+    // regardless of whether that plan+cycle combination was ever actually
+    // created in Plans.
+    const [soloDoctorPlans, setSoloDoctorPlans] = useState([]);
     const [plansLoaded, setPlansLoaded] = useState(false);
 
     const [form, setForm] = useState(() => buildFormState(doctor));
@@ -175,16 +179,43 @@ export default function DoctorModal({ onClose, onCreated, onSaved, mode = "creat
         { degree: "", institution: "", year: "" },
     ]);
 
-    const availablePlanOptions = planOptions.length
-        ? planOptions
-        : DEFAULT_SOLO_DOCTOR_PLAN_OPTIONS;
+    // Only plans actually created in Plans (Clinic/Solo Doctor Plans) are
+    // ever offered here - a hardcoded "Solo Basic"/"Solo Pro" fallback used
+    // to fill this dropdown even when nothing had been created yet, so
+    // admins could assign a plan that didn't exist.
+    const planOptions = useMemo(
+        () => [...new Set(soloDoctorPlans.map((plan) => plan.subscriptionPlan).filter(Boolean))],
+        [soloDoctorPlans]
+    );
     const planChoices = useMemo(() => {
-        if (doctor?.plan && !availablePlanOptions.includes(doctor.plan)) {
-            return [doctor.plan, ...availablePlanOptions];
+        if (doctor?.plan && !planOptions.includes(doctor.plan)) {
+            return [doctor.plan, ...planOptions];
         }
 
-        return availablePlanOptions;
-    }, [availablePlanOptions, doctor?.plan]);
+        return planOptions;
+    }, [planOptions, doctor?.plan]);
+
+    // Billing Cycle options are scoped to whichever cycles were actually
+    // created (in Plans) for the currently-selected plan name - a plan
+    // created with only a "Monthly" cycle shouldn't also offer "Annual".
+    const billingOptions = useMemo(
+        () => [
+            ...new Set(
+                soloDoctorPlans
+                    .filter((plan) => plan.subscriptionPlan === form.plan)
+                    .map((plan) => plan.billingCycle)
+                    .filter(Boolean)
+            ),
+        ],
+        [soloDoctorPlans, form.plan]
+    );
+    const billingChoices = useMemo(() => {
+        if (doctor?.billing && !billingOptions.includes(doctor.billing) && doctor.plan === form.plan) {
+            return [doctor.billing, ...billingOptions];
+        }
+
+        return billingOptions;
+    }, [billingOptions, doctor?.billing, doctor?.plan, form.plan]);
 
     useEffect(() => {
         let active = true;
@@ -192,17 +223,15 @@ export default function DoctorModal({ onClose, onCreated, onSaved, mode = "creat
         const loadPlans = async () => {
             try {
                 const response = await getPlans();
-                const soloDoctorPlans = (Array.isArray(response.data) ? response.data : [])
-                    .filter((plan) => resolvePlanType(plan) === "Solo Doctor" && (!plan.status || plan.status === "Active"))
-                    .map((plan) => plan.subscriptionPlan)
-                    .filter(Boolean);
+                const filtered = (Array.isArray(response.data) ? response.data : [])
+                    .filter((plan) => resolvePlanType(plan) === "Solo Doctor" && (!plan.status || plan.status === "Active"));
 
                 if (active) {
-                    setPlanOptions([...new Set(soloDoctorPlans)]);
+                    setSoloDoctorPlans(filtered);
                 }
             } catch (error) {
                 if (active) {
-                    setPlanOptions([]);
+                    setSoloDoctorPlans([]);
                 }
             } finally {
                 if (active) {
@@ -232,6 +261,25 @@ export default function DoctorModal({ onClose, onCreated, onSaved, mode = "creat
             }));
         }
     }, [form.plan, planChoices, plansLoaded]);
+
+    // Mirrors the plan-reconciliation effect above: once plans are loaded,
+    // clear/replace a billing cycle that doesn't actually belong to the
+    // now-selected plan (e.g. after switching plans, or a stale saved value)
+    // rather than silently keeping an invalid combination.
+    useEffect(() => {
+        if (!plansLoaded) return;
+
+        const nextBilling = billingChoices.includes(form.billing)
+            ? form.billing
+            : (billingChoices[0] || "");
+
+        if (nextBilling !== form.billing) {
+            setForm((previous) => ({
+                ...previous,
+                billing: nextBilling,
+            }));
+        }
+    }, [form.billing, billingChoices, plansLoaded]);
 
     useEffect(() => {
         setActiveTab("personal");
@@ -265,9 +313,7 @@ export default function DoctorModal({ onClose, onCreated, onSaved, mode = "creat
                             <h2 className="text-xl sm:text-3xl font-bold text-[#0C3D2E] tracking-tight">
                                 {title}
                             </h2>
-                            <span className="px-3 py-0.5 rounded-full text-xs font-bold border border-[#0C3D2E]/20 bg-[#D9E8E3] text-[#0C3D2E]">
-                                {status}
-                            </span>
+                            <StatusDropdown value={status} onChange={handleStatusChange} />
                         </div>
                         <p className="text-[#0C3D2E]/70 text-xs sm:text-sm mt-0.5 font-semibold">
                             {description}
@@ -282,20 +328,6 @@ export default function DoctorModal({ onClose, onCreated, onSaved, mode = "creat
                     >
                         ✕
                     </button>
-                </div>
-
-                {/* WORKFLOW STATUS BAR WITH MATCHING MINT GREEN BG */}
-                <div className="bg-[#EEF6F3] px-4 sm:px-8 py-3 border-b border-[#0C3D2E]/15 flex flex-wrap items-center justify-between gap-3">
-                    <span className="text-xs font-bold uppercase tracking-wider text-[#0C3D2E]">
-                        Workflow Status:
-                    </span>
-
-                    <div className="flex items-center gap-2">
-                        <StatusDropdown
-                            value={status}
-                            onChange={handleStatusChange}
-                        />
-                    </div>
                 </div>
 
                 {/* STEPPER CONTAINER WITH MATCHING MINT GREEN BG */}
@@ -318,6 +350,7 @@ export default function DoctorModal({ onClose, onCreated, onSaved, mode = "creat
                         qualifications={qualifications}
                         setQualifications={setQualifications}
                         planOptions={planChoices}
+                        billingOptions={billingChoices}
                         onClose={onClose}
                         onCreated={onCreated}
                         onSaved={onSaved}

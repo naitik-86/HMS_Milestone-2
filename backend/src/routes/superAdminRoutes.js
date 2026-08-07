@@ -34,6 +34,7 @@ const {
 
 const upload = require('../middlewares/upload');
 const uploadClinicDocumentsToCloudinary = require('../middlewares/uploadClinicDocuments');
+const uploadVeterinarianDocuments = require('../middlewares/uploadVeterinarianDocuments');
 
 router.use(authorize('SUPER_ADMIN'));
 
@@ -52,7 +53,7 @@ router.delete('/veterinarians/:id', deleteVeterinarian);
 router.put('/veterinarians/:id/status', updateVeterinarianStatus);
 router.put(
     '/veterinarians/:id',
-    upload.fields([
+    uploadVeterinarianDocuments.fields([
         { name: 'profilePhoto', maxCount: 1 },
         { name: 'govtIdDocument', maxCount: 1 },
         { name: 'degreeCertificates', maxCount: 10 },
@@ -62,7 +63,7 @@ router.put(
 );
 router.post(
     '/veterinarians',
-    upload.fields([
+    uploadVeterinarianDocuments.fields([
         { name: 'profilePhoto', maxCount: 1 },
         { name: 'govtIdDocument', maxCount: 1 },
         { name: 'degreeCertificates', maxCount: 10 },

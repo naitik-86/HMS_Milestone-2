@@ -1181,6 +1181,36 @@ export default function ClinicForm({
         }
     };
 
+    // Alternate Contact never got a blur handler like Primary Contact's
+    // checkContact("phone"), so a malformed value showed no error until
+    // Next was clicked (and even then, checkContact's DB duplicate-check
+    // doesn't apply here - an alternate contact number legitimately being
+    // used elsewhere isn't an error). Format + differs-from-primary are the
+    // only two rules validateIdentityFields actually enforces for it.
+    const checkAltPhoneFormat = () => {
+        const value = String(form.altPhone || "").trim();
+
+        if (!value) {
+            clearError("altPhone");
+            return;
+        }
+
+        if (!isValidMobileNumber(value)) {
+            setErrors((prev) => ({ ...prev, altPhone: "Enter a valid 10-digit mobile number." }));
+            return;
+        }
+
+        const primaryContact = getPhoneDigits(form.phone);
+        const alternateContact = getPhoneDigits(value);
+
+        if (primaryContact && alternateContact && primaryContact === alternateContact) {
+            setErrors((prev) => ({ ...prev, altPhone: "Alternate contact must be different from primary contact." }));
+            return;
+        }
+
+        clearError("altPhone");
+    };
+
     const ADMIN_OTP_RESEND_COOLDOWN_SECONDS = 30;
 
     const handleSendAdminOtp = async () => {
@@ -2094,7 +2124,7 @@ export default function ClinicForm({
                                     />
                                     <Input requiredField={true} name="email" label="Official Email" value={form.email} error={errors.email} onChange={handleChange} onBlur={() => checkContact("email")} />
                                     <Input requiredField={true} name="phone" label="Primary Contact" value={form.phone} error={errors.phone} maxLength={10} inputMode="numeric" onChange={handlePhoneChange} onBlur={() => checkContact("phone")} />
-                                    <Input name="altPhone" label="Alternate Contact" value={form.altPhone} error={errors.altPhone} maxLength={10} inputMode="numeric" onChange={handlePhoneChange} />
+                                    <Input name="altPhone" label="Alternate Contact" value={form.altPhone} error={errors.altPhone} maxLength={10} inputMode="numeric" onChange={handlePhoneChange} onBlur={checkAltPhoneFormat} />
                                     <Input name="website" label="Website URL" value={form.website} error={errors.website} onChange={handleChange} />
 
                                     <Upload

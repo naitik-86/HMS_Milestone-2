@@ -11,7 +11,6 @@ import { createDoctor, updateDoctor } from "../../../api/doctorApi";
 import { checkClinicContactAvailability } from "../../../api/clinicApi";
 import { BANK_OPTIONS, getBankRule, formatAccountLength, getMaxAccountLength } from "../../../../../shared/constants/bankAccountRules";
 
-const BILLING_CYCLE_OPTIONS = ["Monthly", "Quarterly", "Half-Yearly", "Annual"];
 
 const DEGREE_OPTIONS = [
     "BVSc",
@@ -145,7 +144,8 @@ export default function DoctorForm({
     setForm,
     qualifications,
     setQualifications,
-    planOptions = ["Solo Basic", "Solo Pro"],
+    planOptions = [],
+    billingOptions = [],
     onClose,
     onCreated,
     onSaved,
@@ -276,6 +276,48 @@ export default function DoctorForm({
         });
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [form.vetCouncilRegistrationNumber, form.certificateValidityDate]);
+
+    // Same "disabled Next with no visible reason" gap for Year of Passing -
+    // validateQualificationStep() already rejects a future/pre-1900 year,
+    // but only runs from handleNext/hasCurrentStepErrors, neither of which
+    // calls setErrors. Scoped to just the year field (not degree/institution
+    // /certificate) so it doesn't force those required-field errors to show
+    // before the admin has finished filling in a row.
+    useEffect(() => {
+        const timer = window.setTimeout(() => {
+            setErrors((prev) => {
+                const next = { ...prev };
+
+                qualifications.forEach((row, index) => {
+                    const key = `qualification-${index}-year`;
+                    const yearValue = String(row.year || "").trim();
+
+                    if (!yearValue) {
+                        delete next[key];
+                        return;
+                    }
+
+                    if (!YEAR_REGEX.test(yearValue)) {
+                        next[key] = "Enter a 4-digit year.";
+                        return;
+                    }
+
+                    const numericYear = Number(yearValue);
+                    if (numericYear > new Date().getFullYear()) {
+                        next[key] = "Year of Passing cannot be in the future.";
+                    } else if (numericYear < 1900) {
+                        next[key] = "Enter a valid passing year.";
+                    } else {
+                        delete next[key];
+                    }
+                });
+
+                return next;
+            });
+        }, 400);
+
+        return () => window.clearTimeout(timer);
+    }, [qualifications]);
 
     const currentStepIndex = Math.max(
         tabs.findIndex(([key]) => key === activeTab),
@@ -1607,7 +1649,7 @@ export default function DoctorForm({
                                     requiredField={true}
                                     name="billing"
                                     label="Billing Cycle"
-                                    options={BILLING_CYCLE_OPTIONS}
+                                    options={billingOptions}
                                     error={errors.billing}
                                     onChange={handleSimpleChange}
                                 />

@@ -603,6 +603,7 @@ const serializeVeterinarian = (vet) => {
     bankName: bankDetails.bankName || '',
     branch: bankDetails.branch || '',
     plan: vet.plan || '',
+    billing: vet.billingCycle || '',
     createdAt: vet.createdAt,
     updatedAt: vet.updatedAt,
   };
@@ -714,7 +715,7 @@ exports.getVeterinarians = async (req, res) => {
       .sort({ createdAt: -1 })
       .populate('clinicId', 'name')
       .select(
-        'name mobile email gender dateOfBirth profilePhoto languages address city state pincode govtIdType govtIdNumber govtIdDocument qualifications degreeCertificates experience specialization specializations vetCouncilRegistrationNumber stateVetCouncil registrationCertificate certificateValidityDate isRenewable practiceType consultationFee emergencyAvailable serviceAreas gstPan bankDetails plan isActive forcePasswordReset veterinarianStatus createdAt updatedAt clinicId'
+        'name mobile email gender dateOfBirth profilePhoto languages address city state pincode govtIdType govtIdNumber govtIdDocument qualifications degreeCertificates experience specialization specializations vetCouncilRegistrationNumber stateVetCouncil registrationCertificate certificateValidityDate isRenewable practiceType consultationFee emergencyAvailable serviceAreas gstPan bankDetails plan billingCycle isActive forcePasswordReset veterinarianStatus createdAt updatedAt clinicId'
       );
 
     const data = veterinarians.map(serializeVeterinarian);
@@ -825,6 +826,7 @@ exports.updateVeterinarian = async (req, res) => {
       bankName,
       branch,
       plan,
+      billing,
     } = req.body;
 
     const normalizedEmail = normalizeEmail(email || existingVeterinarian.email);
@@ -881,6 +883,7 @@ exports.updateVeterinarian = async (req, res) => {
       : Number(existingVeterinarian.consultationFee || 0);
     const gstPanValue = String(gstPan || existingVeterinarian.gstPan || '').trim().toUpperCase();
     const planValue = String(plan || existingVeterinarian.plan || '').trim();
+    const billingValue = String(billing || existingVeterinarian.billingCycle || '').trim();
     const nextClinicId = clinicId || existingVeterinarian.clinicId || null;
     const governmentIdTypeValue = String(govtIdType || existingVeterinarian.govtIdType || '').trim();
     const governmentIdNumberValue = String(govtIdNumber || existingVeterinarian.govtIdNumber || '').trim();
@@ -1193,6 +1196,7 @@ exports.updateVeterinarian = async (req, res) => {
         gstPan: gstPanValue,
         bankDetails: normalizedBankDetails,
         plan: planValue,
+        billingCycle: billingValue,
       },
       { new: true }
     ).populate('clinicId', 'name');
@@ -1427,6 +1431,7 @@ exports.createVeterinarian = async (req, res) => {
       bankName,
       branch,
       plan,
+      billing,
     } = req.body;
 
     const normalizedEmail = normalizeEmail(email);
@@ -1794,6 +1799,7 @@ exports.createVeterinarian = async (req, res) => {
         accountName: normalizedBankDetails.accountName,
       },
       plan: String(plan || '').trim(),
+      billingCycle: String(billing || '').trim(),
     });
 
     const notificationWarnings = [];

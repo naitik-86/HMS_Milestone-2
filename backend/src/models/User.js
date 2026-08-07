@@ -174,6 +174,10 @@ const userSchema = new mongoose.Schema({
   plan: {
     type: String,
     default: '',
+  },
+  billingCycle: {
+    type: String,
+    default: '',
   }
 }, { timestamps: true });
 

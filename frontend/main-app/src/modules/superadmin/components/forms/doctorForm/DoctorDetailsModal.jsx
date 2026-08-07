@@ -147,13 +147,13 @@ export default function DoctorDetailsModal({ doctor, onClose, onEdit, onDelete }
                             <Field label="City" value={doctor.city} />
                             <Field label="State" value={doctor.state} />
                             <Field label="PIN Code" value={doctor.pincode} />
-                            <Field label="Profile Photo" value={profilePhotoName} wide />
+                            <FileField label="Profile Photo" value={profilePhotoName} wide />
                         </Section>
 
                         <Section title="Government ID">
                             <Field label="ID Type" value={doctor.govtIdType} />
                             <Field label="ID Number" value={doctor.govtIdNumber} />
-                            <Field label="Document" value={govtIdDocumentName} wide />
+                            <FileField label="Document" value={govtIdDocumentName} wide />
                         </Section>
 
                         <Section title="Qualifications">

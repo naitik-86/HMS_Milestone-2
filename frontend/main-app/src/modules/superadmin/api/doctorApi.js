@@ -43,6 +43,7 @@ const buildDoctorFormData = (doctorData = {}) => {
         "bankName",
         "branch",
         "plan",
+        "billing",
     ].forEach((key) => appendValue(formData, key, doctorData[key]));
 
     appendValue(formData, "languages", doctorData.languages || []);
