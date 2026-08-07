@@ -2477,23 +2477,25 @@ export default function ClinicForm({
                                         options={BANK_OPTIONS}
                                         onChange={handleChange}
                                     />
-                                    <Input requiredField={true} name="accountNumber" label="Account Number" value={form.accountNumber} error={errors.accountNumber} maxLength={18} inputMode="numeric" onChange={(e) => {
-                                        const rule = getBankRule(form.bankName);
+                                    <div>
+                                        <Input requiredField={true} name="accountNumber" label="Account Number" value={form.accountNumber} error={errors.accountNumber} maxLength={18} inputMode="numeric" onChange={(e) => {
+                                            const rule = getBankRule(form.bankName);
 
-                                        handleChange({
-                                            target: {
-                                                name: "accountNumber",
-                                                value: getPhoneDigits(e.target.value).slice(
-                                                    0,
-                                                    getMaxAccountLength(rule)
-                                                ),
-                                                type: "text",
-                                            },
-                                        });
-                                    }} />
-                                    <p className="text-xs text-gray-500 mt-1">
-                                        Expected Length: {formatAccountLength(getBankRule(form.bankName))}
-                                    </p>
+                                            handleChange({
+                                                target: {
+                                                    name: "accountNumber",
+                                                    value: getPhoneDigits(e.target.value).slice(
+                                                        0,
+                                                        getMaxAccountLength(rule)
+                                                    ),
+                                                    type: "text",
+                                                },
+                                            });
+                                        }} />
+                                        <p className="text-xs text-gray-500 mt-1">
+                                            Expected Length: {formatAccountLength(getBankRule(form.bankName))}
+                                        </p>
+                                    </div>
                                     <Input requiredField={true} name="ifsc" label="IFSC Code" value={form.ifsc} error={errors.ifsc} maxLength={11} onChange={handleUppercaseChange(11)} />
 
                                     <Upload
