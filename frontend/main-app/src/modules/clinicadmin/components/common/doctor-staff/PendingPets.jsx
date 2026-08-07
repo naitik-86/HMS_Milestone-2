@@ -12,6 +12,12 @@ import {
   deletePatient,
 } from "../../../api/doctorModuleApi";
 
+// Next Due Date (vaccination) and Follow-Up Date are both forward-looking
+// reminders, not records of something that already happened - a native
+// date input's own min attribute is the simplest reliable way to keep
+// either from being set in the past across every browser/date-picker UI.
+const getTodayDateStr = () => new Date().toISOString().split("T")[0];
+
 export default function PendingPets() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [search, setSearch] = useState("");
@@ -2120,6 +2126,7 @@ export default function PendingPets() {
                                 <input
                                   type="date"
                                   value={row.nextDueDate || ""}
+                                  min={getTodayDateStr()}
                                   onChange={(e) => {
                                     const updated = [...vacList];
                                     updated[rIdx] = { ...updated[rIdx], nextDueDate: e.target.value };
@@ -2568,6 +2575,7 @@ export default function PendingPets() {
                       <input
                         type="date"
                         value={formData.suggestion.followUpDate}
+                        min={getTodayDateStr()}
                         onChange={(e) =>
                           handleChange(
                             "suggestion",

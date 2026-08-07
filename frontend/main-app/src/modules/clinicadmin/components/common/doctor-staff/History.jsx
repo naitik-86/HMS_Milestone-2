@@ -24,11 +24,18 @@ export default function History() {
     try {
       setLoading(true);
       const res = await getHistory();
-      
-      // Robust array extraction
+
+      // Robust array extraction. Backend actually returns
+      // { success, data: { stats, records } } - the nested `data.records`
+      // case must be checked before the flatter fallbacks below, otherwise
+      // every shape check fails silently and the table stays empty.
       let records = [];
+      let statsData = null;
       if (Array.isArray(res)) {
         records = res;
+      } else if (res?.data?.records && Array.isArray(res.data.records)) {
+        records = res.data.records;
+        statsData = res.data.stats || null;
       } else if (res?.data && Array.isArray(res.data)) {
         records = res.data;
       } else if (res?.records && Array.isArray(res.records)) {
@@ -39,9 +46,9 @@ export default function History() {
 
       setHistoryData(records);
       setStats({
-        totalRecords: res?.total || records.length,
+        totalRecords: statsData?.totalRecords ?? res?.total ?? records.length,
         vaccinations: res?.vaccinations || Math.ceil(records.length * 0.4),
-        treatments: res?.treatments || Math.ceil(records.length * 0.8)
+        treatments: statsData?.doctorCompleted ?? res?.treatments ?? Math.ceil(records.length * 0.8)
       });
     } catch (error) {
       console.error("Error fetching doctor history:", error);
@@ -66,7 +73,7 @@ export default function History() {
 
   const filteredData = historyData.filter((item) => {
     const ownerName = item.ownerName || item.ownerId?.ownerName || item.owner?.ownerName || "";
-    const petName = item.petName || item.petId?.name || item.petId?.petName || item.pet?.petName || "";
+    const petName = item.petName || item.petId?.name || item.petId?.petName || item.pet?.name || item.pet?.petName || "";
     const phone = item.phone || item.ownerId?.mobileNumber || item.owner?.mobileNumber || "";
     const species = item.species || item.petId?.species || item.pet?.species || "";
     const token = item.tokenNumber || item.token || item.petId || "";
@@ -222,7 +229,7 @@ export default function History() {
                 </tr>
               ) : (
                 filteredData.map((item) => {
-                  const petName = item.petName || item.petId?.name || item.petId?.petName || item.pet?.petName || "Pet";
+                  const petName = item.petName || item.petId?.name || item.petId?.petName || item.pet?.name || item.pet?.petName || "Pet";
                   const species = item.species || item.petId?.species || item.pet?.species || "Dog";
                   const ownerName = item.ownerName || item.ownerId?.ownerName || item.owner?.ownerName || "Owner";
                   const phone = item.phone || item.ownerId?.mobileNumber || item.owner?.mobileNumber || "-";
@@ -284,7 +291,7 @@ export default function History() {
             <div className="py-12 text-center text-slate-500">No records found.</div>
           ) : (
             filteredData.map((item) => {
-              const petName = item.petName || item.petId?.name || item.petId?.petName || item.pet?.petName || "Pet";
+              const petName = item.petName || item.petId?.name || item.petId?.petName || item.pet?.name || item.pet?.petName || "Pet";
               const ownerName = item.ownerName || item.ownerId?.ownerName || item.owner?.ownerName || "Owner";
 
               return (
@@ -319,7 +326,7 @@ export default function History() {
                   Medical Record File
                 </span>
                 <h3 className="text-2xl font-bold text-slate-800 mt-2">
-                  {selectedRecord.petName || selectedRecord.petId?.name || selectedRecord.petId?.petName || selectedRecord.pet?.petName || "Pet"} Clinical Record
+                  {selectedRecord.petName || selectedRecord.petId?.name || selectedRecord.petId?.petName || selectedRecord.pet?.name || selectedRecord.pet?.petName || "Pet"} Clinical Record
                 </h3>
               </div>
               <button

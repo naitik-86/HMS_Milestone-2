@@ -405,13 +405,65 @@ exports.getHistory = async (req, res) => {
                 createdAt: -1
             });
 
+        // Lookup consultations & pre-consultations so the History drawer can
+        // show the diagnosis/treatment/suggestion the doctor actually filled
+        // in - same enrichment as getCompletedPets, without which every
+        // record's "View" modal would render blank/fallback data.
+        const visitIds = history.map((v) => v._id);
+        const preConsultIds = history.map((v) => v.preConsultationId).filter(Boolean);
+        const docConsultIds = history.map((v) => v.doctorId?._id || v.doctorId).filter(Boolean);
+
+        const [consultations, preConsultations] = await Promise.all([
+            DoctorConsultation.find({
+                $or: [
+                    { visitId: { $in: visitIds } },
+                    { _id: { $in: docConsultIds } }
+                ]
+            }),
+            PreConsultation.find({
+                $or: [
+                    { visitId: { $in: visitIds } },
+                    { _id: { $in: preConsultIds } }
+                ]
+            })
+        ]);
+
+        const consultMapByVisit = {};
+        const consultMapById = {};
+        consultations.forEach((c) => {
+            if (c.visitId) consultMapByVisit[c.visitId.toString()] = c.toObject();
+            if (c._id) consultMapById[c._id.toString()] = c.toObject();
+        });
+
+        const preConsultMapByVisit = {};
+        const preConsultMapById = {};
+        preConsultations.forEach((pc) => {
+            if (pc.visitId) preConsultMapByVisit[pc.visitId.toString()] = pc.toObject();
+            if (pc._id) preConsultMapById[pc._id.toString()] = pc.toObject();
+        });
+
         // petId refs a top-level "Pet" collection that's never populated -
         // the real pet data is an embedded subdocument on the owner
         // (ownerId/PetRegistration), keyed by that same petId.
-        const historyWithPets = history.map((visit) => ({
-            ...visit.toObject(),
-            pet: visit.ownerId?.pets?.id(visit.petId) || null,
-        }));
+        const historyWithPets = history.map((visit) => {
+            const rawObj = visit.toObject();
+            const doctorIdRef = (visit.doctorId?._id || visit.doctorId)?.toString();
+            const consult = consultMapByVisit[visit._id.toString()] || consultMapById[doctorIdRef] || {};
+            const preConsult = preConsultMapByVisit[visit._id.toString()] || preConsultMapById[visit.preConsultationId?.toString()] || {};
+
+            return {
+                ...rawObj,
+                pet: visit.ownerId?.pets?.id(visit.petId) || null,
+                history: consult.history || {},
+                clinicalObservation: consult.clinicalObservation || {},
+                diagnosis: consult.diagnosis || {},
+                labRequisition: consult.labRequisition || {},
+                treatment: consult.treatment || {},
+                suggestion: consult.suggestion || {},
+                consultationDetails: consult,
+                preConsultationId: preConsult,
+            };
+        });
 
         return res.status(200).json({
 

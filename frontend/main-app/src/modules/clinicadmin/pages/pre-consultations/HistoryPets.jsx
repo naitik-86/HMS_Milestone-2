@@ -370,25 +370,25 @@ export default function HistoryPets() {
                   <div className="p-3 bg-blue-50/50 rounded-xl border border-blue-100 text-center">
                     <p className="text-[10px] text-slate-500 font-bold uppercase">Temp</p>
                     <p className="text-sm font-extrabold text-blue-900 mt-0.5">
-                      {selectedRecord.preConsultationId?.bodyTemperature || "101.2 °F"}
+                      {selectedRecord.preConsultationId?.bodyTemperature || "Not recorded"}
                     </p>
                   </div>
                   <div className="p-3 bg-blue-50/50 rounded-xl border border-blue-100 text-center">
                     <p className="text-[10px] text-slate-500 font-bold uppercase">Heart Rate</p>
                     <p className="text-sm font-extrabold text-blue-900 mt-0.5">
-                      {selectedRecord.preConsultationId?.heartRate || "96 bpm"}
+                      {selectedRecord.preConsultationId?.heartRate || "Not recorded"}
                     </p>
                   </div>
                   <div className="p-3 bg-blue-50/50 rounded-xl border border-blue-100 text-center">
                     <p className="text-[10px] text-slate-500 font-bold uppercase">Weight</p>
                     <p className="text-sm font-extrabold text-blue-900 mt-0.5">
-                      {selectedRecord.preConsultationId?.bodyWeight || "13.5 kg"}
+                      {selectedRecord.preConsultationId?.bodyWeight || "Not recorded"}
                     </p>
                   </div>
                   <div className="p-3 bg-blue-50/50 rounded-xl border border-blue-100 text-center">
                     <p className="text-[10px] text-slate-500 font-bold uppercase">SpO2</p>
                     <p className="text-sm font-extrabold text-blue-900 mt-0.5">
-                      {selectedRecord.preConsultationId?.spo2 || "99 %"}
+                      {selectedRecord.preConsultationId?.spo2 || "Not recorded"}
                     </p>
                   </div>
                 </div>
@@ -398,7 +398,7 @@ export default function HistoryPets() {
               <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-2">
                 <p className="text-xs font-bold text-slate-700 uppercase">Assessment Notes & Complaint:</p>
                 <p className="text-xs text-slate-600 leading-relaxed">
-                  {selectedRecord.primaryReason || selectedRecord.complaint || "Patient presented for general wellness evaluation. Vitals recorded normally."}
+                  {selectedRecord.primaryReason || selectedRecord.complaint || "Not recorded"}
                 </p>
               </div>
 

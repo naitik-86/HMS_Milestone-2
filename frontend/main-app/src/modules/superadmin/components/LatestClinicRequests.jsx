@@ -833,7 +833,6 @@ export default function LatestClinicApprovals({ searchTerm = "" }) {
                     clinic={selectedClinic}
                     onClose={closeModal}
                     onEdit={(clinic) => openClinicModal("edit", clinic)}
-                    onDelete={handleDeleteClinic}
                 />
             )}
 
