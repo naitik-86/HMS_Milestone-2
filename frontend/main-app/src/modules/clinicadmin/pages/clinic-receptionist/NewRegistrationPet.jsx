@@ -91,6 +91,46 @@ const defaultVisitReason = {
   assignedDoctor: "",
 };
 
+// Shared by isEditMode's owner/pet prefill and by selecting an existing
+// pet in the "Existing Owner" flow - both need to turn a raw saved pet
+// record (pet.history / pet.visits, embedded on PetRegistration.pets) into
+// the flat shape petHistoriesMap/petVisitsMap actually use, so Pet History
+// and Reason For Visit show what was filled in at registration instead of
+// silently falling back to defaultHistory/defaultVisitReason.
+const buildHistoryFromPet = (pet) => {
+  const history = pet?.history || {};
+  return {
+    ...defaultHistory,
+    vaccineName: history.vaccineName || history.vaccinations?.[0]?.vaccineName || history.vaccinations?.[0]?.name || "",
+    vaccinationDate: history.vaccinationDate || history.vaccinations?.[0]?.vaccinationDate || history.vaccinations?.[0]?.date || "",
+    batchNumber: history.batchNumber || history.vaccinations?.[0]?.batchNumber || "",
+    clinicName: history.clinicName || history.vaccinations?.[0]?.clinicName || "",
+    dewormingProduct: history.dewormingProduct || history.dewormings?.[0]?.dewormingProduct || history.dewormings?.[0]?.product || "",
+    dewormingDate: history.dewormingDate || history.dewormings?.[0]?.dewormingDate || history.dewormings?.[0]?.date || "",
+    dose: history.dose || history.dewormings?.[0]?.dose || "",
+    surgicalProcedure: history.surgicalProcedure || history.surgeries?.[0]?.surgicalProcedure || history.surgeries?.[0]?.procedure || "",
+    surgeryDate: history.surgeryDate || history.surgeries?.[0]?.surgeryDate || history.surgeries?.[0]?.date || "",
+    hospital: history.hospital || history.surgeries?.[0]?.hospital || "",
+    condition: history.condition || history.treatments?.[0]?.condition || "",
+    treatment: history.treatment || history.treatments?.[0]?.treatment || history.treatments?.[0]?.details || "",
+    treatmentDate: history.treatmentDate || history.treatments?.[0]?.treatmentDate || history.treatments?.[0]?.date || "",
+    allergies: history.allergies || "",
+    medications: history.medications || history.currentMedications || "",
+  };
+};
+
+const buildVisitFromPet = (pet) => {
+  const visits = Array.isArray(pet?.visits) ? pet.visits : [];
+  const visit = visits[visits.length - 1] || {};
+  return {
+    ...defaultVisitReason,
+    ...visit,
+    appointmentDate: visit.appointmentDate && !Number.isNaN(new Date(visit.appointmentDate).getTime())
+      ? new Date(visit.appointmentDate).toISOString().split("T")[0]
+      : getTodayDateStr(),
+  };
+};
+
 const steps = [
   {
     id: 1,
@@ -191,31 +231,47 @@ const calculateAge = (dob) => {
   return age >= 0 ? age : "";
 };
 
-// Total age in whole months - used only to render a friendlier "X months"
-// display for pets under a year old, so a puppy/kitten doesn't just show
-// a bare "0". The stored/submitted age (calculateAge, in years) is unchanged.
-const calculateAgeInMonths = (dob) => {
+// Full calendar years/months/days breakdown - used to render a specific
+// age (e.g. "5 months 12 days" for a young pet, "2 yrs 3 mo" for an older
+// one) instead of just a bare year count. The stored/submitted age
+// (calculateAge, in whole years) is unchanged.
+const calculateAgeBreakdown = (dob) => {
   if (!dob) return null;
   const birthDate = new Date(dob);
   const currentDate = new Date();
-  let months =
-    (currentDate.getFullYear() - birthDate.getFullYear()) * 12 +
-    (currentDate.getMonth() - birthDate.getMonth());
-  if (currentDate.getDate() < birthDate.getDate()) months -= 1;
-  return months >= 0 ? months : null;
+  if (Number.isNaN(birthDate.getTime())) return null;
+
+  let years = currentDate.getFullYear() - birthDate.getFullYear();
+  let months = currentDate.getMonth() - birthDate.getMonth();
+  let days = currentDate.getDate() - birthDate.getDate();
+
+  if (days < 0) {
+    months -= 1;
+    days += new Date(currentDate.getFullYear(), currentDate.getMonth(), 0).getDate();
+  }
+  if (months < 0) {
+    years -= 1;
+    months += 12;
+  }
+  if (years < 0) return null;
+
+  return { years, months, days };
 };
 
 const formatAgeDisplay = (dob) => {
-  const totalMonths = calculateAgeInMonths(dob);
-  if (totalMonths === null) return "";
-  if (totalMonths < 12) {
-    return `${totalMonths} ${totalMonths === 1 ? "month" : "months"}`;
+  const breakdown = calculateAgeBreakdown(dob);
+  if (!breakdown) return "";
+  const { years, months, days } = breakdown;
+
+  if (years > 0) {
+    const yearsLabel = `${years} ${years === 1 ? "yr" : "yrs"}`;
+    return months > 0 ? `${yearsLabel} ${months} ${months === 1 ? "mo" : "mos"}` : yearsLabel;
   }
-  const years = Math.floor(totalMonths / 12);
-  const remainderMonths = totalMonths % 12;
-  const yearsLabel = `${years} ${years === 1 ? "yr" : "yrs"}`;
-  if (remainderMonths === 0) return yearsLabel;
-  return `${yearsLabel} ${remainderMonths} ${remainderMonths === 1 ? "mo" : "mos"}`;
+  if (months > 0) {
+    const monthsLabel = `${months} ${months === 1 ? "month" : "months"}`;
+    return days > 0 ? `${monthsLabel} ${days} ${days === 1 ? "day" : "days"}` : monthsLabel;
+  }
+  return `${days} ${days === 1 ? "day" : "days"}`;
 };
 
 const normalizeDoctorList = (response) => {
@@ -273,6 +329,7 @@ export default function NewRegistrationPet() {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState(initialFormData);
   const [errors, setErrors] = useState({});
+  const [submitting, setSubmitting] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
   const [otpVerified, setOtpVerified] = useState(false);
 
@@ -338,8 +395,6 @@ export default function NewRegistrationPet() {
 
     const owner = editCustomer.owner || {};
     const pet = editCustomer.pet || {};
-    const history = pet.history || {};
-    const visit = pet.visits?.[pet.visits.length - 1] || {};
     const stateMatch = matchStateFromList(owner.state, states);
     const key = "new_owner_0";
 
@@ -358,35 +413,8 @@ export default function NewRegistrationPet() {
       pincode: owner.pincode || "",
     });
     setNewOwnerPets([{ ...pet, petName: pet.petName || pet.name || "", name: pet.name || pet.petName || "", sterilized: pet.sterilized || pet.isSterilised ? "Yes" : "No", photo: pet.photo || pet.photoUrl || "" }]);
-    setPetHistoriesMap({
-      [key]: {
-        ...defaultHistory,
-        vaccineName: history.vaccineName || history.vaccinations?.[0]?.vaccineName || history.vaccinations?.[0]?.name || "",
-        vaccinationDate: history.vaccinationDate || history.vaccinations?.[0]?.vaccinationDate || history.vaccinations?.[0]?.date || "",
-        batchNumber: history.batchNumber || history.vaccinations?.[0]?.batchNumber || "",
-        clinicName: history.clinicName || history.vaccinations?.[0]?.clinicName || "",
-        dewormingProduct: history.dewormingProduct || history.dewormings?.[0]?.dewormingProduct || history.dewormings?.[0]?.product || "",
-        dewormingDate: history.dewormingDate || history.dewormings?.[0]?.dewormingDate || history.dewormings?.[0]?.date || "",
-        dose: history.dose || history.dewormings?.[0]?.dose || "",
-        surgicalProcedure: history.surgicalProcedure || history.surgeries?.[0]?.surgicalProcedure || history.surgeries?.[0]?.procedure || "",
-        surgeryDate: history.surgeryDate || history.surgeries?.[0]?.surgeryDate || history.surgeries?.[0]?.date || "",
-        hospital: history.hospital || history.surgeries?.[0]?.hospital || "",
-        condition: history.condition || history.treatments?.[0]?.condition || "",
-        treatment: history.treatment || history.treatments?.[0]?.treatment || history.treatments?.[0]?.details || "",
-        treatmentDate: history.treatmentDate || history.treatments?.[0]?.treatmentDate || history.treatments?.[0]?.date || "",
-        allergies: history.allergies || "",
-        medications: history.medications || history.currentMedications || "",
-      },
-    });
-    setPetVisitsMap({
-      [key]: {
-        ...defaultVisitReason,
-        ...visit,
-        appointmentDate: visit.appointmentDate && !Number.isNaN(new Date(visit.appointmentDate).getTime())
-          ? new Date(visit.appointmentDate).toISOString().split("T")[0]
-          : getTodayDateStr(),
-      },
-    });
+    setPetHistoriesMap({ [key]: buildHistoryFromPet(pet) });
+    setPetVisitsMap({ [key]: buildVisitFromPet(pet) });
   }, [editCustomer, isEditMode, states]);
 
   const cities = useMemo(() => {
@@ -501,6 +529,7 @@ export default function NewRegistrationPet() {
           ownerName: owner.ownerName || "",
           ownerIdType: owner.ownerIdType || "Aadhaar Card",
           ownerOtherIdType: owner.ownerOtherIdType || "",
+          ownerIdNumber: owner.ownerIdNumber || "",
           email: owner.email || "",
           address: owner.address || "",
           state: owner.state || "",
@@ -734,7 +763,31 @@ export default function NewRegistrationPet() {
     }
 
     if (name === "ownerName") {
-      setField(name, value.replace(/[^a-zA-Z\s.'-]/g, ""));
+      const sanitized = value.replace(/[^a-zA-Z\s.'-]/g, "");
+      setFormData((prev) => ({ ...prev, ownerName: sanitized }));
+      const trimmed = sanitized.trim();
+      // setField unconditionally clears the error on every change, which
+      // is why this never showed a live "must be at least 3 characters"
+      // message - it only ever surfaced on Next-click via getOwnerStepErrors.
+      if (!trimmed || trimmed.length >= 3) {
+        setErrors((prev) => ({ ...prev, ownerName: "" }));
+      } else {
+        setErrors((prev) => ({
+          ...prev,
+          ownerName: `Owner name must be at least 3 characters (${trimmed.length}/3).`,
+        }));
+      }
+      return;
+    }
+
+    if (name === "email") {
+      setFormData((prev) => ({ ...prev, email: value }));
+      const trimmed = value.trim();
+      if (!trimmed || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+        setErrors((prev) => ({ ...prev, email: "" }));
+      } else {
+        setErrors((prev) => ({ ...prev, email: "Enter a valid email address." }));
+      }
       return;
     }
 
@@ -863,10 +916,21 @@ export default function NewRegistrationPet() {
   };
 
   // Helper methods for multi-pet management
-  const toggleExistingPetSelection = (petId) => {
+  const toggleExistingPetSelection = (pet) => {
+    const petId = pet._id;
     setSelectedExistingPetIds((prev) =>
       prev.includes(petId) ? prev.filter((id) => id !== petId) : [...prev, petId]
     );
+
+    // Pet History/Reason For Visit fell back to defaultHistory/
+    // defaultVisitReason for every existing pet, even though searchCustomer
+    // already returns each pet's full stored history/visits embedded on
+    // the owner record - nothing ever copied that data into
+    // petHistoriesMap/petVisitsMap on selection. Only prefill the first
+    // time a given pet is selected, so deselecting and reselecting doesn't
+    // clobber anything the receptionist has already edited.
+    setPetHistoriesMap((prev) => (prev[petId] ? prev : { ...prev, [petId]: buildHistoryFromPet(pet) }));
+    setPetVisitsMap((prev) => (prev[petId] ? prev : { ...prev, [petId]: buildVisitFromPet(pet) }));
   };
 
   const handleAddNewPetForExisting = () => {
@@ -892,6 +956,28 @@ export default function NewRegistrationPet() {
     if (newPetsForExisting.length <= 1) {
       setAddNewPetForExisting(false);
     }
+    // Removing a pet shifts every later index down by one, so any
+    // petName_ext_*/breed_ext_*/otherSpecies_ext_* error set by that pet's
+    // onBlur now belongs to the wrong pet (or none at all).
+    // hasVisiblePetErrors scans for ANY truthy key with these prefixes
+    // regardless of whether that index still exists, so a stale entry kept
+    // Next disabled even after the offending pet was removed - the only
+    // way to clear it was navigating back and forward, which reset errors
+    // entirely. Per-field onBlur repopulates correct errors as the admin
+    // continues with whichever pets remain.
+    setErrors((prev) => {
+      const next = { ...prev };
+      Object.keys(next).forEach((key) => {
+        if (
+          key.startsWith("petName_ext_") ||
+          key.startsWith("breed_ext_") ||
+          key.startsWith("otherSpecies_ext_")
+        ) {
+          delete next[key];
+        }
+      });
+      return next;
+    });
   };
 
   const handleNewPetForExistingChange = (index, field, value) => {
@@ -1267,9 +1353,18 @@ export default function NewRegistrationPet() {
   const handleSubmit = async (event) => {
     event.preventDefault();
 
+    // Nothing previously prevented a double-click (or a slow network
+    // making the admin click again) from firing this twice, which could
+    // register the same owner/pet/visit more than once - the button now
+    // disables itself and shows a spinner for the duration of the request,
+    // and re-enables on error so the admin can retry without navigating
+    // away and back.
+    if (submitting) return;
+
     if (isEditMode) {
       if (!validateFields(["owner", "pet", "visit"])) return;
 
+      setSubmitting(true);
       try {
         const ownerId = editCustomer.owner._id;
         const petId = editCustomer.pet._id;
@@ -1335,12 +1430,14 @@ export default function NewRegistrationPet() {
         navigate("/clinic/reception/existing-customer");
       } catch (error) {
         showToast({ type: "error", title: "Update Failed", description: error?.response?.data?.message || "Unable to update this registration." });
+        setSubmitting(false);
       }
       return;
     }
 
     if (!validateFields(["owner", "pet", "visit"])) return;
 
+    setSubmitting(true);
     try {
       if (mobileExists && existingOwnerId) {
         // Update owner details if edited
@@ -1478,6 +1575,7 @@ export default function NewRegistrationPet() {
         title: "Operation Failed",
         description: error?.response?.data?.message || "Unable to complete registration.",
       });
+      setSubmitting(false);
     }
   };
 
@@ -1901,7 +1999,7 @@ export default function NewRegistrationPet() {
                             return (
                               <div
                                 key={p._id}
-                                onClick={() => toggleExistingPetSelection(p._id)}
+                                onClick={() => toggleExistingPetSelection(p)}
                                 className={`px-3 py-1.5 rounded-lg border transition cursor-pointer flex items-center justify-between gap-2 ${
                                   isSelected
                                     ? "bg-orange-50/60 border-orange-500 shadow-2xs"
@@ -3197,10 +3295,20 @@ export default function NewRegistrationPet() {
               ) : (
                 <button
                   onClick={handleSubmit}
-                  className="flex items-center gap-1.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white px-6 py-2.5 rounded-xl font-semibold text-xs sm:text-sm shadow-md shadow-emerald-100 transition cursor-pointer border-none"
+                  disabled={submitting}
+                  className="flex items-center gap-1.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white px-6 py-2.5 rounded-xl font-semibold text-xs sm:text-sm shadow-md shadow-emerald-100 transition cursor-pointer border-none disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:from-emerald-500 disabled:hover:to-teal-500"
                 >
-                  Complete Registration & Visit
-                  <CheckCircle2 className="w-4 h-4" />
+                  {submitting ? (
+                    <>
+                      Saving...
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    </>
+                  ) : (
+                    <>
+                      Complete Registration & Visit
+                      <CheckCircle2 className="w-4 h-4" />
+                    </>
+                  )}
                 </button>
               )}
             </div>
