@@ -273,6 +273,7 @@ const ClinicDocuments = ({ form }) => {
         ["Veterinary council certificate", form.vetCert],
         ["Trade license", form.tradeDoc],
         ["Drug license", form.drugDoc],
+        ["Other document", form.otherLicenseDoc],
         ["Cancelled cheque", form.cheque],
         ["Government ID", form.idDoc],
         ["Admin profile", form.profile],
@@ -362,6 +363,8 @@ const getClinicForm = (clinic = {}) => {
         tradeExpiry: toDateInputValue(clinic.tradeExpiry || reg.tradeLicenseExpiryDate || reg.tradeExpiry),
         drugLicense: clinic.drugLicense || clinic.drugLicenseNumber || reg.drugLicenseNumber || reg.drugLicense || "",
         drugExpiry: toDateInputValue(clinic.drugExpiry || reg.drugLicenseExpiryDate || reg.drugExpiry),
+        otherLicense: clinic.otherLicense || clinic.otherLicenseNumber || reg.otherLicenseNumber || reg.otherLicense || "",
+        otherLicenseExpiry: toDateInputValue(clinic.otherLicenseExpiry || reg.otherLicenseExpiryDate || reg.otherLicenseExpiry),
 
         gst: clinic.gst || clinic.gstNumber || tax.gstNumber || tax.gst || "",
         pan: clinic.pan || clinic.panNumber || tax.panNumber || tax.pan || "",
@@ -407,6 +410,7 @@ const getClinicForm = (clinic = {}) => {
         vetCert: filePlaceholder(docs.vetCouncilCertificate || docs.vetCouncilCertificateUrl || clinic.vetCertName, docs.vetCouncilCertificateName),
         tradeDoc: filePlaceholder(docs.tradeLicense || docs.tradeLicenseUrl || clinic.tradeDocName, docs.tradeLicenseName),
         drugDoc: filePlaceholder(docs.drugLicense || docs.drugLicenseUrl || clinic.drugDocName, docs.drugLicenseName),
+        otherLicenseDoc: filePlaceholder(docs.otherLicenseDocument || docs.otherLicenseUrl || clinic.otherLicenseDocName, docs.otherLicenseName),
         cheque: filePlaceholder(docs.cancelledCheque || docs.cancelledChequeUrl || clinic.chequeName, docs.cancelledChequeName),
         idDoc: filePlaceholder(docs.idDocument || docs.idDocumentUrl || clinic.idDocName || docs.governmentId || docs.governmentIdUrl, docs.idDocumentName),
         profile: filePlaceholder(docs.adminProfile || docs.adminProfileUrl || clinic.profileName, docs.adminProfileName),
@@ -477,6 +481,8 @@ const getUpdatePayload = (form) => {
             tradeExpiry: form.tradeExpiry,
             drugLicenseNumber: form.drugLicense,
             drugExpiry: form.drugExpiry,
+            otherLicenseNumber: form.otherLicense,
+            otherLicenseExpiry: form.otherLicenseExpiry,
         },
         adminDetails: {
             adminName: form.adminName,

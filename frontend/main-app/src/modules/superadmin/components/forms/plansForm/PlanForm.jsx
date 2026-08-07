@@ -43,6 +43,21 @@ const STATUS_OPTIONS = ["Active", "Inactive", "Archived"];
 
 const clampNonNegativeNumber = (value) => Math.max(Number(value || 0), 0);
 
+// Numeric fields here start from an actual 0, and the DOM's raw input
+// value at the moment of a keystroke is whatever the browser produced by
+// inserting the typed character at the caret position relative to that
+// existing "0" - e.g. typing "1" after it makes the raw value "01", not
+// "1". Selecting the field's text on focus doesn't reliably survive a
+// mouse click (the browser can reposition the caret to the click point
+// after focus fires), so leading zeros are stripped here instead, on
+// every keystroke, and the field is allowed to sit genuinely blank while
+// being edited - clampNonNegativeNumber only re-applies a real 0 default
+// at submit time.
+const sanitizeNumericInput = (value) => {
+    const digitsOnly = String(value ?? "").replace(/\D/g, "");
+    return digitsOnly.replace(/^0+(?=\d)/, "");
+};
+
 const resolvePlanType = (plan) => {
     if (plan?.planType === "Solo Doctor") return "Solo Doctor";
     if (["Solo Basic", "Solo Pro"].includes(plan?.subscriptionPlan)) return "Solo Doctor";
@@ -161,7 +176,7 @@ export default function PlanForm({ plan, onClose, onSaved, onCreated, readOnly =
             const nextValue = type === "checkbox"
                 ? checked
                 : numericFields.has(name)
-                    ? clampNonNegativeNumber(value)
+                    ? sanitizeNumericInput(value)
                     : value;
 
             const nextForm = {
@@ -189,6 +204,13 @@ export default function PlanForm({ plan, onClose, onSaved, onCreated, readOnly =
             ...form,
             price: clampNonNegativeNumber(form.price),
             trialPeriodDays: clampNonNegativeNumber(form.trialPeriodDays),
+            // These fields can now sit as a plain digit string while being
+            // edited (sanitizeNumericInput no longer force-coerces on every
+            // keystroke) - re-applied as real numbers here at submit time.
+            maxStaffAccounts: clampNonNegativeNumber(form.maxStaffAccounts),
+            maxDoctors: clampNonNegativeNumber(form.maxDoctors),
+            maxPetRecords: clampNonNegativeNumber(form.maxPetRecords),
+            storageLimitGb: clampNonNegativeNumber(form.storageLimitGb),
             planEndRenewalDate,
             // Only Lab is actually selectable in the UI right now - force the
             // rest off so an old plan's stale enabled flags (from before this
@@ -365,17 +387,6 @@ function Section({ title }) {
 }
 
 function Field({ label, name, value, onChange, type = "text", readOnly = false, disabled = false, required = false, min }) {
-    // Numeric fields default to 0, and typing while "0" sits in front of the
-    // caret appends instead of replacing (e.g. "0" -> "01" -> "010") since
-    // the browser has no reason to treat a leading zero as selected text.
-    // Selecting the existing value on focus makes the first keystroke
-    // replace it, matching how a blank field would behave.
-    const handleFocus = (event) => {
-        if (type === "number" && Number(value) === 0) {
-            event.target.select();
-        }
-    };
-
     return (
         <div>
             <label className="text-xs font-semibold uppercase tracking-wider text-gray-500">{label}</label>
@@ -384,7 +395,6 @@ function Field({ label, name, value, onChange, type = "text", readOnly = false, 
                 name={name}
                 value={value}
                 onChange={onChange}
-                onFocus={handleFocus}
                 readOnly={readOnly}
                 disabled={disabled}
                 required={required}

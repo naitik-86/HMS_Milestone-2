@@ -238,6 +238,8 @@ export default function ClinicModal({ onClose }) {
         expiry: "",
         tradeLicense: "",
         drugLicense: "",
+        otherLicense: "",
+        otherLicenseExpiry: "",
 
         designation: "",
         govtIdType: "",
@@ -247,6 +249,7 @@ export default function ClinicModal({ onClose }) {
         vetCert: null,
         tradeDoc: null,
         drugDoc: null,
+        otherLicenseDoc: null,
         cheque: null,
         idDoc: null,
         profile: null,
@@ -328,7 +331,8 @@ export default function ClinicModal({ onClose }) {
                 return Boolean(
                     (form.vetReg && form.vetCert) ||
                     (form.tradeLicense && form.tradeDoc) ||
-                    (form.drugLicense && form.drugDoc)
+                    (form.drugLicense && form.drugDoc) ||
+                    (form.otherLicense && form.otherLicenseDoc)
                 );
 
             case "tax":
@@ -417,7 +421,8 @@ export default function ClinicModal({ onClose }) {
                     if (
                         !((form.vetReg && form.vetCert) ||
                             (form.tradeLicense && form.tradeDoc) ||
-                            (form.drugLicense && form.drugDoc))
+                            (form.drugLicense && form.drugDoc) ||
+                            (form.otherLicense && form.otherLicenseDoc))
                     ) {
                         return false;
                     }

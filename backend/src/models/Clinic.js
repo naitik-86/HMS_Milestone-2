@@ -68,7 +68,9 @@ const clinicSchema = new mongoose.Schema({
     tradeLicenseNumber: String,
     tradeExpiry: Date,
     drugLicenseNumber: String,
-    drugExpiry: Date
+    drugExpiry: Date,
+    otherLicenseNumber: String,
+    otherLicenseExpiry: Date
   },
 
   features: {
@@ -93,6 +95,8 @@ const clinicSchema = new mongoose.Schema({
     tradeLicenseName: String,
     drugLicenseUrl: String,
     drugLicenseName: String,
+    otherLicenseUrl: String,
+    otherLicenseName: String,
     cancelledChequeUrl: String,
     cancelledChequeName: String,
     adminProfileUrl: String,

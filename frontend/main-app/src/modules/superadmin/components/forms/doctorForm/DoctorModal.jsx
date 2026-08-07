@@ -4,7 +4,6 @@ import { ChevronDown, Check } from "lucide-react";
 import DoctorForm from "./DoctorForm";
 import Stepper from "../Stepper";
 import { getPlans } from "../../../api/planApi";
-import { showToast } from "../../../../../shared/components/toast";
 
 const SOLO_DOCTOR_PLAN_NAMES = new Set(["Solo Basic", "Solo Pro"]);
 
@@ -293,15 +292,6 @@ export default function DoctorModal({ onClose, onCreated, onSaved, mode = "creat
         ? "Update the veterinarian profile and save the changes."
         : "Complete the details to register a new veterinarian.";
 
-    const handleStatusChange = (newStatus) => {
-        setStatus(newStatus);
-        showToast({
-            type: "info",
-            title: "Status Updated",
-            description: `Veterinarian status set to ${newStatus}.`,
-        });
-    };
-
     return (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center px-2 py-[max(2rem,env(safe-area-inset-top))] pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:p-4">
             <div className="bg-white w-full sm:w-[95%] h-[calc(100svh-3.25rem)] max-h-[calc(100svh-3.25rem)] sm:h-[95vh] sm:max-h-[95vh] rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-gray-100">
@@ -313,7 +303,6 @@ export default function DoctorModal({ onClose, onCreated, onSaved, mode = "creat
                             <h2 className="text-xl sm:text-3xl font-bold text-[#0C3D2E] tracking-tight">
                                 {title}
                             </h2>
-                            <StatusDropdown value={status} onChange={handleStatusChange} />
                         </div>
                         <p className="text-[#0C3D2E]/70 text-xs sm:text-sm mt-0.5 font-semibold">
                             {description}

@@ -2664,6 +2664,7 @@ exports.uploadClinicDocuments = async (req, res) => {
       vetCouncilCertificate: ['vetCouncilCertificateUrl', 'vetCouncilCertificateName'],
       tradeLicense: ['tradeLicenseUrl', 'tradeLicenseName'],
       drugLicense: ['drugLicenseUrl', 'drugLicenseName'],
+      otherLicenseDocument: ['otherLicenseUrl', 'otherLicenseName'],
       cancelledCheque: ['cancelledChequeUrl', 'cancelledChequeName'],
       adminProfile: ['adminProfileUrl', 'adminProfileName'],
       idDocument: ['idDocumentUrl', 'idDocumentName'],

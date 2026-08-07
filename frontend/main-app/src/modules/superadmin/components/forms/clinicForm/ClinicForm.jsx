@@ -12,7 +12,8 @@ import {
 import {
     ClipboardDocumentListIcon,
     BeakerIcon,
-    BuildingStorefrontIcon
+    BuildingStorefrontIcon,
+    DocumentTextIcon
 } from "@heroicons/react/24/outline";
 import { checkClinicContactAvailability, createClinic, sendClinicAdminOtp, verifyClinicAdminOtp } from "../../../api/clinicApi";
 import { getPlans } from "../../../api/planApi";
@@ -1418,6 +1419,7 @@ export default function ClinicForm({
             { numberField: "vetReg", documentField: "vetCert", expiryField: "vetExpiry", label: "Registration" },
             { numberField: "tradeLicense", documentField: "tradeDoc", expiryField: "tradeExpiry", label: "Trade license" },
             { numberField: "drugLicense", documentField: "drugDoc", expiryField: "drugExpiry", label: "Drug license" },
+            { numberField: "otherLicense", documentField: "otherLicenseDoc", expiryField: "otherLicenseExpiry", label: "Other document" },
         ];
         const today = getDateValue(new Date());
 
@@ -1559,6 +1561,9 @@ export default function ClinicForm({
                 drugLicense: licenseErrors.drugLicense,
                 drugDoc: licenseErrors.drugDoc,
                 drugExpiry: licenseErrors.drugExpiry,
+                otherLicense: licenseErrors.otherLicense,
+                otherLicenseDoc: licenseErrors.otherLicenseDoc,
+                otherLicenseExpiry: licenseErrors.otherLicenseExpiry,
             }));
         }, 400);
         return () => window.clearTimeout(timer);
@@ -1567,6 +1572,7 @@ export default function ClinicForm({
         form.vetReg, form.vetCert, form.vetExpiry,
         form.tradeLicense, form.tradeDoc, form.tradeExpiry,
         form.drugLicense, form.drugDoc, form.drugExpiry,
+        form.otherLicense, form.otherLicenseDoc, form.otherLicenseExpiry,
     ]);
 
     // Same "Next silently disabled" gap on Clinic Identity - email/phone
@@ -1862,6 +1868,9 @@ export default function ClinicForm({
         form.drugLicense,
         form.drugDoc,
         form.drugExpiry,
+        form.otherLicense,
+        form.otherLicenseDoc,
+        form.otherLicenseExpiry,
         form.gst,
         form.pan,
         form.bankName,
@@ -1947,7 +1956,7 @@ export default function ClinicForm({
         const tabFieldMap = {
             identity: ["clinicName", "facilityType", "year", "phone", "altPhone", "email", "website", "logo"],
             address: ["address1", "state", "city", "district", "pincode", "serviceAreas"],
-            licenses: ["stateCouncil", "vetReg", "vetCert", "vetExpiry", "tradeLicense", "tradeDoc", "tradeExpiry", "drugLicense", "drugDoc", "drugExpiry"],
+            licenses: ["stateCouncil", "vetReg", "vetCert", "vetExpiry", "tradeLicense", "tradeDoc", "tradeExpiry", "drugLicense", "drugDoc", "drugExpiry", "otherLicense", "otherLicenseDoc", "otherLicenseExpiry"],
             tax: ["gst", "pan", "bankName", "accountNumber", "ifsc", "cheque"],
             admin: ["adminName", "designation", "adminPhone", "adminEmail", "govtIdType", "govtIdNumber", "idDoc", "profile"],
             plan: ["plan", "billing", "startDate", "endDate", "trialDays", "maxStaff", "maxDoctors", "maxPets", "storageLimit"],
@@ -2385,6 +2394,52 @@ export default function ClinicForm({
                                                     label="Expiry Date"
                                                     value={form.tradeExpiry}
                                                     error={errors.tradeExpiry}
+                                                    min={getTodayDate()}
+                                                    max="9999-12-31"
+                                                    onChange={handleChange}
+                                                    className="rounded-xl h-12"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Other */}
+                                    <div className="border-t border-gray-100 py-5 sm:py-6">
+                                        <div className="grid gap-4 sm:grid-cols-[64px_minmax(0,1fr)] sm:items-start">
+                                            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-[#D9E8E3] border border-[#0C3D2E]/10 flex items-center justify-center shrink-0 sm:mt-6">
+                                                <DocumentTextIcon className="w-8 h-8 text-[#0C3D2E]" />
+                                            </div>
+
+                                            <div className="grid min-w-0 gap-4 lg:grid-cols-3">
+                                                <Input
+                                                    name="otherLicense"
+                                                    label="Other License/Registration Number"
+                                                    value={form.otherLicense}
+                                                    error={errors.otherLicense}
+                                                    maxLength={LICENSE_NUMBER_MAX_LENGTH}
+                                                    onChange={handleChange}
+                                                    className="rounded-xl h-12"
+                                                />
+
+                                                <Upload
+                                                    label="Other License Document"
+                                                    value={form.otherLicenseDoc}
+                                                    error={errors.otherLicenseDoc}
+                                                    onChange={handleFileUpload("otherLicenseDoc")}
+                                                    onRemove={() =>
+                                                        setForm((p) => ({
+                                                            ...p,
+                                                            otherLicenseDoc: null,
+                                                        }))
+                                                    }
+                                                />
+
+                                                <Input
+                                                    type="date"
+                                                    name="otherLicenseExpiry"
+                                                    label="Expiry Date"
+                                                    value={form.otherLicenseExpiry}
+                                                    error={errors.otherLicenseExpiry}
                                                     min={getTodayDate()}
                                                     max="9999-12-31"
                                                     onChange={handleChange}

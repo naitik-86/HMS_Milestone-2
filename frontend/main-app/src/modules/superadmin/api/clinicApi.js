@@ -84,7 +84,9 @@ export const createClinic = async (clinicData) => {
             tradeLicenseNumber: clinicData.tradeLicense,
             tradeExpiry: clinicData.tradeExpiry,
             drugLicenseNumber: clinicData.drugLicense,
-            drugExpiry: clinicData.drugExpiry
+            drugExpiry: clinicData.drugExpiry,
+            otherLicenseNumber: clinicData.otherLicense,
+            otherLicenseExpiry: clinicData.otherLicenseExpiry
         },
         features: {
             labModule: clinicData.labModule,
@@ -162,6 +164,7 @@ export const uploadClinicDocuments = async (clinicId, clinicData) => {
         vetCouncilCertificate: clinicData.vetCert,
         tradeLicense: clinicData.tradeDoc,
         drugLicense: clinicData.drugDoc,
+        otherLicenseDocument: clinicData.otherLicenseDoc,
         cancelledCheque: clinicData.cheque,
         adminProfile: clinicData.profile,
         idDocument: clinicData.idDoc,
