@@ -19,6 +19,10 @@
 #                             Google" button (Google Identity Services).
 #                             Must match the backend's GOOGLE_CLIENT_ID env
 #                             var exactly, or token verification fails.
+#   VITE_GOOGLE_MAPS_API_KEY - Google Maps JavaScript API key (Maps
+#                             JavaScript API + Geocoding API enabled),
+#                             used by the Add/Edit Clinic Address & Location
+#                             map (current-location + click/drag-to-pin).
 #   CLOUDFRONT_DISTRIBUTION_ID - dedicated distribution for this testing
 #                             server (E1MN8GQE24P54K / d113u4fu4xedub.cloudfront.net).
 #                             Without invalidation, CloudFront can keep
@@ -71,6 +75,7 @@ jobs:
           VITE_BACKEND_URL: ${{ secrets.VITE_BACKEND_URL }}
           VITE_PAYU_BASE_URL: ${{ secrets.VITE_PAYU_BASE_URL }}
           VITE_GOOGLE_CLIENT_ID: ${{ secrets.VITE_GOOGLE_CLIENT_ID }}
+          VITE_GOOGLE_MAPS_API_KEY: ${{ secrets.VITE_GOOGLE_MAPS_API_KEY }}
         run: npm run build
 
       - name: Configure AWS credentials

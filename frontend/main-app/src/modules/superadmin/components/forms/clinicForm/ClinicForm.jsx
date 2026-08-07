@@ -18,6 +18,7 @@ import { checkClinicContactAvailability, createClinic, sendClinicAdminOtp, verif
 import { getPlans } from "../../../api/planApi";
 import { Upload, Card, Select, Grid, Full, Input } from "../../../components";
 import { useNavigate } from "react-router-dom";
+import { geocodeAddress, reverseGeocodeLatLng, loadGoogleMaps } from "../../../../../shared/utils/googleMaps";
 
 /* ---------------- MAIN FORM ---------------- */
 
@@ -27,7 +28,6 @@ const DEFAULT_MAP_CENTER = {
 };
 
 const DEFAULT_MAP_ZOOM = 12;
-const TILE_SIZE = 256;
 const BILLING_MONTHS = {
     Monthly: 1,
     Quarterly: 3,
@@ -219,46 +219,6 @@ const resolvePlanType = (plan) => {
     if (SOLO_DOCTOR_PLAN_NAMES.has(plan?.subscriptionPlan)) return "Solo Doctor";
     return "Clinic";
 };
-
-const lonToTileX = (lon, zoom) =>
-    ((lon + 180) / 360) * Math.pow(2, zoom);
-
-const latToTileY = (lat, zoom) => {
-    const rad = (lat * Math.PI) / 180;
-    return (
-        (1 -
-            Math.log(Math.tan(rad) + 1 / Math.cos(rad)) / Math.PI) /
-        2
-    ) * Math.pow(2, zoom);
-};
-
-const tileXToLon = (x, zoom) =>
-    (x / Math.pow(2, zoom)) * 360 - 180;
-
-const tileYToLat = (y, zoom) => {
-    const n = Math.PI - (2 * Math.PI * y) / Math.pow(2, zoom);
-    return (180 / Math.PI) * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n)));
-};
-
-const getDisplayAddress = (address = {}) =>
-    [
-        address.house_number,
-        address.road,
-        address.neighbourhood,
-        address.suburb,
-        address.village,
-        address.town,
-    ]
-        .filter(Boolean)
-        .join(", ");
-
-const getCityName = (address = {}) =>
-    address.city ||
-    address.town ||
-    address.village ||
-    address.municipality ||
-    address.county ||
-    "";
 
 const cleanStr = (s) =>
     String(s || "")
@@ -604,29 +564,20 @@ export default function ClinicForm({
         }, 5000);
 
         try {
-            const response = await fetch(
-                `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=in&q=${encodeURIComponent(addressParts.join(", "))}`,
-                {
-                    signal,
-                    headers: {
-                        "Accept-Language": "en",
-                    },
-                }
-            );
+            // The Google Maps JS SDK's Geocoder doesn't accept an
+            // AbortSignal, so a newer debounced call superseding this one
+            // is instead handled by checking signal.aborted before
+            // applying the result below.
+            const location = await geocodeAddress(addressParts.join(", "));
 
-            const data = await response.json();
-            const location = data?.[0];
+            if (signal?.aborted) return false;
+            if (!location?.lat || !location?.lng) return false;
 
-            if (!location?.lat || !location?.lon) return false;
-
-            updateMapCoordinates(location.lat, location.lon);
+            updateMapCoordinates(location.lat, location.lng);
 
             return true;
         } catch (err) {
-            if (err.name !== "AbortError") {
-                console.error(err);
-            }
-
+            console.error(err);
             return false;
         } finally {
             clearTimeout(locatingTimeout);
@@ -2862,54 +2813,32 @@ export default function ClinicForm({
 }
 
 function ClinicLocationMap({ latitude, longitude, locating = false, onSelect }) {
+    const mapContainerRef = useRef(null);
+    const mapRef = useRef(null);
+    const markerRef = useRef(null);
     const [loading, setLoading] = useState(false);
     const [mapError, setMapError] = useState("");
-    const [zoom, setZoom] = useState(DEFAULT_MAP_ZOOM);
+    const [mapReady, setMapReady] = useState(false);
+
     const center = {
         lat: Number(latitude) || DEFAULT_MAP_CENTER.lat,
         lng: Number(longitude) || DEFAULT_MAP_CENTER.lng,
     };
 
-    const centerTileX = lonToTileX(center.lng, zoom);
-    const centerTileY = latToTileY(center.lat, zoom);
-    const baseTileX = Math.floor(centerTileX);
-    const baseTileY = Math.floor(centerTileY);
-    const offsetX = (centerTileX - baseTileX) * TILE_SIZE;
-    const offsetY = (centerTileY - baseTileY) * TILE_SIZE;
+    const applyReverseGeocode = async (lat, lng, errorMessage) => {
+        setLoading(true);
+        setMapError("");
 
-    const tiles = [];
-    for (let x = -1; x <= 1; x += 1) {
-        for (let y = -1; y <= 1; y += 1) {
-            tiles.push({
-                key: `${zoom}-${baseTileX + x}-${baseTileY + y}`,
-                x: baseTileX + x,
-                y: baseTileY + y,
-                left: x * TILE_SIZE - offsetX,
-                top: y * TILE_SIZE - offsetY,
-            });
-        }
-    }
-
-    const reverseGeocode = async (lat, lng, errorMessage) => {
         try {
-            const response = await fetch(
-                `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&addressdetails=1`,
-                {
-                    headers: {
-                        "Accept-Language": "en",
-                    },
-                }
-            );
-            const data = await response.json();
-            const address = data.address || {};
+            const result = await reverseGeocodeLatLng(lat, lng);
 
             onSelect({
-                address1: getDisplayAddress(address) || data.display_name || "",
-                address2: address.suburb || address.neighbourhood || "",
-                city: getCityName(address),
-                district: address.state_district || address.county || getCityName(address),
-                state: address.state || "",
-                pincode: address.postcode || "",
+                address1: result.address1,
+                address2: result.address2,
+                city: result.city,
+                district: result.district || result.city,
+                state: result.state,
+                pincode: result.pincode,
                 latitude: Number(lat).toFixed(6),
                 longitude: Number(lng).toFixed(6),
             });
@@ -2921,19 +2850,78 @@ function ClinicLocationMap({ latitude, longitude, locating = false, onSelect }) 
         }
     };
 
-    const handleMapClick = async (e) => {
-        const rect = e.currentTarget.getBoundingClientRect();
-        const pixelX = e.clientX - rect.left - rect.width / 2;
-        const pixelY = e.clientY - rect.top - rect.height / 2;
-        const clickedTileX = centerTileX + pixelX / TILE_SIZE;
-        const clickedTileY = centerTileY + pixelY / TILE_SIZE;
-        const lng = tileXToLon(clickedTileX, zoom);
-        const lat = tileYToLat(clickedTileY, zoom);
+    // Loads the Google Maps SDK once and mounts an interactive map with a
+    // draggable pin - clicking the map or dragging the pin both trigger a
+    // reverse-geocode so address/city/PIN code stay in sync with the pin.
+    useEffect(() => {
+        let cancelled = false;
+        let clickListener;
+        let dragListener;
 
-        setLoading(true);
-        setMapError("");
-        reverseGeocode(lat, lng, "Unable to fetch address for this location.");
-    };
+        loadGoogleMaps()
+            .then((maps) => {
+                if (cancelled || !mapContainerRef.current) return;
+
+                const map = new maps.Map(mapContainerRef.current, {
+                    center,
+                    zoom: DEFAULT_MAP_ZOOM,
+                    streetViewControl: false,
+                    mapTypeControl: false,
+                    fullscreenControl: false,
+                    clickableIcons: false,
+                });
+
+                const marker = new maps.Marker({
+                    position: center,
+                    map,
+                    draggable: true,
+                });
+
+                clickListener = map.addListener("click", (e) => {
+                    const lat = e.latLng.lat();
+                    const lng = e.latLng.lng();
+                    marker.setPosition({ lat, lng });
+                    applyReverseGeocode(lat, lng, "Unable to fetch address for this location.");
+                });
+
+                dragListener = marker.addListener("dragend", (e) => {
+                    applyReverseGeocode(
+                        e.latLng.lat(),
+                        e.latLng.lng(),
+                        "Unable to fetch address for this location."
+                    );
+                });
+
+                mapRef.current = map;
+                markerRef.current = marker;
+                setMapReady(true);
+            })
+            .catch((err) => {
+                console.error(err);
+                if (!cancelled) {
+                    setMapError("Unable to load Google Maps. Check the API key configuration.");
+                }
+            });
+
+        return () => {
+            cancelled = true;
+            clickListener?.remove();
+            dragListener?.remove();
+        };
+        // Map is intentionally initialized once - the effect below keeps the
+        // existing map/marker instances in sync when latitude/longitude
+        // change from outside (e.g. address typed into the form fields).
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    useEffect(() => {
+        if (!mapRef.current || !markerRef.current) return;
+        if (!latitude || !longitude) return;
+
+        const nextCenter = { lat: Number(latitude), lng: Number(longitude) };
+        markerRef.current.setPosition(nextCenter);
+        mapRef.current.panTo(nextCenter);
+    }, [latitude, longitude]);
 
     const useCurrentLocation = () => {
         if (!navigator.geolocation) {
@@ -2945,10 +2933,13 @@ function ClinicLocationMap({ latitude, longitude, locating = false, onSelect }) 
         setMapError("");
 
         navigator.geolocation.getCurrentPosition(
-            async (position) => {
+            (position) => {
                 const lat = position.coords.latitude;
                 const lng = position.coords.longitude;
-                reverseGeocode(lat, lng, "Unable to fetch address for current location.");
+
+                markerRef.current?.setPosition({ lat, lng });
+                mapRef.current?.panTo({ lat, lng });
+                applyReverseGeocode(lat, lng, "Unable to fetch address for current location.");
             },
             () => {
                 setLoading(false);
@@ -2965,69 +2956,28 @@ function ClinicLocationMap({ latitude, longitude, locating = false, onSelect }) 
                         Select Clinic Location
                     </h3>
                     <p className="text-xs text-gray-400 mt-0.5">
-                        Click the map to auto-fill address, city and PIN code.
+                        Click the map or drag the pin to auto-fill address, city and PIN code.
                     </p>
                 </div>
 
-                <div className="flex items-center gap-2">
-                    <button
-                        type="button"
-                        onClick={useCurrentLocation}
-                        className="w-full sm:w-auto px-3.5 py-2 rounded-xl border border-gray-200 text-xs font-semibold text-[#0C3D2E] hover:bg-[#D9E8E3]/30 transition-colors cursor-pointer"
-                    >
-                        Use Current Location
-                    </button>
-                    <div className="flex gap-2">
-                        <button
-                            type="button"
-                            onClick={() => setZoom((z) => Math.min(z + 1, 19))}
-                            className="h-9 w-9 rounded-xl border border-gray-200 bg-white font-bold text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
-                        >
-                            +
-                        </button>
-
-                        <button
-                            type="button"
-                            onClick={() => setZoom((z) => Math.max(z - 1, 3))}
-                            className="h-9 w-9 rounded-xl border border-gray-200 bg-white font-bold text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
-                        >
-                            −
-                        </button>
-                    </div>
-                </div>
+                <button
+                    type="button"
+                    onClick={useCurrentLocation}
+                    className="w-full sm:w-auto px-3.5 py-2 rounded-xl border border-gray-200 text-xs font-semibold text-[#0C3D2E] hover:bg-[#D9E8E3]/30 transition-colors cursor-pointer"
+                >
+                    Use Current Location
+                </button>
             </div>
 
-            <button
-                type="button"
-                onClick={handleMapClick}
-                className="relative block w-full h-72 overflow-hidden bg-slate-100 cursor-crosshair"
-                aria-label="Select clinic location on map"
-            >
-                {tiles.map((tile) => (
-                    <img
-                        key={tile.key}
-                        src={`https://tile.openstreetmap.org/${zoom}/${tile.x}/${tile.y}.png`}
-                        alt=""
-                        className="absolute max-w-none"
-                        style={{
-                            width: TILE_SIZE,
-                            height: TILE_SIZE,
-                            left: `calc(50% + ${tile.left}px)`,
-                            top: `calc(50% + ${tile.top}px)`,
-                        }}
-                        draggable="false"
-                    />
-                ))}
+            <div className="relative h-72 w-full bg-slate-100">
+                <div ref={mapContainerRef} className="absolute inset-0" />
 
-                <span className="absolute left-1/2 top-1/2 h-8 w-8 -translate-x-1/2 -translate-y-full rounded-full bg-[#F7931E] shadow-lg ring-4 ring-white" />
-                <span className="absolute left-1/2 top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white" />
-
-                {(loading || locating) && (
-                    <span className="absolute inset-0 flex items-center justify-center bg-white/70 text-sm font-medium text-slate-700">
-                        {loading ? "Fetching address..." : "Locating..."}
+                {(loading || locating || !mapReady) && !mapError && (
+                    <span className="absolute inset-0 flex items-center justify-center bg-white/70 text-sm font-medium text-slate-700 pointer-events-none">
+                        {!mapReady ? "Loading map..." : loading ? "Fetching address..." : "Locating..."}
                     </span>
                 )}
-            </button>
+            </div>
 
             <div className="px-4 py-3 text-xs text-gray-400">
                 Selected: {latitude && longitude ? `${latitude}, ${longitude}` : "No location selected"}
