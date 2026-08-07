@@ -365,6 +365,17 @@ function Section({ title }) {
 }
 
 function Field({ label, name, value, onChange, type = "text", readOnly = false, disabled = false, required = false, min }) {
+    // Numeric fields default to 0, and typing while "0" sits in front of the
+    // caret appends instead of replacing (e.g. "0" -> "01" -> "010") since
+    // the browser has no reason to treat a leading zero as selected text.
+    // Selecting the existing value on focus makes the first keystroke
+    // replace it, matching how a blank field would behave.
+    const handleFocus = (event) => {
+        if (type === "number" && Number(value) === 0) {
+            event.target.select();
+        }
+    };
+
     return (
         <div>
             <label className="text-xs font-semibold uppercase tracking-wider text-gray-500">{label}</label>
@@ -373,6 +384,7 @@ function Field({ label, name, value, onChange, type = "text", readOnly = false, 
                 name={name}
                 value={value}
                 onChange={onChange}
+                onFocus={handleFocus}
                 readOnly={readOnly}
                 disabled={disabled}
                 required={required}

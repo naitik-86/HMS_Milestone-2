@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from "react";
 import { ChevronDown, Check } from "lucide-react";
-import { showToast } from "../../../../../shared/components/toast";
 import { calculateEndDate, getTodayDate } from "../../../../../shared/utils/calculateEndDate ";
 import { getNextClinicCode } from "../../../api/clinicApi";
 
@@ -173,7 +172,11 @@ export function CustomSelect({
 
 export default function ClinicModal({ onClose }) {
     const [activeTab, setActiveTab] = useState("identity");
-    const [status, setStatus] = useState("Pending");
+    // The interactive status pill was removed from this modal's header -
+    // clinic workflow status is now only ever changed via the Verification
+    // Center. Kept as a constant (rather than deleting the `status` key
+    // from the form object entirely) since ClinicForm still reads it.
+    const status = "Pending";
 
     const today = getTodayDate();
 
@@ -466,15 +469,6 @@ export default function ClinicModal({ onClose }) {
         return true;
     };
 
-    const handleStatusChange = (newStatus) => {
-        setStatus(newStatus);
-        showToast({
-            type: "info",
-            title: "Status Updated",
-            description: `Clinic status set to ${newStatus}.`,
-        });
-    };
-
     return (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center px-2 py-[max(0.5rem,env(safe-area-inset-top))] pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:p-4">
             <div className="bg-white w-full sm:w-[95%] h-[calc(100svh-1rem)] max-h-[calc(100svh-1rem)] sm:h-[95vh] sm:max-h-[95vh] rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-gray-100">
@@ -486,7 +480,6 @@ export default function ClinicModal({ onClose }) {
                             <h2 className="text-xl sm:text-3xl font-bold text-[#0C3D2E] tracking-tight">
                                 Add Clinic
                             </h2>
-                            <StatusDropdown value={status} onChange={handleStatusChange} />
                         </div>
                         <p className="text-[#0C3D2E]/70 text-xs sm:text-sm mt-0.5 font-semibold">
                             Register a new clinic/hospital in the system.
