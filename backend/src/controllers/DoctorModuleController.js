@@ -413,7 +413,7 @@ exports.getHistory = async (req, res) => {
         const preConsultIds = history.map((v) => v.preConsultationId).filter(Boolean);
         const docConsultIds = history.map((v) => v.doctorId?._id || v.doctorId).filter(Boolean);
 
-        const [consultations, preConsultations] = await Promise.all([
+        const [consultations, preConsultations, labReports] = await Promise.all([
             DoctorConsultation.find({
                 $or: [
                     { visitId: { $in: visitIds } },
@@ -425,8 +425,14 @@ exports.getHistory = async (req, res) => {
                     { visitId: { $in: visitIds } },
                     { _id: { $in: preConsultIds } }
                 ]
-            })
+            }),
+            LabReport.find({ visitId: { $in: visitIds } })
         ]);
+
+        const labReportMapByVisit = {};
+        labReports.forEach((lr) => {
+            if (lr.visitId) labReportMapByVisit[lr.visitId.toString()] = lr.toObject();
+        });
 
         const consultMapByVisit = {};
         const consultMapById = {};
@@ -451,6 +457,8 @@ exports.getHistory = async (req, res) => {
             const consult = consultMapByVisit[visit._id.toString()] || consultMapById[doctorIdRef] || {};
             const preConsult = preConsultMapByVisit[visit._id.toString()] || preConsultMapById[visit.preConsultationId?.toString()] || {};
 
+            const labRep = labReportMapByVisit[visit._id.toString()] || null;
+
             return {
                 ...rawObj,
                 pet: visit.ownerId?.pets?.id(visit.petId) || null,
@@ -462,6 +470,8 @@ exports.getHistory = async (req, res) => {
                 suggestion: consult.suggestion || {},
                 consultationDetails: consult,
                 preConsultationId: preConsult,
+                labReport: labRep,
+                hasLabReport: !!labRep,
             };
         });
 

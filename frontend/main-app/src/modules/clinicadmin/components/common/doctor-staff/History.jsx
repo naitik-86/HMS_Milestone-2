@@ -370,6 +370,31 @@ export default function History() {
                   <p className="text-slate-800">{selectedRecord.suggestion.dietAdvice}</p>
                 </div>
               )}
+
+              {selectedRecord.hasLabReport && selectedRecord.labReport?.reports?.length > 0 && (
+                <div className="p-4 bg-purple-50/50 border border-purple-100 rounded-2xl space-y-2">
+                  <p className="font-bold text-purple-900 uppercase">Lab Reports:</p>
+                  <div className="space-y-1.5">
+                    {selectedRecord.labReport.reports.map((report, index) => (
+                      <div key={index} className="flex items-center justify-between gap-3 bg-white rounded-xl border border-purple-100 px-3 py-2">
+                        <span className="font-semibold text-slate-800">{report.testName || `Report ${index + 1}`}</span>
+                        {report.fileUrl ? (
+                          <a
+                            href={report.fileUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-purple-700 font-bold underline"
+                          >
+                            View File
+                          </a>
+                        ) : (
+                          <span className="text-slate-400">No file</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="flex justify-end pt-2">

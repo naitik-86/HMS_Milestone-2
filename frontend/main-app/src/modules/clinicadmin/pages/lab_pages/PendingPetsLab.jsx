@@ -33,6 +33,16 @@ const formatToken = (raw, fallback = "N/A") => {
   return str.toUpperCase().startsWith("TK-") ? str : `TK-${str}`;
 };
 
+// Shared between the submit handler and the disabled/progress state on the
+// button itself, so "all reports mandatory" is enforced and visible before
+// the technician even clicks Submit, not just rejected after the fact.
+const getRequiredTestNames = (caseItem) =>
+  (caseItem?.tests && caseItem.tests.length > 0)
+    ? caseItem.tests.map((test, index) =>
+        typeof test === "string" ? test : test.testName || test.name || `Test_${index + 1}`
+      )
+    : ["General_Report"];
+
 export default function LabPendingCases() {
   const [cases, setCases] = useState([]);
   const [search, setSearch] = useState("");
@@ -102,6 +112,21 @@ export default function LabPendingCases() {
   };
 
   const handleUpload = async () => {
+    // Every test the doctor actually requisitioned must have its own report
+    // attached before this can go back to the doctor - previously only
+    // "at least one file" was required, so a case with 3 requested tests
+    // could be sent back with just 1 report attached and 2 silently missing.
+    const requiredTestNames = getRequiredTestNames(selectedCase);
+    const missingTests = requiredTestNames.filter((testName) => !files[testName]);
+    if (missingTests.length > 0) {
+      showToast({
+        type: "error",
+        title: "Reports Missing",
+        description: `Please attach a report for all requested tests before sending to doctor. Missing: ${missingTests.join(", ")}.`,
+      });
+      return;
+    }
+
     if (Object.keys(files).length === 0) {
       showToast({
         type: "error",
@@ -431,6 +456,26 @@ export default function LabPendingCases() {
                 <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0" />
               </div>
 
+              {(() => {
+                const requiredTestNames = getRequiredTestNames(selectedCase);
+                const attachedCount = requiredTestNames.filter((testName) => !!files[testName]).length;
+                const allAttached = attachedCount === requiredTestNames.length;
+                return (
+                  <div
+                    className={`rounded-2xl p-3.5 border text-xs font-bold flex items-center justify-between ${
+                      allAttached
+                        ? "bg-emerald-50 border-emerald-200 text-emerald-800"
+                        : "bg-amber-50 border-amber-200 text-amber-800"
+                    }`}
+                  >
+                    <span>
+                      {attachedCount} / {requiredTestNames.length} report(s) attached
+                    </span>
+                    {!allAttached && <span>All reports are required before sending to doctor</span>}
+                  </div>
+                );
+              })()}
+
               {selectedCase.tests && selectedCase.tests.length > 0 ? (
                 selectedCase.tests.map((test, index) => {
                   const testName = typeof test === "string" ? test : test.testName || test.name || `Test_${index + 1}`;
@@ -535,7 +580,7 @@ export default function LabPendingCases() {
               <button
                 type="button"
                 onClick={handleUpload}
-                disabled={uploading}
+                disabled={uploading || getRequiredTestNames(selectedCase).some((testName) => !files[testName])}
                 className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-xl font-bold text-xs transition shadow-lg shadow-emerald-600/20 cursor-pointer border-none flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {uploading ? (
