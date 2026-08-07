@@ -17,7 +17,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { checkClinicContactAvailability, createClinic, sendClinicAdminOtp, verifyClinicAdminOtp } from "../../../api/clinicApi";
 import { getPlans } from "../../../api/planApi";
-import { Upload, Card, Select, Grid, Full, Input } from "../../../components";
+import { Upload, CameraCapture, Card, Select, Grid, Full, Input } from "../../../components";
 import { useNavigate } from "react-router-dom";
 import { geocodeAddress, reverseGeocodeLatLng, loadGoogleMaps } from "../../../../../shared/utils/googleMaps";
 
@@ -282,6 +282,10 @@ export default function ClinicForm({
     // tab-completeness check can also see whether the *current* phone
     // value has actually been OTP-verified.
     const adminPhoneOtpVerified = Boolean(form.adminPhone) && form.adminPhoneVerifiedNumber === form.adminPhone;
+    // Upload vs Live Capture toggle for the Profile Photo field - both
+    // modes write the same File object into form.profile, so validation/
+    // submission never need to know which one produced it.
+    const [profileCaptureMode, setProfileCaptureMode] = useState("upload");
     const shownDuplicateChecks = useRef(new Set());
     const initialContactValues = useRef({
         email: String(form.email || "").trim().toLowerCase(),
@@ -1705,9 +1709,14 @@ export default function ClinicForm({
         return nextErrors;
     };
 
-    // Same "Next silently disabled" gap on Admin Info - adminName/adminEmail/
-    // adminPhone already get live feedback above, but designation and the
-    // Govt ID type/number/document pair never did.
+    // Same "Next silently disabled" gap on Admin Info - adminName/adminEmail
+    // already get live feedback above, but designation, the Govt ID type/
+    // number/document pair, and adminPhone never did. adminPhone in
+    // particular needs this: validateAdminFields() already rejects an
+    // unverified phone ("Please verify this mobile number with the OTP
+    // before continuing."), but that only ever surfaced from the Send/
+    // Verify OTP button's own error handlers - if the admin never clicked
+    // Send OTP at all, Next just silently stayed disabled with no message.
     useEffect(() => {
         const timer = window.setTimeout(() => {
             const adminErrors = validateAdminFields();
@@ -1718,10 +1727,11 @@ export default function ClinicForm({
                 govtIdNumber: adminErrors.govtIdNumber,
                 idDoc: adminErrors.idDoc,
                 profile: adminErrors.profile,
+                adminPhone: adminErrors.adminPhone,
             }));
         }, 400);
         return () => window.clearTimeout(timer);
-    }, [form.designation, form.govtIdType, form.govtIdNumber, form.idDoc, form.profile]);
+    }, [form.designation, form.govtIdType, form.govtIdNumber, form.idDoc, form.profile, form.adminPhone, form.adminPhoneVerifiedNumber]);
 
     const validatePlanFields = ({ syncEndDate = true } = {}) => {
         const nextErrors = {};
@@ -2640,15 +2650,52 @@ export default function ClinicForm({
                                         accept=".pdf,application/pdf,image/png,image/jpeg,image/jpg"
                                     />
 
-                                    <Upload
-                                        requiredField={true}
-                                        label="Profile Photo / PDF"
-                                        value={form.profile}
-                                        error={errors.profile}
-                                        onChange={handleFileUpload("profile")}
-                                        onRemove={() => setForm((p) => ({ ...p, profile: null }))}
-                                        accept=".pdf,application/pdf,image/png,image/jpeg,image/jpg"
-                                    />
+                                    <div>
+                                        <div className="flex items-center gap-1.5 mb-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => setProfileCaptureMode("upload")}
+                                                className={`px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider transition-colors cursor-pointer ${
+                                                    profileCaptureMode === "upload"
+                                                        ? "bg-[#0C3D2E] text-white"
+                                                        : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                                                }`}
+                                            >
+                                                Upload Photo
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setProfileCaptureMode("camera")}
+                                                className={`px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider transition-colors cursor-pointer ${
+                                                    profileCaptureMode === "camera"
+                                                        ? "bg-[#0C3D2E] text-white"
+                                                        : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                                                }`}
+                                            >
+                                                Live Capture
+                                            </button>
+                                        </div>
+
+                                        {profileCaptureMode === "upload" ? (
+                                            <Upload
+                                                requiredField={true}
+                                                label="Profile Photo / PDF"
+                                                value={form.profile}
+                                                error={errors.profile}
+                                                onChange={handleFileUpload("profile")}
+                                                onRemove={() => setForm((p) => ({ ...p, profile: null }))}
+                                                accept=".pdf,application/pdf,image/png,image/jpeg,image/jpg"
+                                            />
+                                        ) : (
+                                            <CameraCapture
+                                                label="Profile Photo"
+                                                value={form.profile}
+                                                error={errors.profile}
+                                                onCapture={(file) => setForm((p) => ({ ...p, profile: file }))}
+                                                onRemove={() => setForm((p) => ({ ...p, profile: null }))}
+                                            />
+                                        )}
+                                    </div>
                                 </Grid>
                             </Card>
                         )}

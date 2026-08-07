@@ -38,6 +38,7 @@ import VerificationCenter from "./verification/VerificationCenter "
 import Input from "./forms/Input"
 import Select from "./forms/Select"
 import Upload from "./forms/Upload"
+import CameraCapture from "./forms/CameraCapture"
 import { Grid, Full } from "./forms/Grid"
 import Card from "./forms/Card"
 
@@ -78,6 +79,7 @@ export {
     Input,
     Select,
     Upload,
+    CameraCapture,
     Grid,
     Full,
     Card,
