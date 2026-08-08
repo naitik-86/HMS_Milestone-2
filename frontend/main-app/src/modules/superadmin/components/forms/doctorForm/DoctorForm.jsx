@@ -422,24 +422,84 @@ export default function DoctorForm({
         setFieldValue("mobile", digitsOnly(e.target.value, 10));
     };
 
+    // Entering a PIN code now actually fills in City/State from the postal
+    // lookup, instead of only cross-checking it against whatever City/State
+    // the admin had already (possibly wrongly, or not yet) typed - PIN code
+    // is authoritative here, so it overwrites rather than just validates.
     const handlePincodeChange = async (e) => {
         const nextValue = digitsOnly(e.target.value, 6);
         setFieldValue("pincode", nextValue);
 
         if (nextValue.length === 6) {
-            const validation = await validatePincode(nextValue, form.state, form.city, true);
+            const lookup = await lookupPincodeLocation(nextValue);
 
-            if (!validation.valid) {
-                setErrors((prev) => ({ ...prev, pincode: validation.message }));
+            if (!lookup.success) {
+                setErrors((prev) => ({ ...prev, pincode: lookup.message }));
+                showToast({
+                    type: "error",
+                    title: "Invalid PIN Code",
+                    description: lookup.message,
+                });
             } else {
+                const matchedState = stateOptions.find(
+                    (option) => option.toLowerCase() === lookup.state.toLowerCase()
+                );
+
+                setForm((prev) => ({
+                    ...prev,
+                    city: lookup.city,
+                    ...(matchedState ? { state: matchedState } : {}),
+                }));
+
                 // hasCurrentStepErrors() for this step just checks whether
                 // `errors` has any keys - a previous mismatch (e.g. before
                 // the city was corrected) left errors.pincode set forever,
                 // since nothing ever cleared it once the value became
                 // valid. Next stayed disabled even after re-entering a
                 // genuinely correct PIN code.
-                clearErrorKeys("pincode");
+                clearErrorKeys(["pincode", "city", "state"]);
+                showToast({
+                    type: "success",
+                    title: "Location Found",
+                    description: `${lookup.city}, ${lookup.state}`,
+                });
             }
+        }
+    };
+
+    // Raw postal lookup with no comparison against any existing form value -
+    // used by handlePincodeChange to actually fill City/State in. A pincode
+    // maps to exactly one District/State, so this direction is reliable.
+    // (The reverse - deriving a single PIN code from a city name - is NOT
+    // implemented: one city legitimately has dozens of valid PIN codes, so
+    // there is no single correct value to auto-fill; City still cross-
+    // checks against whichever PIN code is already entered, via
+    // handleCityBlur below, instead.)
+    const lookupPincodeLocation = async (pincodeValue) => {
+        const pincode = digitsOnly(pincodeValue, 6);
+
+        if (!PINCODE_REGEX.test(pincode)) {
+            return { success: false, message: "PIN Code must be 6 digits." };
+        }
+
+        try {
+            const response = await fetch(`https://api.postalpincode.in/pincode/${pincode}`);
+            const data = await response.json();
+
+            if (!data || data[0].Status !== "Success" || !data[0].PostOffice) {
+                return { success: false, message: "PIN Code not found." };
+            }
+
+            const office = data[0].PostOffice[0];
+            const city = office.District || office.Block;
+
+            if (!city || !office.State) {
+                return { success: false, message: "PIN Code not found." };
+            }
+
+            return { success: true, city, state: office.State };
+        } catch {
+            return { success: false, message: "Unable to verify PIN Code." };
         }
     };
 
